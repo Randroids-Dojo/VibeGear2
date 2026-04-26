@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "bench:render": "vitest run --config vitest.bench.config.ts",
     "verify": "npm run lint && npm run typecheck && npm run test",
     "verify:full": "npm run verify && npm run test:e2e"
   },

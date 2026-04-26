@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Render perf bench script (npm run bench:render)
+
+**GDD sections touched:** none (tooling slice; informational bench only)
+**Branch / PR:** `feat/render-perf-bench` (stacked on `feat/off-road-dust`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `scripts/bench-render.ts`: a manual frame-time bench that drives
+  `pseudoRoadCanvas.drawRoad` against a stub Canvas2D context for 600
+  frames with the parallax bands (sky / mountains / hills), a primed
+  64-particle dust pool, and an active VFX shake. Prints a summary table
+  with frame count, mean, p50, p95, and p99 in milliseconds, labelled
+  "CPU canvas, indicative only" because jsdom's HTMLCanvasElement throws
+  without the optional native `canvas` package and we deliberately do
+  not pull that in.
+- Added `vitest.bench.config.ts`: a standalone Vitest config whose
+  include glob targets only `scripts/bench-render.ts`. The bench is
+  invoked as a Vitest test so the `@/` aliases resolve and TypeScript
+  is transpiled without an extra loader dep, but it stays out of the
+  default `vitest.config.ts` glob so `npm test` and CI never run it.
+- `npm run bench:render` script wired in `package.json`. Verified the
+  bench prints the table and exits clean (~260 ms total). On this dev
+  machine the first run reported mean 0.016 ms / p95 0.029 ms; numbers
+  are not portable across machines, only useful for relative regression
+  hunting on the same host.
+- Authored `docs/CONTRIBUTING.md` covering the local check loop, the
+  bench workflow ("paste the table into the PR body when touching the
+  renderer"), the em-dash grep recipe, and the loop-logging
+  expectations from `AGENTS.md` RULE 5.
+- Per the dot's "CI does not run the bench by default" requirement: no
+  CI workflow exists yet (CI is owned by the re-opened
+  `implement-github-actions` dot). When that lands, the bench step
+  should be gated on `if [ "$RUN_BENCH" = '1' ]` so the default
+  pipeline stays deterministic per `AGENTS.md`.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 429 tests passing (bench file is excluded from the unit
+  glob; test count unchanged).
+- `npm run build` clean. Route sizes unchanged (`/race` stays at
+  7.49 kB / 130 kB; the bench only ships under `scripts/` and never
+  reaches the bundle).
+- `npm run test:e2e` 4 of 4 passing (no UI changes).
+- `npm run bench:render` runs to completion and prints the summary
+  table.
+
+### Followups
+- F-NNN (will be filed when the CI workflow dot lands): wire the
+  optional `RUN_BENCH=1` step in CI so reviewers can request a bench
+  comparison without touching the deterministic default pipeline.
+
+---
+
 ## 2026-04-26: Slice: Off-road dust particles + physics surface flag
 
 **GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md), [§16](gdd/16-rendering-and-visual-design.md)
