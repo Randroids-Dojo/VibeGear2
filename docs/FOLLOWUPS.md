@@ -366,7 +366,7 @@ pattern.
 ## F-036: Wire `cappedRepairCost` into `applyRepairCost`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open (unblocked)
+**Status:** done (2026-04-26, `feat/wire-capped-repair-cost`)
 **Notes:** The `feat/economy-catch-up` slice landed
 `cappedRepairCost(rawCost, raceCashEarned, kind, difficulty)` in
 `src/game/catchUp.ts` with eleven cell-by-cell unit tests. F-033
@@ -389,6 +389,33 @@ applied. The natural shape:
 The `kind` argument comes from the garage UI's repair-button
 selection (essential vs full); the surface itself is owned by the
 parent §20 results-screen / garage dot.
+
+**Resolution (2026-04-26, `feat/wire-capped-repair-cost`):** Wiring
+landed in `src/game/economy.ts`. `applyRepairCost` now accepts three
+optional fields on `ApplyRepairCostInput` -- `repairKind`
+(`"essential" | "full"`, defaults to `"full"`),
+`lastRaceCashEarned` (defaults to `0`), and `difficulty` (defaults
+to `save.settings.difficultyPreset`) -- and passes the summed raw
+cost through `cappedRepairCost(rawTotal, raceCash, kind,
+difficulty)` from `catchUp.ts` before the wallet check and debit.
+When the cap engages, a new `redistributeBreakdown` helper applies
+largest-remainder rounding to the per-zone breakdown so receipt
+rows still sum exactly to the deducted total, and the result
+returns a new `cashSaved` field carrying `rawTotal - cashSpent` for
+the §20 "Discount applied" line. Defaults preserve the F-033
+back-compat contract: callers that omit the new fields keep the
+existing raw-cost behaviour byte-for-byte. Eleven new
+`describe("essential-repair cap")` tests in
+`src/game/__tests__/economy.test.ts` pin the back-compat default,
+the normal-difficulty cap math, the largest-remainder breakdown
+allocation, the under-cap pass-through, the full-repair / hard-tier
+exclusions, the free-essential-on-zero-income edge case, the
+save-default and explicit-override difficulty resolution, the
+`REPAIR_CAP_FRACTION` knob coupling, and purity. The garage UI
+that picks `repairKind` is still owned by the §20 / garage slice
+(`implement-garage-flow-07f26703`); the wiring lands in
+`applyRepairCost` so the surface only has to thread the new
+optional fields when it ships the essential / full toggle.
 
 ---
 

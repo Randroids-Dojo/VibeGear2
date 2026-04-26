@@ -45,6 +45,7 @@ import {
 import { CARS_BY_ID } from "@/data/cars";
 import { UPGRADES_BY_ID } from "@/data/upgrades";
 
+import { cappedRepairCost, type RepairKind } from "./catchUp";
 import {
   REPAIR_BASE_COST_CREDITS,
   createDamageState,
@@ -218,9 +219,25 @@ export type EconomyResult<S = SaveGame> =
       bonuses?: ReadonlyArray<RaceBonus>;
       /** Credits debited from the wallet for this operation (repair flow). */
       cashSpent?: number;
+      /**
+       * Credits saved by the §12 essential-repair cap (repair flow). Always
+       * the difference `rawTotal - cashSpent` so callers can render
+       * "Discount applied: -N" without recomputing the raw cost. Zero when
+       * the cap did not engage (full repair, ineligible difficulty, or
+       * raw total already at or below the cap). The receipt UI can surface
+       * the saving as a separate line and the §20 results screen can show
+       * a "Catch-up cap" badge whenever this field is positive.
+       */
+      cashSaved?: number;
       /** Post-operation `DamageState` with the repaired zones zeroed (repair flow). */
       damage?: DamageState;
-      /** Per-zone repair cost breakdown in the order the caller passed them (repair flow). */
+      /**
+       * Per-zone repair cost breakdown in the order the caller passed them
+       * (repair flow). Line items always sum exactly to `cashSpent`. When
+       * the §12 essential-repair cap engages the per-zone values are scaled
+       * proportionally (largest-remainder rounding) so the receipt rows
+       * still reconcile with the wallet debit.
+       */
       repairBreakdown?: ReadonlyArray<{ zone: DamageZone; credits: number }>;
     }
   | { ok: false; failure: EconomyFailure };
@@ -405,6 +422,42 @@ export interface ApplyRepairCostInput {
   tourTier: number;
   /** Optional subset; omitted means "repair all three zones". */
   zones?: ReadonlyArray<DamageZone>;
+  /**
+   * §12 catch-up #2 repair kind. The garage UI's repair button picks
+   * `"essential"` (the minimum-to-keep-racing repair, eligible for the
+   * cap) or `"full"` (cosmetic / total repair, never capped). Defaults
+   * to `"full"` so existing callers that have not yet wired the
+   * essential / full toggle keep their previous behaviour and pay the
+   * raw §12 cost. The cap is applied after the per-zone breakdown is
+   * computed so the formula and the rounding policy stay identical to
+   * the uncapped path.
+   */
+  repairKind?: RepairKind;
+  /**
+   * Player's last race cash income in credits, used as the cap basis
+   * by `cappedRepairCost`. Required for the cap to engage; absent or
+   * zero means the cap collapses to 0 (a player who earned no cash
+   * from the previous race gets a free essential repair, mirroring
+   * the §12 catch-up intent). Quick-race / Time Trial / Practice can
+   * pass the runtime payout that landed on the §20 results screen;
+   * the championship slice will eventually thread this through from
+   * the per-tour ledger. Save-resident persistence of the value is
+   * deliberately not modelled here so the per-race lifecycle stays
+   * the caller's responsibility.
+   */
+  lastRaceCashEarned?: number;
+  /**
+   * Player-difficulty key for the §12 cap eligibility check. One of
+   * the keys in `DIFFICULTY_MULTIPLIERS`; unknown values pass through
+   * to `cappedRepairCost` which excludes them from the cap. Defaults
+   * to `save.settings.difficultyPreset` (or `"normal"` when the v1
+   * save predates the field) so the common case (garage surface
+   * reading the active save) does not have to thread the value
+   * explicitly. An explicit override is supported for the
+   * championship case where the active tour's `difficultyPreset`
+   * differs from the save's.
+   */
+  difficulty?: string;
 }
 
 /**
@@ -424,6 +477,18 @@ export interface ApplyRepairCostInput {
  *
  * Each zone is rounded individually before summing so the §20 receipt
  * can show line items that add up exactly to the deducted total.
+ *
+ * §12 catch-up #2 essential-repair cap: when `repairKind === "essential"`
+ * and the player-difficulty key is one of the cap-eligible tiers (easy,
+ * normal, novice; hard / master / extreme always pay full price), the
+ * summed raw cost is clamped to `lastRaceCashEarned * REPAIR_CAP_FRACTION`
+ * via `cappedRepairCost`. The clamp targets the total (not each zone) so
+ * the §20 receipt's "Discount applied" line matches the wallet debit.
+ * Per-zone breakdown rows are scaled with largest-remainder rounding so
+ * the line items still sum exactly to `cashSpent`. The result's
+ * `cashSaved` field carries the discount (`rawTotal - cashSpent`); zero
+ * when the cap did not engage. Defaults preserve the pre-F-036 behaviour:
+ * callers that omit `repairKind` get full price and zero saving.
  *
  * Rejection paths:
  *
@@ -477,15 +542,53 @@ export function applyRepairCost(
   const scale = tourTierScale(input.tourTier);
   const repairFactor = car.repairFactor;
 
-  const breakdown: Array<{ zone: DamageZone; credits: number }> = [];
-  let totalCost = 0;
+  const rawBreakdown: Array<{ zone: DamageZone; credits: number }> = [];
+  let rawTotal = 0;
   for (const zone of uniqueZones) {
     const damagePct = clampUnit(input.damage.zones[zone] ?? 0);
     const baseCredits = damagePct * REPAIR_BASE_COST_CREDITS[zone];
     const zoneCost = Math.max(0, Math.round(baseCredits * repairFactor * scale));
-    breakdown.push({ zone, credits: zoneCost });
-    totalCost += zoneCost;
+    rawBreakdown.push({ zone, credits: zoneCost });
+    rawTotal += zoneCost;
   }
+
+  // §12 catch-up #2: an essential repair on a cap-eligible difficulty is
+  // capped at a fraction of the previous race's cash income. The cap
+  // applies to the summed per-zone cost (not per-zone individually) so
+  // the receipt's "Discount applied" line lines up with what the player
+  // saw on the §20 results screen. `cappedRepairCost` defaults to a
+  // pass-through when `repairKind === "full"` or the difficulty is not
+  // eligible (hard, master, extreme); see `src/game/catchUp.ts` for the
+  // gate set. Defaults preserve the pre-F-036 behaviour: callers that do
+  // not pass `repairKind`/`lastRaceCashEarned`/`difficulty` get full
+  // price and zero saving.
+  const repairKind: RepairKind = input.repairKind ?? "full";
+  const raceCashEarned = Math.max(0, input.lastRaceCashEarned ?? 0);
+  // `save.settings.difficultyPreset` is optional on the v1 schema (the
+  // field landed in the v2 settings expansion); the loader / `defaultSave`
+  // always populate it but a v1 save in flight may still be `undefined`.
+  // Fall back to `"normal"` per the schema's documented compatibility
+  // contract so the cap eligibility check has a stable key.
+  const difficulty =
+    input.difficulty ?? save.settings.difficultyPreset ?? "normal";
+  const totalCost = cappedRepairCost(
+    rawTotal,
+    raceCashEarned,
+    repairKind,
+    difficulty,
+  );
+  const cashSaved = Math.max(0, rawTotal - totalCost);
+
+  // Re-distribute the cap across the per-zone breakdown so line items
+  // still sum exactly to `totalCost`. Largest-remainder rounding keeps
+  // each zone close to its proportional share of the raw cost while
+  // guaranteeing the integer sum is honoured. When the cap did not
+  // engage (`totalCost === rawTotal`) the breakdown is the raw values
+  // unchanged so the existing F-033 unit tests stay green byte-for-byte.
+  const breakdown =
+    totalCost === rawTotal
+      ? rawBreakdown
+      : redistributeBreakdown(rawBreakdown, rawTotal, totalCost);
 
   if (totalCost > save.garage.credits) {
     return {
@@ -528,9 +631,82 @@ export function applyRepairCost(
     ok: true,
     state: next,
     cashSpent: totalCost,
+    cashSaved,
     damage: nextDamage,
     repairBreakdown: breakdown,
   };
+}
+
+/**
+ * Largest-remainder allocation of `targetTotal` across `breakdown`,
+ * weighted by each entry's share of `rawTotal`. Used by `applyRepairCost`
+ * when the §12 essential-repair cap collapses the raw cost: the receipt
+ * still has to render line items that sum exactly to the deducted total
+ * and stay non-negative integers.
+ *
+ * Algorithm (Hamilton / largest-remainder method):
+ *   1. For each entry, compute the floor of `targetTotal * (raw / rawTotal)`.
+ *   2. Track the fractional remainder per entry.
+ *   3. Distribute the leftover credits one at a time to the entries with
+ *      the largest remainders (ties broken by original index for stability).
+ *
+ * Edge cases:
+ *   - `rawTotal === 0`: every entry was already zero; return the breakdown
+ *     unchanged with credits zeroed (defensive; callers should never reach
+ *     this with `targetTotal > 0`).
+ *   - `targetTotal === 0`: every line collapses to zero (free essential
+ *     repair when the player earned no cash).
+ *   - Single-entry breakdown: the entire `targetTotal` lands on that entry.
+ */
+function redistributeBreakdown(
+  rawBreakdown: ReadonlyArray<{ zone: DamageZone; credits: number }>,
+  rawTotal: number,
+  targetTotal: number,
+): Array<{ zone: DamageZone; credits: number }> {
+  if (rawTotal <= 0 || targetTotal <= 0) {
+    return rawBreakdown.map((entry) => ({ zone: entry.zone, credits: 0 }));
+  }
+
+  type Slot = {
+    index: number;
+    zone: DamageZone;
+    floorCredits: number;
+    remainder: number;
+  };
+
+  const slots: Slot[] = rawBreakdown.map((entry, index) => {
+    const exact = (targetTotal * entry.credits) / rawTotal;
+    const floor = Math.floor(exact);
+    return {
+      index,
+      zone: entry.zone,
+      floorCredits: floor,
+      remainder: exact - floor,
+    };
+  });
+
+  const allocated = slots.reduce((acc, slot) => acc + slot.floorCredits, 0);
+  let leftover = targetTotal - allocated;
+
+  // Distribute leftover credits one at a time to the slots with the
+  // largest remainder. A stable sort (by remainder descending, then by
+  // original index ascending) makes the allocation deterministic so two
+  // calls with identical inputs produce identical breakdowns.
+  const order = [...slots].sort((a, b) => {
+    if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    return a.index - b.index;
+  });
+
+  for (const slot of order) {
+    if (leftover <= 0) break;
+    slot.floorCredits += 1;
+    leftover -= 1;
+  }
+
+  // Rebuild in original order so the receipt rows stay in the order the
+  // caller passed them.
+  const restored = [...slots].sort((a, b) => a.index - b.index);
+  return restored.map((slot) => ({ zone: slot.zone, credits: slot.floorCredits }));
 }
 
 function isDamageZone(value: unknown): value is DamageZone {

@@ -14,6 +14,7 @@ import { defaultSave } from "@/persistence/save";
 import { CARS_BY_ID } from "@/data/cars";
 import { UPGRADES_BY_ID } from "@/data/upgrades";
 
+import { REPAIR_CAP_FRACTION } from "../catchUp";
 import { createDamageState, REPAIR_BASE_COST_CREDITS } from "../damage";
 import {
   applyRepairCost,
@@ -620,6 +621,289 @@ describe("applyRepairCost", () => {
       const expected = Math.round(REPAIR_BASE_COST_CREDITS.engine * car.repairFactor);
       expect(result.cashSpent).toBe(expected);
     }
+  });
+
+  // §12 catch-up #2 essential-repair cap: F-036 wires
+  // `cappedRepairCost(rawTotal, lastRaceCashEarned, kind, difficulty)`
+  // around the per-zone breakdown so an essential repair on a cap-eligible
+  // difficulty (easy / normal / novice) is clamped to a fraction of the
+  // previous race's cash income. The clamp targets the summed total so the
+  // §20 receipt's "Discount applied" line lines up with the wallet debit;
+  // the per-zone breakdown is rescaled with largest-remainder rounding so
+  // line items still sum to `cashSpent`. Hard / master / extreme always
+  // pay full price and full repairs are never capped.
+  describe("essential-repair cap", () => {
+    it("defaults to the uncapped raw cost when repairKind is omitted (back-compat)", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      const damage = createDamageState({ engine: 0.5, tires: 0.25, body: 0.5 });
+      // No repairKind / lastRaceCashEarned passed: the F-033 baseline
+      // contract must still hold byte-for-byte so existing callers do
+      // not accidentally start paying capped prices.
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+      });
+      assertOk(result);
+      expect(result.cashSpent).toBe(750 + 150 + 450);
+      expect(result.cashSaved).toBe(0);
+      expect(result.repairBreakdown).toEqual([
+        { zone: "engine", credits: 750 },
+        { zone: "tires", credits: 150 },
+        { zone: "body", credits: 450 },
+      ]);
+    });
+
+    it("essential repair on normal difficulty clamps total to the §12 cap", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      // Sparrow GT, tier 1, all zones full damage:
+      //   engine = round(1.0 * 1500) = 1500
+      //   tires  = round(1.0 *  600) =  600
+      //   body   = round(1.0 *  900) =  900
+      //   raw    = 3000
+      // raceCash 2000 -> cap = round(2000 * 0.4) = 800
+      // proportional split (clean integers):
+      //   engine = 800 * 1500/3000 = 400
+      //   tires  = 800 *  600/3000 = 160
+      //   body   = 800 *  900/3000 = 240
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 2000,
+        difficulty: "normal",
+      });
+      assertOk(result);
+      expect(result.cashSpent).toBe(800);
+      expect(result.cashSaved).toBe(3000 - 800);
+      expect(result.state.garage.credits).toBe(99999 - 800);
+      expect(result.repairBreakdown).toEqual([
+        { zone: "engine", credits: 400 },
+        { zone: "tires", credits: 160 },
+        { zone: "body", credits: 240 },
+      ]);
+      // Sanity: the breakdown must reconcile with the wallet debit so the
+      // §20 receipt rows can render without a re-derivation step.
+      const breakdownSum = (result.repairBreakdown ?? []).reduce(
+        (acc, row) => acc + row.credits,
+        0,
+      );
+      expect(breakdownSum).toBe(result.cashSpent);
+    });
+
+    it("largest-remainder rounding keeps the per-zone breakdown summing to cashSpent", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      // Half-damage every zone:
+      //   engine = round(0.5 * 1500) = 750
+      //   tires  = round(0.5 *  600) = 300
+      //   body   = round(0.5 *  900) = 450
+      //   raw    = 1500
+      // raceCash 1753 -> cap = round(1753 * 0.4) = round(701.2) = 701
+      // proportional split (non-integer):
+      //   engine 701 * 750/1500 = 350.5  -> floor 350, remainder 0.50
+      //   tires  701 * 300/1500 = 140.2  -> floor 140, remainder 0.20
+      //   body   701 * 450/1500 = 210.3  -> floor 210, remainder 0.30
+      //   floors sum 700, leftover 1 -> goes to the largest remainder
+      //   (engine, 0.50): final 351 / 140 / 210 = 701.
+      const damage = createDamageState({ engine: 0.5, tires: 0.5, body: 0.5 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 1753,
+        difficulty: "normal",
+      });
+      assertOk(result);
+      expect(result.cashSpent).toBe(701);
+      expect(result.cashSaved).toBe(1500 - 701);
+      expect(result.repairBreakdown).toEqual([
+        { zone: "engine", credits: 351 },
+        { zone: "tires", credits: 140 },
+        { zone: "body", credits: 210 },
+      ]);
+      const breakdownSum = (result.repairBreakdown ?? []).reduce(
+        (acc, row) => acc + row.credits,
+        0,
+      );
+      expect(breakdownSum).toBe(result.cashSpent);
+    });
+
+    it("essential repair below the cap passes through unchanged with cashSaved 0", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      // Raw total 1500 (half-damage every zone) vs. raceCash 10000
+      // (cap = round(4000) = 4000). Raw is well under the cap so the
+      // breakdown and cashSpent must mirror the uncapped path.
+      const damage = createDamageState({ engine: 0.5, tires: 0.5, body: 0.5 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 10000,
+        difficulty: "normal",
+      });
+      assertOk(result);
+      expect(result.cashSpent).toBe(1500);
+      expect(result.cashSaved).toBe(0);
+      expect(result.repairBreakdown).toEqual([
+        { zone: "engine", credits: 750 },
+        { zone: "tires", credits: 300 },
+        { zone: "body", credits: 450 },
+      ]);
+    });
+
+    it("full repair never engages the cap even with a high last-race income", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "full",
+        lastRaceCashEarned: 0,
+        difficulty: "normal",
+      });
+      assertOk(result);
+      // Raw total 3000 must pass through unchanged for `kind === "full"`
+      // even when raceCash 0 would otherwise collapse the cap to 0.
+      expect(result.cashSpent).toBe(3000);
+      expect(result.cashSaved).toBe(0);
+    });
+
+    it("hard / master / extreme difficulties always pay full price for essential repairs", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      for (const difficulty of ["hard", "master", "extreme"] as const) {
+        const result = applyRepairCost(before, {
+          carId: STARTER_CAR,
+          damage,
+          tourTier: 1,
+          repairKind: "essential",
+          lastRaceCashEarned: 100,
+          difficulty,
+        });
+        assertOk(result);
+        // §12 deliberately excludes the harder tiers from the cap so the
+        // economy risk surface stays intact at high difficulty.
+        expect(result.cashSpent).toBe(3000);
+        expect(result.cashSaved).toBe(0);
+      }
+    });
+
+    it("zero lastRaceCashEarned grants a free essential repair on cap-eligible difficulty", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 0,
+        difficulty: "easy",
+      });
+      assertOk(result);
+      // Cap collapses to round(0 * 0.4) = 0 -> wallet untouched, breakdown
+      // rows zeroed, cashSaved == raw total. Mirrors the §12 catch-up
+      // intent: a player who earned no cash from the previous race gets
+      // a free essential repair so they can keep racing.
+      expect(result.cashSpent).toBe(0);
+      expect(result.cashSaved).toBe(3000);
+      expect(result.state.garage.credits).toBe(99999);
+      expect(result.repairBreakdown).toEqual([
+        { zone: "engine", credits: 0 },
+        { zone: "tires", credits: 0 },
+        { zone: "body", credits: 0 },
+      ]);
+    });
+
+    it("defaults difficulty to save.settings.difficultyPreset when not overridden", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      // The default save ships `difficultyPreset: "normal"` which is
+      // cap-eligible, so omitting the explicit difficulty arg must still
+      // engage the cap. This pins the convenience-default contract so the
+      // garage surface does not have to thread the value at every call.
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 2000,
+      });
+      assertOk(result);
+      expect(result.cashSpent).toBe(800);
+      expect(result.cashSaved).toBe(2200);
+    });
+
+    it("respects difficulty override even when save.settings.difficultyPreset is cap-eligible", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      // Save's preset is "normal" (cap-eligible) but the championship
+      // tour the player just finished was "hard"; the explicit override
+      // must win so the tour's risk surface drives the cap.
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 100,
+        difficulty: "hard",
+      });
+      assertOk(result);
+      expect(result.cashSpent).toBe(3000);
+      expect(result.cashSaved).toBe(0);
+    });
+
+    it("REPAIR_CAP_FRACTION drives the ceiling so a knob change rebalances both runtime and tests", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const raceCash = 5000;
+      const result = applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: raceCash,
+        difficulty: "normal",
+      });
+      assertOk(result);
+      const expectedCap = Math.round(raceCash * REPAIR_CAP_FRACTION);
+      // 5000 * 0.4 = 2000 < raw total 3000, so the cap engages.
+      expect(expectedCap).toBeLessThan(3000);
+      expect(result.cashSpent).toBe(expectedCap);
+      expect(result.cashSaved).toBe(3000 - expectedCap);
+    });
+
+    it("never mutates the input save when the cap engages", () => {
+      const before = freshSave();
+      before.garage.credits = 99999;
+      const snapshot = JSON.parse(JSON.stringify(before));
+      const damage = createDamageState({ engine: 1.0, tires: 1.0, body: 1.0 });
+      const damageSnapshot = JSON.parse(JSON.stringify(damage));
+      applyRepairCost(before, {
+        carId: STARTER_CAR,
+        damage,
+        tourTier: 1,
+        repairKind: "essential",
+        lastRaceCashEarned: 2000,
+        difficulty: "normal",
+      });
+      expect(before).toEqual(snapshot);
+      expect(damage).toEqual(damageSnapshot);
+    });
   });
 });
 
