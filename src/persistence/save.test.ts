@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import saveExample from "@/data/examples/saveGame.example.json" with { type: "json" };
+import v1DefaultSave from "./migrations/__fixtures__/v1-default-save.json" with { type: "json" };
+import v2DefaultSave from "./migrations/__fixtures__/v2-default-save.json" with { type: "json" };
 import {
   CURRENT_SAVE_VERSION,
   backupKey,
@@ -103,6 +105,31 @@ describe("loadSave", () => {
       expect(result.save.profileName).toBe(saveExample.profileName);
       expect(result.save.garage.credits).toBe(saveExample.garage.credits);
     }
+  });
+
+  it("falls back to a v2 key, migrates, and writes the current key", () => {
+    storage.setItem(storageKey(2), JSON.stringify(v2DefaultSave));
+    const result = loadSave({ storage, logger });
+    expect(result.kind).toBe("loaded");
+    if (result.kind !== "loaded") return;
+    expect(result.save.version).toBe(CURRENT_SAVE_VERSION);
+    expect(result.save.ghosts).toEqual({});
+    expect(storage.getItem(storageKey(CURRENT_SAVE_VERSION))).not.toBeNull();
+  });
+
+  it("falls back through v2 to a v1 key when no newer save exists", () => {
+    storage.setItem(storageKey(1), JSON.stringify(v1DefaultSave));
+    const result = loadSave({ storage, logger });
+    expect(result.kind).toBe("loaded");
+    if (result.kind !== "loaded") return;
+    expect(result.save.version).toBe(CURRENT_SAVE_VERSION);
+    expect(result.save.settings.audio).toEqual({
+      master: 1,
+      music: 0.8,
+      sfx: 0.9,
+    });
+    expect(result.save.ghosts).toEqual({});
+    expect(storage.getItem(storageKey(CURRENT_SAVE_VERSION))).not.toBeNull();
   });
 
   it("falls back to default and preserves a backup when JSON is corrupted", () => {

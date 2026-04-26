@@ -449,6 +449,46 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
   };
 }
 
+/**
+ * Merge the result-builder PB patch into a save snapshot before the page
+ * commits wallet credits. Kept pure so route code can compose
+ * `buildRaceResult -> awardCredits -> applyRaceResultRecords -> saveSave`
+ * without duplicating record-shape rules.
+ */
+export function applyRaceResultRecords(save: SaveGame, result: RaceResult): SaveGame {
+  const patch = result.recordsUpdated;
+  if (patch === null) {
+    return save;
+  }
+
+  const existing = save.records[patch.trackId] ?? null;
+  const playerRecord = result.finishingOrder.find(
+    (record) => record.carId === result.playerCarId,
+  );
+  const currentRaceMs =
+    playerRecord?.status === "finished" &&
+    typeof playerRecord.raceTimeMs === "number" &&
+    Number.isFinite(playerRecord.raceTimeMs) &&
+    playerRecord.raceTimeMs > 0
+      ? playerRecord.raceTimeMs
+      : patch.bestLapMs;
+  const bestRaceMs =
+    existing === null
+      ? currentRaceMs
+      : Math.min(existing.bestRaceMs, currentRaceMs);
+
+  return {
+    ...save,
+    records: {
+      ...save.records,
+      [patch.trackId]: {
+        bestLapMs: patch.bestLapMs,
+        bestRaceMs,
+      },
+    },
+  };
+}
+
 function computePoints(
   record: FinalCarRecord | null,
   placement: number | null,

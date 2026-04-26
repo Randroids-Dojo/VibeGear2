@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Review fixes for save and lap timing
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) "Number of laps" and "Finish rewards",
+[§21](gdd/21-technical-design-for-web-implementation.md) "Save system",
+[§22](gdd/22-data-schemas.md) "Save-game JSON schema".
+**Branch / PR:** `feat/f-022b-ghost-driver-helper`, direct merge requested.
+**Status:** Implemented review fixes.
+
+### Done
+- `src/persistence/save.ts`: `loadSave` now falls back through older
+  versioned save keys before returning a missing default, migrates the
+  first found payload, validates it, and writes the migrated shape to
+  the current key when the source key was older.
+- `src/game/raceResult.ts` and `src/app/race/page.tsx`: added
+  `applyRaceResultRecords` and wired race-finish persistence so the
+  credited save also receives any `recordsUpdated` PB patch before
+  `saveSave`.
+- `src/game/raceSession.ts`: lap-completion HUD fields now store the
+  per-lap duration, not cumulative race elapsed, so later laps can beat
+  lap one in multi-lap races.
+- Added regression coverage for v1 / v2 save-key fallback, PB record
+  persistence, first-record creation, and multi-lap timing.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green.
+- `npm run content-lint` clean.
+- `npm run test:e2e` green, 50 passed.
+- `npm run build` clean after rerunning without a concurrent e2e build.
+- `git diff --check` clean.
+- No em or en dashes in touched files.
+
+### Decisions and assumptions
+- Existing older save keys are left in place after migration. The loader
+  writes the migrated copy to the current key so later loads use the
+  current path, while the older key remains a recovery backstop.
+- `applyRaceResultRecords` preserves an existing `bestRaceMs` when it is
+  faster than the current race time. Fresh records use the current
+  finished race time, with `bestLapMs` as a defensive fallback.
+
+### Followups created
+None.
+
+### GDD edits
+None. The fixes align the implementation with the existing save and
+race timing contracts.
+
+---
+
 ## 2026-04-26: Slice: F-023 Time Trial recorder lifecycle producer
 
 **GDD sections touched:**

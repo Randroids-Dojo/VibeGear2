@@ -50,6 +50,7 @@ import {
   createRaceSession,
   deriveHudState,
   deriveSplitsState,
+  applyRaceResultRecords,
   retireRaceSession,
   startLoop,
   stepRaceSession,
@@ -231,11 +232,10 @@ function commitRaceCredits(input: {
     return result;
   }
 
-  // Persist the credited save. A storage failure (quota / privacy mode)
-  // is non-fatal here: the player still sees the receipt, and the next
-  // race-finish will retry from the in-memory delta. The wallet commit
-  // mirrored on `creditsAwarded` stays accurate either way.
-  saveSave(award.state);
+  // Persist the credited save plus any PB patch emitted by the result
+  // builder. Storage failure is non-fatal here: the player still sees
+  // the receipt, and the next race finish can retry from a loaded save.
+  saveSave(applyRaceResultRecords(award.state, result));
 
   return {
     ...result,

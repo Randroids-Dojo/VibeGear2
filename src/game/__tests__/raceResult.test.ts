@@ -29,6 +29,7 @@ import { defaultSave } from "@/persistence/save";
 import type { SponsorObjective, Track } from "@/data/schemas";
 
 import {
+  applyRaceResultRecords,
   buildRaceResult,
   CLEAN_RACE_BONUS_RATE,
   DEFAULT_BASE_TRACK_REWARD,
@@ -744,6 +745,66 @@ describe("buildRaceResult + awardCredits: F-034 race-finish wiring", () => {
     expect(award.state.garage.credits).toBe(
       save.garage.credits + result.cashEarned,
     );
+  });
+
+  it("merges a PB patch into the credited save before persistence", () => {
+    const save = defaultSave();
+    save.records["test-circuit"] = { bestLapMs: 32_000, bestRaceMs: 100_000 };
+    const result = buildRaceResult(
+      makeInput({
+        save,
+        baseTrackReward: 1000,
+        finalState: makeFinalState({
+          finishingOrder: [
+            {
+              carId: PLAYER_ID,
+              status: "finished",
+              raceTimeMs: 90_000,
+              bestLapMs: 30_000,
+            },
+          ],
+          perLapTimes: { [PLAYER_ID]: [30_000, 30_000, 30_000] },
+        }),
+      }),
+    );
+    expect(result.recordsUpdated).toEqual({
+      trackId: "test-circuit",
+      bestLapMs: 30_000,
+    });
+
+    const award = awardCredits(save, {
+      placement: result.playerPlacement ?? 1,
+      status: "finished",
+      baseTrackReward: 1000,
+      difficulty: "normal",
+      bonuses: result.bonuses,
+    });
+    expect(award.ok).toBe(true);
+    if (!award.ok) return;
+
+    const committed = applyRaceResultRecords(award.state, result);
+    expect(committed.garage.credits).toBe(
+      save.garage.credits + result.cashEarned,
+    );
+    expect(committed.records["test-circuit"]).toEqual({
+      bestLapMs: 30_000,
+      bestRaceMs: 90_000,
+    });
+  });
+
+  it("creates a valid record when the first PB lands on a fresh track", () => {
+    const save = defaultSave();
+    const result = buildRaceResult(makeInput({ save }));
+    expect(result.recordsUpdated).toEqual({
+      trackId: "test-circuit",
+      bestLapMs: 30_000,
+    });
+
+    const committed = applyRaceResultRecords(save, result);
+    expect(committed.records["test-circuit"]).toEqual({
+      bestLapMs: 30_000,
+      bestRaceMs: 90_000,
+    });
   });
 });
 

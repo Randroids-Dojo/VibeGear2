@@ -221,6 +221,50 @@ describe("stepRaceSession (lap completion)", () => {
     expect(session.race.phase).toBe("racing");
   });
 
+  it("stores per-lap duration rather than cumulative elapsed time after lap one", () => {
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 3,
+    };
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      race: {
+        ...session.race,
+        elapsed: 100,
+        lap: 2,
+        lastLapTimeMs: 80_000,
+        bestLapTimeMs: 80_000,
+      },
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          z: track.totalLengthMeters * 2 - 0.1,
+          speed: 60,
+        },
+        lapTimes: [80_000],
+      },
+    };
+
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    const expectedLapDurationMs = Math.max(
+      1,
+      Math.round((100 + DT) * 1000) - 80_000,
+    );
+    expect(session.race.lap).toBe(3);
+    expect(session.race.lastLapTimeMs).toBe(expectedLapDurationMs);
+    expect(session.race.bestLapTimeMs).toBe(expectedLapDurationMs);
+    expect(session.player.lapTimes).toEqual([
+      80_000,
+      expectedLapDurationMs,
+    ]);
+  });
+
   it("flips to finished when the final lap completes and freezes physics", () => {
     const track = loadTrack("test/straight");
     const config: RaceSessionConfig = {
@@ -1433,7 +1477,7 @@ describe("stepRaceSession (§7 per-car DNF tracking + finishing order, F-028)", 
     expect(session.player.lapTimes.length).toBe(2);
     const lap2Ms = session.player.lapTimes[1]!;
     // Lap 2 was spent waiting ~1s before the synthetic snap; the
-    // duration is not cumulative — it must be smaller than the full
+    // duration is not cumulative. It must be smaller than the full
     // race elapsed and strictly positive.
     expect(lap2Ms).toBeGreaterThan(0);
     expect(lap2Ms).toBeLessThan(lap1Ms + 1_000_000);

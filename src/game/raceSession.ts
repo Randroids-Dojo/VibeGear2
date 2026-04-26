@@ -1363,11 +1363,13 @@ export function stepRaceSession(
       // One or more laps crossed this tick. The MVP records a single lap
       // time for the most recent crossing; multi-lap-per-tick can only
       // happen with absurd dt and is not relevant for 60 Hz.
-      lastLapTimeMs = nextElapsedMs;
+      const priorTotalMs = state.player.lapTimes.reduce((a, b) => a + b, 0);
+      const lapDurationMs = Math.max(1, nextElapsedMs - priorTotalMs);
+      lastLapTimeMs = lapDurationMs;
       bestLapTimeMs =
         bestLapTimeMs === null
-          ? nextElapsedMs
-          : Math.min(bestLapTimeMs, nextElapsedMs);
+          ? lapDurationMs
+          : Math.min(bestLapTimeMs, lapDurationMs);
       nextLap = intendedLap;
       // §7 per-car lap times: append the per-lap duration (current
       // elapsed minus the cumulative time at the prior lap boundary)
@@ -1375,8 +1377,6 @@ export function stepRaceSession(
       // duration is `nextElapsedMs` since the lap-1 baseline is the
       // green-light moment (`elapsed = 0`); subsequent laps subtract
       // the cumulative ms baked into the prior `lapTimes` total.
-      const priorTotalMs = state.player.lapTimes.reduce((a, b) => a + b, 0);
-      const lapDurationMs = Math.max(1, nextElapsedMs - priorTotalMs);
       nextPlayerLapTimes = [...state.player.lapTimes, lapDurationMs];
       if (nextLap > state.race.totalLaps) {
         nextPhase = "finished";

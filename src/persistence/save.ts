@@ -197,18 +197,15 @@ export function loadSave(io: SaveIO = {}): SaveLoadOutcome {
     return { kind: "default", reason: "no-storage" };
   }
 
-  const key = storageKey(CURRENT_SAVE_VERSION);
-  let raw: string | null;
-  try {
-    raw = storage.getItem(key);
-  } catch (error) {
-    logger.warn("getItem threw; treating as no-storage", error);
+  const found = readNewestAvailableSave(storage, logger);
+  if (found.kind === "no-storage") {
     return { kind: "default", reason: "no-storage" };
   }
-
-  if (raw === null) {
+  if (found.kind === "missing") {
     return { kind: "default", reason: "missing" };
   }
+
+  const { raw, version: sourceVersion } = found;
 
   let parsed: unknown;
   try {
@@ -230,6 +227,10 @@ export function loadSave(io: SaveIO = {}): SaveLoadOutcome {
     logger.warn("save failed schema validation; preserving backup", result.error.issues);
     preserveBackup(storage, raw, logger);
     return { kind: "default", reason: "schema-invalid" };
+  }
+
+  if (sourceVersion !== CURRENT_SAVE_VERSION) {
+    persistMigratedSave(storage, result.data, logger);
   }
 
   return { kind: "loaded", save: result.data };
@@ -470,6 +471,42 @@ function preserveBackup(storage: Storage, raw: string, logger: SaveLogger): void
     storage.setItem(backupKey(CURRENT_SAVE_VERSION), raw);
   } catch (error) {
     logger.warn("failed to preserve backup of corrupted save", error);
+  }
+}
+
+type SaveReadResult =
+  | { kind: "found"; version: number; raw: string }
+  | { kind: "missing" }
+  | { kind: "no-storage" };
+
+function readNewestAvailableSave(
+  storage: Storage,
+  logger: SaveLogger,
+): SaveReadResult {
+  for (let version = CURRENT_SAVE_VERSION; version >= 1; version -= 1) {
+    let raw: string | null;
+    try {
+      raw = storage.getItem(storageKey(version));
+    } catch (error) {
+      logger.warn("getItem threw; treating as no-storage", error);
+      return { kind: "no-storage" };
+    }
+    if (raw !== null) {
+      return { kind: "found", version, raw };
+    }
+  }
+  return { kind: "missing" };
+}
+
+function persistMigratedSave(
+  storage: Storage,
+  save: SaveGame,
+  logger: SaveLogger,
+): void {
+  try {
+    storage.setItem(storageKey(CURRENT_SAVE_VERSION), JSON.stringify(save));
+  } catch (error) {
+    logger.warn("failed to persist migrated save", error);
   }
 }
 
