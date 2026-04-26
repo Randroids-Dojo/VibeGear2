@@ -11,7 +11,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { startLoop, type LoopHandle } from "@/game/loop";
+import { deriveHudState, type RankedCar } from "@/game/hudState";
+import { createRaceState, type RaceState } from "@/game/raceState";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { drawHud } from "@/render/uiRenderer";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
@@ -70,6 +73,14 @@ export default function RoadDevPage() {
     };
     const viewport = { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT };
 
+    // Demo race state for the HUD overlay. The dev page is not a real
+    // race, so we synthesise lap progress from camera.z and pretend a
+    // single ghost AI is running 80 m ahead so the HUD shows P2/2.
+    const raceState: RaceState = createRaceState(3);
+    raceState.phase = "racing";
+    const PLAYER_ID = "demo-player";
+    const GHOST_ID = "demo-ghost";
+
     let fpsWindowStart = performance.now();
     let fpsWindowFrames = 0;
     let lastFps = 0;
@@ -83,12 +94,33 @@ export default function RoadDevPage() {
         const totalLen = TEST_TRACK.totalLength;
         if (totalLen > 0 && camera.z > totalLen) {
           camera.z -= totalLen;
+          if (raceState.lap < raceState.totalLaps) {
+            raceState.lap += 1;
+          }
         }
       },
       render: () => {
         const strips = project(TEST_TRACK.segments, camera, viewport);
         drawRoad(ctx, strips, viewport);
         lastVisible = strips.reduce((acc, s) => (s.visible ? acc + 1 : acc), 0);
+
+        // HUD overlay. Speed is the constant camera advance; total
+        // progress combines lap number and z so the ghost stays one
+        // car-length ahead even after a lap rollover.
+        const totalLen = TEST_TRACK.totalLength;
+        const playerProgress = (raceState.lap - 1) * totalLen + camera.z;
+        const cars: RankedCar[] = [
+          { id: PLAYER_ID, totalProgress: playerProgress },
+          { id: GHOST_ID, totalProgress: playerProgress + 80 },
+        ];
+        const hud = deriveHudState({
+          race: raceState,
+          playerSpeedMetersPerSecond: CAMERA_SPEED_M_PER_S,
+          playerId: PLAYER_ID,
+          cars,
+          speedUnit: "kph",
+        });
+        drawHud(ctx, hud, viewport);
 
         fpsWindowFrames += 1;
         const now = performance.now();

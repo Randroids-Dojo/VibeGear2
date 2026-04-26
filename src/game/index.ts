@@ -6,3 +6,4 @@ export * from "./raceState";
 export * from "./loop";
 export * from "./input";
 export * from "./physics";
+export * from "./hudState";

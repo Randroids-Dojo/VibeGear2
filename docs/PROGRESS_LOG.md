@@ -6,6 +6,84 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Minimal HUD for speed, lap, and position (§20)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md)
+**Branch / PR:** `feat/minimal-hud`, PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/hudState.ts` exposing the pure derivation
+  `deriveHudState({race, playerSpeedMetersPerSecond, playerId, cars,
+  speedUnit}) -> HudState` plus the helpers `speedToDisplayUnit`
+  (m/s to kph or mph with rounding and abs) and `rankPosition`
+  (1-indexed place in the field, deterministic tie-break on id lex).
+  HudState exposes `{speed, speedUnit, lap, totalLaps, position,
+  totalCars}`. Lap is clamped into `[1, totalLaps]` so the HUD never
+  surfaces "0 / N" pre-countdown or "4 / 3" mid-overshoot.
+- Added `src/render/uiRenderer.ts` exposing `drawHud(ctx, state,
+  viewport, options?) -> void`. Pure draw: lap and position read
+  top-left, speed and unit read bottom-right per §20 "UX wireframe
+  descriptions / Race HUD layout". Uses a one-pixel drop shadow for
+  legibility over grass and sky alike. Saves and restores ctx state
+  (fillStyle, font, textAlign, textBaseline) so the caller does not
+  need to wrap with save/restore.
+- Re-exported the HUD surface from `src/game/index.ts` and
+  `src/render/index.ts`.
+- Wired the HUD into `src/app/dev/road/page.tsx`: the dev page now
+  renders the HUD overlay over the road. Lap rolls forward as the
+  camera completes laps of the 1.2 km test track. A synthetic ghost
+  AI sits 80 m ahead so the position display reads "POS 2 / 2".
+- Added `src/game/__tests__/hudState.test.ts` (21 cases) covering:
+  speed unit conversion (kph and mph), reverse / NaN / Infinity speed
+  collapsing to a non-negative integer, single-car field rendering as
+  position 1 / 1, multi-car ranking by total progress, deterministic
+  tie-break across grid-start ties, lap 0 to lap 1 placeholder, lap
+  overshoot clamped to totalLaps, fractional lap truncation, purity
+  (no input mutation), and a 100-call determinism guard.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 180/180 (21 new + 159 prior).
+- `npm run build` succeeds; `/dev/road` ships at 2.14 kB.
+- `grep -P '[\x{2013}\x{2014}]'` across the touched files returns
+  nothing (no em-dashes, no en-dashes).
+- Manual visual verification at `/dev/road` deferred to a human run
+  of `npm run dev`. Unit tests cover the math.
+
+### Decisions and assumptions
+- The HUD computes position from a `RankedCar[]` passed in by the
+  race-state owner. The owner is responsible for converting per-car
+  `(lap, z)` into a single `totalProgress` scalar. This keeps HUD
+  derivation independent of the §15 AI module that does not exist
+  yet, and matches the pattern in `physics.ts` (small dependency
+  surface, easy to test in isolation).
+- Tie-break on id lex ascending, not insertion order. Grid-start ties
+  are common (every car at progress 0); the lex order keeps the HUD
+  stable across ticks. The §15 AI slice will introduce real
+  archetype ids; the lex break stays useful when the §11 grid order
+  is otherwise undefined.
+- Speed unit reads from `SaveGame.settings.displaySpeedUnit` per §22.
+  The dev page hardcodes `"kph"` for now; a future slice will plumb
+  the loaded save into the dev pages once the title screen exists.
+- Drop shadow is a single-pixel offset rather than a real
+  `shadowBlur`. The §20 polish slice can switch to layered blurs
+  once typography is settled; for the minimal-HUD slice the cheap
+  underlay reads cleanly over the grass and sky bands.
+- The HUD draws inside the `render` callback (not `simulate`) so it
+  shares the road renderer's rAF cadence and cannot flicker between
+  sim ticks. Interpolation across sim states is the caller's job;
+  the HUD reads the current snapshot.
+
+### Followups created
+- None.
+
+### GDD edits
+- None. The implementation conforms to the §20 Race HUD layout.
+
+---
+
 ## 2026-04-26: Slice: Arcade physics step for player car (§10)
 
 **GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md), [§11](gdd/11-cars-and-stats.md), [§23](gdd/23-balancing-tables.md)
