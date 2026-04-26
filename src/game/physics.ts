@@ -39,7 +39,29 @@ import type { CarBaseStats } from "@/data/schemas";
 import { ROAD_WIDTH } from "@/road/constants";
 import type { DamageScalars } from "./damageBands";
 import { PRISTINE_SCALARS } from "./damageBands";
+import type { AssistScalars } from "./difficultyPresets";
 import type { Input } from "./input";
+
+/**
+ * Identity (Balanced) §28 scalars used as the default when no preset has
+ * been resolved. Mirrors `getPreset("normal")` from `./difficultyPresets`,
+ * inlined here so the physics module does not pull a runtime dependency on
+ * the preset table just to express the no-op identity. Kept frozen so a
+ * caller cannot accidentally mutate the shared default.
+ *
+ * The only field that diverges from a literal `1.0` row is
+ * `steeringAssistScale`, which the §28 Balanced row pins at `0.10`. The
+ * physics step ignores `steeringAssistScale` entirely when no
+ * `assistScalars` are passed (`undefined` short-circuits the assist
+ * branch), so this constant is only consumed when an explicit
+ * `assistScalars` reference has been forwarded.
+ */
+const IDENTITY_ASSIST_SCALARS: Readonly<AssistScalars> = Object.freeze({
+  steeringAssistScale: 0,
+  nitroStabilityPenalty: 1,
+  damageSeverity: 1,
+  offRoadDragScale: 1,
+});
 
 /**
  * Logical version of the physics math. Bumped any time the integration
@@ -63,8 +85,19 @@ import type { Input } from "./input";
  * The cheap discipline is "if in doubt, bump". A spurious bump only
  * costs the player their old ghost; a missing bump corrupts replays
  * silently.
+ *
+ * Version history:
+ *   - 1: pre-§28 wiring. `step()` ignored difficulty preset scalars; off-
+ *     road drag and steering authority were fixed regardless of player
+ *     setting.
+ *   - 2: §28 preset scalars (`offRoadDragScale`, `steeringAssistScale`)
+ *     consumed when `StepOptions.assistScalars` is forwarded. A ghost
+ *     recorded under v1 cannot be replayed verbatim because a v2 race
+ *     session resolves and forwards the player's preset scalars; the
+ *     bump rejects v1 ghosts so the §20 PB compare layer never compares
+ *     across pre-binding and post-binding math.
  */
-export const PHYSICS_VERSION = 1;
+export const PHYSICS_VERSION = 2;
 
 /**
  * Off-road handling tunables from §10 "Suggested tunable constants".
@@ -220,6 +253,21 @@ export interface StepOptions {
   draftBonus?: number;
   damageScalars?: Readonly<DamageScalars>;
   accelMultiplier?: number;
+  /**
+   * §28 difficulty preset scalars. When present, the step scales
+   * `OFF_ROAD_DRAG_M_PER_S2` by `offRoadDragScale` (so an Easy preset
+   * with a `1.20` scalar bites harder off-road, while Hard / Master
+   * relax the punishment) and applies `steeringAssistScale` as a pull
+   * toward the centerline on the lateral velocity contribution (so an
+   * Easy preset with `0.25` scrubs 25 percent of oversteer toward
+   * neutral each tick). Omitting the field preserves the unscaled
+   * pre-§28 behaviour exactly; any caller that has not yet wired the
+   * preset can keep its existing `step()` invocation. The race session
+   * resolves the active preset once at session creation and threads
+   * the same frozen reference through every per-tick call so there is
+   * no per-tick allocation cost.
+   */
+  assistScalars?: Readonly<AssistScalars>;
 }
 
 /** Conservative upper bound on the draft bonus inside the step. */
@@ -298,9 +346,22 @@ export function step(
     nextSpeed = Math.max(0, nextSpeed - delta);
   }
 
+  // §28 difficulty preset scalars: identity when no preset is forwarded
+  // so existing call sites keep their pre-binding behaviour. Each scalar
+  // is clamped defensively against the §28 documented bands so a buggy
+  // upstream config cannot push the off-road drag into a divide-by-zero
+  // band or steer the assist past the §10 stability ceiling.
+  const presetScalars = options.assistScalars ?? IDENTITY_ASSIST_SCALARS;
+  const offRoadDragScale = clamp(presetScalars.offRoadDragScale, 0, 4);
+  const steeringAssistScale = clamp(presetScalars.steeringAssistScale, 0, 1);
+
   if (offRoad) {
     // §10 "Off-road should reduce traction, apply strong drag, cap top speed."
-    const dragDelta = OFF_ROAD_DRAG_M_PER_S2 * dt;
+    // §28 `offRoadDragScale` lets the difficulty preset bias how harshly
+    // grass / dirt slows the car; Beginner reads `1.20` (sticky off-road
+    // keeps the player from short-cutting), Expert reads `0.95` (slight
+    // forgiveness so a wide line is not race-ending).
+    const dragDelta = OFF_ROAD_DRAG_M_PER_S2 * offRoadDragScale * dt;
     nextSpeed = Math.max(0, nextSpeed - dragDelta);
     if (nextSpeed > OFF_ROAD_CAP_M_PER_S) {
       nextSpeed = OFF_ROAD_CAP_M_PER_S;
@@ -328,7 +389,19 @@ export function step(
   const yawDelta = steerInput * steerRate * dt * tractionScalar;
   // Lateral velocity in m/s = yaw rate * forward speed. At zero speed the
   // car cannot move sideways, satisfying the dot's edge case.
-  const lateralVelocity = yawDelta * nextSpeed;
+  let lateralVelocity = yawDelta * nextSpeed;
+  // §28 `steeringAssistScale` clamps the lateral velocity contribution
+  // toward neutral. A Beginner preset (`0.25`) scrubs 25 percent of the
+  // lateral velocity per tick before integration; Expert / Master read
+  // `0.0` (the §10 floor), preserving the unscaled steering authority.
+  // The §10 narrative pins this as "the steering-assist authority knob":
+  // it does not block intentional lane changes, it dampens the lateral
+  // velocity that the steering equation injects each tick. The effect
+  // composes with `tractionScalar` so an Easy player on grass still
+  // suffers reduced grip; the assist does not promise the car onto the
+  // road. Identity (`0.0`) preserves the pre-§28 behaviour bit-for-bit
+  // because the multiplier collapses to `1`.
+  lateralVelocity = lateralVelocity * (1 - steeringAssistScale);
   const nextX = state.x + lateralVelocity;
 
   // Forward integration uses the post-update speed. Trapezoidal would be

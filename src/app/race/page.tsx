@@ -272,22 +272,30 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Resolve persisted §19 accessibility assists at session start so
-    // the toggles in /options/accessibility actually shape the per-tick
-    // input. Sampled once: the runtime does not currently honour
-    // mid-race toggles (the pause menu would close, then a fresh race
-    // would re-read on next mount). Falls back to the defaults bundle
-    // when no save exists or the load failed; the runtime treats every
-    // missing flag as `false` already.
+    // Resolve persisted §19 accessibility assists and §28 difficulty
+    // preset at session start so the toggles in /options/accessibility
+    // and /options actually shape the per-tick input + scalars. Sampled
+    // once: the runtime does not currently honour mid-race toggles
+    // (the pause menu would close, then a fresh race would re-read on
+    // next mount). Falls back to the defaults bundle when no save
+    // exists or the load failed; the runtime treats every missing flag
+    // as `false` already, and an undefined `difficultyPreset` resolves
+    // to Balanced via `resolvePresetScalars`.
     const persisted = loadSave();
-    const persistedAssists =
+    const persistedSettings =
       persisted.kind === "loaded"
-        ? persisted.save.settings.assists
-        : defaultSave().settings.assists;
+        ? persisted.save.settings
+        : defaultSave().settings;
+    const persistedAssists = persistedSettings.assists;
+    const persistedDifficulty = persistedSettings.difficultyPreset;
 
     const config: RaceSessionConfig = {
       track: track.compiled,
-      player: { stats: STARTER_STATS, assists: persistedAssists },
+      player: {
+        stats: STARTER_STATS,
+        assists: persistedAssists,
+        difficultyPreset: persistedDifficulty,
+      },
       ai: [{ driver: DEMO_DRIVER, stats: STARTER_STATS }],
       seed: 1,
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),

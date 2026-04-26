@@ -560,6 +560,116 @@ describe("getInstabilityMultiplier", () => {
       }
     }
   });
+
+  describe("§28 nitroStabilityPenalty scalar", () => {
+    const HARD = Object.freeze({
+      steeringAssistScale: 0,
+      nitroStabilityPenalty: 1.15,
+      damageSeverity: 1.2,
+      offRoadDragScale: 0.95,
+    });
+    const EASY = Object.freeze({
+      steeringAssistScale: 0.25,
+      nitroStabilityPenalty: 0.7,
+      damageSeverity: 0.75,
+      offRoadDragScale: 1.2,
+    });
+
+    it("Hard preset (1.15) compounds the existing instability multiplier", () => {
+      const burning = fresh({ activeRemainingSec: 0.5 });
+      const identity = getInstabilityMultiplier(
+        burning,
+        "rumble",
+        "rain",
+        "moderate",
+      );
+      const hard = getInstabilityMultiplier(
+        burning,
+        "rumble",
+        "rain",
+        "moderate",
+        HARD,
+      );
+      // Either Hard scales identity by 1.15 verbatim, or both clamp at
+      // INSTABILITY_MULTIPLIER_MAX. Assert whichever applies.
+      const expected = Math.min(
+        INSTABILITY_MULTIPLIER_MAX,
+        Math.max(1, identity * 1.15),
+      );
+      expect(hard).toBeCloseTo(expected, 6);
+    });
+
+    it("Easy preset (0.70) softens the multiplier but never below 1.0", () => {
+      const burning = fresh({ activeRemainingSec: 0.5 });
+      // On the lightest combination the identity multiplier is already
+      // 1.0, so multiplying by 0.7 would land below the floor; the
+      // clamp must hold the result at 1.0.
+      const easyLightest = getInstabilityMultiplier(
+        burning,
+        "road",
+        "clear",
+        "pristine",
+        EASY,
+      );
+      expect(easyLightest).toBe(1);
+      // On a worse combination, the soft scalar still bites.
+      const identityWet = getInstabilityMultiplier(
+        burning,
+        "rumble",
+        "rain",
+        "moderate",
+      );
+      const easyWet = getInstabilityMultiplier(
+        burning,
+        "rumble",
+        "rain",
+        "moderate",
+        EASY,
+      );
+      expect(easyWet).toBeLessThan(identityWet);
+      expect(easyWet).toBeGreaterThanOrEqual(1);
+    });
+
+    it("omitting assistScalars matches the pre-§28 behaviour", () => {
+      const burning = fresh({ activeRemainingSec: 0.5 });
+      const a = getInstabilityMultiplier(burning, "grass", "snow", "severe");
+      const b = getInstabilityMultiplier(
+        burning,
+        "grass",
+        "snow",
+        "severe",
+        undefined,
+      );
+      expect(b).toBe(a);
+    });
+
+    it("clamps a NaN nitroStabilityPenalty back to identity", () => {
+      const burning = fresh({ activeRemainingSec: 0.5 });
+      const sneaky = Object.freeze({
+        steeringAssistScale: 0,
+        nitroStabilityPenalty: Number.NaN,
+        damageSeverity: 1,
+        offRoadDragScale: 1,
+      });
+      const a = getInstabilityMultiplier(burning, "rumble", "rain", "moderate");
+      const b = getInstabilityMultiplier(
+        burning,
+        "rumble",
+        "rain",
+        "moderate",
+        sneaky,
+      );
+      expect(b).toBe(a);
+    });
+
+    it("returns 1.0 with assistScalars when no charge is burning", () => {
+      // The early-out preserves the §10 "no spin risk when no charge"
+      // contract regardless of preset.
+      expect(
+        getInstabilityMultiplier(fresh(), "grass", "snow", "catastrophic", HARD),
+      ).toBe(1);
+    });
+  });
 });
 
 describe("determinism", () => {

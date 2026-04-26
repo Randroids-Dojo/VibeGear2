@@ -36,7 +36,18 @@
  * a `baseMagnitude` deterministically. This module does not consume a PRNG
  * itself; a future slice may add a `chooseHitMagnitude(seed, kind)` helper
  * here without touching the public surface below.
+ *
+ * §28 difficulty wiring: both `applyHit` and `applyOffRoadDamage` accept
+ * an optional `assistScalars` parameter that scales the contact-event
+ * total by `damageSeverity` (an Easy preset reads `0.75` so a wall hit
+ * counts for less; Hard / Master read `> 1.0` so the same hit eats more
+ * of the per-zone budget). Omitting the parameter preserves the unscaled
+ * pre-binding behaviour exactly. The race session resolves the preset
+ * once at session creation and threads the same frozen reference through
+ * every per-tick damage call.
  */
+
+import type { AssistScalars } from "./difficultyPresets";
 
 /** Damage zone identifiers per §13 "Damage visualization" / "Mechanical effects". */
 export type DamageZone = "engine" | "tires" | "body";
@@ -231,8 +242,20 @@ export function createDamageState(
  * `speedFactor` is clamped to `[0, 1]` and `baseMagnitude` is clamped to
  * `[0, +inf)`; a negative magnitude returns the input unchanged
  * (defensive, no health regen via the damage path).
+ *
+ * `assistScalars` (optional) scales the per-event total by §28
+ * `damageSeverity` before the per-zone distribution split. Omitting the
+ * parameter (or passing `undefined`) preserves the unscaled pre-binding
+ * behaviour bit-for-bit; the existing test fixtures and the §23 numeric
+ * pins read the same `totalIncrement`. The scalar is clamped to a
+ * conservative `[0, 4]` band so a buggy upstream config cannot turn a
+ * single hit into an instant wreck.
  */
-export function applyHit(state: Readonly<DamageState>, hit: Readonly<HitEvent>): DamageState {
+export function applyHit(
+  state: Readonly<DamageState>,
+  hit: Readonly<HitEvent>,
+  assistScalars?: Readonly<AssistScalars>,
+): DamageState {
   const baseMagnitude = Math.max(0, Number.isFinite(hit.baseMagnitude) ? hit.baseMagnitude : 0);
   const speedFactor = clampUnit(hit.speedFactor);
   if (baseMagnitude === 0 || speedFactor === 0) {
@@ -241,8 +264,9 @@ export function applyHit(state: Readonly<DamageState>, hit: Readonly<HitEvent>):
     return cloneState(state);
   }
 
+  const severity = clampSeverity(assistScalars?.damageSeverity);
   const distribution = hit.zoneOverride ?? DEFAULT_ZONE_DISTRIBUTION[hit.kind];
-  const totalIncrement = (baseMagnitude * speedFactor) / DAMAGE_UNIT_SCALE;
+  const totalIncrement = (baseMagnitude * speedFactor * severity) / DAMAGE_UNIT_SCALE;
 
   const next: Record<DamageZone, number> = {
     engine: clampUnit(state.zones.engine + totalIncrement * (distribution.engine ?? 0)),
@@ -274,12 +298,14 @@ export function applyOffRoadDamage(
   state: Readonly<DamageState>,
   speedMps: number,
   dt: number,
+  assistScalars?: Readonly<AssistScalars>,
 ): DamageState {
   if (!Number.isFinite(dt) || dt <= 0 || !Number.isFinite(speedMps) || speedMps <= 0) {
     return cloneState(state);
   }
+  const severity = clampSeverity(assistScalars?.damageSeverity);
   const distance = speedMps * dt;
-  const totalIncrement = OFF_ROAD_DAMAGE_PER_M * distance;
+  const totalIncrement = OFF_ROAD_DAMAGE_PER_M * distance * severity;
   const distribution = DEFAULT_ZONE_DISTRIBUTION.offRoadPersistent;
   const next: Record<DamageZone, number> = {
     engine: clampUnit(state.zones.engine + totalIncrement * distribution.engine),
@@ -348,6 +374,22 @@ export function totalRepairCost(state: Readonly<DamageState>): number {
 }
 
 // Internal helpers ---------------------------------------------------------
+
+/**
+ * Clamp the §28 `damageSeverity` scalar into a conservative band. The
+ * `[0, 4]` ceiling defends against a buggy upstream config (e.g. a
+ * future preset row that pinned a `5x` value by mistake) without
+ * blocking the §28 documented `0.75 to 1.35` span. `undefined` (no
+ * preset wired) collapses to `1.0` so the unscaled identity preserves
+ * the pre-binding behaviour.
+ */
+function clampSeverity(value: number | undefined): number {
+  if (value === undefined) return 1;
+  if (!Number.isFinite(value)) return 1;
+  if (value < 0) return 0;
+  if (value > 4) return 4;
+  return value;
+}
 
 function clampUnit(value: number): number {
   if (!Number.isFinite(value)) return 0;

@@ -368,3 +368,147 @@ describe("step (forward integration)", () => {
     expect(s.z).toBeLessThanOrEqual(start.speed * DT);
   });
 });
+
+describe("step (§28 difficulty preset scalars)", () => {
+  // §28 Beginner / Balanced / Expert scalar fixtures, mirrored from
+  // `src/game/difficultyPresets.ts` so a typo in the table fails this
+  // test before it ships into the runtime.
+  const BEGINNER = Object.freeze({
+    steeringAssistScale: 0.25,
+    nitroStabilityPenalty: 0.7,
+    damageSeverity: 0.75,
+    offRoadDragScale: 1.2,
+  });
+  const BALANCED = Object.freeze({
+    steeringAssistScale: 0.1,
+    nitroStabilityPenalty: 1,
+    damageSeverity: 1,
+    offRoadDragScale: 1,
+  });
+  const EXPERT = Object.freeze({
+    steeringAssistScale: 0,
+    nitroStabilityPenalty: 1.15,
+    damageSeverity: 1.2,
+    offRoadDragScale: 0.95,
+  });
+
+  it("offRoadDragScale 1.2 (Beginner) bites harder than identity", () => {
+    // Place the car off-road at a speed below the off-road cap so the
+    // drag delta is the only thing controlling the post-step speed.
+    // Beginner reads `1.20`, so the post-step speed should be lower
+    // than the identity (1.0) tick.
+    const start = freshState({
+      speed: 20,
+      x: ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE + 1, // grass
+    });
+    const identity = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    const beginner = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT, {
+      assistScalars: BEGINNER,
+    });
+    expect(beginner.speed).toBeLessThan(identity.speed);
+    // Beginner drag delta: OFF_ROAD_DRAG_M_PER_S2 * 1.20 * dt
+    //                    = 18 * 1.20 / 60 = 0.36 m/s.
+    // Identity drag delta: 0.30 m/s. So beginner sits 0.06 m/s lower.
+    expect(identity.speed - beginner.speed).toBeCloseTo(0.06, 6);
+  });
+
+  it("offRoadDragScale 0.95 (Expert) eases off-road slowdown", () => {
+    const start = freshState({
+      speed: 20,
+      x: ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE + 1,
+    });
+    const identity = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    const expert = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT, {
+      assistScalars: EXPERT,
+    });
+    expect(expert.speed).toBeGreaterThan(identity.speed);
+  });
+
+  it("steeringAssistScale 0.25 (Beginner) reduces lateral drift", () => {
+    // At speed and full steer, the lateral velocity contribution is
+    // proportional to (1 - steeringAssistScale). Beginner clamps a
+    // quarter of the lateral motion toward neutral.
+    const start = freshState({ speed: 40 });
+    const identity = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    const beginner = step(
+      start,
+      withInput({ steer: 1 }),
+      STARTER_STATS,
+      ROAD,
+      DT,
+      { assistScalars: BEGINNER },
+    );
+    expect(Math.abs(beginner.x)).toBeLessThan(Math.abs(identity.x));
+    // The §28 pin: Beginner reads 0.25, so the lateral velocity is 75%
+    // of identity. Tolerance is generous to allow the §10 trapezoidal
+    // integration order to stay free; the relative ratio is what we
+    // pin, not an absolute lateral position.
+    expect(Math.abs(beginner.x)).toBeCloseTo(Math.abs(identity.x) * 0.75, 6);
+  });
+
+  it("steeringAssistScale 0.0 (Expert) preserves identity steering", () => {
+    const start = freshState({ speed: 40 });
+    const identity = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    const expert = step(
+      start,
+      withInput({ steer: 1 }),
+      STARTER_STATS,
+      ROAD,
+      DT,
+      { assistScalars: EXPERT },
+    );
+    // Expert pins steeringAssistScale to 0, so the lateral motion
+    // matches the unscaled identity tick exactly. offRoadDragScale 0.95
+    // does not enter this on-road tick.
+    expect(expert.x).toBeCloseTo(identity.x, 6);
+  });
+
+  it("Balanced scalars apply a small steering assist (§28 default)", () => {
+    // The §28 Balanced row pins steeringAssistScale at 0.10 (a small
+    // helping-hand assist). On a save with no preset wired (identity),
+    // there is no assist; Balanced sees ~10% lateral reduction.
+    const start = freshState({ speed: 40 });
+    const identity = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    const balanced = step(
+      start,
+      withInput({ steer: 1 }),
+      STARTER_STATS,
+      ROAD,
+      DT,
+      { assistScalars: BALANCED },
+    );
+    expect(Math.abs(balanced.x)).toBeCloseTo(Math.abs(identity.x) * 0.9, 6);
+  });
+
+  it("omitting assistScalars preserves the pre-§28 behaviour", () => {
+    // No-preset call site (existing test fixtures, headless tests, the
+    // physics-feel benchmark) must observe the unscaled step exactly.
+    const start = freshState({ speed: 40 });
+    const a = step(start, withInput({ steer: 0.5, throttle: 1 }), STARTER_STATS, ROAD, DT);
+    const b = step(start, withInput({ steer: 0.5, throttle: 1 }), STARTER_STATS, ROAD, DT, {});
+    expect(a).toEqual(b);
+  });
+
+  it("ignores a non-finite scalar and falls back to identity-like clamps", () => {
+    // A buggy upstream config that hands NaN / Infinity to the step
+    // must not blow up the math. The clamp lower bound is 0 for both
+    // scalars, so a NaN reads as 0 (no off-road drag, no assist) which
+    // keeps the car moving without producing a speed-cheat.
+    const start = freshState({
+      speed: 30,
+      x: ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE + 1,
+    });
+    const sneaky = Object.freeze({
+      steeringAssistScale: Number.NaN,
+      nitroStabilityPenalty: Number.POSITIVE_INFINITY,
+      damageSeverity: -1,
+      offRoadDragScale: Number.NaN,
+    });
+    const result = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT, {
+      assistScalars: sneaky,
+    });
+    expect(Number.isFinite(result.speed)).toBe(true);
+    expect(Number.isFinite(result.x)).toBe(true);
+    expect(result.speed).toBeGreaterThanOrEqual(0);
+  });
+});

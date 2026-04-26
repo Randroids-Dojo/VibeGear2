@@ -60,6 +60,7 @@
 import type { CarBaseStats, UpgradeCategory, WeatherOption } from "@/data/schemas";
 
 import type { DamageBand } from "./damageBands";
+import type { AssistScalars } from "./difficultyPresets";
 import type { Surface } from "./physics";
 
 // State -------------------------------------------------------------------
@@ -568,8 +569,18 @@ export const INSTABILITY_MULTIPLIER_MAX = 8;
  *
  * When the nitro is active, returns
  * `NITRO_WEATHER_MULTIPLIER[risk] * NITRO_SURFACE_MULTIPLIER[surface]
- * * NITRO_DAMAGE_BAND_MULTIPLIER[damageBand]`, clamped into
+ * * NITRO_DAMAGE_BAND_MULTIPLIER[damageBand] *
+ * assistScalars.nitroStabilityPenalty`, clamped into
  * `[1, INSTABILITY_MULTIPLIER_MAX]`.
+ *
+ * The §28 `nitroStabilityPenalty` (an Easy preset reads `0.70`, Hard
+ * `1.15`, Master `1.25`) lets the difficulty preset bias how punishing
+ * a nitro tap on grass / wet / damaged conditions is. Omitting
+ * `assistScalars` (or passing `undefined`) preserves the unscaled
+ * pre-binding behaviour bit-for-bit; the scalar collapses to `1`. The
+ * downward clamp at `1` still applies after the scalar is composed so
+ * even an Easy preset cannot push the multiplier below the no-penalty
+ * floor (the §10 narrative does not allow a "negative spin risk").
  *
  * Pure: no globals, no RNG. Same inputs produce deep-equal outputs.
  * Out-of-range damageBand or surface inputs default to the safest
@@ -581,13 +592,31 @@ export function getInstabilityMultiplier(
   surface: Surface,
   weather: WeatherOption,
   damageBand: DamageBand,
+  assistScalars?: Readonly<AssistScalars>,
 ): number {
   if (state.activeRemainingSec <= 0) return 1;
   const risk = NITRO_WEATHER_RISK[weather] ?? "low";
   const wMul = NITRO_WEATHER_MULTIPLIER[risk] ?? 1;
   const sMul = NITRO_SURFACE_MULTIPLIER[surface] ?? 1;
   const dMul = NITRO_DAMAGE_BAND_MULTIPLIER[damageBand] ?? 1;
-  return clampNumber(wMul * sMul * dMul, 1, INSTABILITY_MULTIPLIER_MAX);
+  const penalty = clampPenalty(assistScalars?.nitroStabilityPenalty);
+  return clampNumber(wMul * sMul * dMul * penalty, 1, INSTABILITY_MULTIPLIER_MAX);
+}
+
+/**
+ * Clamp the §28 `nitroStabilityPenalty` scalar into a conservative
+ * band. The `[0, 4]` ceiling defends against a buggy upstream config
+ * (e.g. a future preset row that pinned a `5x` value by mistake)
+ * without blocking the §28 documented `0.70 to 1.25` span. `undefined`
+ * (no preset wired) collapses to `1.0` so the unscaled identity
+ * preserves the pre-binding behaviour.
+ */
+function clampPenalty(value: number | undefined): number {
+  if (value === undefined) return 1;
+  if (!Number.isFinite(value)) return 1;
+  if (value < 0) return 0;
+  if (value > 4) return 4;
+  return value;
 }
 
 // Race-start helpers ------------------------------------------------------

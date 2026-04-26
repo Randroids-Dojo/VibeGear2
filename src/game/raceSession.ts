@@ -32,6 +32,7 @@
 import type {
   AIDriver,
   CarBaseStats,
+  PlayerDifficultyPreset,
   TransmissionModePersisted,
   UpgradeCategory,
   WeatherOption,
@@ -55,6 +56,10 @@ import {
   type AssistMemory,
   type AssistSettingsRuntime,
 } from "./assists";
+import {
+  resolvePresetScalars,
+  type AssistScalars,
+} from "./difficultyPresets";
 import {
   computeWakeOffset,
   INITIAL_DRAFT_WINDOW,
@@ -136,6 +141,19 @@ export interface RaceSessionPlayer {
    * `stepRaceSession` rather than a per-tick parameter.
    */
   assists?: Readonly<AssistSettingsRuntime> | null;
+  /**
+   * Player-facing difficulty preset id from
+   * `SaveGameSettings.difficultyPreset`. Resolved once at session
+   * creation via `resolvePresetScalars`; the cached
+   * `AssistScalars` reference is forwarded into every per-tick
+   * `step` / damage / nitro call so an Easy preset bites less and a
+   * Master preset bites more without per-tick allocation. Defaults
+   * to the Balanced (`normal`) row when omitted, which matches the
+   * §28 default and the v1 save migration target. Mid-race changes
+   * to the preset are not supported by the runtime; pause -> exit
+   * to title -> options -> resume to apply a new preset.
+   */
+  difficultyPreset?: PlayerDifficultyPreset | null;
 }
 
 export interface RaceSessionAI {
@@ -728,6 +746,18 @@ export function stepRaceSession(
   const playerStats = config.player.stats;
   const playerUpgradeTier = config.player.upgrades?.nitro;
   const playerIsRacing = state.player.status === "racing";
+  // §28 difficulty preset scalars: resolved each tick from the player's
+  // saved preset id. `resolvePresetScalars` returns the same frozen
+  // object reference per preset id (`getPreset` lookup is a property
+  // access on a frozen table) so this is effectively zero-cost; no
+  // per-tick allocation. AI cars deliberately do not consume the
+  // player's preset (the §28 narrative is "player-facing difficulty");
+  // every AI step receives the identity scalars implicitly via an
+  // omitted `assistScalars` parameter, preserving the pre-binding AI
+  // behaviour bit-for-bit.
+  const playerAssistScalars: Readonly<AssistScalars> = resolvePresetScalars(
+    config.player.difficultyPreset ?? undefined,
+  );
 
   // §19 accessibility assists: rewrite the player's resolved input
   // before any downstream reducer (nitro, transmission, drafting,
@@ -952,7 +982,11 @@ export function stepRaceSession(
         playerStats,
         trackContext,
         dt,
-        { accelMultiplier: playerAccelMultiplier, draftBonus: playerDraftBonus },
+        {
+          accelMultiplier: playerAccelMultiplier,
+          draftBonus: playerDraftBonus,
+          assistScalars: playerAssistScalars,
+        },
       )
     : { ...state.player.car };
 

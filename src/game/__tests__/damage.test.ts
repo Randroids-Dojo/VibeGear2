@@ -378,3 +378,87 @@ describe("constants surface", () => {
     expect(Math.abs(s.total - 1)).toBeLessThan(TOL);
   });
 });
+
+describe("§28 damageSeverity scalar (applyHit)", () => {
+  const BEGINNER = Object.freeze({
+    steeringAssistScale: 0.25,
+    nitroStabilityPenalty: 0.7,
+    damageSeverity: 0.75,
+    offRoadDragScale: 1.2,
+  });
+  const HARD = Object.freeze({
+    steeringAssistScale: 0,
+    nitroStabilityPenalty: 1.15,
+    damageSeverity: 1.2,
+    offRoadDragScale: 0.95,
+  });
+
+  it("Beginner (0.75) softens contact damage proportionally", () => {
+    const identity = applyHit(PRISTINE_DAMAGE_STATE, carHit());
+    const beginner = applyHit(PRISTINE_DAMAGE_STATE, carHit(), BEGINNER);
+    // Each zone should land at 75% of its identity counterpart.
+    expect(beginner.zones.engine).toBeCloseTo(identity.zones.engine * 0.75, 8);
+    expect(beginner.zones.tires).toBeCloseTo(identity.zones.tires * 0.75, 8);
+    expect(beginner.zones.body).toBeCloseTo(identity.zones.body * 0.75, 8);
+  });
+
+  it("Hard (1.20) compounds contact damage proportionally", () => {
+    const identity = applyHit(PRISTINE_DAMAGE_STATE, carHit());
+    const hard = applyHit(PRISTINE_DAMAGE_STATE, carHit(), HARD);
+    expect(hard.zones.engine).toBeCloseTo(identity.zones.engine * 1.2, 8);
+    expect(hard.zones.tires).toBeCloseTo(identity.zones.tires * 1.2, 8);
+    expect(hard.zones.body).toBeCloseTo(identity.zones.body * 1.2, 8);
+  });
+
+  it("omitting assistScalars matches the pre-§28 unscaled hit", () => {
+    const a = applyHit(PRISTINE_DAMAGE_STATE, carHit());
+    const b = applyHit(PRISTINE_DAMAGE_STATE, carHit(), undefined);
+    expect(b).toEqual(a);
+  });
+
+  it("clamps a NaN damageSeverity back to identity (1.0)", () => {
+    const sneaky = Object.freeze({
+      steeringAssistScale: 0,
+      nitroStabilityPenalty: 1,
+      damageSeverity: Number.NaN,
+      offRoadDragScale: 1,
+    });
+    const a = applyHit(PRISTINE_DAMAGE_STATE, carHit());
+    const b = applyHit(PRISTINE_DAMAGE_STATE, carHit(), sneaky);
+    expect(b).toEqual(a);
+  });
+
+  it("damageSeverity = 0 freezes contact damage at zero (defensive band)", () => {
+    const sneaky = Object.freeze({
+      steeringAssistScale: 0,
+      nitroStabilityPenalty: 1,
+      damageSeverity: 0,
+      offRoadDragScale: 1,
+    });
+    const next = applyHit(PRISTINE_DAMAGE_STATE, carHit(), sneaky);
+    expect(next.zones.engine).toBe(0);
+    expect(next.zones.tires).toBe(0);
+    expect(next.zones.body).toBe(0);
+  });
+});
+
+describe("§28 damageSeverity scalar (applyOffRoadDamage)", () => {
+  const BEGINNER = Object.freeze({
+    steeringAssistScale: 0.25,
+    nitroStabilityPenalty: 0.7,
+    damageSeverity: 0.75,
+    offRoadDragScale: 1.2,
+  });
+
+  it("scales off-road persistent damage by damageSeverity", () => {
+    const identity = applyOffRoadDamage(PRISTINE_DAMAGE_STATE, 60, 1);
+    const beginner = applyOffRoadDamage(PRISTINE_DAMAGE_STATE, 60, 1, BEGINNER);
+    expect(beginner.zones.body).toBeCloseTo(identity.zones.body * 0.75, 8);
+  });
+
+  it("preserves the pre-§28 behaviour when assistScalars omitted", () => {
+    const a = applyOffRoadDamage(PRISTINE_DAMAGE_STATE, 60, 1);
+    const b = applyOffRoadDamage(PRISTINE_DAMAGE_STATE, 60, 1, undefined);
+    expect(b).toEqual(a);
+  });
+});

@@ -1437,3 +1437,146 @@ describe("stepRaceSession (§7 per-car DNF tracking + finishing order, F-028)", 
     expect(a.ai[0]?.lapTimes).toEqual(b.ai[0]?.lapTimes);
   });
 });
+
+describe("stepRaceSession (§28 difficulty preset wiring, F-042)", () => {
+  // Roll the session forward through countdown then full-throttle for a
+  // burst of ticks so the player car is moving fast enough that the §28
+  // scalars (off-road drag, steering assist) can be observed against a
+  // peer-preset baseline. The two sessions share the same track + AI so
+  // any behaviour difference traces back to the resolved scalars.
+  //
+  // Note: the session never observes a "no preset" case the way the
+  // bare `step()` function does, because `resolvePresetScalars(undefined)`
+  // collapses to Balanced inside the session. The pre-binding behaviour
+  // (no §28 wiring at all) is therefore not reachable through the
+  // session surface; the closest analogue is the Hard preset
+  // (`steeringAssistScale = 0`) where the §10 steering authority is
+  // unmodified.
+  it("Easy preset (steeringAssist 0.25) cuts lateral drift versus Hard (0)", () => {
+    // Easy clamps 25% of lateral velocity per tick; Hard keeps the
+    // unscaled §10 authority. After a short steered burst that keeps
+    // the car on the drivable surface, Easy should land closer to
+    // centerline than Hard.
+    const STEER_GENTLE: Input = { ...NEUTRAL_INPUT, throttle: 1, steer: 0.2 };
+    const cfgEasy = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "easy" },
+    });
+    const cfgHard = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "hard" },
+    });
+    let easy = createRaceSession(cfgEasy);
+    let hard = createRaceSession(cfgHard);
+    for (let i = 0; i < 30; i += 1) {
+      easy = stepRaceSession(easy, STEER_GENTLE, cfgEasy, DT);
+      hard = stepRaceSession(hard, STEER_GENTLE, cfgHard, DT);
+    }
+    expect(Math.abs(easy.player.car.x)).toBeLessThan(Math.abs(hard.player.car.x));
+  });
+
+  it("Master and Hard match on a short on-road burst (both at the steeringAssist floor)", () => {
+    // Both Master and Hard pin steeringAssistScale at 0; the §28
+    // off-road drag axes only enter once the car leaves the drivable
+    // surface. A short burst that stays on-road should land the two
+    // presets on the same trajectory cell-for-cell.
+    const STEER_GENTLE: Input = { ...NEUTRAL_INPUT, throttle: 1, steer: 0.2 };
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "master" },
+    });
+    const cfgHard = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "hard" },
+    });
+    let master = createRaceSession(config);
+    let hard = createRaceSession(cfgHard);
+    for (let i = 0; i < 30; i += 1) {
+      master = stepRaceSession(master, STEER_GENTLE, config, DT);
+      hard = stepRaceSession(hard, STEER_GENTLE, cfgHard, DT);
+    }
+    expect(master.player.car.x).toBeCloseTo(hard.player.car.x, 6);
+    expect(master.player.car.speed).toBeCloseTo(hard.player.car.speed, 6);
+  });
+
+  it("default (no preset) matches an explicit 'normal' preset", () => {
+    // The session resolves an undefined preset to the Balanced (`normal`)
+    // row, which matches the §28 default and `defaultSave().settings`.
+    const STEER_GENTLE: Input = { ...NEUTRAL_INPUT, throttle: 1, steer: 0.2 };
+    const cfgFallback = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS },
+    });
+    const cfgNormal = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "normal" },
+    });
+    let fallback = createRaceSession(cfgFallback);
+    let normal = createRaceSession(cfgNormal);
+    for (let i = 0; i < 30; i += 1) {
+      fallback = stepRaceSession(fallback, STEER_GENTLE, cfgFallback, DT);
+      normal = stepRaceSession(normal, STEER_GENTLE, cfgNormal, DT);
+    }
+    expect(fallback.player.car.x).toBeCloseTo(normal.player.car.x, 6);
+    expect(fallback.player.car.z).toBeCloseTo(normal.player.car.z, 6);
+  });
+
+  it("Balanced sits between Hard and Easy on the steering ladder", () => {
+    // Balanced steeringAssistScale = 0.10, between Easy (0.25) and
+    // Hard (0). On a short on-road burst the cumulative |x| ordering
+    // should reflect the §28 monotonic trend without the off-road
+    // drag axis confounding the result.
+    const STEER_GENTLE: Input = { ...NEUTRAL_INPUT, throttle: 1, steer: 0.2 };
+    function rollGentle(p: "easy" | "normal" | "hard"): number {
+      const cfg = buildConfig({
+        countdownSec: 0,
+        player: { stats: STARTER_STATS, difficultyPreset: p },
+      });
+      let s = createRaceSession(cfg);
+      for (let i = 0; i < 30; i += 1) {
+        s = stepRaceSession(s, STEER_GENTLE, cfg, DT);
+      }
+      return Math.abs(s.player.car.x);
+    }
+    const easy = rollGentle("easy");
+    const balanced = rollGentle("normal");
+    const hard = rollGentle("hard");
+    expect(easy).toBeLessThanOrEqual(balanced);
+    expect(balanced).toBeLessThanOrEqual(hard);
+  });
+
+  it("createRaceSession does not throw when difficultyPreset is missing or null", () => {
+    const cfg1 = buildConfig({
+      player: { stats: STARTER_STATS },
+    });
+    const cfg2 = buildConfig({
+      player: { stats: STARTER_STATS, difficultyPreset: null },
+    });
+    expect(() => createRaceSession(cfg1)).not.toThrow();
+    expect(() => createRaceSession(cfg2)).not.toThrow();
+  });
+
+  it("AI cars are not affected by the player's difficulty preset", () => {
+    // The §28 narrative pins the preset as a player-facing knob; AI
+    // cars run their own controller without scalar bias. Two sessions
+    // with different player presets should leave the AI car at the
+    // same lateral position after a short on-road burst.
+    const STEER_GENTLE: Input = { ...NEUTRAL_INPUT, throttle: 1, steer: 0.2 };
+    const cfgEasy = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "easy" },
+    });
+    const cfgHard = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, difficultyPreset: "hard" },
+    });
+    let easy = createRaceSession(cfgEasy);
+    let hard = createRaceSession(cfgHard);
+    for (let i = 0; i < 30; i += 1) {
+      easy = stepRaceSession(easy, STEER_GENTLE, cfgEasy, DT);
+      hard = stepRaceSession(hard, STEER_GENTLE, cfgHard, DT);
+    }
+    expect(easy.ai[0]?.car.x).toBeCloseTo(hard.ai[0]?.car.x ?? Number.NaN, 6);
+    expect(easy.ai[0]?.car.z).toBeCloseTo(hard.ai[0]?.car.z ?? Number.NaN, 6);
+  });
+});

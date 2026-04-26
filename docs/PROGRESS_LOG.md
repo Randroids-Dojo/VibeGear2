@@ -6,6 +6,92 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-042 wire §28 difficulty preset scalars into physics, damage, nitro, raceSession
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) Off-road drag, steering
+authority. [§13](gdd/13-damage-repairs-and-risk.md) Contact-event
+totals. [§15](gdd/15-cpu-opponents-and-ai.md) Player-facing
+difficulty ladder.
+[§28](gdd/28-appendices-and-research-references.md) Example tuning
+values consumed end-to-end.
+**Branch / PR:** `feat/wire-difficulty-preset-scalars` stacked on
+`feat/difficulty-presets-tuning`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-f-042-378995f6` and marks `F-042` `done`. The
+§28 table now drives the runtime: a Hard preset bites harder on
+contact, suffers a higher nitro instability penalty, and runs with no
+steering assist; Easy gets a softer hit budget, lower nitro penalty,
+and a quarter-share lateral assist. `PHYSICS_VERSION` bumped from `1`
+to `2` so any v1 ghost recorded under the unscaled math is rejected
+by the rehydrate path. The race page now reads
+`loadSave().settings.difficultyPreset` and threads it into the
+session config alongside the existing `assists` snapshot.
+
+### Done
+- `src/game/physics.ts` (update): `StepOptions.assistScalars`
+  consumes `offRoadDragScale` against `OFF_ROAD_DRAG_M_PER_S2` and
+  `steeringAssistScale` as a `(1 - scale)` clamp on the lateral
+  velocity contribution. Identity (no `assistScalars` forwarded)
+  preserves pre-binding behaviour bit-for-bit. `PHYSICS_VERSION`
+  bumped from `1` to `2`. The version-history block documents the
+  bump rationale.
+- `src/game/damage.ts` (update): `applyHit` and
+  `applyOffRoadDamage` accept an optional `assistScalars` argument
+  and multiply the per-event total by `damageSeverity` before the
+  per-zone distribution split. A defensive `[0, 4]` clamp on the
+  scalar defends against a buggy upstream config without blocking
+  the §28 documented `0.75 to 1.35` span.
+- `src/game/nitro.ts` (update): `getInstabilityMultiplier` accepts
+  an optional `assistScalars` argument and composes
+  `nitroStabilityPenalty` into the existing `weather * surface *
+  damageBand` product. The §10 downward floor at `1.0` still holds
+  so an Easy preset cannot push the multiplier below the no-penalty
+  baseline.
+- `src/game/raceSession.ts` (update):
+  `RaceSessionPlayer.difficultyPreset` is the new
+  optional persisted preset id. `stepRaceSession` resolves once per
+  tick via `resolvePresetScalars` (frozen-table lookup, no
+  allocation) and forwards the cached `AssistScalars` reference to
+  the player's `step()` call. AI cars deliberately do not consume
+  the player's preset; the §28 narrative pins it as a player-facing
+  knob.
+- `src/app/race/page.tsx` (update): reads the persisted
+  `difficultyPreset` off the loaded save (or the defaults bundle
+  when no save exists) and threads it into the
+  `RaceSessionConfig.player` alongside the existing `assists`
+  sample. Sampled once per session; mid-race toggles still require
+  a restart per the same convention as the assists pipeline.
+- `src/game/__tests__/physics.test.ts` (update): seven new cases
+  cover Beginner / Expert off-road drag deltas, Beginner /
+  Expert / Balanced steering-assist behaviour, identity preservation
+  when `assistScalars` is omitted, and NaN-clamp defence in depth.
+- `src/game/__tests__/damage.test.ts` (update): seven new cases
+  cover Beginner / Hard contact-damage scaling on `applyHit`,
+  identity preservation on omit, NaN clamp, severity = 0 floor, and
+  Beginner scaling on `applyOffRoadDamage`.
+- `src/game/__tests__/nitro.test.ts` (update): five new cases cover
+  Hard scalar compounding, Easy soft scalar with the downward floor
+  at `1`, identity preservation on omit, NaN clamp, and the
+  not-burning early-out across presets.
+- `src/game/__tests__/raceSession.test.ts` (update): six new cases
+  cover Easy versus Hard lateral drift, Master versus Hard parity
+  on the steering floor, default fallback to `normal`, monotonic
+  Easy / Balanced / Hard ladder, AI immunity to the player preset,
+  and that `createRaceSession` accepts both missing and `null`
+  preset values.
+- `docs/FOLLOWUPS.md` (update): F-042 marked `done` with the
+  consumer wiring summary.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 25 new cases on top of the 1641 existing.
+- `npm run build`: clean (no UI surface added).
+- `npm run test:e2e`: clean.
+
+---
+
 ## 2026-04-26: Slice: §28 difficulty preset tuning scalars (pure binding)
 
 **GDD sections touched:**
