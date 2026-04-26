@@ -290,7 +290,7 @@ complete.
 ## F-039: Wire `tourCompletionBonus` into the tour-clear payout
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-26, `feat/f-039-tour-completion-bonus`)
 **Notes:** The `feat/race-bonuses` slice landed
 `tourCompletionBonus({ raceRewards, tourPassed })` in
 `src/game/raceBonuses.ts` returning a `RaceBonus` of kind
@@ -303,6 +303,25 @@ helper (see F-037 for the easyModeBonus parallel) and credit the
 combined amount via `awardCredits` (or a new `creditFlat(save,
 amount)` helper if that path lands first). Mirrors the F-037
 producer-without-consumer pattern.
+
+**Resolution (2026-04-26, `feat/f-039-tour-completion-bonus`):**
+`tourComplete(activeTour, championship, playerCarId?, raceRewards?)`
+in `src/game/championship.ts` now accepts an optional `raceRewards`
+list and exposes a new `bonuses: ReadonlyArray<RaceBonus>` field on
+`TourCompletionSummary`. When the tour passed and `raceRewards` is
+non-empty / non-zero-sum, the helper appends the
+`tourCompletionBonus({ raceRewards, tourPassed })` `RaceBonus` to
+the list; failed tours, omitted / empty `raceRewards`, and zero-sum
+rewards yield an empty list. The wallet credit stays the §20 page
+surface's responsibility: the future `/world` tour-clear screen
+sums `bonuses` `cashCredits` into a single `awardCredits` call so
+the chip strip and the wallet delta line up with the per-race
+pipeline. F-037 will append `easyModeBonus(save, raceRewards)` to
+the same `bonuses` list once its consumer wires here. Eight new
+unit cases pin: passed-tour positive bonus, failed-tour empty,
+omitted-rewards default empty, empty-list empty, zero-sum empty,
+negative-entry clamp, unknown-tour empty, raceRewards purity, and
+determinism.
 
 ---
 

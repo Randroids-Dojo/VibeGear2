@@ -34,6 +34,7 @@ import {
   STIPEND_THRESHOLD_CREDITS,
   getStipendClaimed,
 } from "../catchUp";
+import { TOUR_COMPLETION_BONUS_RATE } from "../raceBonuses";
 import { PLACEMENT_POINTS } from "../raceResult";
 
 function freshSave(): SaveGame {
@@ -286,7 +287,12 @@ describe("tourComplete", () => {
   it("returns empty standings when the tour id is unknown to the championship", () => {
     const cursor: ActiveTour = { tourId: "ghost", raceIndex: 0, results: [] };
     const summary = tourComplete(cursor, FIXTURE_CHAMPIONSHIP);
-    expect(summary).toEqual({ passed: false, playerStanding: null, standings: [] });
+    expect(summary).toEqual({
+      passed: false,
+      playerStanding: null,
+      standings: [],
+      bonuses: [],
+    });
   });
 
   it("uses the supplied playerCarId in the standings", () => {
@@ -332,6 +338,129 @@ describe("tourComplete", () => {
     tourComplete(cursor, FIXTURE_CHAMPIONSHIP);
     expect(cursor).toEqual(cursorBefore);
     expect(FIXTURE_CHAMPIONSHIP).toEqual(championshipBefore);
+  });
+
+  // F-039: tour-completion bonus wiring -------------------------------------
+
+  describe("tour-completion bonus (F-039)", () => {
+    const passingCursor: ActiveTour = {
+      tourId: "first-tour",
+      raceIndex: 4,
+      results: [
+        makeResult("first/a", 1),
+        makeResult("first/b", 1),
+        makeResult("first/c", 1),
+        makeResult("first/d", 1),
+      ],
+    };
+    const failingCursor: ActiveTour = {
+      tourId: "third-tour",
+      raceIndex: 4,
+      results: [
+        makeResult("third/a", 6),
+        makeResult("third/b", 6),
+        makeResult("third/c", 6),
+        makeResult("third/d", 6),
+      ],
+    };
+
+    it("appends a tourComplete RaceBonus on a passed tour with non-empty raceRewards", () => {
+      const rewards = [1000, 800, 1200, 900];
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        rewards,
+      );
+      expect(summary.passed).toBe(true);
+      expect(summary.bonuses).toHaveLength(1);
+      const bonus = summary.bonuses[0];
+      expect(bonus?.kind).toBe("tourComplete");
+      expect(bonus?.label).toBe("Tour completion");
+      const expected = Math.round(
+        (1000 + 800 + 1200 + 900) * TOUR_COMPLETION_BONUS_RATE,
+      );
+      expect(bonus?.cashCredits).toBe(expected);
+    });
+
+    it("does not append a bonus on a failed tour even with non-empty raceRewards", () => {
+      const summary = tourComplete(
+        failingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        [1000, 1000, 1000, 1000],
+      );
+      expect(summary.passed).toBe(false);
+      expect(summary.bonuses).toEqual([]);
+    });
+
+    it("does not append a bonus when raceRewards is omitted (default empty)", () => {
+      const summary = tourComplete(passingCursor, FIXTURE_CHAMPIONSHIP);
+      expect(summary.passed).toBe(true);
+      expect(summary.bonuses).toEqual([]);
+    });
+
+    it("does not append a bonus when raceRewards is an empty list", () => {
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        [],
+      );
+      expect(summary.passed).toBe(true);
+      expect(summary.bonuses).toEqual([]);
+    });
+
+    it("does not append a bonus when raceRewards sums to zero (all zero entries)", () => {
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        [0, 0, 0, 0],
+      );
+      expect(summary.passed).toBe(true);
+      expect(summary.bonuses).toEqual([]);
+    });
+
+    it("clamps negative reward entries to zero before summing the bonus", () => {
+      const rewards = [1000, -500, 1000, 1000];
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        rewards,
+      );
+      const bonus = summary.bonuses[0];
+      // -500 entry is clamped to 0; sum = 3000.
+      expect(bonus?.cashCredits).toBe(
+        Math.round(3000 * TOUR_COMPLETION_BONUS_RATE),
+      );
+    });
+
+    it("returns an empty bonuses list when the tour id is unknown to the championship", () => {
+      const cursor: ActiveTour = { tourId: "ghost", raceIndex: 0, results: [] };
+      const summary = tourComplete(
+        cursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        [1000, 1000, 1000, 1000],
+      );
+      expect(summary.bonuses).toEqual([]);
+    });
+
+    it("does not mutate the input raceRewards", () => {
+      const rewards = [1000, 800, 1200, 900];
+      const before = [...rewards];
+      tourComplete(passingCursor, FIXTURE_CHAMPIONSHIP, "player", rewards);
+      expect(rewards).toEqual(before);
+    });
+
+    it("is deterministic across repeated calls with the same inputs", () => {
+      const rewards = [1234, 567, 890, 1111];
+      const a = tourComplete(passingCursor, FIXTURE_CHAMPIONSHIP, "player", rewards);
+      const b = tourComplete(passingCursor, FIXTURE_CHAMPIONSHIP, "player", rewards);
+      expect(a).toEqual(b);
+    });
   });
 });
 
