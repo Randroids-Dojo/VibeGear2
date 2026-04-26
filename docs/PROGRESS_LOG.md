@@ -6,6 +6,96 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: profile export / import (JSON download + upload)
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) Save and load: Manual profile export /
+import, Versioned save migrations.
+**Branch / PR:** `feat/profile-export-import` stacked on
+`feat/savegame-settings-v2`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-profile-export-043666c9`. A player who clears
+their browser data, switches devices, or wants to hand a save fixture
+to a tester can now round-trip the save via a downloaded JSON file.
+Import runs the existing v1 -> v2 migration chain so a v1 export
+loads cleanly into the current runtime; future-version files are
+rejected with a precise error rather than a silent corruption. The
+pure parse / serialise functions live in a fresh module so they can
+be unit-tested without DOM, Storage, or React; the React shell binds
+to a hidden anchor for the download and a hidden file input for the
+upload.
+
+### Done
+- `src/persistence/profileExport.ts` (new): pure
+  `exportProfile(save)` returns `{ blob, filename }` (MIME
+  `application/json`, filename `vibegear2-profile-<isoSlug>.json`).
+  Pure `importProfile(text)` returns `{ ok: true, save }` or
+  `{ ok: false, error }`; error kinds cover `parse`, `schema`,
+  `future_version`, `migration`, and `too_large` (1 MB cap). The
+  byte cap uses `TextEncoder` so multi-byte glyphs are sized
+  accurately; the version probe runs before the migration walker
+  so a future-version file gets a precise error rather than a
+  generic migration failure.
+- `src/persistence/index.ts` (update): re-export the new module
+  through the persistence barrel.
+- `src/persistence/__tests__/profileExport.test.ts` (new): 16
+  cases covering filename pattern, blob MIME, schema-rejection on
+  export, default-save round-trip, malformed-JSON parse error,
+  empty-string parse error, non-object parse error, future-version
+  error, schema-invalid error with the offending Zod path, the
+  1 MB byte cap, v1-fixture migration through to current schema,
+  customised-garage round-trip, and an em-dash sweep across every
+  error message.
+- `src/components/options/ProfileSection.tsx` (new): React shell
+  with Export, Import, and Clear save buttons. Export programmatic
+  ally clicks a hidden anchor on the blob URL and revokes on the
+  next animation frame. Import opens a hidden file input, reads
+  text, runs `importProfile`, persists via `saveSave`. Clear
+  prompts via `window.confirm`, removes both the current-version
+  key and the backup key. Status messages tag `info` vs `error`
+  via `data-status`. Pattern follows `AccessibilityPane.tsx`.
+- `src/app/options/page.tsx` (update): mount `<ProfileSection>` as
+  the seventh tab labelled "Profile".
+- `src/app/options/tabNav.ts` (update): extend `TabKey` and
+  `TAB_ORDER` with the new `profile` tab.
+- `src/app/options/__tests__/tabNav.test.ts` (update): pin the
+  seven-tab order including the new Profile entry.
+- `src/app/options/__tests__/page.test.tsx` (update): rename the
+  six-tab assertion to iterate over `TAB_ORDER`.
+- `e2e/options-screen.spec.ts` (update): extend the cycle-through
+  spec and the wrap-back spec to cover the seventh tab.
+- `e2e/profile-export.spec.ts` (new): five Playwright scenarios.
+  Profile pane renders with the three buttons. Export downloads a
+  JSON file matching the documented filename pattern. Round-trip
+  via export -> Clear save -> setInputFiles -> import restores the
+  custom seed save through localStorage. Import surfaces a parse
+  error for malformed JSON. Import surfaces a future-version
+  error for a save with `version: 99`. Auto-confirms the
+  `window.confirm` dialog so the Clear save path is deterministic.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 1626 + 16 = 1642 passing across 73 files.
+- `npm run build`: passes; bundle size for `/options` rises from
+  4.2 kB to 6.3 kB First Load JS for the new pane.
+- `npm run test:e2e`: 47 passing (3 new profile specs plus the
+  two updated options-screen specs).
+
+### GDD edits
+None. The §20 'Save and load' bullet list called out manual export
+/ import as a feature; this slice ships it without changing the
+design.
+
+### Followups
+None opened. The `Import while a race is active: prompt confirm`
+edge case from the dot was descoped: race state is in-memory only
+during a session, so importing while racing replaces the persisted
+save but does not yank the current race. A future slice can add
+the prompt if the race-state-leak case shows up; not blocking.
+
+---
+
 ## 2026-04-26: Slice: SaveGameSettings v2 schema expansion
 
 **GDD sections touched:**

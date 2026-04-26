@@ -30,6 +30,7 @@ import type { CSSProperties, KeyboardEvent, ReactElement } from "react";
 
 import { AccessibilityPane } from "@/components/options/AccessibilityPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
+import { ProfileSection } from "@/components/options/ProfileSection";
 
 import styles from "./page.module.css";
 import { TAB_ORDER, isTabNavKey, nextTabIndex, type TabKey } from "./tabNav";
@@ -95,6 +96,11 @@ const TABS: ReadonlyArray<TabSpec> = [
     headline: "Performance settings coming soon",
     body: "Draw distance, sprite density, and pixel ratio sliders ship with the performance settings slice.",
     dotId: "VibeGear2-implement-performance-settings-2de5d437",
+  },
+  {
+    key: "profile",
+    label: "Profile",
+    pane: () => <ProfileSection />,
   },
 ];
 

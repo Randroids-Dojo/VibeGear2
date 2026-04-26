@@ -21,7 +21,8 @@ export type TabKey =
   | "controls"
   | "accessibility"
   | "difficulty"
-  | "performance";
+  | "performance"
+  | "profile";
 
 /** Stable left-to-right tab order shown in the options chrome. */
 export const TAB_ORDER: ReadonlyArray<TabKey> = [
@@ -31,6 +32,7 @@ export const TAB_ORDER: ReadonlyArray<TabKey> = [
   "accessibility",
   "difficulty",
   "performance",
+  "profile",
 ];
 
 /**

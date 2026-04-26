@@ -7,10 +7,11 @@ const TAB_KEYS = [
   "accessibility",
   "difficulty",
   "performance",
+  "profile",
 ] as const;
 
 test.describe("options screen", () => {
-  test("renders all six tabs and opens with Display selected", async ({ page }) => {
+  test("renders every tab and opens with Display selected", async ({ page }) => {
     await page.goto("/options");
 
     await expect(page.getByTestId("options-page")).toBeVisible();
@@ -36,13 +37,14 @@ test.describe("options screen", () => {
     await display.focus();
 
     // Step through Audio, Controls, Accessibility, Difficulty,
-    // Performance, then wrap back to Display.
+    // Performance, Profile, then wrap back to Display.
     const order = [
       "audio",
       "controls",
       "accessibility",
       "difficulty",
       "performance",
+      "profile",
       "display",
     ];
     for (const key of order) {
@@ -61,7 +63,7 @@ test.describe("options screen", () => {
     await page.getByTestId("options-tab-display").focus();
     await page.keyboard.press("ArrowLeft");
 
-    await expect(page.getByTestId("options-tab-performance")).toHaveAttribute(
+    await expect(page.getByTestId("options-tab-profile")).toHaveAttribute(
       "aria-selected",
       "true",
     );

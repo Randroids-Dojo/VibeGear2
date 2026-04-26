@@ -10,7 +10,7 @@ import { TAB_ORDER, isTabNavKey, nextTabIndex } from "../tabNav";
 describe("Options tabNav", () => {
   const total = TAB_ORDER.length;
 
-  it("ships six tabs in §20 order", () => {
+  it("ships seven tabs in §20 order (six settings panes plus Profile)", () => {
     expect(TAB_ORDER).toEqual([
       "display",
       "audio",
@@ -18,6 +18,7 @@ describe("Options tabNav", () => {
       "accessibility",
       "difficulty",
       "performance",
+      "profile",
     ]);
   });
 

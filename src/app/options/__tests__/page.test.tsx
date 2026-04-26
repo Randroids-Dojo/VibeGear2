@@ -26,7 +26,7 @@ describe("OptionsPage", () => {
     expect(html).toContain('id="options-title"');
   });
 
-  it("renders all six tab labels per GDD §20", () => {
+  it("renders every tab label per the §20 TAB_ORDER", () => {
     for (const key of TAB_ORDER) {
       expect(
         html,
