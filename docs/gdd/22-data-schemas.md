@@ -209,7 +209,8 @@ the §20 / §19 documented defaults.
       "bestLapMs": 67321,
       "bestRaceMs": 214555
     }
-  }
+  },
+  "writeCounter": 12
 }
 ```
 
@@ -218,3 +219,10 @@ optional in the runtime schema so a v1 save mid-migration still validates.
 Consumers that read settings should default missing fields to the documented
 v2 defaults; the v1 -> v2 migration always populates them, so a fully
 migrated save will never have them missing in practice.
+
+`writeCounter` is the cross-tab last-write-wins advisory described in
+`docs/gdd/21-technical-design-for-web-implementation.md` "Cross-tab
+consistency". It is independent of the schema `version`, optional so v1
+saves and pre-counter v2 saves still validate (the loader treats
+`undefined` as `0`), and incremented by `saveSave` on every persist. The
+v1 -> v2 migrator seeds it to `0` if absent.

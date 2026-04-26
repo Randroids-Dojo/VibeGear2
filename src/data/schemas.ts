@@ -634,5 +634,16 @@ export const SaveGameSchema = z.object({
   garage: SaveGameGarageSchema,
   progress: SaveGameProgressSchema,
   records: z.record(slug, SaveGameRecordSchema),
+  /**
+   * Per-write monotonic counter (advisory) used by the cross-tab
+   * last-write-wins protocol in `src/persistence/save.ts`. Optional so
+   * v1 saves and any pre-counter v2 saves still validate; the loader
+   * treats `undefined` as `0` and `saveSave` increments before writing.
+   * `writeCounter` is independent of the schema `version` field: the
+   * schema major bumps for shape changes, the counter ticks every
+   * persisted write. See `docs/gdd/21-technical-design-for-web-implementation.md`
+   * "Cross-tab consistency".
+   */
+  writeCounter: z.number().int().nonnegative().optional(),
 });
 export type SaveGame = z.infer<typeof SaveGameSchema>;

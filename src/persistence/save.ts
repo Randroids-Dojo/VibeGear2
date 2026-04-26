@@ -148,6 +148,9 @@ export function defaultSave(): SaveGame {
       completedTours: [],
     },
     records: {},
+    // Cross-tab last-write-wins counter. Seeds at 0; `saveSave` increments
+    // before every persist so two tabs can compare which write came last.
+    writeCounter: 0,
   };
 }
 
@@ -229,7 +232,11 @@ export function loadSave(io: SaveIO = {}): SaveLoadOutcome {
 
 /**
  * Persist the save. Validates against the schema before write so callers
- * cannot poison storage with unstructured state.
+ * cannot poison storage with unstructured state. Increments the
+ * `writeCounter` on the persisted shape so other tabs can detect a newer
+ * write via `subscribeToSaveChanges` / `reloadIfNewer` per
+ * `docs/gdd/21-technical-design-for-web-implementation.md` "Cross-tab
+ * consistency".
  */
 export function saveSave(state: SaveGame, io: SaveIO = {}): SaveWriteOutcome {
   const storage = resolveStorage(io.storage);
@@ -240,7 +247,16 @@ export function saveSave(state: SaveGame, io: SaveIO = {}): SaveWriteOutcome {
     return { kind: "error", reason: "no-storage" };
   }
 
-  const validated = SaveGameSchema.safeParse(state);
+  // Tick the cross-tab counter advisory. A missing counter (legacy or
+  // pre-counter v2 save) is treated as 0; the first write after that
+  // becomes 1 so a freshly migrated save is strictly newer than the
+  // pre-write copy any other tab still holds in memory.
+  const next: SaveGame = {
+    ...state,
+    writeCounter: (state.writeCounter ?? 0) + 1,
+  };
+
+  const validated = SaveGameSchema.safeParse(next);
   if (!validated.success) {
     logger.warn("refusing to persist invalid save", validated.error.issues);
     return { kind: "error", reason: "serialization-failed" };
@@ -265,6 +281,168 @@ export function saveSave(state: SaveGame, io: SaveIO = {}): SaveWriteOutcome {
     logger.warn("setItem threw; treating as no-storage", error);
     return { kind: "error", reason: "no-storage" };
   }
+}
+
+/**
+ * Cross-tab event surface. The `storage` event is the simplest way to learn
+ * that another tab persisted a save. The browser does not deliver the event
+ * to the originating tab, so the listener only ever fires for foreign-tab
+ * writes (the documented behaviour `subscribeToSaveChanges` relies on).
+ *
+ * Two listeners hook here: the title / garage screens hot-reload the
+ * displayed save when a foreign tab writes, and any long-lived in-memory
+ * save reference revalidates on `focus` / `visibilitychange` via
+ * `reloadIfNewer`. Race state is intentionally excluded; mid-race we never
+ * touch the persisted save until the race ends, so a foreign-tab write
+ * cannot corrupt live race state.
+ */
+export type SaveChangeListener = (next: SaveGame) => void;
+
+export interface SubscribeOptions {
+  /**
+   * Source of `storage` events. Browsers fire the event on the `window`;
+   * tests inject a mock. Falls back to `globalThis.window` when omitted; if
+   * that is unavailable the subscription is a no-op and the returned
+   * unsubscribe is a no-op.
+   */
+  target?: SaveEventTarget | null;
+  logger?: SaveLogger;
+}
+
+/**
+ * Minimal `EventTarget` surface so tests can drive `storage` events without
+ * dragging the full `Window` type in. Real browsers satisfy this through
+ * `window`; jsdom satisfies it through its `Window` shim.
+ */
+export interface SaveEventTarget {
+  addEventListener(
+    type: "storage",
+    handler: (event: StorageEventLike) => void,
+  ): void;
+  removeEventListener(
+    type: "storage",
+    handler: (event: StorageEventLike) => void,
+  ): void;
+}
+
+/**
+ * Subset of `StorageEvent` we read. The platform `StorageEvent` is wider;
+ * narrowing here keeps the test shim light and pins exactly what the
+ * cross-tab protocol consumes.
+ */
+export interface StorageEventLike {
+  key: string | null;
+  newValue: string | null;
+  storageArea?: Storage | null;
+}
+
+function resolveEventTarget(
+  candidate: SaveEventTarget | null | undefined,
+): SaveEventTarget | null {
+  if (candidate !== undefined) {
+    return candidate;
+  }
+  if (typeof globalThis === "undefined") {
+    return null;
+  }
+  const win = (globalThis as { window?: SaveEventTarget }).window;
+  return win ?? null;
+}
+
+/**
+ * Subscribe to cross-tab save writes. The callback fires whenever another
+ * tab persists a valid save under the current schema's storage key. Same-
+ * tab writes do not fire (the `storage` event semantic). Returns an
+ * unsubscribe; calling the unsubscribe twice is safe.
+ *
+ * Failure modes (event target unavailable, foreign payload corrupt, key
+ * mismatch) are silent: the listener simply does not invoke the callback.
+ * Callers that need to revalidate on focus should pair this with
+ * `reloadIfNewer`.
+ */
+export function subscribeToSaveChanges(
+  callback: SaveChangeListener,
+  options: SubscribeOptions = {},
+): () => void {
+  const target = resolveEventTarget(options.target);
+  const logger = options.logger ?? defaultLogger;
+  if (!target) {
+    return () => {};
+  }
+
+  const expectedKey = storageKey(CURRENT_SAVE_VERSION);
+
+  const handler = (event: StorageEventLike): void => {
+    if (event.key !== expectedKey) {
+      // Not our save (could be backup, leaderboard cache, mod settings).
+      return;
+    }
+    if (event.newValue === null) {
+      // The other tab cleared the save. Surfacing a "save was deleted"
+      // event is out of scope; drop silently and let `reloadIfNewer`
+      // handle it on the next focus.
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(event.newValue);
+    } catch (error) {
+      logger.warn("foreign-tab save event payload was not JSON", error);
+      return;
+    }
+    const migrated = safeMigrate(parsed, logger);
+    if (migrated === undefined) {
+      return;
+    }
+    const result = SaveGameSchema.safeParse(migrated);
+    if (!result.success) {
+      logger.warn(
+        "foreign-tab save event failed schema validation",
+        result.error.issues,
+      );
+      return;
+    }
+    callback(result.data);
+  };
+
+  target.addEventListener("storage", handler);
+  let unsubscribed = false;
+  return () => {
+    if (unsubscribed) {
+      return;
+    }
+    unsubscribed = true;
+    target.removeEventListener("storage", handler);
+  };
+}
+
+/**
+ * Compare the in-memory save's `writeCounter` against the on-disk save and
+ * return the on-disk save when it is strictly newer; otherwise return null.
+ * Designed for `focus` / `visibilitychange` revalidation: the title and
+ * garage screens call this before any UI mutation to avoid clobbering a
+ * concurrent tab's write. Race state is independent of `SaveGame` until
+ * the race ends, so this helper is not called mid-race.
+ *
+ * Treats a missing counter as 0. The on-disk save is read with the same
+ * load pipeline as `loadSave`, including schema validation; a corrupt
+ * on-disk save returns null (the in-memory copy stays authoritative until
+ * the next successful write).
+ */
+export function reloadIfNewer(
+  currentInMemory: SaveGame,
+  io: SaveIO = {},
+): SaveGame | null {
+  const outcome = loadSave(io);
+  if (outcome.kind !== "loaded") {
+    return null;
+  }
+  const onDiskCounter = outcome.save.writeCounter ?? 0;
+  const inMemoryCounter = currentInMemory.writeCounter ?? 0;
+  if (onDiskCounter <= inMemoryCounter) {
+    return null;
+  }
+  return outcome.save;
 }
 
 /** Detect the various flavours of QuotaExceededError across browsers. */

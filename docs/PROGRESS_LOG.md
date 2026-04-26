@@ -6,6 +6,125 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: cross-tab save consistency (writeCounter, storage subscribe, focus revalidate)
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) Save system (new
+"Cross-tab consistency" subsection naming the last-write-wins protocol,
+the `writeCounter` advisory, `subscribeToSaveChanges`, and
+`reloadIfNewer`).
+[§22](gdd/22-data-schemas.md) `SaveGame` schema (added the optional
+`writeCounter` field with the cross-tab semantics call-out).
+[§27](gdd/27-risks-and-mitigations.md) Risk catalogue (added the
+"Cross-tab save corruption" row with the §21 mitigation reference).
+**Branch / PR:** `feat/cross-tab-save-consistency`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-cross-tab-fa8cb14c`. Two tabs of the deployed build
+can now coexist safely: every persist ticks a per-write counter,
+foreign-tab writes hot-reload via the `storage` event, and a long-lived
+in-memory save can revalidate against the on-disk copy on `focus` /
+`visibilitychange`. The race loop is intentionally untouched because
+`RaceState` is independent of `SaveGame` until the race ends.
+
+### Done
+- `src/data/schemas.ts`: added optional `writeCounter`
+  (`z.number().int().nonnegative().optional()`) to `SaveGameSchema` with
+  a comment cross-linking the §21 cross-tab section. Counter is
+  independent of the schema `version`; loaders treat `undefined` as `0`.
+- `src/persistence/save.ts`: `defaultSave()` seeds `writeCounter: 0`;
+  `saveSave()` increments before serialise and persists the bumped
+  counter so the on-disk shape always reflects the most recent write.
+  Added `subscribeToSaveChanges(callback, { target?, logger? })` that
+  wires a `storage` event listener (filters on the current schema's
+  storage key, ignores `null` `newValue`, parses + migrates + schema-
+  validates before invoking the callback) and returns an unsubscribe
+  that is safe to call twice. Added `reloadIfNewer(currentInMemory,
+  io?)` that loads the on-disk save and returns it when its
+  `writeCounter` is strictly greater than the in-memory copy, else
+  null. New types `SaveChangeListener`, `SubscribeOptions`,
+  `SaveEventTarget`, `StorageEventLike` exported alongside.
+- `src/persistence/migrations/v1ToV2.ts`: seeds `writeCounter: 0` on the
+  migrated payload. Preserves an existing non-negative integer
+  `writeCounter` if the source already carries one (forward-compat
+  guard); rejects-as-0 for invalid inputs (negative, non-integer,
+  string, null, true).
+- `src/persistence/save.test.ts`: 16 new cases covering the
+  `writeCounter` round-trip semantics (seeded at 0, increments per
+  write, missing-counter-treated-as-0, two-writer last-write-wins
+  using a shared backing map), the `subscribeToSaveChanges` filter set
+  (foreign-key ignored, `null` `newValue` ignored, schema-invalid and
+  malformed-JSON foreign payloads ignored, no-target = no-op
+  unsubscribe, unsubscribe removes the listener and is idempotent),
+  and `reloadIfNewer` (returns null on equal counters, returns the
+  on-disk save on greater counter, null on corrupt on-disk save,
+  treats missing in-memory counter as 0). Updated the round-trip test
+  to acknowledge the post-write counter tick.
+- `src/persistence/migrations/v1ToV2.test.ts`: 3 new cases
+  (writeCounter seeded at 0 on a fresh v1 save, preserved when the
+  source already has a valid counter, fallback to 0 for invalid
+  values).
+- `docs/gdd/21-technical-design-for-web-implementation.md`: added the
+  "Cross-tab consistency" subsection under "Save system".
+- `docs/gdd/22-data-schemas.md`: documented `writeCounter` on the
+  example payload and in the trailing prose.
+- `docs/gdd/27-risks-and-mitigations.md`: added the "Cross-tab save
+  corruption" row.
+- `docs/OPEN_QUESTIONS.md`: filed Q-009 on whether to upgrade to
+  leader-tab election; recommended default is to keep last-write-wins.
+
+### Verified
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 76 files / 1786 tests pass (29 in `save.test.ts`, 13 in
+  `v1ToV2.test.ts`, 32 in `schemas.test.ts`, all green).
+- `npm run build`: clean static output, route surface unchanged.
+- `npm run test:e2e`: 47 specs pass (no e2e exercises the cross-tab
+  protocol because Playwright drives one browsing context at a time;
+  unit tests cover the three protocol scenarios with a shared-backing
+  storage shim and a `StorageEventBus` listener shim).
+
+### Decisions and assumptions
+- `writeCounter` lives on `SaveGameSchema` itself (optional) rather
+  than in a separate JSON envelope. The dot text said "stored
+  alongside the save inside the JSON payload, not as a separate key";
+  embedding the counter on the schema keeps the round-trip lossless,
+  the export / import path automatic, and the validation pipeline
+  unchanged. Loaders treat `undefined` as `0` so any pre-counter
+  payload migrates implicitly.
+- Same-tab events are filtered by relying on the documented browser
+  behaviour that `StorageEvent` does not fire in the originating tab.
+  The dot referenced a tab-id mechanism, but no such id exists in the
+  codebase and the documented event semantics already make same-tab
+  filtering free. The `StorageEventBus` test shim emits to every
+  registered listener, mirroring the cross-tab fan-out without
+  needing a synthetic tab id.
+- `BroadcastChannel` is intentionally not used in this slice. The
+  `storage` event is enough for the write-detected case and works in
+  every supported browser including Safari. A future slice can add
+  `BroadcastChannel` for in-app cross-tab coordination
+  (pause-all-tabs, etc.) if §27 ever requires it.
+
+### Followups created
+- Q-009 in `OPEN_QUESTIONS.md` (leader-tab election alternative;
+  recommended default is no, keep last-write-wins). No new F-NNN
+  entries: focus / visibilitychange wiring on the title and garage
+  pages is part of the parent garage-flow dot
+  (`VibeGear2-implement-garage-flow-07f26703`) and the consumer of
+  `subscribeToSaveChanges` will land alongside the screens it
+  protects.
+
+### GDD edits
+- `docs/gdd/21-technical-design-for-web-implementation.md`: added
+  "Cross-tab consistency" subsection under "Save system" (one
+  paragraph + cross-link to `src/persistence/save.ts`).
+- `docs/gdd/22-data-schemas.md`: extended the SaveGame example with
+  `writeCounter` and a paragraph describing the field's optionality
+  and the migration's seed behaviour.
+- `docs/gdd/27-risks-and-mitigations.md`: appended the "Cross-tab save
+  corruption" risk row with the §21 mitigation reference.
+
+---
+
 ## 2026-04-26: Slice: F-043 pin §23 weather modifiers into `src/game/weather.ts`
 
 **GDD sections touched:**

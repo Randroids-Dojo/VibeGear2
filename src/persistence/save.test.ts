@@ -6,9 +6,13 @@ import {
   backupKey,
   defaultSave,
   loadSave,
+  reloadIfNewer,
   saveSave,
   storageKey,
+  subscribeToSaveChanges,
+  type SaveEventTarget,
   type SaveLogger,
+  type StorageEventLike,
 } from "./save";
 
 /**
@@ -187,7 +191,261 @@ describe("round-trip", () => {
     const loaded = loadSave({ storage, logger });
     expect(loaded.kind).toBe("loaded");
     if (loaded.kind === "loaded") {
-      expect(loaded.save).toEqual(original);
+      // saveSave increments the cross-tab writeCounter on persist, so the
+      // round-tripped value is one tick ahead of the in-memory original.
+      // Every other field is identical.
+      const { writeCounter: _ignored, ...originalRest } = original;
+      const { writeCounter: loadedCounter, ...loadedRest } = loaded.save;
+      expect(loadedRest).toEqual(originalRest);
+      expect(loadedCounter).toBe((original.writeCounter ?? 0) + 1);
     }
+  });
+});
+
+describe("writeCounter", () => {
+  it("seeds defaultSave at 0", () => {
+    expect(defaultSave().writeCounter).toBe(0);
+  });
+
+  it("increments on every saveSave", () => {
+    const storage = new MemoryStorage();
+    const logger = silentLogger();
+
+    saveSave(defaultSave(), { storage, logger });
+    const first = loadSave({ storage, logger });
+    expect(first.kind).toBe("loaded");
+    if (first.kind !== "loaded") return;
+    expect(first.save.writeCounter).toBe(1);
+
+    saveSave(first.save, { storage, logger });
+    const second = loadSave({ storage, logger });
+    expect(second.kind).toBe("loaded");
+    if (second.kind !== "loaded") return;
+    expect(second.save.writeCounter).toBe(2);
+  });
+
+  it("treats a missing writeCounter as 0 and seeds it on the first write", () => {
+    const storage = new MemoryStorage();
+    const logger = silentLogger();
+    const noCounter = { ...defaultSave() };
+    delete (noCounter as { writeCounter?: unknown }).writeCounter;
+
+    saveSave(noCounter as ReturnType<typeof defaultSave>, { storage, logger });
+    const result = loadSave({ storage, logger });
+    expect(result.kind).toBe("loaded");
+    if (result.kind === "loaded") {
+      expect(result.save.writeCounter).toBe(1);
+    }
+  });
+
+  it("last-write-wins across two writers sharing one storage backing", () => {
+    // Two MemoryStorage shims sharing a backing map model two browser tabs
+    // pointed at the same origin. A late writer's persist always wins; the
+    // earlier write's writeCounter is overwritten by the later one. The
+    // counter strictly increases across the two writes.
+    const backing = new Map<string, string>();
+    class SharedStorage extends MemoryStorage {
+      override getItem(key: string): string | null {
+        return backing.has(key) ? (backing.get(key) as string) : null;
+      }
+      override setItem(key: string, value: string): void {
+        backing.set(key, value);
+      }
+      override removeItem(key: string): void {
+        backing.delete(key);
+      }
+    }
+    const tabA = new SharedStorage();
+    const tabB = new SharedStorage();
+    const logger = silentLogger();
+
+    saveSave(defaultSave(), { storage: tabA, logger });
+    const tabAReadAfterFirst = loadSave({ storage: tabA, logger });
+    expect(tabAReadAfterFirst.kind).toBe("loaded");
+    if (tabAReadAfterFirst.kind !== "loaded") return;
+    expect(tabAReadAfterFirst.save.writeCounter).toBe(1);
+
+    // Tab B persists its own write next: counter goes 1 -> 2.
+    saveSave(tabAReadAfterFirst.save, { storage: tabB, logger });
+    const finalRead = loadSave({ storage: tabA, logger });
+    expect(finalRead.kind).toBe("loaded");
+    if (finalRead.kind !== "loaded") return;
+    expect(finalRead.save.writeCounter).toBe(2);
+  });
+});
+
+class StorageEventBus implements SaveEventTarget {
+  private handlers = new Set<(event: StorageEventLike) => void>();
+  addEventListener(
+    type: "storage",
+    handler: (event: StorageEventLike) => void,
+  ): void {
+    if (type !== "storage") return;
+    this.handlers.add(handler);
+  }
+  removeEventListener(
+    type: "storage",
+    handler: (event: StorageEventLike) => void,
+  ): void {
+    if (type !== "storage") return;
+    this.handlers.delete(handler);
+  }
+  emit(event: StorageEventLike): void {
+    for (const handler of this.handlers) {
+      handler(event);
+    }
+  }
+  get listenerCount(): number {
+    return this.handlers.size;
+  }
+}
+
+describe("subscribeToSaveChanges", () => {
+  it("invokes the callback when a foreign tab writes the save key", () => {
+    const bus = new StorageEventBus();
+    const logger = silentLogger();
+    const callback = vi.fn();
+    const unsubscribe = subscribeToSaveChanges(callback, {
+      target: bus,
+      logger,
+    });
+
+    const next = { ...defaultSave(), writeCounter: 5 };
+    bus.emit({
+      key: storageKey(CURRENT_SAVE_VERSION),
+      newValue: JSON.stringify(next),
+    });
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback.mock.calls[0]?.[0].writeCounter).toBe(5);
+    unsubscribe();
+  });
+
+  it("ignores events for unrelated keys (backup, mods, leaderboards)", () => {
+    const bus = new StorageEventBus();
+    const callback = vi.fn();
+    subscribeToSaveChanges(callback, {
+      target: bus,
+      logger: silentLogger(),
+    });
+
+    bus.emit({
+      key: backupKey(CURRENT_SAVE_VERSION),
+      newValue: JSON.stringify({ ...defaultSave(), writeCounter: 9 }),
+    });
+    bus.emit({
+      key: "vibegear2:mods:index",
+      newValue: "{}",
+    });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("ignores events whose newValue is null (clear / removeItem)", () => {
+    const bus = new StorageEventBus();
+    const callback = vi.fn();
+    subscribeToSaveChanges(callback, {
+      target: bus,
+      logger: silentLogger(),
+    });
+    bus.emit({ key: storageKey(CURRENT_SAVE_VERSION), newValue: null });
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("does not invoke the callback when the foreign payload fails schema validation", () => {
+    const bus = new StorageEventBus();
+    const callback = vi.fn();
+    subscribeToSaveChanges(callback, {
+      target: bus,
+      logger: silentLogger(),
+    });
+
+    bus.emit({
+      key: storageKey(CURRENT_SAVE_VERSION),
+      newValue: JSON.stringify({ version: 2, garbage: true }),
+    });
+    bus.emit({
+      key: storageKey(CURRENT_SAVE_VERSION),
+      newValue: "{not json",
+    });
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("returns a no-op unsubscribe when no event target is available", () => {
+    const callback = vi.fn();
+    const unsubscribe = subscribeToSaveChanges(callback, {
+      target: null,
+      logger: silentLogger(),
+    });
+    expect(typeof unsubscribe).toBe("function");
+    expect(() => unsubscribe()).not.toThrow();
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("removes the listener when unsubscribe is called", () => {
+    const bus = new StorageEventBus();
+    const callback = vi.fn();
+    const unsubscribe = subscribeToSaveChanges(callback, {
+      target: bus,
+      logger: silentLogger(),
+    });
+    expect(bus.listenerCount).toBe(1);
+    unsubscribe();
+    expect(bus.listenerCount).toBe(0);
+    // Calling unsubscribe a second time is a no-op.
+    expect(() => unsubscribe()).not.toThrow();
+    expect(bus.listenerCount).toBe(0);
+  });
+});
+
+describe("reloadIfNewer", () => {
+  it("returns null when the on-disk writeCounter is equal to in-memory", () => {
+    const storage = new MemoryStorage();
+    const logger = silentLogger();
+    saveSave(defaultSave(), { storage, logger });
+    const inMemory = loadSave({ storage, logger });
+    expect(inMemory.kind).toBe("loaded");
+    if (inMemory.kind !== "loaded") return;
+
+    expect(reloadIfNewer(inMemory.save, { storage, logger })).toBeNull();
+  });
+
+  it("returns the on-disk save when its writeCounter is strictly greater", () => {
+    const storage = new MemoryStorage();
+    const logger = silentLogger();
+    saveSave(defaultSave(), { storage, logger });
+    const stale = loadSave({ storage, logger });
+    expect(stale.kind).toBe("loaded");
+    if (stale.kind !== "loaded") return;
+
+    // Simulate another tab persisting a newer save.
+    saveSave(stale.save, { storage, logger });
+
+    const fresh = reloadIfNewer(stale.save, { storage, logger });
+    expect(fresh).not.toBeNull();
+    expect(fresh?.writeCounter).toBe(2);
+  });
+
+  it("returns null when the on-disk save is corrupt", () => {
+    const storage = new MemoryStorage();
+    const logger = silentLogger();
+    storage.setItem(storageKey(CURRENT_SAVE_VERSION), "{not json");
+    const baseline = defaultSave();
+    expect(reloadIfNewer(baseline, { storage, logger })).toBeNull();
+  });
+
+  it("treats a missing in-memory writeCounter as 0", () => {
+    const storage = new MemoryStorage();
+    const logger = silentLogger();
+    saveSave(defaultSave(), { storage, logger });
+    const noCounter = { ...defaultSave() };
+    delete (noCounter as { writeCounter?: unknown }).writeCounter;
+
+    const fresh = reloadIfNewer(
+      noCounter as ReturnType<typeof defaultSave>,
+      { storage, logger },
+    );
+    expect(fresh).not.toBeNull();
+    expect(fresh?.writeCounter).toBe(1);
   });
 });

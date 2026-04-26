@@ -152,6 +152,10 @@ served on every page load by the production host.
 
 The current repo already stores controls and tuning in local storage and uses backend persistence for tracks and leaderboards. VibeGear2 should extend that pattern into a versioned local save with optional cloud sync later. [24]
 
+### Cross-tab consistency
+
+Two browser tabs of the deployed build can each load and persist the same `SaveGame`. The MVP rule is **last-write-wins with a monotonic `writeCounter` advisory**, not leader-tab election. `saveSave` increments `writeCounter` (a per-write counter independent of the schema `version`) before serialising. `subscribeToSaveChanges` wires a `storage` event listener so the title and garage screens hot-reload the displayed save when a foreign tab writes; the browser does not deliver the event to the originating tab, so same-tab writes never echo back. `reloadIfNewer(currentInMemory)` compares counters on `focus` / `visibilitychange` and returns the on-disk save when its counter is strictly greater, so a long-lived in-memory reference can revalidate before the next UI mutation. The race loop is intentionally excluded: `RaceState` is independent of `SaveGame` until the race ends, so a foreign-tab write cannot corrupt live race state. See `src/persistence/save.ts` and the cross-tab tests in `src/persistence/save.test.ts`.
+
 ## Modding support
 
 - Mods live in /mods/<mod-id>/

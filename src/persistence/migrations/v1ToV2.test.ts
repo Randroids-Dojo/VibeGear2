@@ -138,4 +138,38 @@ describe("migrateV1ToV2", () => {
     });
     expect(migrated.settings.keyBindings).toBeDefined();
   });
+
+  it("seeds the cross-tab writeCounter at 0 on a v1 save without one", () => {
+    // v1 saves predate the §21 cross-tab last-write-wins counter. The
+    // migration must seed it to 0 so the first post-migration `saveSave`
+    // ticks it to 1 deterministically.
+    const migrated = migrateV1ToV2(v1Default) as V2Save & {
+      writeCounter?: unknown;
+    };
+    expect(migrated.writeCounter).toBe(0);
+  });
+
+  it("preserves an existing non-negative integer writeCounter on the source", () => {
+    // Forward-compat: a hand-edited v1 save (or a v1 save written by some
+    // future tooling) might already carry a writeCounter. The migrator
+    // must not clobber a valid one.
+    const customised = { ...v1Default, writeCounter: 7 } as typeof v1Default & {
+      writeCounter: number;
+    };
+    const migrated = migrateV1ToV2(customised) as V2Save & {
+      writeCounter?: unknown;
+    };
+    expect(migrated.writeCounter).toBe(7);
+  });
+
+  it("falls back to 0 when the source writeCounter is invalid", () => {
+    const cases: unknown[] = [-1, 1.5, "3", null, true];
+    for (const value of cases) {
+      const migrated = migrateV1ToV2({
+        ...v1Default,
+        writeCounter: value,
+      }) as V2Save & { writeCounter?: unknown };
+      expect(migrated.writeCounter).toBe(0);
+    }
+  });
 });

@@ -4,8 +4,47 @@ Questions the agent has paused on, awaiting dev input. Newest at the top.
 Each entry has an id (`Q-NNN`), a GDD reference, the question, options
 considered, the agent's recommended default, and a status.
 
-Statuses: `open`, `answered`, `obsolete`. Do not delete answered entries —
+Statuses: `open`, `answered`, `obsolete`. Do not delete answered entries,
 they are part of the design history.
+
+---
+
+## Q-009: Cross-tab save protocol: leader-tab election or last-write-wins?
+
+**GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
+"Save system" (Cross-tab consistency subsection),
+[§27](gdd/27-risks-and-mitigations.md) "Cross-tab save corruption" row.
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** The cross-tab slice
+(`VibeGear2-implement-cross-tab-fa8cb14c`) shipped a last-write-wins
+protocol with a monotonic `writeCounter` advisory plus
+`subscribeToSaveChanges` and `reloadIfNewer`. The dot text named
+last-write-wins as the recommended default and called out
+leader-tab election as a possible alternative. Should we upgrade?
+
+- **(a) Keep last-write-wins (recommended).** Simplest. Works in every
+  supported browser without `BroadcastChannel`. The data is local-only
+  in the MVP and the players-with-two-tabs population is small. The
+  `writeCounter` advisory plus the focus revalidate already cover the
+  "free upgrade by stale tab" failure case named in the dot.
+- **(b) Leader-tab election via `BroadcastChannel`.** One tab is
+  authoritative for writes; followers send writes to the leader and
+  receive a broadcast on every accepted change. Adds complexity:
+  leader handoff on close, election protocol, two-leader resolution
+  on race conditions. Buys deterministic write ordering inside a
+  single user session. Probably overkill until cloud sync arrives.
+- **(c) Defer to cloud sync.** The Save system section already names
+  cloud sync as an optional later phase. Cross-tab gets resolved
+  for free once writes go through a server. Risk: cloud sync may not
+  ship for months and the local-only failure persists in the
+  meantime.
+
+**Recommended default.** (a). Keep last-write-wins until either §27
+gains a higher-priority cross-tab risk or cloud sync starts landing
+and we can switch to (c) directly. (b) is added complexity for a
+narrow benefit.
 
 ---
 

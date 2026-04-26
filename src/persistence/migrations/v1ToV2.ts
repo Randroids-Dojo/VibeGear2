@@ -14,6 +14,10 @@
  *   largeUiText: false, screenShakeScale: 1 }` per the §20 accessibility
  *   defaults; `screenShakeScale: 1` keeps the v1 shake intensity unchanged.
  * - `keyBindings = DEFAULT_KEY_BINDINGS` (cloned from `src/game/input.ts`).
+ * - `writeCounter = 0` for the §21 cross-tab last-write-wins protocol; the
+ *   first `saveSave` after migration ticks it to 1. v1 saves never had a
+ *   counter, so seeding 0 is the lowest non-negative integer that lets a
+ *   newer tab's write win deterministically.
  *
  * The migrator is strict on input shape: a payload that is not a v1 save
  * (missing required v1 keys, declared version != 1) throws. The save loader
@@ -94,9 +98,20 @@ export function migrateV1ToV2(input: unknown): unknown {
     settings.keyBindings = defaultKeyBindings();
   }
 
+  // Seed the cross-tab write counter when a v1 payload predates it. Preserve
+  // any explicit counter the source already carried (a hand-edited v1 save,
+  // or a forward-compat seed) so the migration is non-destructive.
+  const writeCounter =
+    typeof source.writeCounter === "number" &&
+    Number.isInteger(source.writeCounter) &&
+    source.writeCounter >= 0
+      ? source.writeCounter
+      : 0;
+
   return {
     ...source,
     version: 2,
     settings,
+    writeCounter,
   };
 }
