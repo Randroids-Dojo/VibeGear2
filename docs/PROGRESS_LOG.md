@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: pure championship.ts module (enterTour, recordResult, tourComplete, unlockNextTour)
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) "Top 8 finishers score points"
+table is the standings source via `PLACEMENT_POINTS`,
+[§8](gdd/08-world-and-progression-design.md) "Unlock structure" sequential
+unlock contract. No GDD edits.
+**Branch / PR:** `feat/championship-pure-module`, PR pending.
+**Status:** Sub-slice 1 of the parent `tour-region-d9ca9a4d` dot. Lands the
+pure module; the `/world` page surface and the F-035 / F-037 / F-039 wiring
+slices land in follow-up sub-slices that consume this one.
+
+### Done
+- `src/game/championship.ts`: new pure module exposing `enterTour`,
+  `recordResult`, `tourComplete`, `unlockNextTour`. The `ActiveTour` cursor
+  lives in memory between race-finishes; persistence-side state stays on
+  the existing `SaveGameProgress` shape (`unlockedTours`, `completedTours`,
+  `stipendsClaimed`). Aggregation reads `PLACEMENT_POINTS` from
+  `raceResult.ts` so a future §7 retune flows through both the per-race
+  pointsEarned line and the per-tour standings without a second pin.
+- `src/game/__tests__/championship.test.ts`: 20 unit cases covering the
+  enterTour seed / unknown-tour / locked-tour branches, recordResult
+  append + non-mutation, tourComplete pass / boundary / fail / DNF /
+  unknown-tour / playerCarId override / determinism / non-mutation, and
+  unlockNextTour append / final-tour no-successor / idempotence /
+  unknown-id / non-mutation.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (2032 tests, +20 for this slice).
+- `npm run build` clean.
+- `npm run test:e2e` green (50 specs).
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- The `ActiveTour` cursor lives in memory rather than on the save schema
+  for this slice. Resume-tour-on-reload would promote it to a schema
+  field; today the `/world` page can rebuild it from the championship
+  plus the player's last race outcome on demand. Keeping it off-schema
+  avoids a v3 to v4 migration for a feature the page surface has not
+  yet shipped.
+- `tourComplete` synthesises a stand-in AI field by crediting the slot
+  ahead of the player on each race (one synthetic id per non-player
+  placement slot). The player standing only depends on the player's
+  points so the placeholder does not affect pass/fail; the synthetic
+  field exists so the §20 results screen has something to render. The
+  AI grid spawner slice (`implement-ai-grid-02d7e311`) will replace the
+  placeholder with real per-AI telemetry once it lands.
+- `enterTour` requires the tour to already be in `unlockedTours`,
+  including the first tour. The championship-onboarding flow (out of
+  scope here) seeds the first tour into `unlockedTours` when the player
+  picks a championship.
+- The per-race `TourRaceResult` shape is intentionally narrow (trackId
+  + placement + dnf). Wider race-finish telemetry stays on
+  `RaceResult`; this module reads only what it needs to keep the
+  contract minimal and the test fixtures small.
+
+### Followups added
+None new. The deferred work is already tracked under the parent
+`VibeGear2-implement-tour-region-d9ca9a4d` dot and the existing F-035 /
+F-037 / F-039 follow-up rows in `docs/FOLLOWUPS.md`; this sub-slice
+ships the data plane those wirings need.
+
+### GDD edits
+None.
+
+### Open questions raised
+None.
+
+---
+
 ## 2026-04-26: Slice: Q-009 confirm last-write-wins cross-tab save protocol
 
 **GDD sections touched:**
