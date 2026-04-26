@@ -20,6 +20,7 @@
 
 import { describe, expect, it } from "vitest";
 
+import { getDamageBand } from "../damageBands";
 import {
   applyHit,
   applyOffRoadDamage,
@@ -27,6 +28,7 @@ import {
   DAMAGE_UNIT_SCALE,
   DEFAULT_ZONE_DISTRIBUTION,
   isWrecked,
+  NITRO_WHILE_SEVERELY_DAMAGED_BONUS,
   OFF_ROAD_DAMAGE_PER_M,
   PERFORMANCE_FLOOR,
   PRISTINE_DAMAGE_STATE,
@@ -439,6 +441,83 @@ describe("§28 damageSeverity scalar (applyHit)", () => {
     expect(next.zones.engine).toBe(0);
     expect(next.zones.tires).toBe(0);
     expect(next.zones.body).toBe(0);
+  });
+});
+
+describe("§13 / §23 nitroActiveOnDamagedCar bonus (applyHit)", () => {
+  function wallHit(over: Partial<HitEvent> = {}): HitEvent {
+    return { kind: "wallHit", baseMagnitude: 24, speedFactor: 1, ...over };
+  }
+
+  it("severe-band car with active nitro takes 15% more total damage than the same hit without nitro", () => {
+    // Severe band: damage% in [75, 99]. Pin at 0.80 so the band check
+    // upstream (getDamageBand(state.total * 100)) reads "severe" and the
+    // hit's per-zone increments do not clamp at the 1.0 ceiling (which
+    // would mask the +15% multiplier in the totalIncrement comparison).
+    const severe = createDamageState({ engine: 0.8, tires: 0.8, body: 0.8 });
+    expect(getDamageBand(severe.total * 100)).toBe("severe");
+
+    // Use a small hit so neither path clamps at 1.0.
+    const hit = wallHit({ baseMagnitude: 4, speedFactor: 0.5 });
+    const without = applyHit(severe, hit);
+    const withNitro = applyHit(severe, hit, undefined, true);
+
+    const deltaWithout =
+      (without.zones.engine - severe.zones.engine) +
+      (without.zones.tires - severe.zones.tires) +
+      (without.zones.body - severe.zones.body);
+    const deltaWith =
+      (withNitro.zones.engine - severe.zones.engine) +
+      (withNitro.zones.tires - severe.zones.tires) +
+      (withNitro.zones.body - severe.zones.body);
+
+    expect(deltaWith).toBeCloseTo(deltaWithout * (1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS), 8);
+    // Sanity: the per-zone scaling is uniform (the bonus rides on the
+    // shared totalIncrement, not on a per-zone bias).
+    expect(withNitro.zones.engine - severe.zones.engine).toBeCloseTo(
+      (without.zones.engine - severe.zones.engine) * 1.15,
+      8,
+    );
+  });
+
+  it("omitting the flag (or passing false) preserves the unscaled hit", () => {
+    const a = applyHit(PRISTINE_DAMAGE_STATE, wallHit());
+    const b = applyHit(PRISTINE_DAMAGE_STATE, wallHit(), undefined, false);
+    const c = applyHit(PRISTINE_DAMAGE_STATE, wallHit(), undefined, undefined);
+    expect(b).toEqual(a);
+    expect(c).toEqual(a);
+  });
+
+  it("stacks multiplicatively with damageSeverity (1.20 * 1.15 = 1.38x)", () => {
+    const HARD = Object.freeze({
+      steeringAssistScale: 0,
+      nitroStabilityPenalty: 1.15,
+      damageSeverity: 1.2,
+      offRoadDragScale: 0.95,
+    });
+    const identity = applyHit(PRISTINE_DAMAGE_STATE, wallHit({ baseMagnitude: 4, speedFactor: 0.5 }));
+    const stacked = applyHit(
+      PRISTINE_DAMAGE_STATE,
+      wallHit({ baseMagnitude: 4, speedFactor: 0.5 }),
+      HARD,
+      true,
+    );
+    expect(stacked.zones.engine).toBeCloseTo(identity.zones.engine * 1.2 * 1.15, 8);
+    expect(stacked.zones.tires).toBeCloseTo(identity.zones.tires * 1.2 * 1.15, 8);
+    expect(stacked.zones.body).toBeCloseTo(identity.zones.body * 1.2 * 1.15, 8);
+  });
+
+  it("does not regen damage on a no-op hit even with the flag set", () => {
+    const before = createDamageState({ body: 0.4 });
+    const after = applyHit(before, wallHit({ baseMagnitude: 0 }), undefined, true);
+    expect(after.zones).toEqual(before.zones);
+  });
+
+  it("returns a fresh state without mutating the input", () => {
+    const before = createDamageState({ engine: 0.8, tires: 0.8, body: 0.8 });
+    const snapshot = JSON.parse(JSON.stringify(before)) as unknown;
+    applyHit(before, wallHit({ baseMagnitude: 4, speedFactor: 0.5 }), undefined, true);
+    expect(JSON.parse(JSON.stringify(before))).toEqual(snapshot);
   });
 });
 

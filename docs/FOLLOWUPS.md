@@ -10,21 +10,43 @@ or `obsolete` so the trail is preserved.
 
 ---
 
-## F-045: Wire `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` into the damage path
+## F-047: Thread per-car `DamageState` through `raceSession` and feed `applyHit`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
 **Status:** open
+**Notes:** `applyHit` (and `applyOffRoadDamage`) now accept the
+`assistScalars` and `nitroActiveOnDamagedCar` knobs but `raceSession`
+does not yet own a per-car `DamageState`. Add a `damage: DamageState`
+field to `RaceSessionPlayerCar` / `RaceSessionAICar`, initialise it
+to `PRISTINE_DAMAGE_STATE` in `createRaceSession`, and call
+`applyHit(state.damage, hit, assistScalars, nitroOnDamagedCar)` from
+the per-tick collision / wall handler with
+`nitroOnDamagedCar = state.nitro.activeRemainingSec > 0 &&
+(getDamageBand(state.damage.total * 100) === "severe" ||
+ getDamageBand(state.damage.total * 100) === "catastrophic")`.
+The off-road branch already exists in `damage.ts`; route the
+per-tick `applyOffRoadDamage` call through the same field. The §13
+`isWrecked` gate then feeds `RaceCarStatus = "dnf"`.
+
+---
+
+## F-045: Wire `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` into the damage path
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** done
 **Notes:** Pinned by the §23 balancing-pass slice in
-`src/game/damage.ts` as a documented constant (`+15%`). Consumer
-logic still missing: when the player taps nitro on a severely damaged
-or catastrophic-band car, the next contact event should multiply the
-`baseMagnitude` by `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` for the
-duration of the burn. The natural home is `applyHit` (extra arg
-`nitroActiveOnDamagedCar?: boolean`), threaded from `raceSession`
-which already knows both the burn state (`nitroState.activeRemainingSec
-> 0`) and the band (`damageBandFromTotal`). Add a unit test that
-asserts a wallHit on a severe-band car with active nitro deposits 15%
-more total damage than the same hit without nitro.
+`src/game/damage.ts` as a documented constant (`+15%`). The wiring
+slice (`feat/nitro-damaged-bonus`) added an optional
+`nitroActiveOnDamagedCar` flag to `applyHit`: when true the per-event
+`totalIncrement` scales by `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)`,
+stacking multiplicatively with `damageSeverity`. Unit tests cover the
++15% bonus on a severe-band car, identity preservation when the flag
+is omitted, the multiplicative stack with `damageSeverity`, and
+no-op safety. The `raceSession` side cannot set the flag yet because
+per-car `DamageState` is not threaded into the session loop; the band
+check (`getDamageBand(state.total * 100) === "severe"` or
+`"catastrophic"`) lands in the same slice that wires per-car damage
+into `RaceSessionPlayerCar` / `RaceSessionAICar`. Tracked as F-047.
 
 ---
 

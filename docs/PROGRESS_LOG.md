@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-045 wire `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` into `applyHit`
+
+**GDD sections touched:**
+[§13](gdd/13-damage-repairs-and-risk.md) Damage sources (nitro overuse
+in damaged state). [§23](gdd/23-balancing-tables.md) Damage formula
+targets `nitroWhileSeverelyDamagedBonus = +15%` cell.
+**Branch / PR:** `feat/nitro-damaged-bonus` stacked on
+`feat/balancing-pass-23`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-f-045-1aaec9d7`. The §23 `+15%` constant pinned
+in the prior balancing-pass slice now has a consumer:
+`applyHit(state, hit, assistScalars?, nitroActiveOnDamagedCar?)`
+multiplies the per-event `totalIncrement` by
+`(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` when the caller passes
+`true`. The flag is purely a caller decision (the band check sits
+upstream); `damage.ts` does not import `damageBands.ts`. The race
+session does not yet own a per-car `DamageState`, so the call-site
+that sets the flag (`nitroState.activeRemainingSec > 0` AND
+`getDamageBand(state.damage.total * 100) in {severe, catastrophic}`)
+is filed as F-047 alongside the per-car damage threading.
+
+### Done
+- `src/game/damage.ts` (update): added optional
+  `nitroActiveOnDamagedCar?: boolean` parameter to `applyHit`. When
+  `true`, `totalIncrement` scales by
+  `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` (`+15%`). Stacks
+  multiplicatively with `damageSeverity`: `1.20 * 1.15 = 1.38x`.
+  Omitting the flag (or passing `false` / `undefined`) preserves
+  the unscaled pre-binding behaviour bit-for-bit. Module header
+  comment and `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` doc-comment
+  updated to describe the wiring.
+- `src/game/__tests__/damage.test.ts` (update): five new cases under
+  "§13 / §23 nitroActiveOnDamagedCar bonus (applyHit)":
+  the +15% delta on a severe-band car (the dot's verify item),
+  identity preservation when the flag is omitted / `false`,
+  multiplicative stack with `damageSeverity = 1.20` (Hard preset),
+  no-op safety on a zero-magnitude hit, and input-immutability.
+- `docs/FOLLOWUPS.md` (update): F-045 marked `done`; F-047 opened
+  for the per-car `DamageState` threading into `raceSession` that
+  will set the flag at the call site.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: existing damage and balancing suites continue to pass;
+  five new cases under `damage.test.ts`.
+- `npm run build`: clean (no UI surface added).
+- `npm run test:e2e`: clean.
+
+---
+
 ## 2026-04-26: Slice: §23 balancing pass (pin tables + `balancing.test.ts`)
 
 **GDD sections touched:**

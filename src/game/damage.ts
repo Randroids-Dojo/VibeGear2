@@ -45,6 +45,18 @@
  * pre-binding behaviour exactly. The race session resolves the preset
  * once at session creation and threads the same frozen reference through
  * every per-tick damage call.
+ *
+ * §13 / §23 nitro-while-damaged wiring: `applyHit` accepts an optional
+ * `nitroActiveOnDamagedCar` flag. When set the per-event total is
+ * multiplied by `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` so a contact
+ * event during a nitro burn on a severe / catastrophic-band car eats
+ * 15% more of the per-zone budget than the same hit without nitro. The
+ * caller (race session) decides when the flag is true: nitro is
+ * actively burning AND the band derived from the pre-hit damage total
+ * is `severe` or `catastrophic`. The damage module does not re-derive
+ * the band itself; keeping the band check in the caller leaves
+ * `applyHit` independent of `damageBands.ts`. Omitting the flag (or
+ * passing `false`) preserves the pre-binding behaviour exactly.
  */
 
 import type { AssistScalars } from "./difficultyPresets";
@@ -175,12 +187,13 @@ export const HIT_MAGNITUDE_RANGES: Readonly<
  * "nitro overuse in damaged state" as one of the listed damage sources;
  * §23 puts a number on it.
  *
- * The constant is exported here so the consumer logic can land in a
- * later slice without re-deriving the rate. As of this slice the bonus
- * is a documented pin: the race-session damage path does not yet
- * multiply by `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` when the burn
- * is active and the band is `severe` or `catastrophic`. Tracked in
- * `docs/FOLLOWUPS.md` so the wiring slice has a target.
+ * Consumed by `applyHit` via the optional `nitroActiveOnDamagedCar`
+ * flag: when true the per-event `totalIncrement` scales by
+ * `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)`. The caller (race session)
+ * is responsible for setting the flag only when both conditions hold:
+ * a charge is currently burning (`nitroState.activeRemainingSec > 0`)
+ * and the pre-hit damage band is `severe` or `catastrophic`
+ * (`getDamageBand(state.total * 100)` from `./damageBands`).
  */
 export const NITRO_WHILE_SEVERELY_DAMAGED_BONUS = 0.15;
 
@@ -300,11 +313,23 @@ export function createDamageState(
  * pins read the same `totalIncrement`. The scalar is clamped to a
  * conservative `[0, 4]` band so a buggy upstream config cannot turn a
  * single hit into an instant wreck.
+ *
+ * `nitroActiveOnDamagedCar` (optional) toggles the §23
+ * `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` multiplier. When `true` the
+ * per-event total scales by `1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS`
+ * (`+15%`); `false` (or omitted) preserves the pre-binding behaviour.
+ * The caller decides whether both preconditions hold (an active nitro
+ * burn AND a `severe` / `catastrophic` damage band); this function
+ * does not re-derive the band so it stays free of a `damageBands.ts`
+ * import. Stacks multiplicatively with `damageSeverity`: a `1.20`
+ * difficulty severity combined with the `+15%` nitro bonus deposits
+ * `1.20 * 1.15 = 1.38x` the unscaled total.
  */
 export function applyHit(
   state: Readonly<DamageState>,
   hit: Readonly<HitEvent>,
   assistScalars?: Readonly<AssistScalars>,
+  nitroActiveOnDamagedCar?: boolean,
 ): DamageState {
   const baseMagnitude = Math.max(0, Number.isFinite(hit.baseMagnitude) ? hit.baseMagnitude : 0);
   const speedFactor = clampUnit(hit.speedFactor);
@@ -315,8 +340,12 @@ export function applyHit(
   }
 
   const severity = clampSeverity(assistScalars?.damageSeverity);
+  const nitroBonus = nitroActiveOnDamagedCar === true
+    ? 1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS
+    : 1;
   const distribution = hit.zoneOverride ?? DEFAULT_ZONE_DISTRIBUTION[hit.kind];
-  const totalIncrement = (baseMagnitude * speedFactor * severity) / DAMAGE_UNIT_SCALE;
+  const totalIncrement =
+    (baseMagnitude * speedFactor * severity * nitroBonus) / DAMAGE_UNIT_SCALE;
 
   const next: Record<DamageZone, number> = {
     engine: clampUnit(state.zones.engine + totalIncrement * (distribution.engine ?? 0)),
