@@ -358,6 +358,15 @@ export type PlayerDifficultyPreset = z.infer<
   typeof PlayerDifficultyPresetSchema
 >;
 
+/**
+ * Player-facing transmission mode per GDD §10 "Gear shifting" and §19
+ * "Keyboard layout" (E / Q for keyboard, RB / LB on pad). Automatic is
+ * the default; manual is an opt-in expert mode that earns a small (under
+ * 5%) accel advantage at the optimal shift point.
+ */
+export const TransmissionModeSchema = z.enum(["auto", "manual"]);
+export type TransmissionModePersisted = z.infer<typeof TransmissionModeSchema>;
+
 export const SaveGameSettingsSchema = z.object({
   displaySpeedUnit: SpeedUnitSchema,
   assists: AssistSettingsSchema,
@@ -367,6 +376,12 @@ export const SaveGameSettingsSchema = z.object({
    * loaded save should treat `undefined` as `'normal'` for §15 compatibility.
    */
   difficultyPreset: PlayerDifficultyPresetSchema.optional(),
+  /**
+   * Optional so v1 saves written before this field was added still load.
+   * `defaultSave()` always sets it to `'auto'`; consumers reading from a
+   * loaded save should treat `undefined` as `'auto'` per the §10 default.
+   */
+  transmissionMode: TransmissionModeSchema.optional(),
 });
 export type SaveGameSettings = z.infer<typeof SaveGameSettingsSchema>;
 

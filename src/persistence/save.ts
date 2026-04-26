@@ -86,6 +86,8 @@ export function defaultSave(): SaveGame {
       },
       // GDD §15 'Normal' is the baseline tier and the §28 default.
       difficultyPreset: "normal",
+      // GDD §10 'Gear shifting' default: automatic. Manual is opt-in.
+      transmissionMode: "auto",
     },
     garage: {
       credits: 0,

@@ -182,14 +182,31 @@ export const DEFAULT_TRACK_CONTEXT: Readonly<TrackContext> = Object.freeze({
  * "spinRiskMultiplier" knobs are owned by their respective slices
  * (steering smoothing, nitro system, traction loss) and read the
  * scalars off the same field without a second resolve.
+ *
+ * `accelMultiplier` is the gear-curve scalar from
+ * `./transmission.ts:gearAccelMultiplier`. Multiplied against the
+ * throttle-driven acceleration each tick to model the §10 torque curve
+ * (lugging at low RPM, peak in the middle of the band, redline penalty
+ * past the soft limit). Defaults to `1.0` so existing callers keep
+ * their behaviour. Clamped to a sane band (`[0, 2]`) so a buggy
+ * upstream reducer cannot turn the field into a top-speed override.
  */
 export interface StepOptions {
   draftBonus?: number;
   damageScalars?: Readonly<DamageScalars>;
+  accelMultiplier?: number;
 }
 
 /** Conservative upper bound on the draft bonus inside the step. */
 export const DRAFT_BONUS_MAX = 1.5;
+
+/**
+ * Conservative upper bound on the accel multiplier inside the step. The
+ * §10 torque curve peaks at `MANUAL_PEAK_TORQUE_MULTIPLIER = 1.04`; this
+ * defends against a buggy reducer that returns a wildly out-of-band
+ * value without throwing.
+ */
+export const ACCEL_MULTIPLIER_MAX = 2;
 
 /**
  * Advance the car state by `dt` seconds. Pure: no mutation of the input
@@ -232,6 +249,10 @@ export function step(
   const throttle = clamp(input.throttle, 0, 1);
   const brake = clamp(input.brake, 0, 1);
   const draftBonus = clamp(options.draftBonus ?? 1, 1, DRAFT_BONUS_MAX);
+  // Gear torque curve: clamp into a sane band defensively. Default is
+  // `1` so existing callers (and any code path that does not run the
+  // transmission reducer) keep the pre-transmission behaviour.
+  const accelMultiplier = clamp(options.accelMultiplier ?? 1, 0, ACCEL_MULTIPLIER_MAX);
   // Damage scalars: clamp each consumed field defensively. A buggy
   // upstream caller cannot turn a damage scalar into a speed boost; the
   // upper bound for `topSpeedScalar` and `gripScalar` is 1.0.
@@ -240,7 +261,7 @@ export function step(
   const damagedTopSpeed = stats.topSpeed * topSpeedScalar;
 
   if (throttle > 0) {
-    nextSpeed += stats.accel * throttle * draftBonus * dt;
+    nextSpeed += stats.accel * throttle * draftBonus * accelMultiplier * dt;
   }
   if (brake > 0) {
     // Brake decelerates toward zero. Never inverts velocity.

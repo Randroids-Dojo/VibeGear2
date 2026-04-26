@@ -6,6 +6,119 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: manual transmission and gear shifting per §10 §19
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) ("Gear shifting"),
+[§12](gdd/12-upgrade-and-economy-system.md) (Gearbox upgrade ladder),
+[§19](gdd/19-controls-and-input.md) (E / Q + RB / LB bindings).
+**Branch / PR:** `feat/manual-transmission` (stacked on
+`feat/damage-band`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/transmission.ts`: pure state machine over
+  `{ mode: 'auto' | 'manual', gear: 1..7, rpm: 0..1 }` with reducer
+  `stepTransmission(state, ctx)`. Auto upshifts when prior RPM
+  exceeds `AUTO_UPSHIFT_RPM = 0.85` and a higher gear exists; auto
+  downshifts when prior RPM drops below `AUTO_DOWNSHIFT_RPM = 0.4`
+  or the brake is pressed in any gear above first. Manual ignores
+  auto thresholds and consumes `shiftUp` / `shiftDown` directly,
+  ignored at the per-tier max gear / first-gear edges. Auto mode
+  ignores shift inputs entirely so a stray press does not toggle
+  modes (the dot's edge case).
+- Pinned the gearbox upgrade ladder: Stock 5, Street 5, Sport 6,
+  Factory 6, Extreme 7 in `MAX_GEAR_BY_GEARBOX_UPGRADE`. Helpers
+  `maxGearForGearboxUpgrade(tier)` and `maxGearForUpgrades(obj)`
+  read either form; out-of-range tiers clamp into the table.
+- Pinned the torque curve via `gearAccelMultiplier(state)`: floor
+  at `TORQUE_CURVE_FLOOR = 0.55` below `0.15` RPM, linear ramp to
+  the gear's peak at `REDLINE_SOFT_LIMIT_RPM = 0.95`, then redline
+  taper down to `peak * REDLINE_PENALTY_MULTIPLIER = 0.85` at the
+  hard limit `1.0`. Auto peak `1.0`; manual peak `1.04`. The
+  `1.04 / 1.0 = 1.04` ratio is the §10 "small expert advantage"
+  budget, well under the dot's 5% cap. RPM clamps defensively
+  into `[0, 1]` so a stale or buggy speed cannot poison physics.
+- Wired `accelMultiplier` through `physics.step()` as a new
+  optional `StepOptions` field (alongside `draftBonus` and
+  `damageScalars`). The throttle term is now `accel * throttle *
+  draftBonus * accelMultiplier * dt`. Defaults to `1.0` so existing
+  call sites (`raceSession.ts`, the dev page, AI loop) keep their
+  behaviour bit-for-bit. The race-session integration with the
+  transmission reducer is a follow-on slice (kept narrow per the
+  one-slice-one-PR rule); this slice ships the pure module + the
+  physics seam.
+- Added `transmissionMode: 'auto' | 'manual'` to
+  `SaveGameSettingsSchema` as an optional field (back-compat with
+  v1 saves; treat `undefined` as `'auto'` per §10). `defaultSave()`
+  always sets it to `'auto'`. The §22 `saveGame.example.json` now
+  carries the field. Schema tests cover the manual case, the
+  default-auto case, and the bad-enum case.
+- Re-exported the new module from `src/game/index.ts`.
+- Added `src/game/__tests__/transmission.test.ts` (34 tests):
+  upgrade-tier table, RPM band conversion (clamps and degenerates),
+  auto upshift / downshift / brake-downshift / no-toggle behaviour,
+  manual shift edges (max gear ignored, first gear ignored),
+  stale-upgrade clamp, redline limiter, torque-curve monotonicity,
+  manual-vs-auto < 5% advantage check, 200-step deterministic
+  replay, immutability guard.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (824 tests; 34 new in `transmission.test.ts`,
+  3 new schema tests).
+- `npm run build` clean. No route-size delta (the new module is
+  game-logic only and not consumed by the renderer yet).
+- `npm run test:e2e` passes (15 specs, no new e2e specs since the
+  transmission state is a pure reducer).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Gear count by upgrade tier pinned at Stock 5, Street 5, Sport 6,
+  Factory 6, Extreme 7. The dot pins these; the underlying §12
+  text is qualitative ("unlocks higher gearing") so the numeric
+  cadence here is the canonical source until a balancing slice
+  changes it.
+- Torque curve pinned to a linear floor / ramp / penalty model.
+  §10's "smooths high-speed pull" language is qualitative; pinning
+  the shape in one frozen function keeps the math reviewable and
+  lets a future balancing slice pick exact numbers without
+  rewriting consumers.
+- Manual peak set to 1.04 (4%). The dot caps the advantage at
+  under 5%; 4% gives a noticeable but undominating expert margin.
+  The `tests` enforce the cap so a future tweak past 5% trips a
+  test rather than silently breaking the §10 design promise.
+- `transmissionMode` is persisted as `optional()` at the schema
+  layer (matching the `difficultyPreset` pattern) so v1 saves
+  written before this field landed continue to load. The
+  `defaultSave()` writer sets the field eagerly, and consumers
+  (HUD, race session) can default to `'auto'` when reading from a
+  loaded save without a migration.
+- Auto-mode brake-downshift fires from any gear > 1, not just at
+  low RPM. §10's "downshift on brake" cue describes the
+  expectation; the implementation matches by allowing the brake to
+  drop one gear per tick until first.
+
+### Followups
+- F-NNN: wire `stepTransmission` into `raceSession` so the player
+  car's `accelMultiplier` actually consumes the gear curve at race
+  time. Held as a separate slice because the race session also
+  owns the input-edge debouncing for `shiftUp` / `shiftDown` and
+  the HUD slice owns the gear / RPM widgets; bundling these would
+  bust the one-slice-one-PR rule.
+- F-NNN: Settings UI control to toggle `transmissionMode`. Out of
+  scope for this slice; the §20 HUD slice is the natural home.
+- F-NNN: gear-shift SFX hook (the dot mentions a "limit" SFX cue
+  for blocked shifts at max gear). Lives with the §18 sound slice.
+
+### GDD edits
+- None. Implementation reads §10, §12, §19 verbatim; pinned
+  numeric values are documented in the module header rather than
+  in the GDD so the design text stays qualitative.
+
+---
+
 ## 2026-04-26: Slice: damage band performance scaling per §10 §13
 
 **GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md)

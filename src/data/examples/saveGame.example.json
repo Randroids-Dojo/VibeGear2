@@ -8,7 +8,8 @@
       "autoNitro": false,
       "weatherVisualReduction": false
     },
-    "difficultyPreset": "normal"
+    "difficultyPreset": "normal",
+    "transmissionMode": "auto"
   },
   "garage": {
     "credits": 18250,

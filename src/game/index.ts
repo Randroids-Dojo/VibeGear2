@@ -10,3 +10,4 @@ export * from "./physics";
 export * from "./hudState";
 export * from "./ai";
 export * from "./damageBands";
+export * from "./transmission";

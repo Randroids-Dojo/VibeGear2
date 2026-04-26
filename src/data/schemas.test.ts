@@ -218,4 +218,39 @@ describe("SaveGameSchema", () => {
     };
     expect(SaveGameSchema.safeParse(v1Record).success).toBe(true);
   });
+
+  it("accepts settings with transmissionMode set to 'manual'", () => {
+    const withManual = {
+      ...saveGameExample,
+      settings: {
+        ...saveGameExample.settings,
+        transmissionMode: "manual",
+      },
+    };
+    expect(SaveGameSchema.safeParse(withManual).success).toBe(true);
+  });
+
+  it("accepts settings without transmissionMode (backwards-compatible default)", () => {
+    const { settings } = saveGameExample;
+    const withoutMode = {
+      ...saveGameExample,
+      settings: {
+        displaySpeedUnit: settings.displaySpeedUnit,
+        assists: settings.assists,
+        difficultyPreset: settings.difficultyPreset,
+      },
+    };
+    expect(SaveGameSchema.safeParse(withoutMode).success).toBe(true);
+  });
+
+  it("rejects an unknown transmissionMode value", () => {
+    const broken = {
+      ...saveGameExample,
+      settings: {
+        ...saveGameExample.settings,
+        transmissionMode: "semi-auto",
+      },
+    };
+    expect(SaveGameSchema.safeParse(broken).success).toBe(false);
+  });
 });
