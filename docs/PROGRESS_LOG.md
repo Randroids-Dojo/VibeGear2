@@ -6,6 +6,78 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Single AI driver, clean_line archetype (§15)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md), [§22](gdd/22-data-schemas.md)
+**Branch / PR:** `feat/single-ai-cleanline`, PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/ai.ts` with `tickAI(driver, aiState, aiCar, player,
+  track, race, stats, context, dt) -> { input, nextAiState }`. The
+  function is pure: no globals, no `Math.random`, no `Date.now`. Same
+  arguments produce identical outputs across runs, satisfying the
+  §21 replay/ghost determinism requirement.
+- Pinned the runtime AI state shape `interface AIState`
+  (`progress`, `laneOffset`, `speed`, `intent`, `targetSpeed`,
+  `seed`). Carries the per-AI PRNG seed even though the clean_line
+  slice does not consume it, so adding mistake-prone or
+  nitro-aware archetypes later does not force a breaking
+  signature change.
+- Pinned `AI_TUNING` constants in one place: racing-line bias cap
+  (70 percent of road half-width), curve-driven deceleration
+  coefficient (0.6 for unit curvature), minimum AI speed floor
+  (8 m/s), speed hysteresis band (1.5 m/s), brake ramp (full at
+  6 m/s overshoot), and steer P-gain (1.5 m authority band).
+- Implemented the three clean_line behaviours from §15
+  "Implementation approach": ideal lateral offset from the segment
+  curve (inside-of-corner bias), target speed from `topSpeed`,
+  curve magnitude, and `paceScalar`, and a P-controller for steer
+  that doubles as off-road recovery once `aiCar.x` crosses the
+  rumble.
+- Countdown gating: `race.phase !== "racing"` returns
+  `NEUTRAL_INPUT`. The AI does not integrate during the countdown
+  but still updates its `progress` / `laneOffset` mirror so a
+  future grid HUD overlay can show the starting order.
+- Reasoned in authored-curve units (multiplied compiled
+  `segment.curve` by `CURVATURE_SCALE`) so the tuning constants
+  read against the same magnitude a track author types into the
+  schema.
+- Added `src/app/dev/ai/page.tsx` for visual smoke verification.
+  Runs the §10 physics step driven by `tickAI` on a mixed
+  straight / sweeper / straight / sweeper test track. The panel
+  below the canvas reports live AI speed, target speed, lateral
+  offset, and the steer / throttle / brake input.
+- Added 18 unit tests in `src/game/__tests__/ai.test.ts`:
+  countdown gating returns `NEUTRAL_INPUT`, straight-and-below
+  target accelerates with zero steer, target-speed scales with
+  `paceScalar`, sweeper biases steer toward the inside, target
+  speed drops on curves, brakes when overshooting target,
+  hysteresis-band feathering at and just below target,
+  off-track recovery steers toward centerline, full-lock clamp on
+  large lateral errors, purity (no input mutation), seed
+  preservation, deep-equal output across 100 identical calls,
+  and a sanity check on the tuning constants.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 18 new tests, 287 total passing.
+- `npm run build` clean. `/dev/ai` prerenders to a static page
+  (2.98 kB).
+
+### Followups
+- AI overtake behaviour, collision avoidance, and lane shifts
+  remain on the full-grid AI dot.
+- Nitro firing for clean_line is deliberately deferred per the
+  dot stress-test (item 3): future slice will add it once the
+  nitro budget shape is settled.
+- Future archetypes (rocket starter, bully, cautious, chaotic,
+  enduro) reuse the `AIState` shape and consume the per-AI
+  `seed` for randomised behaviour.
+
+---
+
 ## 2026-04-26: Slice: Asset preload + loading screen (§21)
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md), [§20](gdd/20-hud-and-ui-ux.md)
