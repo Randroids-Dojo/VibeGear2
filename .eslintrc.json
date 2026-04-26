@@ -4,5 +4,20 @@
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     "@typescript-eslint/consistent-type-imports": ["error", { "prefer": "type-imports" }]
   },
+  "overrides": [
+    {
+      "files": ["src/game/**/*.ts", "src/game/**/*.tsx"],
+      "excludedFiles": ["src/game/rng.ts", "src/game/__tests__/**"],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "MemberExpression[object.name='Math'][property.name='random']",
+            "message": "Math.random is banned in src/game; import createRng from src/game/rng instead so simulation stays deterministic per docs/gdd/21-technical-design-for-web-implementation.md."
+          }
+        ]
+      }
+    }
+  ],
   "ignorePatterns": [".next/", "out/", "node_modules/", "playwright-report/", "test-results/"]
 }

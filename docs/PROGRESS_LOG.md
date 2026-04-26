@@ -6,6 +6,116 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: seeded deterministic PRNG module (rng.ts, mulberry32, splitRng) + Math.random ban
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) (deterministic AI contract),
+[§21](gdd/21-technical-design-for-web-implementation.md) (deterministic
+inputs, deterministic replay tests). The §21 contract for bit-exact
+replay across runs depends on a single owned PRNG that every randomness
+consumer (AI chaotic branch, damage hits, weather rolls, particle
+effects, ghost replay sanity) imports from. This slice ships that
+module so the downstream slices that depend on determinism (full AI,
+damage model, weather, ghost replay, physics-feel benchmark) can land
+on a stable foundation.
+**Branch / PR:** `feat/seeded-deterministic-rng` (stacked on
+`feat/race-checkpoint-tracking`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Authored `src/game/rng.ts` exporting `Rng`, `createRng`, `splitRng`,
+  `serializeRng`, and `deserializeRng`. Algorithm is mulberry32 (15
+  lines, public-domain), transcribed fresh under MIT. Single u32 state
+  word; trivially serialisable into a save / replay slot. All math
+  goes through `Math.imul` so the output is identical across V8 /
+  SpiderMonkey / JavaScriptCore (no IEEE-754 ordering hazard).
+- `splitRng(parent, label)` derives a deterministic sub-stream by
+  consuming one parent advance and mixing the post-advance state with
+  an FNV-1a hash of the label. Two parents with the same seed and
+  label produce the same child; two children with different labels on
+  the same parent produce different streams. Different parent seeds
+  with the same label also produce different children.
+- `nextInt(min, maxExclusive)` and `nextBool(probability)` advance the
+  state by one step per call. Both `nextBool(0)` and `nextBool(1)`
+  still advance so the call is replay-observable; a guard that
+  short-circuits the comparison must not skip the state advance.
+- Seed normalisation: NaN / Infinity throw; floats throw in dev (caught
+  loudly during development since race code controls every call site)
+  and floor silently in prod; negatives coerce via `>>> 0`. Seed `0` is
+  permitted and produces a non-degenerate stream pinned by snapshot.
+- Added an ESLint `no-restricted-syntax` rule scoped to
+  `src/game/**/*.ts` (excluded files: `rng.ts` and `__tests__/**`) that
+  bans `Math.random` calls with a message pointing at `src/game/rng.ts`.
+  Rule fires on the syntactic `MemberExpression`, so docstring mentions
+  of the banned token in module headers do not trip lint.
+- Authored `src/game/__tests__/rng.test.ts` (32 tests) covering: the
+  mulberry32(42) reference snapshot for the first 8 values, seed-0
+  snapshot, two-instance determinism over 1000 calls, every seed-
+  normalisation edge case, splitRng isolation + parent advance count,
+  serialise / deserialise round-trip after 1000 advances, nextInt
+  range / negative / NaN / non-integer cases, nextBool determinism +
+  state-advance invariant + fair-split smoke test over 10k rolls.
+- Authored `src/game/__tests__/no-math-random.test.ts` as a static
+  belt-and-braces guard alongside the lint rule. Walks `src/game/`,
+  strips `//` and `/* */` comments before scanning, asserts no
+  production source outside `rng.ts` references the literal token.
+- Re-exported `Rng`, `createRng`, `splitRng`, `serializeRng`, and
+  `deserializeRng` from `src/game/index.ts` so downstream consumers
+  (`@/game`) get a one-line import path.
+
+### Decisions
+- **Algorithm choice: mulberry32, not xoshiro / pcg.** mulberry32's
+  single u32 state word fits the §22 save-game schema's existing slot
+  shape (a plain integer); xoshiro requires four state words. The
+  period (2^32) is short for crypto but more than ample for a 60 Hz
+  race that never exceeds ~10^5 ticks.
+- **No `Date.now` and no `performance.now`.** The PRNG must be a pure
+  function of its seed so replays are bit-exact. A wall-clock seed
+  would couple the stream to the OS clock and break determinism.
+- **`splitRng` consumes a parent advance.** Without the advance, two
+  calls to `splitRng(rng, "ai")` (a likely caller mistake) would
+  return the same child both times. Documented the snapshot pattern
+  for callers that need to fan out multiple children from the same
+  conceptual point: `serializeRng` the parent, then
+  `deserializeRng(snapshot)` for each child.
+- **`nextBool` advances state at p=0 and p=1.** A guard that returns
+  early without advancing would change the per-tick PRNG usage count
+  depending on input data, which is a determinism hole. The advance
+  is unconditional; the comparison branches inside.
+- **Static guard scope is `src/game/` only.** The render pipeline's
+  particle code lives under `src/render/effects*` (visual-polish slice)
+  and will get its own guard once that path exists. The dot stress-
+  test §"Affected Files" mentions both paths; this slice ships the
+  game half today.
+
+### Open / Skipped
+- ESLint scope cannot easily extend to `src/render/effects*` until that
+  path exists; the visual-polish slice (`implement-visual-polish-7d31d112`)
+  should add the second ESLint override entry when it lands. Documented
+  in the dot's stress-test §"Affected Files" so the future implementer
+  has a one-line pointer.
+- `splitRng(parent, label)` derives via `(state * 0x9e3779b1) ^
+  fnv1a(label)`. The constant `0x9e3779b1` is the 32-bit golden ratio,
+  a widely-used mixing constant; if a future audit demands a different
+  mixing function (e.g. SplitMix32) the change is local to this module
+  and every existing serialised state would still round-trip because
+  `splitRng` does not affect serialisation.
+- The dot stress-test §"How callers use it" mentions consumer wiring in
+  `ai.ts`, `damage.ts`, weather (not yet built), and `ghost.ts` (not
+  yet built). Those wirings are owned by their respective slices; this
+  slice ships only the module + ban.
+
+### Verify
+- `npm run lint` clean (the new ESLint override compiles and matches no
+  current source). `npm run typecheck` clean. `npm test`:
+  **1020 tests pass** across 45 files (added 33: 32 in `rng.test.ts`,
+  1 in `no-math-random.test.ts`). `npm run build` clean. `npm run
+  test:e2e`: **28 tests pass** (no regressions on existing flows).
+- No em-dashes in the new files (verified via `grep -P
+  '[\x{2013}\x{2014}]'`).
+
+---
+
 ## 2026-04-26: Slice: race checkpoint pass tracking (RaceState fields, runtime detector, anti-shortcut guard)
 
 **GDD sections touched:**
