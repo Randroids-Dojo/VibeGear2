@@ -25,6 +25,7 @@ import {
 import type { Camera, Strip, Viewport } from "@/road/types";
 
 import { drawParallax, type ParallaxLayer } from "./parallax";
+import { drawVfx, type VfxState } from "./vfx";
 
 export interface RoadColors {
   skyTop: string;
@@ -51,6 +52,15 @@ export interface DrawRoadOptions {
     layers: readonly ParallaxLayer[];
     camera: Pick<Camera, "x" | "z">;
   };
+  /**
+   * Optional VFX state. When present, the drawer paints active flashes
+   * over the parallax / sky band, then translates the canvas by the
+   * summed shake offset before drawing the road strips so the entire
+   * road frame shakes as one unit. The flash lands BEHIND the road on
+   * purpose: a HUD-style overlay flash belongs in the UI layer, while
+   * an in-world impact flash should not occlude the player car.
+   */
+  vfx?: VfxState;
 }
 
 const FALLBACK_COLORS: RoadColors = {
@@ -123,8 +133,33 @@ export function drawRoad(
   } else {
     drawSky(ctx, viewport, colors);
   }
+
+  // VFX runs after the sky / parallax pass so the flash overlay sits on
+  // top of the static background but BEHIND the road strips. The shake
+  // offset, however, has to wrap the road draw so the road translates
+  // as one unit. We capture the offset here, then save / translate /
+  // restore around the strip loop.
+  const shakeOffset = options.vfx ? drawVfx(ctx, options.vfx, viewport) : null;
+
   if (strips.length < 2) return;
 
+  if (shakeOffset && (shakeOffset.dx !== 0 || shakeOffset.dy !== 0)) {
+    ctx.save();
+    ctx.translate(shakeOffset.dx, shakeOffset.dy);
+    drawStrips(ctx, strips, viewport, colors);
+    ctx.restore();
+    return;
+  }
+
+  drawStrips(ctx, strips, viewport, colors);
+}
+
+function drawStrips(
+  ctx: CanvasRenderingContext2D,
+  strips: readonly Strip[],
+  viewport: Viewport,
+  colors: RoadColors,
+): void {
   // Walk far to near so the painter's algorithm covers distant strips with
   // closer ones. We need pairs (near, far); start from the last visible
   // strip and step toward index 0.

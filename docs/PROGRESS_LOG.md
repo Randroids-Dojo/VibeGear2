@@ -1,8 +1,109 @@
 # Progress Log
 
 Append a new entry at the **top** of this file at the end of every loop. Use
-the template from `IMPLEMENTATION_PLAN.md` §6. Never delete past entries —
-correct them by adding a new entry that references the old one.
+the template from `IMPLEMENTATION_PLAN.md` §6. Never delete past entries.
+Correct them by adding a new entry that references the old one.
+
+---
+
+## 2026-04-26: Slice: VFX flash + shake module with reduced-motion gate
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md), [§17](gdd/17-art-direction.md), [§19](gdd/19-controls-and-accessibility.md)
+**Branch / PR:** `feat/vfx-flash-shake` (stacked on `feat/parallax-bands`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/render/vfx.ts`: pinned the API from stress-test items 6 / 7
+  of the visual-polish parent dot, then split out into
+  `implement-vfx-flash-3d33b035`. Exports `INITIAL_VFX_STATE`,
+  `fireFlash(state, params)`, `fireShake(state, params)`,
+  `tickVfx(state, dtMs)`, `drawVfx(ctx, state, viewport)`,
+  `refreshReducedMotionPreference()`, and the pure
+  `shakeOffsetAt(entry, elapsedMs)` helper. `MAX_SHAKE_AMPLITUDE_PX`
+  caps stacked shakes at 24 px per axis; `DEFAULT_SHAKE_FREQUENCY_HZ`
+  pins the snappy collision-shake frequency at 30 Hz per §16.
+- Determinism: shake offsets derive from a Mulberry32-style integer
+  hash on `(seed, tickIdx, axis)` so two replays with identical
+  inputs paint identical pixels. The integer pair seed channels
+  through the §22 RNG model (callers pass the seed; the module never
+  consumes a global RNG).
+- Reduced-motion gate: `fireShake` returns the input state unchanged
+  when `prefers-reduced-motion: reduce` is set, per §19. `fireFlash`
+  is NOT gated since the GDD treats HUD flash on lap complete as a
+  navigation cue, not a motion effect.
+- Hooked the renderer into `src/render/pseudoRoadCanvas.ts`: a new
+  optional `DrawRoadOptions.vfx` paints the flash overlay between the
+  parallax band and the road strips, then translates the canvas by
+  the summed shake offset before the strip pass so the road shakes as
+  one unit. The strip loop was extracted into a private `drawStrips`
+  helper so the translate / restore wraps the entire road draw without
+  duplicating the loop body.
+- Re-exported `vfx` from `src/render/index.ts`.
+- Added `src/render/__tests__/vfx.test.ts`: 27 tests covering
+  `INITIAL_VFX_STATE` shape; `fireFlash` (push, invalid duration /
+  intensity returns input state, works under reduced-motion, stacking);
+  `fireShake` (push with seed and frequency, default frequency, invalid
+  duration / amplitude, reduced-motion no-op,
+  `refreshReducedMotionPreference` re-enables); `tickVfx` (zero / negative
+  dt no-op, 4 ticks of 50 ms expire a 200 ms flash, shake removal at
+  duration, immutability, independent flash + shake ticking);
+  `shakeOffsetAt` (determinism across runs, different seeds diverge,
+  zero-net-drift inside 1 px tolerance, returns zero past duration,
+  linear amplitude attenuation); `drawVfx` (fillRect alpha decay
+  envelope, MAX_SHAKE_AMPLITUDE_PX clamp, no-shake offset, zero-area
+  viewport gates only the flash, two flashes paint in stack order,
+  globalAlpha is restored after painting).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 402 tests passing (27 new in the vfx suite).
+- `npm run build` clean. No route-size regression (`/race` stays at
+  5.71 kB / 130 kB; the vfx module ships in the render layer but has
+  no runtime caller in this slice).
+- `npm run test:e2e` 4 of 4 passing (no UI changes in this slice).
+
+### Decisions and assumptions
+- The flash overlay paints BEHIND the road strips, not on top. A
+  HUD-style overlay flash belongs in the UI layer (where it should
+  occlude the canvas); an in-world impact flash should not occlude the
+  player car. Renderer callers that want a HUD flash can run a second
+  drawVfx pass on the HUD layer after the road draws.
+- `drawVfx` returns the shake offset rather than calling
+  `ctx.translate` itself. Keeps the integration site explicit so the
+  HUD layer can opt out of the shake (e.g. so the lap counter does not
+  jitter during a collision).
+- Each `ShakeEntry` carries its own `seed` and `frequencyHz`. Per-entry
+  seeds let a future "off-road rumble" entry coexist with a "collision
+  shake" entry without aliasing on shared sample points; per-entry
+  frequency lets a slow rumble (5 Hz) coexist with a snap shake (30 Hz)
+  in the same stack.
+- `refreshReducedMotionPreference` exists for tests that flip the
+  preference mid-suite. Production code does not need to call it
+  because the accessibility setting does not change mid-session in
+  practice (same reasoning as `TouchControls.usePointerCoarse` not
+  subscribing to `change` events).
+- The hash function is Mulberry32-style on the integer pair
+  `(seed, tickIdx)` rather than a full PRNG state machine because the
+  module needs random ACCESS by elapsed time, not a sequential stream.
+  A stream PRNG would force callers to advance the state every frame
+  even when nothing was drawing, which loses the "drawVfx is pure"
+  property.
+- `MAX_SHAKE_AMPLITUDE_PX = 24` is the chosen stack cap. Picked at the
+  upper end of "subtle and short" per §16 so a degenerate stack still
+  feels like a strong impact rather than a screen-clearing rumble.
+- Zero-area viewport short-circuits the FLASH overlay only, not the
+  shake offset computation. Tests that simulate a hidden tab or a
+  resized canvas mid-tick still get the same offset they would with
+  the canvas visible, so the deterministic-replay invariant survives a
+  viewport collapse.
+
+### Followups created
+- None. The two remaining sibling visual-polish dots (off-road dust,
+  render perf bench) remain open and ready.
+
+### GDD edits
+- None.
 
 ---
 

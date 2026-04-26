@@ -6,3 +6,4 @@ export * from "./parallax";
 export * from "./pseudoRoadCanvas";
 export * from "./spriteAtlas";
 export * from "./uiRenderer";
+export * from "./vfx";
