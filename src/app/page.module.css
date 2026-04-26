@@ -41,15 +41,21 @@
   padding: 0.75rem 1.25rem;
   border-radius: 6px;
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  font: inherit;
+  display: inline-block;
   transition: border-color 120ms ease, color 120ms ease;
 }
 
-.menuItem:hover:not(:disabled) {
+.menuItem:hover:not(:disabled),
+.menuItem:focus-visible {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.menuItem:disabled {
+.menuItem:disabled,
+.menuItem[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
 }

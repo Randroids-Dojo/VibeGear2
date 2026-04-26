@@ -6,6 +6,75 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Title-screen menu wiring (Start Race, Garage, Options pending)
+
+**GDD sections touched:** [§5](gdd/05-core-gameplay-loop.md), [§20](gdd/20-hud-and-ui-ux.md)
+**Branch / PR:** `feat/title-screen-menu-wiring` (off `feat/race-session-vertical-slice`), PR pending
+**Status:** Implemented
+
+### Done
+- Replaced the three placeholder `<button disabled>` controls in
+  `src/app/page.tsx` with `next/link` anchors for `Start Race` (`/race`)
+  and `Garage` (`/garage/cars`), plus a deliberately-disabled `Options`
+  button carrying `data-testid="menu-options-pending"` so the future
+  `/options` slice can flip the assertion in one line.
+- Updated `src/app/page.module.css` so the shared `.menuItem` class
+  styles both `<a>` and `<button>` variants identically: added
+  `text-align`, `text-decoration: none`, `font: inherit`,
+  `display: inline-block`, a `:focus-visible` style, and an
+  `[aria-disabled="true"]` selector matching the existing `:disabled`
+  visual treatment.
+- Rewrote `e2e/title-screen.spec.ts`: the smoke test now asserts the
+  Start Race and Garage anchors render with the correct `href`, the
+  Options button is visible and disabled with the pending hook, and
+  added two new specs that click each enabled menu item and assert the
+  resulting URL (`/race`, `/garage/cars`).
+- Added `src/app/__tests__/page.test.tsx`: six unit tests that
+  `renderToStaticMarkup(TitlePage)` and assert (a) the title renders,
+  (b) each anchor has the right `data-testid` and `href`, (c) the
+  Options button stays disabled with `aria-disabled="true"`, (d) the
+  DOM order is Start Race -> Garage -> Options for keyboard tab, and
+  (e) the build-status footer hook still ships.
+- Wired `@vitejs/plugin-react` (already in devDependencies) into
+  `vitest.config.ts` so `.test.tsx` suites get the automatic JSX
+  runtime without each file importing React.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 345 tests passing (6 new in `src/app/__tests__/page.test.tsx`).
+- `npm run build` clean. `/` ships at 3.57 kB / 106 kB first-load
+  (was 1.41 kB / 102 kB before the Link wiring; the bump comes from
+  `next/link` being a client component pulled into the route).
+- `npm run test:e2e` 4 of 4 passing (title-screen smoke + two
+  navigation specs + race demo).
+
+### Decisions and assumptions
+- Options stays disabled with a distinct `data-testid="menu-options-pending"`
+  rather than being hidden, so the keyboard tab order is stable across
+  the disabled-then-enabled transition and tests can flip the
+  assertion in a single line when the `/options` route lands.
+- Used `next/link` rather than a programmatic router push so the menu
+  works without JS for pre-hydration crawlers and so the keyboard tab
+  order falls out of normal anchor focus behavior (no `onClick`
+  handlers needed).
+- The unit test uses `renderToStaticMarkup` over RTL because the rest
+  of the suite runs in `node` without `@testing-library/react`
+  installed; for static-shape assertions on a server-rendered page,
+  raw HTML inspection is the lighter option and avoids pulling in a
+  jsdom test environment.
+- Added `@vitejs/plugin-react` to the vitest config (no new dependency,
+  it was already installed) so future `.test.tsx` suites have the
+  automatic JSX runtime available without a per-file React import.
+
+### Followups created
+- None.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Phase 1 vertical slice integration (drivable /race)
 
 **GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md), [§10](gdd/10-driving-model-and-physics.md), [§15](gdd/15-cpu-opponents-and-ai.md), [§20](gdd/20-hud-and-ui-ux.md), [§21](gdd/21-technical-design-for-web-implementation.md)
