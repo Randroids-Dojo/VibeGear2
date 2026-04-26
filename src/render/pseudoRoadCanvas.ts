@@ -5,8 +5,12 @@
  * back-to-front, drawing the sky band once, then each visible strip pair
  * (grass, rumble, road, lane markings) as filled trapezoids.
  *
- * No textures in Phase 1, no sprites in this module, no parallax. Those
- * land in follow-up slices (`background.ts`, `spriteAtlas.ts`).
+ * Parallax support is opt-in via `DrawRoadOptions.parallax`: when present,
+ * the drawer paints the parallax bands instead of the flat sky gradient,
+ * preserving the painter's algorithm (background first, road over).
+ *
+ * No textures in Phase 1, no sprites in this module. Those land in
+ * follow-up slices (`spriteAtlas.ts`).
  *
  * The drawer is the only module that knows about a Canvas2D context. The
  * projector is pure so unit tests can run without jsdom canvas mocking.
@@ -18,7 +22,9 @@ import {
   LANE_STRIPE_LEN,
   RUMBLE_STRIPE_LEN,
 } from "@/road/constants";
-import type { Strip, Viewport } from "@/road/types";
+import type { Camera, Strip, Viewport } from "@/road/types";
+
+import { drawParallax, type ParallaxLayer } from "./parallax";
 
 export interface RoadColors {
   skyTop: string;
@@ -34,6 +40,17 @@ export interface RoadColors {
 
 export interface DrawRoadOptions {
   colors?: RoadColors;
+  /**
+   * Optional parallax bands. When present, the drawer renders the bands
+   * instead of the flat sky gradient. Pass an empty array to skip the
+   * sky entirely (useful for dev pages that test road-only behaviour).
+   * The accompanying `camera` is required so the parallax module can
+   * scroll horizontally.
+   */
+  parallax?: {
+    layers: readonly ParallaxLayer[];
+    camera: Pick<Camera, "x" | "z">;
+  };
 }
 
 const FALLBACK_COLORS: RoadColors = {
@@ -101,7 +118,11 @@ export function drawRoad(
 ): void {
   const colors = options.colors ?? FALLBACK_COLORS;
 
-  drawSky(ctx, viewport, colors);
+  if (options.parallax) {
+    drawParallax(ctx, options.parallax.layers, options.parallax.camera, viewport);
+  } else {
+    drawSky(ctx, viewport, colors);
+  }
   if (strips.length < 2) return;
 
   // Walk far to near so the painter's algorithm covers distant strips with

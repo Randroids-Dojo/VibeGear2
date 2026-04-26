@@ -6,6 +6,89 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Parallax bands renderer (sky / mountains / hills)
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)
+**Branch / PR:** `feat/parallax-bands` (stacked on `feat/sprite-atlas-loader`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/render/parallax.ts`: pinned the `drawParallax(ctx, layers,
+  camera, viewport)` API from stress-test item 4 of the visual-polish
+  parent dot. Exports `ParallaxLayer` (id `"sky" | "mountains" | "hills"`,
+  `image: HTMLImageElement | null`, `scrollX`, `bandHeight`, `yAnchor`),
+  pure helpers `parallaxOffsetFor(layer, camera)` and `bandRect(layer,
+  viewport)`, the shared `PLACEHOLDER_FILL = "#ff00ff"`, and the
+  `PARALLAX_PX_PER_WORLD_X = 1` tuning constant. Parallax derives only
+  from `camera.x` per stress-test item 5 so the road's already-baked
+  curvature does not double-shift the sky bands.
+- Tiled horizontal scroll uses a `modPositive` helper so a camera
+  arbitrarily far from world origin (positive or negative) still tiles
+  across the viewport without gaps.
+- Hooked the drawer into `src/render/pseudoRoadCanvas.ts` via an
+  optional `DrawRoadOptions.parallax = { layers, camera }`. When
+  present, the parallax bands replace the flat sky gradient; absent
+  callers retain Phase 1 behaviour. No race / dev page is wired to
+  parallax yet (placeholder PNG art is gated on a sibling dot); the
+  hook is in place for the visual-polish landing slice.
+- Added `src/render/__tests__/parallax.test.ts`: 14 tests covering
+  `parallaxOffsetFor` (factors 0 / 0.25 / 0.6 / 1, scaling constant,
+  determinism), `bandRect` (yAnchor 0 / 0.5 / 1), and `drawParallax`
+  (back-to-front order across sky / mountains / hills, horizontal
+  tiling at camera.x = 10000, placeholder fill when image is null,
+  yAnchor=1 flush with viewport bottom, zero-area viewport short
+  circuit, zero bandHeight short circuit, first-difference variance
+  under a 600-frame curve fixture stays within 2 px, deterministic
+  replay of a 30-frame camera path).
+- Re-exported `parallax` from `src/render/index.ts`.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 375 tests passing (14 new in the parallax suite).
+- `npm run build` clean. No route-size regression (the parallax module
+  is not yet imported by `/race` or `/dev/road`).
+- `npm run test:e2e` 4 of 4 passing (no UI changes in this slice).
+
+### Decisions and assumptions
+- Parallax derives from `camera.x` only; `camera.z` is in the signature
+  for forward compatibility (e.g. depth-driven horizon lift in a later
+  polish slice) but is not read today. This is the explicit pin from
+  stress-test item 5: the road strip projector already bakes per-segment
+  curvature into the centerline, so a parallax module that also
+  responded to curvature would visibly double-shift.
+- `PARALLAX_PX_PER_WORLD_X = 1` is the chosen world-x to pixel ratio.
+  Lives in `parallax.ts` rather than `road/constants.ts` because
+  parallax is a pure renderer concept the road compiler does not need
+  to know about.
+- The placeholder fill is `#ff00ff`, identical to the sprite atlas
+  fallback fill. Magenta-on-missing-art is the project convention; the
+  shared constant means a future palette tweak flips both renderers in
+  one place.
+- `ParallaxLayer.image` is `HTMLImageElement | null` so callers can
+  pre-define their layer set without blocking on image load. The drawer
+  gracefully degrades to placeholder fill per layer until the asset
+  resolves, matching the `loadAtlas` `fallback: true` pattern.
+- The drawer hook in `pseudoRoadCanvas.ts` REPLACES the sky gradient
+  rather than layering on top of it. Layering would require either an
+  alpha channel in the parallax PNG or a separate clear pass; the
+  replacement keeps Phase 1 callers untouched and avoids a visible
+  composite seam.
+- The 600-frame variance test uses a synthetic sinusoidal camera path
+  rather than driving the projector directly. The projector adds no
+  curvature contribution to the parallax math by design, so the
+  fixture isolates the parallax module's own jitter (zero) from the
+  road's curvature behaviour (already covered by the projector tests).
+
+### Followups created
+- None. The three remaining sibling visual-polish dots (vfx flash +
+  shake, off-road dust, render perf bench) remain open and ready.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Sprite atlas loader + frame index math
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md), [§17](gdd/17-art-direction.md), [§22](gdd/22-data-schemas.md)
