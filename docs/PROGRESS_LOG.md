@@ -6,6 +6,63 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Add Playwright e2e harness and title-screen smoke
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/playwright-smoke` (off `feat/scaffold-next-app`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `@playwright/test` 1.48 as a devDependency.
+- Authored `playwright.config.ts`: chromium project, runs against
+  `http://127.0.0.1:3100` (configurable via `PLAYWRIGHT_PORT`), boots the
+  Next.js production build via `npm run build && npm run start`, retains
+  HTML reports + traces + screenshots on failure, GitHub reporter under CI.
+- Authored `e2e/title-screen.spec.ts`: a single smoke test that loads `/`,
+  asserts the `data-testid="game-title"` element reads "VibeGear2", asserts
+  the document title matches, asserts the three menu buttons (Start Race,
+  Garage, Options) are visible and disabled, and asserts the build status
+  contains "Phase 0".
+- Added npm scripts `test:e2e`, `test:e2e:ui`, and `verify:full`
+  (`verify` + `test:e2e`).
+- Updated `vitest.config.ts` exclude pattern from `tests/e2e/**` to `e2e/**`
+  to match the chosen folder.
+- Updated `README.md` Local development block to document
+  `npx playwright install chromium`, `npm run test:e2e`, and `npm run
+  verify:full`.
+
+### Verified
+- `npm install` succeeds.
+- `npx playwright install chromium` succeeds.
+- `npm run lint`, `npm run typecheck`, `npm run test` all pass.
+- `npm run test:e2e` builds and starts the production server, runs the smoke
+  spec, and passes (1 passed, ~7s wall).
+- `grep` for U+2014 and U+2013 across new files returns nothing.
+
+### Decisions and assumptions
+- Ran Playwright against the production build, not the dev server. Reasons:
+  the production build is what auto-deploy will ship, the smoke check
+  catches build regressions earlier, and dev-server hot-reload occasionally
+  emits transient 500s during compilation that flake e2e tests.
+- Pinned the e2e port to 3100 (configurable) rather than 3000 so a local
+  `npm run dev` session does not collide with `npm run test:e2e`.
+- Restricted to chromium for the smoke. Cross-browser projects (firefox,
+  webkit, mobile) ship in a later slice once Phase 0 closes; chromium alone
+  is sufficient to prove the harness wiring.
+- Branched off `feat/scaffold-next-app` rather than `main` because the
+  scaffold slice is not merged yet and the Playwright smoke can only be
+  verified end-to-end with the app shell present. Will rebase if scaffold
+  merges first.
+
+### Followups created
+- None new. F-002 advanced: only the GitHub Actions CI sub-slice remains
+  open (still blocked by Q-003).
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Scaffold Next.js + TypeScript app shell
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
