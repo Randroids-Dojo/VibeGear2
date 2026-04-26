@@ -30,12 +30,12 @@ import type { Track } from "@/data/schemas";
 
 import {
   buildRaceResult,
-  CLEAN_RACE_BONUS_CREDITS,
+  CLEAN_RACE_BONUS_RATE,
   DEFAULT_BASE_TRACK_REWARD,
-  FASTEST_LAP_BONUS_CREDITS,
+  FASTEST_LAP_BONUS_RATE,
   PLACEMENT_POINTS,
-  PODIUM_BONUS_CREDITS,
-  UNDERDOG_BONUS_CREDITS,
+  PODIUM_BONUS_RATES,
+  UNDERDOG_BONUS_RATE_PER_RANK,
   type BuildRaceResultInput,
 } from "../raceResult";
 import { computeRaceReward, DNF_PARTICIPATION_CREDITS } from "../economy";
@@ -360,7 +360,9 @@ describe("buildRaceResult: bonuses", () => {
     const result = buildRaceResult(makeInput());
     const fastest = result.bonuses.find((b) => b.kind === "fastestLap");
     expect(fastest).toBeDefined();
-    expect(fastest?.cashCredits).toBe(FASTEST_LAP_BONUS_CREDITS);
+    expect(fastest?.cashCredits).toBe(
+      Math.round(DEFAULT_BASE_TRACK_REWARD * FASTEST_LAP_BONUS_RATE),
+    );
   });
 
   it("does not award fastest-lap bonus when another car owns it", () => {
@@ -378,7 +380,9 @@ describe("buildRaceResult: bonuses", () => {
     const result = buildRaceResult(makeInput());
     const clean = result.bonuses.find((b) => b.kind === "cleanRace");
     expect(clean).toBeDefined();
-    expect(clean?.cashCredits).toBe(CLEAN_RACE_BONUS_CREDITS);
+    expect(clean?.cashCredits).toBe(
+      Math.round(DEFAULT_BASE_TRACK_REWARD * CLEAN_RACE_BONUS_RATE),
+    );
   });
 
   it("does not award clean-race bonus on any positive damage delta", () => {
@@ -392,10 +396,13 @@ describe("buildRaceResult: bonuses", () => {
   });
 
   it("awards underdog bonus when the player improves on grid", () => {
+    // Fixture: 1st from grid 7 -> six ranks improved.
     const result = buildRaceResult(makeInput({ playerStartPosition: 7 }));
     const underdog = result.bonuses.find((b) => b.kind === "underdog");
     expect(underdog).toBeDefined();
-    expect(underdog?.cashCredits).toBe(UNDERDOG_BONUS_CREDITS);
+    expect(underdog?.cashCredits).toBe(
+      Math.round(DEFAULT_BASE_TRACK_REWARD * UNDERDOG_BONUS_RATE_PER_RANK * 6),
+    );
   });
 
   it("does not award underdog bonus on equal grid placement", () => {
@@ -409,12 +416,13 @@ describe("buildRaceResult: bonuses", () => {
   });
 
   it("sums all bonuses into cashEarned", () => {
+    // Fixture: P1 from grid 7 -> six ranks improved.
     const result = buildRaceResult(makeInput({ playerStartPosition: 7 }));
     const expectedBonusCash =
-      PODIUM_BONUS_CREDITS +
-      FASTEST_LAP_BONUS_CREDITS +
-      CLEAN_RACE_BONUS_CREDITS +
-      UNDERDOG_BONUS_CREDITS;
+      Math.round(DEFAULT_BASE_TRACK_REWARD * (PODIUM_BONUS_RATES[1] ?? 0)) +
+      Math.round(DEFAULT_BASE_TRACK_REWARD * FASTEST_LAP_BONUS_RATE) +
+      Math.round(DEFAULT_BASE_TRACK_REWARD * CLEAN_RACE_BONUS_RATE) +
+      Math.round(DEFAULT_BASE_TRACK_REWARD * UNDERDOG_BONUS_RATE_PER_RANK * 6);
     expect(result.cashEarned).toBe(result.cashBaseEarned + expectedBonusCash);
   });
 });

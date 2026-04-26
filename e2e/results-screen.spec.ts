@@ -44,13 +44,15 @@ const SEED_RESULT = {
   ],
   playerCarId: "player",
   playerPlacement: 1,
-  pointsEarned: 25,
-  cashEarned: 1600,
+  // Base 1000 (§23 difficulty-1) plus rate-driven bonuses: podium P1
+  // 0.10 = 100, fastest 0.08 = 80, clean 0.05 = 50. Total 1,230.
+  cashEarned: 1230,
   cashBaseEarned: 1000,
+  pointsEarned: 25,
   bonuses: [
-    { kind: "podium", label: "Podium finish", cashCredits: 250 },
-    { kind: "fastestLap", label: "Fastest lap", cashCredits: 200 },
-    { kind: "cleanRace", label: "Clean race", cashCredits: 150 },
+    { kind: "podium", label: "Podium finish", cashCredits: 100 },
+    { kind: "fastestLap", label: "Fastest lap", cashCredits: 80 },
+    { kind: "cleanRace", label: "Clean race", cashCredits: 50 },
   ],
   damageTaken: { engine: 0, tires: 0, body: 0 },
   fastestLap: { carId: "player", lapMs: 30_000, lapNumber: 1 },
@@ -91,7 +93,7 @@ test.describe("race results screen", () => {
     await expect(page.getByTestId("results-points")).toHaveText("25");
 
     // 3. Cash earned.
-    await expect(page.getByTestId("results-cash")).toContainText("1,600");
+    await expect(page.getByTestId("results-cash")).toContainText("1,230");
 
     // 4. Bonuses: chips for the three awarded.
     await expect(page.getByTestId("results-bonus-podium")).toBeVisible();

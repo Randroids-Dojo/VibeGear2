@@ -76,15 +76,16 @@ export const PLACEMENT_POINTS: ReadonlyArray<number> = Object.freeze([
  */
 export const DEFAULT_BASE_TRACK_REWARD = 1000;
 
-// Bonus types and constants are re-exported from `raceBonuses.ts` so
-// existing callers (`BonusChip`, e2e specs, results-builder tests) keep
-// importing from `raceResult.ts` while the bonus pipeline lives in its
-// own module.
+// Bonus rate constants are re-exported from `raceBonuses.ts` so existing
+// callers (`BonusChip`, e2e specs, results-builder tests) keep importing
+// from `raceResult.ts` while the bonus pipeline lives in its own module.
+// Rates are dimensionless multipliers of `baseTrackReward`; the credit
+// value lives on the `RaceBonus.cashCredits` field on each chip.
 export {
-  CLEAN_RACE_BONUS_CREDITS,
-  FASTEST_LAP_BONUS_CREDITS,
-  PODIUM_BONUS_CREDITS,
-  UNDERDOG_BONUS_CREDITS,
+  CLEAN_RACE_BONUS_RATE,
+  FASTEST_LAP_BONUS_RATE,
+  PODIUM_BONUS_RATES,
+  UNDERDOG_BONUS_RATE_PER_RANK,
 } from "./raceBonuses";
 export type { RaceBonus, RaceBonusKind } from "./raceBonuses";
 
@@ -317,11 +318,16 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
       })
     : DNF_PARTICIPATION_CREDITS;
 
-  // 4. Bonuses (delegated to the `raceBonuses.ts` owner module).
+  // 4. Bonuses (delegated to the `raceBonuses.ts` owner module). The
+  //    same `resolvedBaseTrackReward` feeds both the per-place cash
+  //    formula above and every per-race bonus rate, so the chip values
+  //    on the §20 results screen stay in lockstep with the wallet
+  //    credit derived from `awardCredits`.
   const bonuses = computeBonuses({
     finalState,
     playerCarId,
     playerStartPosition,
+    baseTrackReward: resolvedBaseTrackReward,
     damageBefore,
     damageAfter,
   });

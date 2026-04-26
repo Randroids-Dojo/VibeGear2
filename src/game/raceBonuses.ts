@@ -25,11 +25,14 @@
  *     objectives; this module is the evaluator. The schema lives in
  *     `src/data/schemas.ts` `SponsorObjectiveSchema`.
  *
- * Bonus credit values are pinned placeholders. §23 has no per-bonus
- * column; the balancing pass (`balancing-pass-71a57fd5`) will swap the
- * constants without rewriting call sites. Values match the legacy
- * placeholders that previously lived in `raceResult.ts` so the §20
- * chip rendering and the existing tests stay numerically stable.
+ * Bonus credit values are derived from the per-race `baseTrackReward`
+ * via the rate constants pinned by the iter-19 stress-test §5 split
+ * (dot `VibeGear2-implement-race-reward-3eb9b609`). Each rate is a
+ * dimensionless multiplier of `baseTrackReward`, rounded once to an
+ * integer credit value at the chip boundary so the §20 chip strip and
+ * the wallet credit stay in lockstep. The §23 base-reward table
+ * (`BASE_REWARDS_BY_TRACK_DIFFICULTY`) sets the per-track scale; this
+ * module sets the per-bonus shape.
  *
  * Determinism: no `Math.random`, no `Date.now`, no globals. Every
  * exported function returns a fresh value and never mutates its input
@@ -75,28 +78,37 @@ export interface RaceBonus {
   cashCredits: number;
 }
 
-// Pinned bonus credit values ----------------------------------------------
-
-/** Cash bonus for finishing on the podium (1st, 2nd, or 3rd). */
-export const PODIUM_BONUS_CREDITS = 250;
-
-/** Cash bonus for setting the race's fastest lap. */
-export const FASTEST_LAP_BONUS_CREDITS = 200;
+// Pinned bonus rates -----------------------------------------------------
 
 /**
- * Cash bonus for finishing without taking damage. The §13 design pillar
- * "damage is strategic, not fiddly" rewards a clean race; the bonus is
- * intentionally smaller than podium so it stacks rather than dominates.
+ * Podium-bonus rates as a fraction of `baseTrackReward`. Index 0 unused
+ * so the placement read is naturally 1-indexed; entries beyond P3 are
+ * `0` so the lookup never awards podium for non-podium places. Matches
+ * the iter-19 stress-test §5 pin: 0.10 / 0.05 / 0.02 for P1 / P2 / P3.
  */
-export const CLEAN_RACE_BONUS_CREDITS = 150;
+export const PODIUM_BONUS_RATES: ReadonlyArray<number> = Object.freeze([
+  0, 0.1, 0.05, 0.02,
+]);
+
+/** Fastest-lap bonus rate (8% of `baseTrackReward`). */
+export const FASTEST_LAP_BONUS_RATE = 0.08;
 
 /**
- * Cash bonus for an underdog finish: placing above the player's
- * pre-race grid position. Paid once per race regardless of how many
- * positions gained. Requires a valid grid position; modes without a
- * grid (Practice) skip the bonus.
+ * Clean-race bonus rate (5% of `baseTrackReward`). The §13 design
+ * pillar "damage is strategic, not fiddly" rewards a clean race; the
+ * bonus is intentionally smaller than the P1 podium so it stacks rather
+ * than dominates.
  */
-export const UNDERDOG_BONUS_CREDITS = 200;
+export const CLEAN_RACE_BONUS_RATE = 0.05;
+
+/**
+ * Underdog bonus rate (10% of `baseTrackReward`) per grid-rank
+ * improvement. Paid once per race; the awarded credit value scales
+ * linearly with how many positions the player gained from grid to
+ * finish. Requires a valid grid position; modes without a grid
+ * (Practice) skip the bonus.
+ */
+export const UNDERDOG_BONUS_RATE_PER_RANK = 0.1;
 
 /**
  * Cash bonus for completing a tour. §12 names the rate as 15% of the
@@ -133,6 +145,17 @@ export interface ComputeBonusesInput {
   finalState: FinalRaceState;
   playerCarId: string;
   playerStartPosition: number | null;
+  /**
+   * Per-race base reward in credits. Every per-race bonus value is a
+   * fraction of this (rates pinned by `PODIUM_BONUS_RATES`,
+   * `FASTEST_LAP_BONUS_RATE`, `CLEAN_RACE_BONUS_RATE`,
+   * `UNDERDOG_BONUS_RATE_PER_RANK`). The race-finish wiring resolves it
+   * via `economy.baseRewardForTrackDifficulty(track.difficulty)` (or a
+   * caller override) and threads the same value into both this module
+   * and `computeRaceReward` so chips and wallet stay numerically
+   * consistent.
+   */
+  baseTrackReward: number;
   damageBefore?: Readonly<DamageScalars>;
   damageAfter?: Readonly<DamageScalars>;
 }
@@ -177,15 +200,27 @@ export function computeBonuses(input: ComputeBonusesInput): ReadonlyArray<RaceBo
   const damageBefore = input.damageBefore ?? ZERO_DAMAGE;
   const damageAfter = input.damageAfter ?? ZERO_DAMAGE;
   const fastestLapCarId = input.finalState.fastestLap?.carId ?? null;
+  // Negative or non-finite base rewards collapse to zero so a malformed
+  // caller cannot produce negative chip values; the §20 chip pipeline
+  // would otherwise render `+-N` text. The wallet sum guard in
+  // `sumBonusCredits` already clamps, but the chip itself still uses
+  // the raw `cashCredits`, so we clamp here at the source.
+  const safeBase =
+    Number.isFinite(input.baseTrackReward) && input.baseTrackReward > 0
+      ? input.baseTrackReward
+      : 0;
 
   const bonuses: RaceBonus[] = [];
 
-  // Podium: top 3 finishers only. DNF cars are filtered above.
+  // Podium: top 3 finishers only. DNF cars are filtered above. Rate
+  // per place comes from `PODIUM_BONUS_RATES`; rounded once to an
+  // integer credit value.
   if (playerPlacement !== null && playerPlacement >= 1 && playerPlacement <= 3) {
+    const rate = PODIUM_BONUS_RATES[playerPlacement] ?? 0;
     bonuses.push({
       kind: "podium",
       label: "Podium finish",
-      cashCredits: PODIUM_BONUS_CREDITS,
+      cashCredits: Math.round(safeBase * rate),
     });
   }
 
@@ -195,7 +230,7 @@ export function computeBonuses(input: ComputeBonusesInput): ReadonlyArray<RaceBo
     bonuses.push({
       kind: "fastestLap",
       label: "Fastest lap",
-      cashCredits: FASTEST_LAP_BONUS_CREDITS,
+      cashCredits: Math.round(safeBase * FASTEST_LAP_BONUS_RATE),
     });
   }
 
@@ -209,22 +244,25 @@ export function computeBonuses(input: ComputeBonusesInput): ReadonlyArray<RaceBo
     bonuses.push({
       kind: "cleanRace",
       label: "Clean race",
-      cashCredits: CLEAN_RACE_BONUS_CREDITS,
+      cashCredits: Math.round(safeBase * CLEAN_RACE_BONUS_RATE),
     });
   }
 
   // Underdog: improved on grid. Requires a valid start position; modes
-  // without a grid (Practice / Time Trial) pass `null` and skip.
+  // without a grid (Practice / Time Trial) pass `null` and skip. The
+  // payout scales with how many positions were gained: rate is per
+  // grid-rank improved, then rounded once.
   if (
     playerPlacement !== null &&
     input.playerStartPosition !== null &&
     input.playerStartPosition > 0 &&
     playerPlacement < input.playerStartPosition
   ) {
+    const ranksImproved = input.playerStartPosition - playerPlacement;
     bonuses.push({
       kind: "underdog",
       label: "Underdog finish",
-      cashCredits: UNDERDOG_BONUS_CREDITS,
+      cashCredits: Math.round(safeBase * UNDERDOG_BONUS_RATE_PER_RANK * ranksImproved),
     });
   }
 

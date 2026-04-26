@@ -27,11 +27,11 @@ import { describe, expect, it } from "vitest";
 import type { SponsorObjective } from "@/data/schemas";
 
 import {
-  CLEAN_RACE_BONUS_CREDITS,
-  FASTEST_LAP_BONUS_CREDITS,
-  PODIUM_BONUS_CREDITS,
+  CLEAN_RACE_BONUS_RATE,
+  FASTEST_LAP_BONUS_RATE,
+  PODIUM_BONUS_RATES,
   TOUR_COMPLETION_BONUS_RATE,
-  UNDERDOG_BONUS_CREDITS,
+  UNDERDOG_BONUS_RATE_PER_RANK,
   buildBonusReceipt,
   computeBonuses,
   evaluateSponsorObjective,
@@ -45,6 +45,14 @@ import type { FinalCarRecord, FinalRaceState } from "../raceRules";
 
 const PLAYER_ID = "player";
 const RIVAL_ID = "ai-1";
+
+/**
+ * Canonical base reward used across this suite. Picked so the §23 rates
+ * (podium 0.10/0.05/0.02, fastest 0.08, clean 0.05, underdog 0.10 per
+ * rank improved) yield round integer credit values: P1=100, P2=50,
+ * P3=20, fastest=80, clean=50, underdog=100 per rank improved.
+ */
+const BASE_REWARD = 1000;
 
 function makeFinalState(overrides: Partial<FinalRaceState> = {}): FinalRaceState {
   const order: ReadonlyArray<FinalCarRecord> = [
@@ -69,6 +77,7 @@ function makeInput(overrides: Partial<ComputeBonusesInput> = {}): ComputeBonuses
     finalState: makeFinalState(),
     playerCarId: PLAYER_ID,
     playerStartPosition: 7,
+    baseTrackReward: BASE_REWARD,
     ...overrides,
   };
 }
@@ -115,7 +124,7 @@ describe("computeBonuses: podium", () => {
         }),
       );
       expect(bonuses.find((b) => b.kind === "podium")?.cashCredits).toBe(
-        PODIUM_BONUS_CREDITS,
+        Math.round(BASE_REWARD * (PODIUM_BONUS_RATES[place] ?? 0)),
       );
     });
   }
@@ -154,7 +163,9 @@ describe("computeBonuses: fastest lap", () => {
   it("awards fastest-lap when player owns it", () => {
     const bonuses = computeBonuses(makeInput());
     const fastest = bonuses.find((b) => b.kind === "fastestLap");
-    expect(fastest?.cashCredits).toBe(FASTEST_LAP_BONUS_CREDITS);
+    expect(fastest?.cashCredits).toBe(
+      Math.round(BASE_REWARD * FASTEST_LAP_BONUS_RATE),
+    );
   });
 
   it("does not award fastest-lap when AI owns it", () => {
@@ -182,7 +193,9 @@ describe("computeBonuses: clean race", () => {
   it("awards clean-race when no damage was taken", () => {
     const bonuses = computeBonuses(makeInput());
     const clean = bonuses.find((b) => b.kind === "cleanRace");
-    expect(clean?.cashCredits).toBe(CLEAN_RACE_BONUS_CREDITS);
+    expect(clean?.cashCredits).toBe(
+      Math.round(BASE_REWARD * CLEAN_RACE_BONUS_RATE),
+    );
   });
 
   it("does not award clean-race on any positive damage delta", () => {
@@ -208,9 +221,21 @@ describe("computeBonuses: clean race", () => {
 
 describe("computeBonuses: underdog", () => {
   it("awards underdog when player improves on grid", () => {
+    // Player finishes 1st from grid 7: six ranks improved.
     const bonuses = computeBonuses(makeInput({ playerStartPosition: 7 }));
     const underdog = bonuses.find((b) => b.kind === "underdog");
-    expect(underdog?.cashCredits).toBe(UNDERDOG_BONUS_CREDITS);
+    expect(underdog?.cashCredits).toBe(
+      Math.round(BASE_REWARD * UNDERDOG_BONUS_RATE_PER_RANK * 6),
+    );
+  });
+
+  it("scales linearly with grid-rank improvement", () => {
+    // Player finishes 1st from grid 2: one rank improved.
+    const bonuses = computeBonuses(makeInput({ playerStartPosition: 2 }));
+    const underdog = bonuses.find((b) => b.kind === "underdog");
+    expect(underdog?.cashCredits).toBe(
+      Math.round(BASE_REWARD * UNDERDOG_BONUS_RATE_PER_RANK * 1),
+    );
   });
 
   it("does not award underdog on equal grid placement", () => {
@@ -251,6 +276,94 @@ describe("computeBonuses: DNF policy", () => {
       }),
     );
     expect(bonuses).toEqual([]);
+  });
+});
+
+describe("computeBonuses: §23 rate pin", () => {
+  // Pinned by the iter-19 stress-test §5 split: a baseTrackReward of
+  // 1,000 yields the canonical chip values below. If the rates ever
+  // drift these literal numbers must move with them.
+  it("podium P1 = 100 credits at base 1000", () => {
+    const order: FinalCarRecord[] = [
+      { carId: PLAYER_ID, status: "finished", raceTimeMs: 90_000, bestLapMs: 30_000 },
+    ];
+    const bonuses = computeBonuses(
+      makeInput({
+        finalState: makeFinalState({
+          finishingOrder: order,
+          perLapTimes: { [PLAYER_ID]: [30_000] },
+          fastestLap: null,
+        }),
+        playerStartPosition: 1,
+      }),
+    );
+    expect(bonuses.find((b) => b.kind === "podium")?.cashCredits).toBe(100);
+  });
+
+  it("podium P2 = 50 credits at base 1000", () => {
+    const order: FinalCarRecord[] = [
+      { carId: "pad-0", status: "finished", raceTimeMs: 80_000, bestLapMs: 25_000 },
+      { carId: PLAYER_ID, status: "finished", raceTimeMs: 90_000, bestLapMs: 30_000 },
+    ];
+    const bonuses = computeBonuses(
+      makeInput({
+        finalState: makeFinalState({
+          finishingOrder: order,
+          perLapTimes: { [PLAYER_ID]: [30_000] },
+          fastestLap: null,
+        }),
+        playerStartPosition: 2,
+      }),
+    );
+    expect(bonuses.find((b) => b.kind === "podium")?.cashCredits).toBe(50);
+  });
+
+  it("podium P3 = 20 credits at base 1000", () => {
+    const order: FinalCarRecord[] = [
+      { carId: "pad-0", status: "finished", raceTimeMs: 80_000, bestLapMs: 25_000 },
+      { carId: "pad-1", status: "finished", raceTimeMs: 80_001, bestLapMs: 25_000 },
+      { carId: PLAYER_ID, status: "finished", raceTimeMs: 90_000, bestLapMs: 30_000 },
+    ];
+    const bonuses = computeBonuses(
+      makeInput({
+        finalState: makeFinalState({
+          finishingOrder: order,
+          perLapTimes: { [PLAYER_ID]: [30_000] },
+          fastestLap: null,
+        }),
+        playerStartPosition: 3,
+      }),
+    );
+    expect(bonuses.find((b) => b.kind === "podium")?.cashCredits).toBe(20);
+  });
+
+  it("fastest lap = 80 credits at base 1000", () => {
+    const bonuses = computeBonuses(makeInput());
+    expect(bonuses.find((b) => b.kind === "fastestLap")?.cashCredits).toBe(80);
+  });
+
+  it("clean race = 50 credits at base 1000", () => {
+    const bonuses = computeBonuses(makeInput());
+    expect(bonuses.find((b) => b.kind === "cleanRace")?.cashCredits).toBe(50);
+  });
+
+  it("underdog = 100 credits per grid rank improved at base 1000", () => {
+    // 1st from grid 2: one rank improved -> 100 credits.
+    const oneRank = computeBonuses(makeInput({ playerStartPosition: 2 }));
+    expect(oneRank.find((b) => b.kind === "underdog")?.cashCredits).toBe(100);
+
+    // 1st from grid 7: six ranks improved -> 600 credits.
+    const sixRanks = computeBonuses(makeInput({ playerStartPosition: 7 }));
+    expect(sixRanks.find((b) => b.kind === "underdog")?.cashCredits).toBe(600);
+  });
+
+  it("non-finite or negative baseTrackReward collapses bonus values to zero", () => {
+    const bonuses = computeBonuses(
+      makeInput({ baseTrackReward: Number.NaN, playerStartPosition: 7 }),
+    );
+    for (const b of bonuses) {
+      expect(b.cashCredits).toBe(0);
+    }
   });
 });
 
@@ -298,6 +411,7 @@ describe("computeBonuses: purity", () => {
         finalState,
         playerCarId: PLAYER_ID,
         playerStartPosition: 7,
+        baseTrackReward: BASE_REWARD,
         damageBefore: Object.freeze({ engine: 0, tires: 0, body: 0 }),
         damageAfter: Object.freeze({ engine: 0, tires: 0, body: 0 }),
       }),

@@ -191,24 +191,23 @@ original plan:
 ## F-041: Swap fixed-credit bonus placeholders for multiplier-based rates per dot pin
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/race-bonuses` slice preserved the legacy
-fixed-credit placeholders for the four per-race bonuses
-(`PODIUM_BONUS_CREDITS = 250`, `FASTEST_LAP_BONUS_CREDITS = 200`,
-`CLEAN_RACE_BONUS_CREDITS = 150`, `UNDERDOG_BONUS_CREDITS = 200`) so
-the §20 chip rendering, `BonusChip.tsx`, the `raceResult` builder
-tests, and the `e2e/results-screen.spec.ts` fixture stayed
-numerically stable. The dot
-`VibeGear2-implement-race-reward-3eb9b609` spec stress-test pinned
-multiplier-of-base values instead (podium 0.10 / 0.05 / 0.02 of
-base, fastest 0.08, clean 0.05, underdog 0.10 per grid-rank
-improvement). Swap is mechanical: change the constants in
-`src/game/raceBonuses.ts` to compute against the per-race
-`baseTrackReward`, update the four `expect(... cashCredits).toBe(...)`
-cases in `src/game/__tests__/raceBonuses.test.ts` and the matching
-cells in `src/game/__tests__/raceResult.test.ts`, and refresh the
-hardcoded `cashCredits` numbers in `e2e/results-screen.spec.ts`.
-Owner: `balancing-pass-71a57fd5`.
+**Status:** done (`feat/race-bonus-multiplier-rates`)
+**Notes:** Replaced the four fixed-credit placeholders with
+multiplier-of-base rate constants in `src/game/raceBonuses.ts`:
+`PODIUM_BONUS_RATES` (`[0, 0.10, 0.05, 0.02]`),
+`FASTEST_LAP_BONUS_RATE = 0.08`, `CLEAN_RACE_BONUS_RATE = 0.05`,
+`UNDERDOG_BONUS_RATE_PER_RANK = 0.10`. `ComputeBonusesInput` gained a
+required `baseTrackReward` field so each chip's `cashCredits` is
+`Math.round(baseTrackReward * rate)`; the underdog payout scales with
+grid-rank improvement. `raceResult.buildRaceResult` threads
+`resolvedBaseTrackReward` (the same value already fed into
+`computeRaceReward`) into `computeBonuses`, so the §20 chip strip and
+the wallet credit stay in lockstep. Re-exports on `raceResult.ts`
+swapped from the four `*_BONUS_CREDITS` constants to the matching
+rate constants; all in-tree callers updated. Verified: a
+`baseTrackReward` of 1,000 yields P1=100, P2=50, P3=20, fastest=80,
+clean=50, and underdog=100 per grid rank improved (covered by the new
+`computeBonuses: §23 rate pin` cells in `raceBonuses.test.ts`).
 
 ---
 
