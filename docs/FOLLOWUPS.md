@@ -10,6 +10,63 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-023: Time Trial UI wiring for the ghost recorder
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/ghost-replay-recorder` slice ships
+`src/game/ghost.ts` as a producer module: `createRecorder`,
+`createPlayer`, `Replay`, the `INPUT_FIELDS` mask order, and the cap
+constants (`RECORDER_SOFT_CAP_TICKS`, `RECORDER_HARD_CAP_TICKS`). The
+producer is complete and unit-tested (34 tests, all paths). The
+consumer wiring lands with the time-trial dot
+(`VibeGear2-implement-time-trial-5d65280a`): instantiate
+`createRecorder` on the green-light tick of a Time Trial run, call
+`record(input, tick)` from the same `simulate` callback that drives
+physics, call `finalize()` on the finish-line tick, and compare
+`replay.finalTimeMs` against the stored PB before deciding whether to
+overwrite. Until then the module is a producer waiting for a consumer,
+mirroring the F-019 (damage model) and the closed F-013 (touch input)
+deferral pattern.
+
+## F-022: Render the ghost car in `pseudoRoadCanvas.ts`
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The ghost slice produces a `Player` whose `readNext(tick)`
+returns the input the recorded driver pressed on each tick. The
+consumer drives a second physics step from those inputs (same
+`step()` call, separate `CarState`) to derive the ghost's `(z, x,
+speed)` for the current tick, then passes that to
+`pseudoRoadCanvas.drawRoad` as a `ghostCar?: { z: number; x: number;
+alpha: number }` field. The drawer paints the ghost with `ctx
+.globalAlpha = 0.5` (the dot stress-test item 9 default) using the
+same player-car atlas frame the live car renders, optionally tinted
+blue or desaturated to differentiate. The atlas frames land with the
+visual-polish slice (`VibeGear2-implement-visual-polish-7d31d112`);
+do this slice after that one.
+
+## F-021: SaveGameSchema integration for ghost replays + v2 migration
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The ghost slice produces a JSON-clean `Replay` shape but
+does not wire it into the §22 save schema. The save integration:
+add `ghosts: z.record(slug, GhostReplaySchema).optional()` to
+`SaveGameSchema` in `src/data/schemas.ts` (where `GhostReplaySchema`
+mirrors the `Replay` type), bump `CURRENT_SAVE_VERSION` to 2,
+register a v1 to v2 migration that adds the empty `ghosts: {}` slot,
+and add a "best-ghost" comparison helper (replace stored ghost iff
+`newReplay.finalTimeMs < currentReplay.finalTimeMs`; tied times keep
+the older ghost to avoid churn) per the dot stress-test item 8. The
+cross-tab broadcast slice (`VibeGear2-implement-cross-tab-fa8cb14c`)
+may also need updating to handle replay deltas in storage events.
+Storage budget concern: a 600-tick (10 s) lap deltas to ~1 KB JSON;
+a 5-minute Time Trial PB ghost is on the order of 30 KB. If the
+on-wire size becomes a problem, switch to base64-packed
+`Uint8Array` deltas in a `REPLAY_FORMAT_VERSION` 2 bump (additive;
+old replays migrate forward).
+
 ## F-020: `scripts/content-lint.ts` to enforce the LEGAL_SAFETY denylist
 **Created:** 2026-04-26
 **Priority:** nice-to-have

@@ -42,6 +42,31 @@ import { PRISTINE_SCALARS } from "./damageBands";
 import type { Input } from "./input";
 
 /**
+ * Logical version of the physics math. Bumped any time the integration
+ * order, the constants, or the equation shape changes. Separate from the
+ * build-version slice (which stamps the git SHA at build time): this one
+ * is owned by code, lives in source, and is what `src/game/ghost.ts` (the
+ * ghost replay slice) writes into recorded replays so a replay produced
+ * under v1 physics is rejected when the math has moved on.
+ *
+ * Bump rules:
+ *
+ *   - Adding a new field to `CarState` that physics writes to: bump.
+ *   - Changing any constant in this file or in `damageBands.ts` that
+ *     `step()` consumes: bump.
+ *   - Re-ordering the integration sub-steps (accel before brake vs the
+ *     other way around): bump.
+ *   - Adding a new optional `StepOptions` field with a default that
+ *     preserves prior outputs (drafting bonus default 1.0 was such a
+ *     change): no bump needed.
+ *
+ * The cheap discipline is "if in doubt, bump". A spurious bump only
+ * costs the player their old ghost; a missing bump corrupts replays
+ * silently.
+ */
+export const PHYSICS_VERSION = 1;
+
+/**
  * Off-road handling tunables from §10 "Suggested tunable constants".
  *
  * These are the starter-tier values from the table. Mid and late tier

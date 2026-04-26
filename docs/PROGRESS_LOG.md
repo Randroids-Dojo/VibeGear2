@@ -6,6 +6,134 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: ghost replay recorder + player module (ghost.ts, delta-encoded inputs, version stamps)
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) (Ghost replay,
+deterministic-replay tests, fixed-step loop). Phase 5 task per
+[`docs/IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). The dot
+(`VibeGear2-implement-ghost-replay-7ea6ffaa`) carries a long
+stress-test that pinned format / cap / version invariants this slice
+implements.
+**Branch / PR:** `feat/ghost-replay-recorder` (stacked on
+`feat/seeded-deterministic-rng`), PR pending.
+**Status:** Implemented (producer module). Save schema, renderer, and
+Time Trial UI integrations deferred to followups F-021, F-022, F-023.
+
+### Done
+- Authored `src/game/ghost.ts` exporting `Recorder`, `Player`, `Replay`,
+  `ReplayDelta`, `createRecorder`, `createPlayer`,
+  `REPLAY_FORMAT_VERSION`, `RECORDER_SOFT_CAP_TICKS`,
+  `RECORDER_HARD_CAP_TICKS`, `INPUT_FIELDS`, and the
+  `ReplayRejectReason` union. Replay shape is JSON-clean (no typed
+  arrays, no functions) so the future save-integration slice can
+  `JSON.stringify` it directly into a save slot without inventing an
+  encoder.
+- Recorder is delta-encoded: only the input fields that changed since
+  the prior tick are stored. A 600-tick (10 s) hold of constant
+  throttle compresses to a single delta entry. The recorder rejects
+  non-integer ticks, ticks that do not strictly increase, and
+  `record` calls past the 15-minute hard cap (`truncated: true` is
+  stamped on the resulting replay). A soft-cap callback fires once
+  when crossing the 5-minute threshold so a future HUD slice can
+  surface the warning; the callback is wrapped in try / catch so a
+  HUD fault cannot break recording.
+- Player validates the replay up front against `REPLAY_FORMAT_VERSION`,
+  `PHYSICS_VERSION`, and `FIXED_STEP_MS`. Mismatches set
+  `mismatchReason` to one of `format-version-mismatch`,
+  `physics-version-mismatch`, `fixed-step-mismatch`, or
+  `malformed-replay` and `readNext` returns `null` so the consumer's
+  ghost-render branch becomes a no-op. Once the recording is
+  exhausted, `readNext` returns `NEUTRAL_INPUT` (the dot stress-test
+  item 4 explicitly preferred this over "coast on the last input" so
+  a finished ghost does not run throttle off the end of the
+  recording). The `finished` flag latches.
+- Added `PHYSICS_VERSION = 1` to `src/game/physics.ts` with a docstring
+  pinning the bump rules (constants change, integration order
+  changes, additions to `CarState` that physics writes to). Separate
+  from the build-version slice that stamps the git SHA at build
+  time; this version is owned by code so a replay produced under v1
+  physics is rejected when the math has moved on.
+- Authored `src/game/__tests__/ghost.test.ts` (34 tests) covering
+  recorder per-tick record, neutral first-tick, no-change skip,
+  strictly increasing tick guard, finalize idempotency, defensive
+  copy on continued recording, soft-cap callback (fires exactly
+  once, survives a thrown callback), hard-cap rejection +
+  `truncated` stamp, scripted-sequence round-trip, neutral coast
+  after exhaust, finished latching, zero-tick replay, long-hold
+  compression, two-recorder JSON-equal determinism, two-player
+  identical-stream determinism, and every `ReplayRejectReason`
+  branch (future format version, stale physics version, fixed-step
+  mismatch, out-of-range tick, non-strictly-increasing deltas, mask
+  zero, mask out of byte range, values length disagreement,
+  non-integer / negative `totalTicks`, non-array `deltas`).
+- Re-exported the public surface from `src/game/index.ts` so
+  downstream consumers (`@/game`) get a one-line import path,
+  matching the pattern used by `rng`, `nitro`, and the other game
+  modules.
+
+### Decisions
+- **Stateful recorder rather than a pure reducer.** A pure
+  `record(prior, input) -> priorPlusInput` would either churn
+  thousands of objects per lap or push the call site to mutate
+  anyway. The mainline race session already owns one recorder
+  reference per session, so the stateful API is the natural fit. The
+  recorder is internally pure (testable, replayable) behind a
+  smaller public API.
+- **Replay is JSON-clean, not Uint8Array-encoded.** The dot
+  stress-test (item 1) suggested base64-encoded `Uint8Array` deltas
+  for compactness. We deferred that: the in-memory shape is
+  `ReplayDelta[]` with `tick`, `mask`, `values`. When the save slice
+  lands and we measure the actual storage footprint, switching to
+  base64-packed bytes is an additive on-the-wire format bump
+  (`REPLAY_FORMAT_VERSION` 2). Shipping JSON now keeps the slice
+  small and makes test-time inspection (deep-equal asserts) trivial.
+- **Player returns `NEUTRAL_INPUT` after exhaust, not the last input.**
+  Per the dot stress-test item 4 recommendation. A finished ghost
+  that mashes throttle off the end of its recording would crash
+  into the wall behind the start line on tracks with a sharp turn 1.
+  Coasting under physics is the conservative default; consumers that
+  want different post-finish behaviour can read `finished` and stop
+  rendering.
+- **Format version and physics version are independent stamps.** The
+  format describes the on-the-wire struct shape; the physics version
+  describes the math the inputs were captured against. Either can
+  bump without the other, so they are two fields rather than a
+  combined "version".
+- **Determinism contract is bit-exact, not "within tolerance".** The
+  stress-test item 10 made this explicit: with a seeded RNG (the
+  prior slice) and a pure physics step (per AGENTS.md RULE 8), there
+  is no float-drift surface for record / playback to diverge on. The
+  ghost test asserts `toEqual`, not `toBeCloseTo`. If a future test
+  ever needs a tolerance, the determinism contract is broken and the
+  fix belongs at the source.
+
+### Open questions
+- None new. The dot stress-test items 7 (save schema integration), 8
+  (best-ghost comparison rule), 9 (renderer integration), 11
+  (physics-feel benchmark consumer), 13 (Time Trial UI hook), and
+  14 (Playwright e2e once a Time Trial route exists) are deferred to
+  the followups below; they are not ambiguous, just not in scope for
+  the producer slice.
+
+### Followups
+- F-021: wire `Replay` into `SaveGameSchema` as a `ghosts: Record<slug,
+  GhostReplaySchema>` field with a v2 migration. Add a "best-ghost"
+  comparison helper (`replace iff finalTimeMs < currentReplay
+  .finalTimeMs`) per stress-test item 8.
+- F-022: render the ghost car in `pseudoRoadCanvas.ts` as a
+  translucent (`globalAlpha = 0.5`) blue-tinted player sprite. Lands
+  with the visual-polish atlas slice that ships the player car
+  frames.
+- F-023: Time Trial UI hook (record on race start, save as PB ghost
+  on finish if it beats the stored time, hide the ghost when the
+  player has no PB yet). Lands with the time-trial dot.
+
+### GDD edits
+- None this slice.
+
+---
+
 ## 2026-04-26: Slice: seeded deterministic PRNG module (rng.ts, mulberry32, splitRng) + Math.random ban
 
 **GDD sections touched:**
