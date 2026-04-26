@@ -1,0 +1,19 @@
+{
+  "id": "ai_rocket_01",
+  "displayName": "T. Holroyd",
+  "archetype": "nitro_burst",
+  "paceScalar": 1.04,
+  "mistakeRate": 0.18,
+  "aggression": 0.7,
+  "weatherSkill": {
+    "clear": 1.05,
+    "rain": 0.9,
+    "fog": 0.88,
+    "snow": 0.86
+  },
+  "nitroUsage": {
+    "launchBias": 0.95,
+    "straightBias": 0.6,
+    "panicBias": 0.4
+  }
+}

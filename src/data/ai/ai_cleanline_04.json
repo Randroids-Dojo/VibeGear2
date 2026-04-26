@@ -1,0 +1,19 @@
+{
+  "id": "ai_cleanline_04",
+  "displayName": "N. Tahir",
+  "archetype": "clean_line",
+  "paceScalar": 1.04,
+  "mistakeRate": 0.06,
+  "aggression": 0.28,
+  "weatherSkill": {
+    "clear": 1.03,
+    "rain": 1.05,
+    "fog": 1.0,
+    "snow": 1.02
+  },
+  "nitroUsage": {
+    "launchBias": 0.58,
+    "straightBias": 0.94,
+    "panicBias": 0.07
+  }
+}

@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: AI driver content registry (20 profiles)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md) (CPU
+archetypes, Difficulty tiers), [§22](gdd/22-data-schemas.md) (AI driver
+JSON schema), [§24](gdd/24-content-plan.md) (Data asset list: 20 AI
+driver profiles).
+**Branch / PR:** `feat/ai-driver-content` (stacked on
+`feat/championship-content`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Authored 20 AI driver JSON files under `src/data/ai/`. File naming
+  follows the §22 example (`ai_cleanline_01`, `ai_bully_03`, etc.).
+  Distribution: 4 `nitro_burst` (Rocket starter), 4 `clean_line`,
+  3 `aggressive` (Bully), 3 `defender` (Cautious), 3 `wet_specialist`
+  (Chaotic / weather-volatile), 3 `endurance` (Enduro). Stat shapes
+  reflect each archetype: rocket starters carry high `launchBias` and
+  weak weatherSkill, defenders/cautious lift `weatherSkill.fog/rain`,
+  chaotic profiles spike `mistakeRate` and `panicBias`, enduro picks
+  flatten weatherSkill and keep `straightBias` high.
+- Added `src/data/ai/index.ts`: static-import barrel exposing
+  `AI_DRIVERS`, `AI_DRIVERS_BY_ID`, and `getAIDriver(id)`. Mirrors the
+  `getCar` shape (returns undefined on miss so the ai-grid spawner can
+  decide policy). Top-of-file comment documents the archetype slot
+  mapping between schema enum names and the §15 prose names.
+- Re-exported `AI_DRIVERS`, `AI_DRIVERS_BY_ID`, and `getAIDriver` from
+  `src/data/index.ts` so callers import via the data barrel.
+- Added `src/data/__tests__/ai-content.test.ts` (105 tests): per-driver
+  schema validation, archetype-enum coverage, weatherSkill key
+  completeness (clear/rain/fog/snow + no extras), `paceScalar` envelope
+  (0.9..1.1, derived from §15 difficulty bounds), unit-interval checks
+  on mistakeRate/aggression/nitroUsage biases, plus catalogue-level
+  invariants (20 drivers, unique ids, unique displayNames, archetype
+  distribution pin).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (675 tests, 105 new in `ai-content.test.ts`).
+- `npm run build` clean. No route-size delta (AI JSON is data only,
+  not yet imported by any page module).
+- `npm run test:e2e` passes (15 specs, no new e2e specs since the AI
+  registry is data-layer only).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Schema enum (`clean_line, aggressive, defender, wet_specialist,
+  nitro_burst, endurance`) and the §15 prose archetype names (Rocket
+  starter, Clean line, Bully, Cautious, Chaotic, Enduro) are the same
+  six slots under different labels. Documented the mapping in
+  `src/data/ai/index.ts`. The `wet_specialist` slot stands in for the
+  §15 "Chaotic" archetype until full-ai shapes per-archetype behaviour;
+  the chaotic JSONs already lean on high `mistakeRate` and high
+  `panicBias` to differentiate from cautious profiles in dry weather.
+- `paceScalar` envelope of 0.9..1.1 comes from the §15 Difficulty
+  tiers table (Master at +9%, easy at -8%). The roster keeps every
+  scalar inside the envelope so ai-grid can layer difficulty modifiers
+  without immediately blowing past the upper bound.
+- Display names are original two-token call signs (single initial +
+  surname, drawn from a deliberately diverse linguistic pool) so the
+  legal-safety lint slice can wire its check without flagging any of
+  the 20 against active or historical motorsport rosters.
+- Distribution (4/4/3/3/3/3 = 20) follows the dot's "documented
+  spread"; balancing-pass slice may rebalance, with the index header
+  comment as the canonical record.
+
+### Followups created
+- None. The full-ai and ai-grid sibling dots will consume this
+  registry; this slice intentionally stops at content + barrel.
+
+---
+
 ## 2026-04-26: Slice: championship content registry (world-tour-standard)
 
 **GDD sections touched:** [§22](gdd/22-data-schemas.md) (Championship JSON

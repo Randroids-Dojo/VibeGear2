@@ -1,0 +1,19 @@
+{
+  "id": "ai_chaotic_01",
+  "displayName": "V. Solberg",
+  "archetype": "wet_specialist",
+  "paceScalar": 1.0,
+  "mistakeRate": 0.32,
+  "aggression": 0.6,
+  "weatherSkill": {
+    "clear": 0.94,
+    "rain": 1.12,
+    "fog": 1.05,
+    "snow": 1.08
+  },
+  "nitroUsage": {
+    "launchBias": 0.7,
+    "straightBias": 0.55,
+    "panicBias": 0.7
+  }
+}

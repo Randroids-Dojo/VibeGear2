@@ -1,0 +1,19 @@
+{
+  "id": "ai_chaotic_03",
+  "displayName": "U. Mbatha",
+  "archetype": "wet_specialist",
+  "paceScalar": 0.98,
+  "mistakeRate": 0.35,
+  "aggression": 0.62,
+  "weatherSkill": {
+    "clear": 0.93,
+    "rain": 1.1,
+    "fog": 1.04,
+    "snow": 1.09
+  },
+  "nitroUsage": {
+    "launchBias": 0.72,
+    "straightBias": 0.5,
+    "panicBias": 0.74
+  }
+}

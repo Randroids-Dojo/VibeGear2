@@ -1,0 +1,19 @@
+{
+  "id": "ai_enduro_02",
+  "displayName": "H. Ostrowski",
+  "archetype": "endurance",
+  "paceScalar": 1.02,
+  "mistakeRate": 0.04,
+  "aggression": 0.42,
+  "weatherSkill": {
+    "clear": 1.03,
+    "rain": 1.02,
+    "fog": 1.01,
+    "snow": 1.0
+  },
+  "nitroUsage": {
+    "launchBias": 0.55,
+    "straightBias": 0.88,
+    "panicBias": 0.13
+  }
+}

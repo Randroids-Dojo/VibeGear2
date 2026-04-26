@@ -1,0 +1,19 @@
+{
+  "id": "ai_cautious_01",
+  "displayName": "I. Renqvist",
+  "archetype": "defender",
+  "paceScalar": 0.97,
+  "mistakeRate": 0.05,
+  "aggression": 0.25,
+  "weatherSkill": {
+    "clear": 0.99,
+    "rain": 1.06,
+    "fog": 1.08,
+    "snow": 1.05
+  },
+  "nitroUsage": {
+    "launchBias": 0.5,
+    "straightBias": 0.7,
+    "panicBias": 0.2
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "ai_bully_01",
+  "displayName": "D. Korsak",
+  "archetype": "aggressive",
+  "paceScalar": 1.0,
+  "mistakeRate": 0.15,
+  "aggression": 0.92,
+  "weatherSkill": {
+    "clear": 1.02,
+    "rain": 0.94,
+    "fog": 0.92,
+    "snow": 0.9
+  },
+  "nitroUsage": {
+    "launchBias": 0.7,
+    "straightBias": 0.6,
+    "panicBias": 0.55
+  }
+}

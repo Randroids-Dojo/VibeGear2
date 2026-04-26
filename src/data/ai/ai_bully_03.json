@@ -1,0 +1,19 @@
+{
+  "id": "ai_bully_03",
+  "displayName": "B. Talavera",
+  "archetype": "aggressive",
+  "paceScalar": 0.99,
+  "mistakeRate": 0.19,
+  "aggression": 0.95,
+  "weatherSkill": {
+    "clear": 1.01,
+    "rain": 0.93,
+    "fog": 0.91,
+    "snow": 0.89
+  },
+  "nitroUsage": {
+    "launchBias": 0.8,
+    "straightBias": 0.55,
+    "panicBias": 0.62
+  }
+}

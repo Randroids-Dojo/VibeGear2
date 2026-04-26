@@ -1,0 +1,19 @@
+{
+  "id": "ai_enduro_03",
+  "displayName": "Y. Sundaram",
+  "archetype": "endurance",
+  "paceScalar": 1.0,
+  "mistakeRate": 0.06,
+  "aggression": 0.38,
+  "weatherSkill": {
+    "clear": 1.01,
+    "rain": 1.04,
+    "fog": 1.03,
+    "snow": 1.02
+  },
+  "nitroUsage": {
+    "launchBias": 0.48,
+    "straightBias": 0.86,
+    "panicBias": 0.18
+  }
+}

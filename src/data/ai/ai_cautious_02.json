@@ -1,0 +1,19 @@
+{
+  "id": "ai_cautious_02",
+  "displayName": "P. Halvorsen",
+  "archetype": "defender",
+  "paceScalar": 0.98,
+  "mistakeRate": 0.06,
+  "aggression": 0.3,
+  "weatherSkill": {
+    "clear": 1.0,
+    "rain": 1.04,
+    "fog": 1.06,
+    "snow": 1.03
+  },
+  "nitroUsage": {
+    "launchBias": 0.45,
+    "straightBias": 0.72,
+    "panicBias": 0.18
+  }
+}

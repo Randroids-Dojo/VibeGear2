@@ -1,0 +1,19 @@
+{
+  "id": "ai_cautious_03",
+  "displayName": "A. Quintero",
+  "archetype": "defender",
+  "paceScalar": 0.96,
+  "mistakeRate": 0.04,
+  "aggression": 0.22,
+  "weatherSkill": {
+    "clear": 0.98,
+    "rain": 1.07,
+    "fog": 1.1,
+    "snow": 1.08
+  },
+  "nitroUsage": {
+    "launchBias": 0.4,
+    "straightBias": 0.68,
+    "panicBias": 0.15
+  }
+}

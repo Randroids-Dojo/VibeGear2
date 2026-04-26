@@ -1,0 +1,19 @@
+{
+  "id": "ai_chaotic_02",
+  "displayName": "G. Driessen",
+  "archetype": "wet_specialist",
+  "paceScalar": 1.02,
+  "mistakeRate": 0.3,
+  "aggression": 0.55,
+  "weatherSkill": {
+    "clear": 0.95,
+    "rain": 1.14,
+    "fog": 1.06,
+    "snow": 1.07
+  },
+  "nitroUsage": {
+    "launchBias": 0.65,
+    "straightBias": 0.6,
+    "panicBias": 0.66
+  }
+}

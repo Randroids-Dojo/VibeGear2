@@ -1,0 +1,19 @@
+{
+  "id": "ai_rocket_03",
+  "displayName": "S. Branwen",
+  "archetype": "nitro_burst",
+  "paceScalar": 1.02,
+  "mistakeRate": 0.22,
+  "aggression": 0.6,
+  "weatherSkill": {
+    "clear": 1.03,
+    "rain": 0.93,
+    "fog": 0.91,
+    "snow": 0.89
+  },
+  "nitroUsage": {
+    "launchBias": 0.98,
+    "straightBias": 0.5,
+    "panicBias": 0.45
+  }
+}

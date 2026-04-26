@@ -1,0 +1,19 @@
+{
+  "id": "ai_enduro_01",
+  "displayName": "C. Pendragon",
+  "archetype": "endurance",
+  "paceScalar": 1.01,
+  "mistakeRate": 0.05,
+  "aggression": 0.4,
+  "weatherSkill": {
+    "clear": 1.02,
+    "rain": 1.03,
+    "fog": 1.02,
+    "snow": 1.02
+  },
+  "nitroUsage": {
+    "launchBias": 0.5,
+    "straightBias": 0.85,
+    "panicBias": 0.15
+  }
+}

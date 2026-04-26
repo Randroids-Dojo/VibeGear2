@@ -1,0 +1,19 @@
+{
+  "id": "ai_cleanline_02",
+  "displayName": "R. Pesaro",
+  "archetype": "clean_line",
+  "paceScalar": 1.03,
+  "mistakeRate": 0.07,
+  "aggression": 0.3,
+  "weatherSkill": {
+    "clear": 1.02,
+    "rain": 1.0,
+    "fog": 0.97,
+    "snow": 0.99
+  },
+  "nitroUsage": {
+    "launchBias": 0.55,
+    "straightBias": 0.92,
+    "panicBias": 0.08
+  }
+}

@@ -16,6 +16,11 @@ export {
   CHAMPIONSHIPS_BY_ID,
   getChampionship,
 } from "./championships";
+export {
+  AI_DRIVERS,
+  AI_DRIVERS_BY_ID,
+  getAIDriver,
+} from "./ai";
 
 import { compileTrack } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";
