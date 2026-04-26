@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { CAMERA_DEPTH, CAMERA_HEIGHT, CURVATURE_SCALE, SEGMENT_LENGTH } from "../constants";
+import {
+  CAMERA_DEPTH,
+  CAMERA_HEIGHT,
+  CURVATURE_SCALE,
+  ROAD_WIDTH,
+  SEGMENT_LENGTH,
+} from "../constants";
 import {
   DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M,
   project,
+  projectGhostCar,
   upcomingCurvature,
 } from "../segmentProjector";
 import type { Camera, CompiledSegment, Viewport } from "../types";
@@ -239,5 +246,183 @@ describe("upcomingCurvature", () => {
     // And a curve inside the window does get picked up.
     segs[2] = { ...segs[2]!, curve: 0.4 / CURVATURE_SCALE };
     expect(upcomingCurvature(segs, 0)).toBeCloseTo(0.4, 6);
+  });
+});
+
+describe("projectGhostCar", () => {
+  it("returns hidden on an empty segment list", () => {
+    const result = projectGhostCar([], makeCamera(), VIEWPORT, 100, 0);
+    expect(result.visible).toBe(false);
+  });
+
+  it("returns hidden when the viewport is degenerate", () => {
+    const segs = flatTrack(64);
+    expect(
+      projectGhostCar(segs, makeCamera(), { width: 0, height: 600 }, 100, 0).visible,
+    ).toBe(false);
+    expect(
+      projectGhostCar(segs, makeCamera(), { width: 800, height: 0 }, 100, 0).visible,
+    ).toBe(false);
+  });
+
+  it("returns hidden when ghostZ or ghostX is non-finite", () => {
+    const segs = flatTrack(64);
+    expect(
+      projectGhostCar(segs, makeCamera(), VIEWPORT, Number.NaN, 0).visible,
+    ).toBe(false);
+    expect(
+      projectGhostCar(segs, makeCamera(), VIEWPORT, 100, Number.POSITIVE_INFINITY)
+        .visible,
+    ).toBe(false);
+  });
+
+  it("returns hidden when the ghost is closer than the near plane", () => {
+    const segs = flatTrack(64);
+    // Ghost half a meter ahead is well inside cameraDepth (~0.84 m).
+    const result = projectGhostCar(segs, makeCamera(), VIEWPORT, 0.5, 0);
+    expect(result.visible).toBe(false);
+  });
+
+  it("returns hidden when the ghost sits past the draw distance window", () => {
+    const segs = flatTrack(64);
+    const drawDistance = 16;
+    // Ghost lives well beyond drawDistance * SEGMENT_LENGTH = 96 m.
+    const result = projectGhostCar(segs, makeCamera(), VIEWPORT, 200, 0, {
+      drawDistance,
+    });
+    expect(result.visible).toBe(false);
+  });
+
+  it("on a flat straight, projects a centerline ghost to the screen midline", () => {
+    const segs = flatTrack(64);
+    const ghostZ = SEGMENT_LENGTH * 4;
+    const result = projectGhostCar(segs, makeCamera(), VIEWPORT, ghostZ, 0);
+    expect(result.visible).toBe(true);
+    expect(result.screenX).toBeCloseTo(VIEWPORT.width / 2, 6);
+    // screenW collapses to scale * ROAD_WIDTH * halfW.
+    const expectedScale = CAMERA_DEPTH / ghostZ;
+    expect(result.scale).toBeCloseTo(expectedScale, 6);
+    expect(result.screenW).toBeCloseTo(
+      expectedScale * ROAD_WIDTH * (VIEWPORT.width / 2),
+      6,
+    );
+  });
+
+  it("on a flat straight, a positive ghostX shifts the projection right of centerline", () => {
+    const segs = flatTrack(64);
+    const ghostZ = SEGMENT_LENGTH * 4;
+    const center = projectGhostCar(segs, makeCamera(), VIEWPORT, ghostZ, 0);
+    const offset = projectGhostCar(segs, makeCamera(), VIEWPORT, ghostZ, 1.5);
+    expect(center.visible).toBe(true);
+    expect(offset.visible).toBe(true);
+    expect(offset.screenX).toBeGreaterThan(center.screenX);
+  });
+
+  it("matches the strip projector at integer segment boundaries on a flat straight", () => {
+    // The strip projector samples each segment at its near edge. A ghost
+    // placed on a segment boundary on a flat straight must therefore land
+    // on the same screenX / screenY / screenW as the matching strip.
+    const segs = flatTrack(32);
+    const camera = makeCamera();
+    const strips = project(segs, camera, VIEWPORT, { drawDistance: 16 });
+    // Pick a strip well inside the visible window so the maxY cull does
+    // not flip it to invisible.
+    const stripIndex = 5;
+    const strip = strips[stripIndex]!;
+    expect(strip.visible).toBe(true);
+    const ghost = projectGhostCar(
+      segs,
+      camera,
+      VIEWPORT,
+      stripIndex * SEGMENT_LENGTH,
+      0,
+      { drawDistance: 16 },
+    );
+    expect(ghost.visible).toBe(true);
+    expect(ghost.screenX).toBeCloseTo(strip.screenX, 6);
+    expect(ghost.screenY).toBeCloseTo(strip.screenY, 6);
+    expect(ghost.screenW).toBeCloseTo(strip.screenW, 6);
+    expect(ghost.scale).toBeCloseTo(strip.scale, 6);
+  });
+
+  it("matches the strip projector at integer segment boundaries on a constant-curve track", () => {
+    const segs = flatTrack(48, { curve: 0.4 / CURVATURE_SCALE });
+    const camera = makeCamera();
+    const strips = project(segs, camera, VIEWPORT, { drawDistance: 24 });
+    const stripIndex = 7;
+    const strip = strips[stripIndex]!;
+    expect(strip.visible).toBe(true);
+    const ghost = projectGhostCar(
+      segs,
+      camera,
+      VIEWPORT,
+      stripIndex * SEGMENT_LENGTH,
+      0,
+      { drawDistance: 24 },
+    );
+    expect(ghost.visible).toBe(true);
+    // The curve accumulator must yield the same worldX as the strip.
+    expect(ghost.worldX).toBeCloseTo(strip.worldX, 6);
+    expect(ghost.screenX).toBeCloseTo(strip.screenX, 6);
+  });
+
+  it("wraps cameraZ past the end of the ring so a lap-rolling player still sees a ghost ahead", () => {
+    const segs = flatTrack(16);
+    const trackLength = 16 * SEGMENT_LENGTH;
+    // Camera one full lap into the ring; ghost a few meters into the
+    // next lap. The wrap should put the ghost at forwardZ ~ ghostZ -
+    // (cameraZ % trackLength).
+    const camera = makeCamera({ z: trackLength + 4 });
+    const ghostZ = trackLength + 4 + SEGMENT_LENGTH * 3;
+    const result = projectGhostCar(segs, camera, VIEWPORT, ghostZ, 0);
+    expect(result.visible).toBe(true);
+    expect(result.screenX).toBeCloseTo(VIEWPORT.width / 2, 6);
+  });
+
+  it("treats a ghost behind the camera as a next-lap ghost when the wrap distance is in the draw window", () => {
+    // Camera near the end of the ring, ghost back at z = 0. The wrap
+    // makes the ghost "next lap forward" by a small distance, which
+    // sits inside drawDistance * SEGMENT_LENGTH and should render.
+    const segs = flatTrack(32);
+    const trackLength = 32 * SEGMENT_LENGTH;
+    const camera = makeCamera({ z: trackLength - SEGMENT_LENGTH * 2 });
+    const result = projectGhostCar(segs, camera, VIEWPORT, 0, 0, {
+      drawDistance: 8,
+    });
+    expect(result.visible).toBe(true);
+  });
+
+  it("caps drawDistance to totalSegments so a ghost beyond a tiny ring still resolves", () => {
+    const segs = flatTrack(4);
+    // Requested drawDistance well above totalSegments; the helper should
+    // clamp to 4 (== totalSegments) and still hide a ghost past 4 segs
+    // forward of the camera (it would wrap and be too far otherwise).
+    const result = projectGhostCar(segs, makeCamera(), VIEWPORT, SEGMENT_LENGTH * 2, 0, {
+      drawDistance: 999,
+    });
+    expect(result.visible).toBe(true);
+  });
+
+  it("snaps the ghost to the projection plane consistent with the strip projector when the camera offsets within a segment", () => {
+    // Camera Z is mid-segment. The strip projector pulls strip 0 to the
+    // near plane via cameraOffsetWithinSegment; the ghost helper must
+    // mirror that so a ghost on the same segment as a known strip
+    // matches its screenX.
+    const segs = flatTrack(32);
+    const camera = makeCamera({ z: SEGMENT_LENGTH * 2.5 });
+    const strips = project(segs, camera, VIEWPORT, { drawDistance: 16 });
+    const stripIndex = 4;
+    const strip = strips[stripIndex]!;
+    expect(strip.visible).toBe(true);
+    // The strip at iteration 4 sits at sz = 4 * SEGMENT_LENGTH -
+    // cameraOffsetWithinSegment = 24 - 3 = 21 m forward of cameraZ.
+    // The ghost at the same forwardZ from cameraZ must match.
+    const ghostZ = camera.z + (4 * SEGMENT_LENGTH - (camera.z - 2 * SEGMENT_LENGTH));
+    const ghost = projectGhostCar(segs, camera, VIEWPORT, ghostZ, 0, {
+      drawDistance: 16,
+    });
+    expect(ghost.visible).toBe(true);
+    expect(ghost.screenX).toBeCloseTo(strip.screenX, 6);
+    expect(ghost.screenW).toBeCloseTo(strip.screenW, 6);
   });
 });

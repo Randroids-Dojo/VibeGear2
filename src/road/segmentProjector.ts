@@ -209,3 +209,190 @@ export function upcomingCurvature(
   if (reScaled < -1) return -1;
   return reScaled;
 }
+
+/**
+ * Output of `projectGhostCar`. Mirrors the `screenX` / `screenY` / `screenW`
+ * fields the §6 ghost overlay drawer (see `pseudoRoadCanvas.drawRoad`'s
+ * `ghostCar` prop) consumes plus a `visible` gate so the caller can skip
+ * the prop entirely when the ghost falls behind the camera or past the
+ * draw distance.
+ *
+ * `screenX`, `screenY`, and `screenW` are CSS pixels in the same coordinate
+ * frame the strip projector produces; passing them straight into the
+ * `ghostCar` prop reuses the same camera projection the live road draw
+ * already paid for.
+ *
+ * `worldX` / `worldY` mirror the strip projector's debug fields so a
+ * future renderer slice (e.g. the F-022 atlas-frame upgrade) can sample
+ * the same camera-space position the road draw used without recomputing
+ * the integration.
+ */
+export interface GhostCarProjection {
+  visible: boolean;
+  screenX: number;
+  screenY: number;
+  screenW: number;
+  scale: number;
+  worldX: number;
+  worldY: number;
+}
+
+const HIDDEN_GHOST_PROJECTION: Readonly<GhostCarProjection> = Object.freeze({
+  visible: false,
+  screenX: 0,
+  screenY: 0,
+  screenW: 0,
+  scale: 0,
+  worldX: 0,
+  worldY: 0,
+});
+
+/**
+ * Project one ghost car's world-space `(z, x)` to the screen-space prop the
+ * §6 ghost overlay drawer consumes (`pseudoRoadCanvas.drawRoad`'s
+ * `ghostCar` field). Pure helper companion to `project`: shares the same
+ * pseudo-3D pinhole math and the same curve / grade integration so a
+ * ghost rendered through this helper sits on the same road plane the live
+ * strips paint.
+ *
+ * Why a separate helper rather than reading the existing `Strip[]`:
+ *
+ *   - The live `project` walks `[0, drawDistance)` segments forward of the
+ *     camera and returns one strip per segment. The ghost lives at a
+ *     specific `(z, x)` between two of those segments; reading off a
+ *     strip would either round to the segment boundary (visible jitter
+ *     each tick) or require the caller to interpolate by hand at every
+ *     site.
+ *   - Hoisting that interpolation behind a single helper means the §6
+ *     Time Trial route (and any future "second car" overlay slice) can
+ *     get a screen position for any `(z, x)` without re-implementing the
+ *     curve / grade accumulator. The math is identical to the strip
+ *     projector at integer segment boundaries; in between, the ghost's
+ *     near edge sits at `cameraDepth / (ghostZ - cameraZ)` scale, which
+ *     is the same expression the strip loop uses.
+ *
+ * Walks segments forward from the camera up to (and including) the
+ * segment containing the ghost, accumulating the same `dx` / `x` and
+ * `dy` / `y` integrators the strip projector uses. The ghost's lateral
+ * `ghostX` is added to the accumulated curve offset before the camera
+ * subtraction, which mirrors how a live car at `(z, x)` would project.
+ *
+ * Edge cases:
+ *
+ *   - Empty segment list: returns `HIDDEN_GHOST_PROJECTION` (visible:
+ *     false). The drawer skips the prop on `visible === false`, so the
+ *     caller can wire this through unconditionally.
+ *   - Degenerate viewport (`width <= 0` or `height <= 0`): returns
+ *     hidden. Mirrors `project`'s guard.
+ *   - Ghost behind the near plane (`sz < camera.depth`): returns hidden.
+ *     The drawer also re-checks `screenW > 0`, so this is defence in
+ *     depth rather than the load-bearing path.
+ *   - Ghost past the draw distance (`sz > drawDistance * SEGMENT_LENGTH`):
+ *     returns hidden. Without this clamp the helper would still produce a
+ *     valid (if vanishingly small) projection for a ghost a full lap
+ *     ahead, which is not what the renderer should paint.
+ *   - Non-finite `ghostZ` or `ghostX`: returns hidden. The Time Trial
+ *     route reads `ghostZ` from a recorded `Replay` driven through a
+ *     fresh physics step; a NaN here would be a producer bug, but the
+ *     guard keeps the renderer safe.
+ *   - Camera Z past the end of the ring: wraps modulo track length so a
+ *     player crossing the start line still projects the ghost
+ *     consistently. Ghost Z wraps the same way; the segment walk uses
+ *     the wrapped pair so a ghost one full lap ahead lines up with the
+ *     same screen position as a fresh ghost at z=0.
+ *
+ * Ring-wrap semantics: when `ghostZ` lies past the end of the compiled
+ * ring relative to `cameraZ`, the helper treats the ghost as on the
+ * next lap and walks the ring around. A ghost behind the camera (the
+ * player has overtaken the recorded best) falls into the "behind the
+ * near plane" branch and renders as hidden, which matches the §6 intent
+ * (you have left your best line behind, so there is nothing in front of
+ * you to chase).
+ */
+export function projectGhostCar(
+  segments: readonly CompiledSegment[],
+  camera: Camera,
+  viewport: Viewport,
+  ghostZ: number,
+  ghostX: number,
+  options: ProjectorOptions = {},
+): GhostCarProjection {
+  if (segments.length === 0) return HIDDEN_GHOST_PROJECTION;
+  if (viewport.width <= 0 || viewport.height <= 0) {
+    return HIDDEN_GHOST_PROJECTION;
+  }
+  if (!Number.isFinite(ghostZ) || !Number.isFinite(ghostX)) {
+    return HIDDEN_GHOST_PROJECTION;
+  }
+
+  const totalSegments = segments.length;
+  const requested = options.drawDistance ?? DRAW_DISTANCE;
+  const drawDistance = Math.max(1, Math.min(requested, totalSegments));
+
+  const trackLength = totalSegments * SEGMENT_LENGTH;
+  const wrappedCameraZ =
+    ((camera.z % trackLength) + trackLength) % trackLength;
+  const wrappedGhostZ =
+    ((ghostZ % trackLength) + trackLength) % trackLength;
+  const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
+  const cameraOffsetWithinSegment =
+    wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
+
+  // Forward distance from the camera to the ghost. A ghost behind the
+  // camera in lap-relative terms wraps to "one lap ahead" so a player
+  // who has just crossed the start/finish line still sees the persisted
+  // ghost from the prior lap up the road. The strip projector uses the
+  // same convention via its modulo wrap.
+  let forwardZ = wrappedGhostZ - wrappedCameraZ;
+  if (forwardZ < 0) {
+    forwardZ += trackLength;
+  }
+
+  if (forwardZ < camera.depth) return HIDDEN_GHOST_PROJECTION;
+  if (forwardZ > drawDistance * SEGMENT_LENGTH) {
+    return HIDDEN_GHOST_PROJECTION;
+  }
+
+  // Walk segments from the camera segment up to (but not including) the
+  // segment that contains the ghost, accumulating the same dx / x and
+  // dy / y the strip projector uses. The integrator must run before the
+  // ghost's segment so the `worldX` / `worldY` pair below sits at the
+  // ghost's near edge, identical to how the strip projector samples a
+  // strip's near edge.
+  const ghostSegmentOffset = Math.floor(
+    (forwardZ + cameraOffsetWithinSegment) / SEGMENT_LENGTH,
+  );
+  let dx = 0;
+  let x = 0;
+  let dy = 0;
+  let y = 0;
+  for (let n = 0; n < ghostSegmentOffset; n++) {
+    const segIndex = (baseSegmentIndex + n) % totalSegments;
+    const segment = segments[segIndex];
+    if (!segment) continue;
+    x += dx;
+    dx += segment.curve;
+    y += dy;
+    dy += segment.grade;
+  }
+
+  const worldX = x + ghostX - camera.x;
+  const worldY = y - camera.y;
+  const sz = forwardZ;
+  const scale = camera.depth / sz;
+  const halfW = viewport.width / 2;
+  const halfH = viewport.height / 2;
+  const screenX = halfW + scale * worldX * halfW;
+  const screenY = halfH - scale * worldY * halfH;
+  const screenW = scale * ROAD_WIDTH * halfW;
+
+  return {
+    visible: true,
+    screenX,
+    screenY,
+    screenW,
+    scale,
+    worldX,
+    worldY,
+  };
+}

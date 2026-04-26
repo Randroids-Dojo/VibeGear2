@@ -848,6 +848,27 @@ the projected `(screenX, screenY, screenW)` plus alpha into the
 (`VibeGear2-implement-time-trial-5d65280a`) since that slice owns the
 recorder lifecycle as well.
 
+**F-022a sub-slice (landed in `feat/f-022a-project-ghost-car`):**
+Step (4) above (project the ghost's `(z, x)` to screen) now has a
+pure helper companion in `src/road/segmentProjector.ts`:
+`projectGhostCar(segments, camera, viewport, ghostZ, ghostX, options?)`
+returns `{ visible, screenX, screenY, screenW, scale, worldX, worldY }`
+using the same pseudo-3D pinhole math as `project`. Walks segments
+forward from the camera up to the ghost's segment, accumulates curve
+and grade with the same dx / x and dy / y integrators the strip
+projector uses, then applies the standard pinhole projection. Hidden
+when the ghost is behind the near plane, past the draw distance, or
+fed non-finite coordinates; ring-wraps cameraZ / ghostZ so a
+lap-rolling player still sees a next-lap ghost ahead. Tests in
+`src/road/__tests__/segmentProjector.test.ts` pin (a) screenX matches
+the strip projector at integer segment boundaries on flat and
+constant-curve tracks, (b) lateral `ghostX` shifts the projection
+right of centerline on a flat straight, (c) hidden branches for
+empty segments, degenerate viewport, non-finite inputs, near-plane,
+and past-draw-distance, and (d) ring wrap semantics. Lets the
+eventual TT-route slice call one helper for the screen prop instead
+of re-implementing the curve / grade walk at the route site.
+
 **Atlas-frame upgrade (deferred):**
 The placeholder rect ships today; the `LoadedAtlas` integration that
 samples the same player-car atlas frame the live car renders (per the
