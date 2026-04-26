@@ -10,6 +10,25 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-032: Wire leaderboard client into race results surface
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/leaderboard-client` slice landed
+`src/leaderboard/client.ts` with `submitLap` and `getTop`, gated by
+`NEXT_PUBLIC_LEADERBOARD_ENABLED`. The dot was marked `verified` but
+the adapter currently has zero in-app callers (`grep -rn "submitLap\|getTop"
+src/` outside `src/leaderboard/` returns nothing). The expected consumer
+is the post-race results surface owned by
+`VibeGear2-implement-race-results-7b0abfaa`: when the player crosses the
+finish line cleanly the results page should call `submitLap` with the
+signed token, render the `stored | rejected | disabled | error` outcome
+inline, and (optionally) show a top-N leaderboard read via `getTop`. Until
+that slice lands the client adapter is a producer waiting for a consumer,
+mirroring the F-015 / F-026 deferral pattern. Close this followup as part
+of the race-results dot, not as a standalone slice. Distinct from F-030
+(Vercel KV provisioning) which is the deploy-side gap.
+
 ## F-031: Source map workspace paths leak in Next.js framework chunks
 **Created:** 2026-04-26
 **Priority:** nice-to-have
