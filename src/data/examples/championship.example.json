@@ -1,0 +1,17 @@
+{
+  "id": "world-tour-standard",
+  "name": "World Tour",
+  "difficultyPreset": "normal",
+  "tours": [
+    {
+      "id": "velvet-coast",
+      "requiredStanding": 4,
+      "tracks": [
+        "velvet-coast/harbor-run",
+        "velvet-coast/sunpier-loop",
+        "velvet-coast/cliffline-arc",
+        "velvet-coast/lighthouse-fall"
+      ]
+    }
+  ]
+}

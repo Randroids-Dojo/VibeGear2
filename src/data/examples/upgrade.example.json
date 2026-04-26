@@ -1,0 +1,11 @@
+{
+  "id": "engine-2",
+  "category": "engine",
+  "tier": 2,
+  "name": "Sport Engine Kit",
+  "cost": 6000,
+  "effects": {
+    "accel": 1.8,
+    "topSpeed": 2.0
+  }
+}

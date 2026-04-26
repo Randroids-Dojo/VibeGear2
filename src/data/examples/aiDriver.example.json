@@ -1,0 +1,19 @@
+{
+  "id": "ai_cleanline_01",
+  "displayName": "K. Vale",
+  "archetype": "clean_line",
+  "paceScalar": 1.02,
+  "mistakeRate": 0.08,
+  "aggression": 0.35,
+  "weatherSkill": {
+    "clear": 1.0,
+    "rain": 1.04,
+    "fog": 0.98,
+    "snow": 1.01
+  },
+  "nitroUsage": {
+    "launchBias": 0.6,
+    "straightBias": 0.9,
+    "panicBias": 0.1
+  }
+}

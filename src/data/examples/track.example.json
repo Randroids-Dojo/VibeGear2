@@ -1,0 +1,38 @@
+{
+  "id": "velvet-coast/harbor-run",
+  "name": "Harbor Run",
+  "tourId": "velvet-coast",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 4280,
+  "laps": 3,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "light_rain", "dusk"],
+  "difficulty": 2,
+  "segments": [
+    {
+      "len": 180,
+      "curve": 0.0,
+      "grade": 0.0,
+      "roadsideLeft": "palms_sparse",
+      "roadsideRight": "marina_signs",
+      "hazards": []
+    },
+    {
+      "len": 140,
+      "curve": 0.35,
+      "grade": 0.02,
+      "roadsideLeft": "guardrail",
+      "roadsideRight": "water_wall",
+      "hazards": ["puddle"]
+    }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 18, "label": "split-a" },
+    { "segmentIndex": 41, "label": "sector-2" }
+  ],
+  "spawn": {
+    "gridSlots": 12
+  }
+}

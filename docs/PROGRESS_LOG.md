@@ -6,6 +6,70 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Data schemas as Zod validators and TS types (§22)
+
+**GDD sections touched:** [§22](gdd/22-data-schemas.md)
+**Branch / PR:** `feat/data-schemas` (off `feat/scaffold-next-app`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/data/schemas.ts` with Zod runtime validators and inferred
+  TypeScript types for every JSON contract in §22: `Track`, `Car`,
+  `Upgrade`, `Championship`, `AIDriver`, `SaveGame`, plus the supporting
+  enums (`WeatherOption`, `CarClass`, `UpgradeCategory`, `DifficultyPreset`,
+  `AIArchetype`, `SpeedUnit`) and nested record schemas (`TrackSegment`,
+  `TrackCheckpoint`, `CarBaseStats`, `CarUpgradeCaps`, `AIWeatherSkill`,
+  `AINitroUsage`, `SaveGameGarage`, `SaveGameSettings`,
+  `SaveGameProgress`, `SaveGameRecord`).
+- Added a barrel at `src/data/index.ts` so consumers can
+  `import { TrackSchema, type Track } from "@/data"`.
+- Added six fixture files under `src/data/examples/` copied verbatim from the
+  §22 examples (track, car, upgrade, championship, aiDriver, saveGame).
+- Added `src/data/schemas.test.ts` with 23 Vitest cases: each schema accepts
+  its §22 example and rejects at least three deliberately broken variants
+  (empty segments, negative numerics, unknown enum values, missing
+  required fields).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test` passes 26/26 (3 pre-existing + 23 new).
+- `npm run build` succeeds.
+- `grep` for U+2014 and U+2013 across new files returns nothing.
+
+### Decisions and assumptions
+- Slug format permits lowercase alphanumerics, hyphens, and underscores.
+  §22's AI driver IDs use snake_case (`ai_cleanline_01`); track IDs use a
+  `tour-id/track-id` path. The regex accepts both.
+- Picked enum sets that are conservative supersets of what §22 shows
+  (e.g. `WeatherOption` includes `rain`, `heavy_rain`, `fog`, `snow`,
+  `night` even though the example only uses `clear`, `light_rain`, `dusk`).
+  These are forward-compatible with §14 weather and §22 likely future
+  expansion. If the GDD ever pins a different set, narrow here.
+- `UpgradeEffectsSchema` uses optional numeric fields with a refine that
+  requires at least one declared effect. §22 shows two effects; the schema
+  allows any subset of the eight stat keys so future upgrades can target
+  brake or stability.
+- `CarUpgradeCaps` and `SaveGame.garage.installedUpgrades.<carId>` reuse
+  the same eight-category shape because §12 and §22 both list the same
+  categories. Consolidated into one schema constant generated from
+  `UpgradeCategorySchema.options`.
+- `SaveGameGarage.installedUpgrades` and `SaveGame.records` both use
+  `z.record(slug, ...)` to allow any car ID or track ID as a key. Stronger
+  cross-record validation (e.g. record key must appear in `ownedCars`)
+  belongs at the load-time wrapper, not inside the leaf schema.
+- Did not add JSON Schema export. Phase 0 only requires TS types + Zod
+  runtime validators per the dot spec. Defer to a content-pipeline slice if
+  authoring tools need it.
+
+### Followups created
+- None.
+
+### GDD edits
+- None. The §22 examples round-trip without modification.
+
+---
+
 ## 2026-04-26: Slice: Scaffold Next.js + TypeScript app shell
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)

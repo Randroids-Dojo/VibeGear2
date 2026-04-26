@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "profileName": "Player",
+  "settings": {
+    "displaySpeedUnit": "kph",
+    "assists": {
+      "steeringAssist": false,
+      "autoNitro": false,
+      "weatherVisualReduction": false
+    }
+  },
+  "garage": {
+    "credits": 18250,
+    "ownedCars": ["sparrow-gt"],
+    "activeCarId": "sparrow-gt",
+    "installedUpgrades": {
+      "sparrow-gt": {
+        "engine": 2,
+        "gearbox": 1,
+        "dryTires": 2,
+        "wetTires": 1,
+        "nitro": 1,
+        "armor": 1,
+        "cooling": 0,
+        "aero": 0
+      }
+    }
+  },
+  "progress": {
+    "unlockedTours": ["velvet-coast", "iron-borough"],
+    "completedTours": ["velvet-coast"]
+  },
+  "records": {
+    "velvet-coast/harbor-run": {
+      "bestLapMs": 67321,
+      "bestRaceMs": 214555
+    }
+  }
+}
