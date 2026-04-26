@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Q-009 confirm last-write-wins cross-tab save protocol
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) "Save system"
+(Cross-tab consistency subsection), [§27](gdd/27-risks-and-mitigations.md)
+"Cross-tab save corruption" mitigation row. No GDD edits.
+**Branch / PR:** `feat/answer-q-009-cross-tab-protocol`, PR pending.
+**Status:** Q-009 closed. Doc-only resolution. The
+`feat/cross-tab-save-consistency` slice (commit `923d6f9`) already shipped
+the recommended default (option (a), last-write-wins with the monotonic
+`writeCounter` advisory plus `subscribeToSaveChanges` and `reloadIfNewer`
+in `src/persistence/save.ts`); this loop only confirms that no upgrade is
+owed and pins the trigger conditions for re-evaluation.
+
+### Done
+- `docs/OPEN_QUESTIONS.md`: Q-009 status flips from `open` to
+  `answered`. The new Resolution paragraph names the shipping commit,
+  cites the `src/persistence/save.ts` surface, and pins the two
+  triggers that would force a re-evaluation: §27 raising the cross-tab
+  risk row above its current weight, or a cloud sync slice landing (at
+  which point we switch directly to option (c) and retire the local-only
+  protocol). Leader-tab election (option (b)) stays rejected for the
+  MVP rationale already in the question body (election, handoff, and
+  two-leader resolution complexity for a narrow two-tab population).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green.
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- Doc-only slice. The shipped protocol is the recommended default; no
+  code surface needs to change. Future cloud-sync work will revisit
+  this resolution and the swap is single-call: replace the
+  `writeSave` localStorage write with a server round-trip.
+- Trigger conditions named in the resolution paragraph. The two named
+  triggers (a §27 risk-row escalation, or a cloud sync slice landing)
+  give a future loop a clear handoff so the question does not silently
+  reopen.
+
+### Followups added
+None new.
+
+### GDD edits
+None.
+
+### Open questions raised
+None.
+
+---
+
 ## 2026-04-26: Slice: F-004 Playwright save/load round-trip via the garage cars UI
 
 **GDD sections touched:**

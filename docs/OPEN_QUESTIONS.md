@@ -71,8 +71,9 @@ F-036 (`cappedRepairCost` consumer wiring). Resolved.
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
 "Save system" (Cross-tab consistency subsection),
 [§27](gdd/27-risks-and-mitigations.md) "Cross-tab save corruption" row.
-**Status:** open
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** The cross-tab slice
 (`VibeGear2-implement-cross-tab-fa8cb14c`) shipped a last-write-wins
@@ -102,6 +103,23 @@ leader-tab election as a possible alternative. Should we upgrade?
 gains a higher-priority cross-tab risk or cloud sync starts landing
 and we can switch to (c) directly. (b) is added complexity for a
 narrow benefit.
+
+**Resolution.** Adopted option (a). The
+`feat/cross-tab-save-consistency` slice (commit `923d6f9`) already
+ships last-write-wins with the `writeCounter` advisory,
+`subscribeToSaveChanges`, and `reloadIfNewer` in
+`src/persistence/save.ts`; no protocol upgrade is owed. Re-evaluate
+only when one of the named triggers fires: §27 raises the cross-tab
+risk row above the current "Cross-tab save corruption" mitigation
+weight, or a cloud sync slice starts landing (at which point we
+switch directly to option (c) and retire the local-only protocol).
+Leader-tab election (option (b)) stays rejected for the MVP because
+it adds election, handoff, and two-leader resolution complexity for a
+narrow population (players with two tabs open against the same save)
+without buying enough determinism to justify the surface.
+
+**Blocking?** No. The protocol shipped under the recommended default;
+this resolution only confirms no upgrade is required. Resolved.
 
 ---
 
