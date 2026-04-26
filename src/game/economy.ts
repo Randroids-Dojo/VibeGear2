@@ -23,8 +23,10 @@
  * code without re-deriving validity from the next state.
  *
  * Out of scope for this slice (filed as followups):
- * - `applyRepairCost`: §12 names a `tourTierScale` factor that has no
- *   §23 column yet. Deferred until the balancing pass lands the table.
+ * - `applyRepairCost`: §12 names the formula
+ *   `repairCost = damagePercent * carRepairFactor * tourTierScale`. The
+ *   §23 `tourTierScale` lookup now lives here (`TOUR_TIER_SCALE` /
+ *   `tourTierScale`); the credit-debit wiring is filed as F-033.
  * - `tourBonus`: the 0.15x tour clear bonus is computed by the
  *   tour/region slice (`implement-tour-region-d9ca9a4d`) which owns the
  *   tour-clear lifecycle; this module supplies the per-race award only.
@@ -138,6 +140,52 @@ export function baseRewardForTrackDifficulty(difficulty: number): number {
   const rounded = Math.round(difficulty);
   const clamped = Math.max(1, Math.min(5, rounded)) as 1 | 2 | 3 | 4 | 5;
   return BASE_REWARDS_BY_TRACK_DIFFICULTY[clamped];
+}
+
+/**
+ * §23 "Repair cost tour tier scale" lookup keyed by 1-based tour index.
+ * Resolves the `tourTierScale` factor in §12's repair-cost formula
+ * (`repairCost = damagePercent * carRepairFactor * tourTierScale`) so
+ * late tours pressure armor upgrades. Frozen so a stray write cannot
+ * drift §23.
+ *
+ * Tour 1 sits at `1.00x` (no scale-up on the first tour); each later
+ * tour adds a geometric-ish ramp ending near `2.80x` at tour 8. Tours
+ * past 8 reuse the tour-8 value via `tourTierScale(tour)` until a
+ * future content slice extends the championship.
+ *
+ * Pinned per Q-010 option (a). The `balancing.test.ts` content test
+ * asserts each cell against the §23 markdown table.
+ */
+export const TOUR_TIER_SCALE: Readonly<
+  Record<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8, number>
+> = Object.freeze({
+  1: 1.0,
+  2: 1.15,
+  3: 1.3,
+  4: 1.5,
+  5: 1.75,
+  6: 2.05,
+  7: 2.4,
+  8: 2.8,
+});
+
+/**
+ * Resolve the §23 `tourTierScale` factor for a 1-based tour index.
+ * Out-of-range inputs (NaN, < 1, > 8) clamp into the pinned table so a
+ * malformed save cannot strand a repair quote with a zero or undefined
+ * scale; the §12 design intent is "every tour pays at least the tour-1
+ * factor and never more than the tour-8 factor until §23 extends".
+ *
+ * Fractional inputs round to the nearest tour so a caller passing a
+ * 0-based index by mistake (e.g. `tour.index` instead of `tour.index + 1`)
+ * still resolves into the table rather than throwing.
+ */
+export function tourTierScale(tour: number): number {
+  if (!Number.isFinite(tour)) return TOUR_TIER_SCALE[1];
+  const rounded = Math.round(tour);
+  const clamped = Math.max(1, Math.min(8, rounded)) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  return TOUR_TIER_SCALE[clamped];
 }
 
 // Result types -------------------------------------------------------------

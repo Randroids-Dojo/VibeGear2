@@ -436,20 +436,19 @@ wallet row renders a non-zero credit count.
 ## F-033: Implement `applyRepairCost` once §23 ships `tourTierScale`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** open (unblocked)
 **Notes:** The `feat/economy-upgrade` slice intentionally deferred
 `applyRepairCost` because §12 names a `tourTierScale` factor in the
 formula `repairCost = damagePercent * carRepairFactor *
-tourTierScale` that has no §23 column today. The iter-19 stress-test
-on `VibeGear2-implement-economy-upgrade-ff73b279` proposed a
-placeholder table (1.0, 1.15, 1.30, 1.50, 1.75, 2.05, 2.40, 2.80 for
-tours 1..8) but flagged that the implementer must NOT freeze it
-without dev sign-off. Q-010 (filed iter-81) asks the dev to confirm or
-replace the table; once answered, add
+tourTierScale` that had no §23 column. Q-010 resolved with option (a)
+in `feat/q-010-tour-tier-scale`: §23 now carries the "Repair cost
+tour tier scale" table and `src/game/economy.ts` exports
+`TOUR_TIER_SCALE` plus the `tourTierScale(tour)` resolver (clamping
+out-of-range / NaN to the in-table extremes). Add
 `applyRepairCost(save, { carId, zoneRepairs, tourTier })` to
 `src/game/economy.ts` reading per-zone damage from the in-flight
 `DamageState`, computing the credit cost via `repairCostFor` from
-`damage.ts`, multiplying by the resolved scale, and returning a
+`damage.ts`, multiplying by `tourTierScale(tourTier)`, and returning a
 fresh `SaveGame` with `garage.credits` decremented and (separately)
 the post-race damage zeroed. The caller (the §20 results-screen
 "Repair" button) is the natural consumer; until that surface lands,

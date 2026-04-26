@@ -13,15 +13,15 @@ they are part of the design history.
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Repair
 costs" (`repairCost = damagePercent * carRepairFactor * tourTierScale`),
-[§23](gdd/23-balancing-tables.md) "Balancing tables" (no `tourTierScale`
-column today).
-**Status:** open
+[§23](gdd/23-balancing-tables.md) "Repair cost tour tier scale".
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** §12 names a `tourTierScale` factor in the repair-cost
-formula but §23 does not pin a tour-by-tour value table. F-033 (`Implement
-applyRepairCost once §23 ships tourTierScale`) is blocked until this
-column exists. The iter-19 stress-test on
+formula but §23 did not pin a tour-by-tour value table. F-033
+(`Implement applyRepairCost once §23 ships tourTierScale`) was blocked
+until this column existed. The iter-19 stress-test on
 `VibeGear2-implement-economy-upgrade-ff73b279` proposed a placeholder
 table (`1.00, 1.15, 1.30, 1.50, 1.75, 2.05, 2.40, 2.80` for tours 1..8)
 but flagged that the implementer must NOT freeze it without dev sign-off.
@@ -52,10 +52,17 @@ F-036 (the `cappedRepairCost` consumer) both unblock with one sign-off.
 If a balancing pass later prefers (b) or (c), the table is one §23 edit
 plus one constant swap in `economy.ts`.
 
-**Blocking?** Yes for F-033 (`applyRepairCost`) and transitively F-036
-(`cappedRepairCost` consumer wiring). No for the §20 results-screen
-"Repair" button surface, which can render with the eventual function
-once it lands.
+**Resolution.** Adopted option (a). §23 now carries the "Repair cost
+tour tier scale" table with the iter-19 values for tours 1..8; tours
+beyond 8 reuse the tour-8 value until a future content slice extends
+the championship. The `TOUR_TIER_SCALE` lookup and `tourTierScale(tour)`
+resolver now live in `src/game/economy.ts` (the same module that owns
+the §23 reward table and will own `applyRepairCost`). The
+`balancing.test.ts` content test pins each cell so a §23 edit fails the
+build at a single readable site. F-033 unblocked.
+
+**Blocking?** Was yes for F-033 (`applyRepairCost`) and transitively
+F-036 (`cappedRepairCost` consumer wiring). Resolved.
 
 ---
 

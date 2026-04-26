@@ -6,6 +6,68 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Q-010 pin §23 `tourTierScale` table
+
+**GDD sections touched:** [§12](gdd/12-upgrade-and-economy-system.md)
+"Repair costs" (formula was already pinned), [§23](gdd/23-balancing-tables.md)
+"Repair cost tour tier scale" (new table row).
+**Branch / PR:** `feat/q-010-tour-tier-scale`, PR pending.
+**Status:** Implemented. Closes `VibeGear2-research-q-010-231ddf82` and
+flips Q-010 in `docs/OPEN_QUESTIONS.md` from `open` to `answered`. F-033
+(`applyRepairCost`) is now unblocked.
+
+### Done
+- `docs/gdd/23-balancing-tables.md`: new "Repair cost tour tier scale"
+  section with the iter-19 placeholder values
+  (`1.00, 1.15, 1.30, 1.50, 1.75, 2.05, 2.40, 2.80` for tours 1..8).
+  Tours past 8 reuse the tour-8 value until a future content slice
+  extends the championship.
+- `src/game/economy.ts`: `TOUR_TIER_SCALE` frozen lookup keyed by
+  1-based tour index plus `tourTierScale(tour)` resolver. NaN clamps
+  to tour 1; out-of-range inputs clamp into `[1, 8]`; fractional
+  inputs round to the nearest tour. The header out-of-scope note for
+  `applyRepairCost` updated to point F-033 at the new lookup.
+- `src/data/__tests__/balancing.test.ts`: new "§23 Repair cost tour
+  tier scale" describe block. Each cell pinned cell-by-cell against
+  the §23 markdown table; clamp / NaN / fractional / monotonicity /
+  freeze contracts covered (8 cases).
+- `docs/OPEN_QUESTIONS.md`: Q-010 marked `answered` with rationale
+  pointing at the §23 row and the `economy.ts` exports.
+- `docs/FOLLOWUPS.md`: F-033 status note updated to `open (unblocked)`
+  with a pointer to `tourTierScale(tourTier)` as the resolver the
+  future `applyRepairCost` should call.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green; the new "§23 Repair cost tour tier scale"
+  describe block passes alongside the existing balancing cells.
+- `npm run build` clean.
+- `npm run test:e2e` green.
+
+### Decisions and assumptions
+- Adopted Q-010 option (a) (the iter-19 placeholder table) per the
+  recommended default. Rationale: it is the only designed proposal in
+  the loop and it unblocks both F-033 and F-036 with a single edit.
+  The balancing pass slice owns the final retune; the `Edit §23 +
+  swap one constant` change is a one-line follow-up.
+- Placed `TOUR_TIER_SCALE` in `src/game/economy.ts` (not a new
+  `src/data/balancing.ts`) to match the existing repo pattern: every
+  other §23 numeric table lives in its consumer module
+  (`BASE_REWARDS_BY_TRACK_DIFFICULTY` in `economy.ts`,
+  `WEATHER_TIRE_MODIFIERS` in `weather.ts`,
+  `CPU_DIFFICULTY_MODIFIERS` in `aiDifficulty.ts`,
+  `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` in `damage.ts`).
+
+### Followups created
+- None. F-033 was already filed; this slice unblocks it.
+
+### GDD edits
+- `docs/gdd/23-balancing-tables.md`: added "Repair cost tour tier
+  scale" table per Q-010 resolution.
+
+---
+
 ## 2026-04-26: Slice: F-020 content-lint script enforces LEGAL_SAFETY denylist
 
 **GDD sections touched:**

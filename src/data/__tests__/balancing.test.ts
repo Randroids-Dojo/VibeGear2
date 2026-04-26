@@ -45,6 +45,8 @@ import { CARS_BY_ID } from "@/data/cars";
 import {
   BASE_REWARDS_BY_TRACK_DIFFICULTY,
   baseRewardForTrackDifficulty,
+  TOUR_TIER_SCALE,
+  tourTierScale,
 } from "@/game/economy";
 import {
   HIT_MAGNITUDE_RANGES,
@@ -154,6 +156,81 @@ describe("§23 Reward formula targets", () => {
   it("rounds fractional difficulties to the nearest tier", () => {
     expect(baseRewardForTrackDifficulty(2.4)).toBe(REWARD_FORMULA_TARGETS[2]);
     expect(baseRewardForTrackDifficulty(2.5)).toBe(REWARD_FORMULA_TARGETS[3]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2b. Repair cost tour tier scale (§23, per Q-010 option (a))
+// ---------------------------------------------------------------------------
+
+/**
+ * §23 "Repair cost tour tier scale" verbatim. Pin against
+ * `TOUR_TIER_SCALE` from `src/game/economy.ts`. Resolved by `Q-010`
+ * with the iter-19 placeholder table; tours past 8 reuse the tour-8
+ * value.
+ */
+const TOUR_TIER_SCALE_TARGETS: Record<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8, number> = {
+  1: 1.0,
+  2: 1.15,
+  3: 1.3,
+  4: 1.5,
+  5: 1.75,
+  6: 2.05,
+  7: 2.4,
+  8: 2.8,
+};
+
+describe("§23 Repair cost tour tier scale", () => {
+  it.each(
+    ([1, 2, 3, 4, 5, 6, 7, 8] as const).map(
+      (tour) => [tour, TOUR_TIER_SCALE_TARGETS[tour]] as const,
+    ),
+  )("tour %i scales repair cost by %f", (tour, expected) => {
+    expect(TOUR_TIER_SCALE[tour]).toBeCloseTo(expected, 9);
+  });
+
+  it("tourTierScale resolves every in-range tour", () => {
+    for (const tour of [1, 2, 3, 4, 5, 6, 7, 8] as const) {
+      expect(tourTierScale(tour)).toBeCloseTo(
+        TOUR_TIER_SCALE_TARGETS[tour],
+        9,
+      );
+    }
+  });
+
+  it("tourTierScale clamps below 1 to tour 1", () => {
+    expect(tourTierScale(0)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[1], 9);
+    expect(tourTierScale(-3)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[1], 9);
+  });
+
+  it("tourTierScale clamps above 8 to tour 8", () => {
+    expect(tourTierScale(9)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[8], 9);
+    expect(tourTierScale(99)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[8], 9);
+  });
+
+  it("tourTierScale falls back to tour 1 on NaN", () => {
+    expect(tourTierScale(Number.NaN)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[1], 9);
+  });
+
+  it("rounds fractional tour indexes to the nearest tour", () => {
+    expect(tourTierScale(2.4)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[2], 9);
+    expect(tourTierScale(2.5)).toBeCloseTo(TOUR_TIER_SCALE_TARGETS[3], 9);
+  });
+
+  it("scale is monotonically non-decreasing across tours", () => {
+    for (let tour = 2; tour <= 8; tour += 1) {
+      const prev = TOUR_TIER_SCALE[(tour - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8];
+      const curr = TOUR_TIER_SCALE[tour as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8];
+      expect(curr).toBeGreaterThanOrEqual(prev - TOL);
+    }
+  });
+
+  it("tour 1 sits at identity so the first tour does not scale up", () => {
+    expect(TOUR_TIER_SCALE[1]).toBeCloseTo(1.0, 9);
+  });
+
+  it("TOUR_TIER_SCALE is frozen so a stray write cannot drift §23", () => {
+    expect(Object.isFrozen(TOUR_TIER_SCALE)).toBe(true);
   });
 });
 

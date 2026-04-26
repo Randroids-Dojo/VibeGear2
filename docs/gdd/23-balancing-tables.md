@@ -21,6 +21,26 @@
 | 4 | 2,250 |
 | 5 | 2,900 |
 
+## Repair cost tour tier scale
+
+Per §12 the repair cost formula is
+`repairCost = damagePercent * carRepairFactor * tourTierScale`.
+The `tourTierScale` factor scales raw repair credits with championship
+progression so the late tours pressure armor upgrades. Tour index is
+1-based; tours beyond 8 reuse the tour-8 value until a future content
+slice extends the championship past the MVP eight tours.
+
+| Tour | tourTierScale |
+| --- | --- |
+| 1 | 1.00 |
+| 2 | 1.15 |
+| 3 | 1.30 |
+| 4 | 1.50 |
+| 5 | 1.75 |
+| 6 | 2.05 |
+| 7 | 2.40 |
+| 8 | 2.80 |
+
 ## Damage formula targets
 
 ```
