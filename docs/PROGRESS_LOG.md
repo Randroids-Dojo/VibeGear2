@@ -6,6 +6,70 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §28 difficulty preset tuning scalars (pure binding)
+
+**GDD sections touched:**
+[§28](gdd/28-appendices-and-research-references.md) Example tuning
+values (Beginner / Balanced / Expert).
+[§15](gdd/15-cpu-opponents-and-ai.md) Difficulty tiers (player-facing
+ladder Easy / Normal / Hard / Master).
+**Branch / PR:** `feat/difficulty-presets-tuning` stacked on
+`feat/profile-export-import`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-28-difficulty-aeb263d1` (binding portion). The
+§28 appendix table now has a runtime owner: a frozen
+`Record<PlayerDifficultyPreset, AssistScalars>` keyed by the §15
+ladder. Easy maps to the Beginner row, Normal to Balanced, Hard to
+Expert; Master extrapolates from the same trend (documented per scalar
+in the module). Consumer wiring (physics off-road drag and steering
+authority, damage severity, nitro stability penalty) is intentionally
+deferred to F-042 so this slice does not bump `PHYSICS_VERSION` and
+invalidate ghost replays. Per the dot's iter-30 researcher note, the
+keying enum is the §15 player-facing `PlayerDifficultyPreset`, not the
+wider championship enum.
+
+### Done
+- `src/game/difficultyPresets.ts` (new): pins the §28 four-row table
+  in a frozen object; exports `AssistScalars`, `getPreset`,
+  `resolvePresetScalars`, `DEFAULT_PRESET_ID`, and `PRESET_IDS`.
+  `getPreset` returns the same frozen reference per call so callers
+  can lean on identity. `resolvePresetScalars` treats `undefined`
+  (older v1 saves before the field landed) as the Balanced row to
+  match `defaultSave()` and the §15 baseline.
+- `src/game/index.ts` (update): re-export the new module through the
+  game barrel.
+- `src/game/__tests__/difficultyPresets.test.ts` (new): 15 unit
+  cases. Pins each row (Beginner, Balanced, Expert, Master)
+  verbatim against the §28 table and the documented Master
+  extrapolation; asserts `DEFAULT_PRESET_ID === 'normal'`;
+  `PRESET_IDS` is the §15 ladder in order; `getPreset` returns the
+  same frozen reference twice; out-of-band id falls back to
+  Balanced; `resolvePresetScalars(undefined)` falls back to
+  Balanced; monotonicity sanity (steering / drag non-increasing,
+  nitro / damage non-decreasing) across Easy -> Master.
+- `docs/FOLLOWUPS.md` (update): F-042 logs the deferred consumer
+  wiring (physics, damage, nitro, raceSession) and the
+  `PHYSICS_VERSION` bump it requires.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 1641 passing across 73 files (was 1626; +15 new
+  difficultyPresets cases).
+- `npm run build`: passes; no route-size deltas (the new module is
+  pure runtime and not yet imported by any UI).
+- `npm run test:e2e`: 47 passing.
+
+### Followups
+- F-042 (nice-to-have): wire the four scalars into physics, damage,
+  nitro, and raceSession; bump `PHYSICS_VERSION` so existing ghosts
+  recorded under the unscaled math are rejected.
+
+### GDD edits
+- None. The §28 table and §15 ladder were the source of truth.
+
+---
+
 ## 2026-04-26: Slice: profile export / import (JSON download + upload)
 
 **GDD sections touched:**

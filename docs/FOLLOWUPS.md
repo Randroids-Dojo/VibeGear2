@@ -10,6 +10,39 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-042: Wire §28 difficulty preset scalars into physics, damage, and nitro
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The pure presets module (`src/game/difficultyPresets.ts`,
+`getPreset`, `resolvePresetScalars`) landed in
+`feat/difficulty-presets-tuning` with the §28 "Example tuning values"
+table pinned. Three scalar consumers are still pending and were
+deliberately deferred to keep the binding slice small and avoid
+bumping `PHYSICS_VERSION` (which would invalidate ghost replays):
+1. `src/game/physics.ts`: read `offRoadDragScale` against
+   `OFF_ROAD_DRAG_M_PER_S2` in the off-road branch, and read
+   `steeringAssistScale` to clamp the lateral-velocity contribution
+   toward neutral (the §10 steering-assist authority knob). Both
+   require a `StepOptions.assistScalars` field with a `1`/identity
+   default so existing call sites keep their behaviour. Bump
+   `PHYSICS_VERSION` in the same slice so an old ghost recorded
+   under the unscaled math is rejected.
+2. `src/game/damage.ts`: multiply contact-event totals by
+   `damageSeverity` before the band lookup. Add an `assistScalars`
+   parameter to `applyContactDamage` (or equivalent) with a `1`
+   default.
+3. `src/game/nitro.ts`: scale the §13 nitro-while-unstable handling
+   penalty by `nitroStabilityPenalty`. The current nitro module
+   does not yet model that penalty path; once the damage-band
+   stability axis flows into nitro (separate slice), this scalar
+   composes as a final multiplier.
+4. `src/game/raceSession.ts`: read `config.player.difficultyPreset`
+   off the loaded save, resolve once via `resolvePresetScalars`, and
+   pass the cached `AssistScalars` reference into each `step()` /
+   `applyContactDamage` / `tickNitro` call. Same reference per
+   session; no per-tick clone.
+
 ## F-041: Swap fixed-credit bonus placeholders for multiplier-based rates per dot pin
 **Created:** 2026-04-26
 **Priority:** nice-to-have
