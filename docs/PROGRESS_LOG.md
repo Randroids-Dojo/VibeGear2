@@ -6,6 +6,115 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: pure raceRules.ts module (countdown labels, DNF timers, ranking, final-state builder)
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) (race lifecycle, fail states,
+tie handling). The §7 spec names DNF as a fail state but does not pin
+timeout values; this slice pins them per the parent dot's iter-19
+researcher stress-test.
+**Branch / PR:** `feat/pure-race-rules-module` (stacked on
+`feat/legal-safety-doc`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Authored `src/game/raceRules.ts` as a pure-helpers module mirroring
+  the `nitro.ts` / `damage.ts` / `drafting.ts` pattern: pure module
+  first, race-session wiring second.
+- Exported countdown HUD labels (`COUNTDOWN_TICK_LABELS`,
+  `labelForCountdown`) re-using the existing `DEFAULT_COUNTDOWN_SEC`
+  constant from `raceState.ts` so the countdown duration is single-
+  sourced.
+- Pinned the four DNF threshold constants (`DNF_OFF_TRACK_TIMEOUT_SEC`,
+  `DNF_NO_PROGRESS_TIMEOUT_SEC`, `DNF_RACE_TIME_LIMIT_SEC`,
+  `DNF_NO_PROGRESS_DELTA_M`, plus `DNF_OFF_TRACK_RESET_SPEED_M_PER_S`
+  for the high-speed-grass-excursion guard) and shipped the per-car
+  reducer `tickDnfTimers(prev, sample, dt)` returning a fresh
+  `{ timers, dnf, reason }`. Reset semantics match the iter-19
+  stress-test §4 "drove through grass for 28s, came back for one tick,
+  drove off again" guard.
+- Shipped `exceedsRaceTimeLimit(elapsedSec)` for the hard race-time
+  cap.
+- Shipped `rankCars(snapshots)` with the iter-19 §3 tie-break ladder
+  (status partition `finished > racing > dnf`, then lap > z >
+  totalDistance > carId lex). The iter-19 §8 ranking case
+  `[(1,1500),(1,1900),(2,10),(1,800)]` ranks as
+  `[carC, carB, carA, carD]`, asserted in the test file.
+- Shipped the `FinalRaceState` shape and `buildFinalRaceState(input)`
+  builder. Per-car `bestLapMs` derives from `Math.min` of the lap
+  array; fastest lap scans every (car, lapIndex) cell with earliest-
+  lap and lex-carId tie-breaks. Reward computation
+  (`economy-upgrade-ff73b279`) consumes this output; the boundary
+  matches the iter-19 §5 split.
+- Authored `src/game/__tests__/raceRules.test.ts` with 31 unit cells
+  covering countdown labels (parametric), DNF off-track / no-progress
+  windows, the threshold-on-exact-tick edge cases, the off-track
+  reason preference on simultaneous trip, race-time-limit edge cases,
+  ranking ladder + status partition, and the full
+  `buildFinalRaceState` happy path / DNF / no-laps / determinism
+  matrix. Frozen-input invariant asserted; per-call fresh-object
+  invariant asserted.
+- Filed sub-dot `VibeGear2-implement-pure-racerules-6272a25e` under
+  the parent composite `VibeGear2-implement-race-rules-b30656ae`.
+  Pure-helpers slice is closed; the wiring slice (race-session
+  integration, `RaceState.cars[]` extension, Playwright e2e for
+  3-lap race) lands in a follow-up sub-dot. Parent composite stays
+  open per the iter-30 HUD-UI tracking-parent pattern.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (965 tests, 42 files; 31 new in raceRules.test.ts).
+- `npm run build` clean.
+- `npm run test:e2e` green (28 specs).
+- No em-dashes (U+2014) or en-dashes (U+2013) in any added file
+  (`grep -P "[\x{2013}\x{2014}]"` returns nothing).
+
+### Decisions and assumptions
+- Re-exported `DEFAULT_COUNTDOWN_SEC` from `raceRules.ts` rather than
+  duplicating. Single source of truth lives in `raceState.ts`; the
+  re-export keeps `raceRules.ts` self-contained for downstream
+  consumers without a module-graph cycle.
+- `labelForCountdown` returns `"GO"` for non-finite or non-positive
+  inputs (including `+Infinity`) as a defensive fallback. A caller
+  that subtracts past zero before checking phase still renders a
+  sensible label.
+- `tickDnfTimers` off-track reset uses the two-condition rule:
+  on-road OR moving-fast (`speed >= DNF_OFF_TRACK_RESET_SPEED_M_PER_S`,
+  pinned at 5 m/s ~ 18 km/h). A car blasting through gravel at full
+  speed is racing, not retired; only a slow off-road excursion
+  accumulates the timeout.
+- When both timers trip on the same tick, `tickDnfTimers` reports the
+  off-track reason because that is the more informative outcome for
+  the §20 results screen.
+- Ranking inside the `finished` status partition uses carId lex
+  order in this slice. The iter-19 stress-test pinned
+  `finishedAtTick` as the canonical tie-break; that field belongs on
+  the wiring slice's extended `CarRankSnapshot` shape, deferred to
+  keep the pure-helpers surface minimal.
+- The DNF threshold values (30s off-track, 60s no-progress, 600s race
+  cap, 5m progress delta) are pinned per the iter-19 stress-test §4.
+  No new GDD edits required; §7 explicitly defers the numbers to the
+  implementer.
+- `buildFinalRaceState`'s DNF ordering (descending laps, then
+  ascending last-lap time, then carId lex) is a slice-local choice;
+  the §7 standings table only specifies tour-aggregate tie-breaks,
+  not per-race DNF ordering. Documented inline.
+
+### Followups created
+- (none) The wiring slice belongs to a follow-up sub-dot of the
+  parent composite. The composite tracks the remaining work:
+  `RaceState.cars[]` extension, race-session integration replacing
+  the current `Math.floor(z / trackLength)` lap-detection stub, and
+  the Playwright `e2e/race-finish.spec.ts` for a 3-lap race against
+  AI.
+
+### GDD edits
+- None. §7 race-rules text is unchanged; the threshold values land
+  as code-level constants per the parent dot's stress-test pin.
+
+---
+
 ## 2026-04-26: Slice: LEGAL_SAFETY.md authoring per GDD §26
 
 **GDD sections touched:**
