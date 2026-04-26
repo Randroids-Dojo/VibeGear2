@@ -112,9 +112,18 @@ upgrade), reload, assert the value persisted.
 ## F-003 — Auto-deploy pipeline from `main`
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
-**Notes:** Blocked by Q-003 (deploy target). Once chosen, add CI workflow
-that builds, runs the test suite, and deploys on every merge to `main`.
+**Status:** in-progress
+**Notes:** Q-003 resolved to Vercel Hobby + GitHub Actions. The
+`feat/github-actions-ci-recovery` slice landed `.github/workflows/ci.yml`
+and `vercel.json` (re-applying the work originally on
+`feat/github-actions-ci`, dot
+`VibeGear2-implement-github-actions-1780fc58`). Verify job runs lint,
+typecheck, Vitest, and Playwright; deploy job runs `vercel build --prod`
++ `vercel deploy --prebuilt --prod`. Concurrency groups split so deploy is
+not cancellable mid-flight. Marked `done` once the first push to `main`
+triggers a successful `deploy` job and the deployed URL serves the title
+screen. Human prerequisites (vercel link, three repo secrets, branch
+protection) are documented in `README.md` Deploy section.
 
 ## F-002 — Project skeleton (Next.js + TypeScript + CI)
 **Created:** 2026-04-26
@@ -127,7 +136,8 @@ unit harness landed in the `feat/scaffold-next-app` slice. The Playwright
 e2e harness with title-screen smoke landed in the
 `feat/playwright-smoke-recovery` slice (`npm run test:e2e`,
 `npm run verify:full`). Remaining: GitHub Actions CI (own slice, blocked by
-F-003 deploy target choice).
+F-003 deploy target choice; landed in
+`feat/github-actions-ci-recovery`).
 
 ## F-001 — Author GDD sections 18–28
 **Created:** 2026-04-26

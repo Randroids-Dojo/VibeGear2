@@ -39,3 +39,9 @@ next-env.d.ts
 
 # dots task tracking (not part of source)
 .dots/
+
+# vercel CLI link artefacts (per-developer; project + org IDs live in repo secrets)
+.vercel/
+
+# claude code per-developer agent state
+.claude/

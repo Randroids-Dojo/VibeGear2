@@ -11,9 +11,10 @@ they are part of the design history.
 
 ## Q-003 — Auto-deploy target
 
-**GDD reference:** §21 (not yet authored), §26
-**Status:** open
+**GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md), §26
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** Where should `main` auto-deploy to? Options: Vercel (matches
 Next.js defaults), Cloudflare Pages, Netlify, GitHub Pages with a static
@@ -23,7 +24,22 @@ export, or self-hosted.
 via a `vercel.json` and a GitHub Action triggered on push to `main`. Easy to
 swap later because the app stays static-exportable.
 
-**Blocking?** Yes for `F-003`. Other slices can proceed without it.
+**Resolution.** Vercel Hobby (free tier, region `iad1`) with GitHub Actions
+gating production deploys. Two-job workflow: `verify` runs lint + typecheck
++ Vitest + Playwright on every PR and on push to `main`; `deploy` runs only
+on push to `main` after `verify` is green, using `vercel build --prod` +
+`vercel deploy --prebuilt --prod` so the build runs in CI logs and the
+artefact is what ships. `verify` and `deploy` use separate concurrency
+groups: `verify` cancels stale runs, `deploy` does not, so a rapid second
+push cannot abort an in-flight production deploy. The Vercel GitHub App
+handles PR previews. Required secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+`VERCEL_PROJECT_ID`. Cloudflare Pages, Netlify, GitHub Pages, and
+self-hosted were rejected (rationale in the closing reason of dot
+`VibeGear2-research-choose-deploy-bcfb9148`). See the recovery slice
+`feat/github-actions-ci-recovery` (re-applied work originally on
+`feat/github-actions-ci`, dot `VibeGear2-implement-github-actions-1780fc58`).
+
+**Blocking?** Yes for `F-003`. Resolved.
 
 ---
 

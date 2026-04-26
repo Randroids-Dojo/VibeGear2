@@ -6,6 +6,109 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: GitHub Actions CI + Vercel auto-deploy (F-003) recovery
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md) (added "Deploy target" subsection)
+**Branch / PR:** `feat/github-actions-ci-recovery` (stacked on `feat/render-perf-bench`), PR pending
+**Status:** Implemented (workflow lands; first deploy waits on human prerequisites)
+
+### Recovery context
+- Re-applies the work that was originally written for the closed dot
+  `VibeGear2-implement-github-actions-1780fc58` and committed as
+  `934f5b6` on the orphan branch `feat/github-actions-ci`. That branch
+  was never merged to `main`; the close-reason claimed shipped files
+  that did not exist on `main`. The recovery dot
+  `VibeGear2-implement-github-actions-388c5523` re-opened the work.
+- Followed option 2 of the recovery dot (re-implement against the live
+  trunk) rather than option 1 (rebase 934f5b6) so the iteration-17
+  stress-test refinements (split concurrency for `deploy`, gated bench
+  job) could land in the same commit. The original 934f5b6 had a single
+  `concurrency` block with `cancel-in-progress: true` covering both
+  jobs; this recovery splits them.
+
+### Done
+- Added `.github/workflows/ci.yml`: three jobs.
+  - `verify` runs on every PR and on push to `main`. Steps: checkout,
+    setup-node 20 with npm cache, `npm ci`, `npm run lint`, `npm run
+    typecheck`, `npm run test`, install Playwright chromium with deps,
+    `npm run build`, `npm run test:e2e`. Uploads `playwright-report/` as
+    an artefact on failure (7-day retention). Concurrency group
+    `ci-verify-${{ github.ref }}` with `cancel-in-progress: true`.
+  - `bench` runs only on `workflow_dispatch` with `run_bench=true`. Runs
+    `npm run bench:render` with `continue-on-error: true` so the
+    informational bench can never gate a merge or deploy. Closes the
+    follow-up noted in the previous PROGRESS_LOG entry.
+  - `deploy` runs only on push to `main` after `verify` is green. Steps:
+    checkout, setup-node, `npm ci`, `vercel pull` for production env,
+    `vercel build --prod`, `vercel deploy --prebuilt --prod`. Surfaces
+    the deploy URL via the GH `environment.url` field. Separate
+    concurrency group `deploy-prod` with `cancel-in-progress: false` so
+    a rapid second push to `main` queues behind the in-flight deploy
+    instead of killing it (per iteration-17 stress test #5).
+- Added `vercel.json` with `framework: nextjs`, `npm ci` install, `next
+  build` build, region `iad1`, openapi.vercel.sh schema URL.
+- Added `.vercel/` and `.claude/` to `.gitignore` so per-developer
+  artefacts stay local.
+- Updated `docs/gdd/21-technical-design-for-web-implementation.md` with
+  a "Deploy target" subsection naming Vercel and pointing at the
+  workflow.
+- Updated `README.md` with a Deploy section that documents the CI gate,
+  the Vercel preview behaviour, the bench dispatch toggle, and the
+  one-time human setup steps.
+- Marked `OPEN_QUESTIONS.md` Q-003 `answered` with the full resolution.
+- Marked `FOLLOWUPS.md` F-003 `in-progress` with completion criteria
+  (first green deploy + smoke of deployed URL); updated F-002 note that
+  the CI slice has landed.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 429 passing (test count unchanged: no source files
+  touched).
+- `npm run build` clean.
+- `npm run test:e2e` 4 of 4 passing.
+- `npm run bench:render` runs to completion (sanity check that the
+  bench script the new CI job gates on still works).
+- `grep` for U+2014 and U+2013 across `.github/workflows/ci.yml`,
+  `vercel.json`, and the new README + GDD additions returns nothing.
+- The `verify` job will run against this PR; `deploy` will fail on
+  first push to `main` until secrets are populated, which is the
+  designed and documented behaviour.
+
+### Decisions and assumptions
+- Used the Vercel CLI from GitHub Actions for production deploys
+  instead of the Vercel GitHub App's auto-prod, so production is
+  strictly gated on the same CI run that runs the smoke. The GitHub
+  App still handles PR preview URLs (with auto-prod toggled off, per
+  the README setup notes).
+- `--with-deps chromium` installs only chromium, matching
+  `playwright.config.ts`'s projects array.
+- Pinned Node 20 (LTS) in CI even though `engines.node` is `>=20`. Lets
+  us bump in one place when 22 ships LTS.
+- No separate `preview` deploy job. PR previews come from the Vercel
+  GitHub App; running both an Actions preview and an App preview
+  duplicates work without adding signal.
+- Workflow file lands even though deploy secrets are not configured
+  yet. The `verify` job is the meaningful gate; `deploy` will fail
+  loudly with a clear error until the human steps complete, which is
+  more discoverable than landing the workflow later.
+- Bench job is `workflow_dispatch`-only with `continue-on-error: true`
+  rather than the previously-suggested `RUN_BENCH=1` env switch
+  because GH Actions has no built-in way to set repo-level env on a
+  push, and dispatch inputs are first-class in the Actions UI.
+
+### Followups created
+- None. F-003 stays `in-progress` until the first green production
+  deploy; that flip is a one-line edit in a follow-up commit, not a
+  new dot.
+
+### GDD edits
+- Added "Deploy target" subsection to
+  [`docs/gdd/21-technical-design-for-web-implementation.md`](gdd/21-technical-design-for-web-implementation.md). Naming the
+  hosting choice in the GDD keeps the doc honest about the architecture.
+
+---
+
 ## 2026-04-26: Slice: Render perf bench script (npm run bench:render)
 
 **GDD sections touched:** none (tooling slice; informational bench only)

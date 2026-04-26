@@ -158,3 +158,18 @@ The current repo already stores controls and tuning in local storage and uses ba
 - Deterministic replay tests for ghosts
 - Playwright flows for title → race → results → garage → next race
 - Performance bench on representative desktop hardware
+
+## Deploy target
+
+Production deploys go to **Vercel Hobby** (free tier, region `iad1`). The deploy
+is gated by GitHub Actions: every push to `main` runs the full `verify` job
+(lint, type-check, Vitest, Playwright e2e against a production build) and only
+on green does the `deploy` job run `vercel build --prod` + `vercel deploy
+--prebuilt --prod`. The Vercel GitHub App handles PR preview URLs; production
+deploys are CLI-driven from `.github/workflows/ci.yml` so they share the same
+job log as CI. The `verify` and `deploy` jobs sit in separate concurrency
+groups so a rapid second push to `main` cannot cancel an in-flight production
+deploy. The render perf bench (`npm run bench:render`) is wired as an opt-in
+`workflow_dispatch` job with `continue-on-error: true` so it never gates a
+merge or deploy. Required GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+`VERCEL_PROJECT_ID`. See `.github/workflows/ci.yml` and `vercel.json`.
