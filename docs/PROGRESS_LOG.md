@@ -6,6 +6,96 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Pseudo-3D road renderer (Canvas2D, single straight track)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md), [§16](gdd/16-rendering-and-visual-design.md), [§21](gdd/21-technical-design-for-web-implementation.md), [§22](gdd/22-data-schemas.md)
+**Branch / PR:** `feat/pseudo-3d-road-renderer` (off `chore/licence-files`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/road/constants.ts` pinning `ROAD_WIDTH`, `SEGMENT_LENGTH`,
+  `DRAW_DISTANCE`, `FOV_DEGREES`, `CAMERA_HEIGHT`, `CAMERA_DEPTH`,
+  `CURVATURE_SCALE`, stripe lengths, and `SPRITE_BASE_SCALE` per the values
+  pinned in the research dot.
+- Added `src/road/types.ts` with `Camera`, `Viewport`, `CompiledSegment`,
+  and `Strip` types. Dependency-free so tests and the projector can import
+  without pulling Canvas2D bindings.
+- Added `src/road/trackCompiler.ts` exposing `compileTrack(track)` and
+  `compileSegments(authored)` that expand variable-length authored
+  segments into fixed `SEGMENT_LENGTH` blocks. `curve` and `grade` are
+  pre-scaled into compiled units so the projector can sum dx and dy
+  directly. NaN and Infinity in those fields are sanitized to 0 with a
+  single warning per compile.
+- Added `src/road/segmentProjector.ts` with a pure `project(segments,
+  camera, viewport, options) -> Strip[]`. Implements the Gordon recipe:
+  per-segment curve and grade accumulation, pinhole projection, and a
+  near-to-far maxY clip that marks strips hidden behind a closer hill
+  crest as not visible. Handles wrap-around for laps and caps
+  drawDistance to totalSegments to avoid double-projecting tiny tracks.
+- Added `src/render/pseudoRoadCanvas.ts` with `drawRoad(ctx, strips,
+  viewport, options)`. Walks the strip list back-to-front and paints the
+  sky band, alternating grass, rumble strips, road surface, and lane
+  markings using filled trapezoids.
+- Added `src/app/dev/road/page.tsx` (dev-only client component) at
+  `/dev/road`. Mounts the renderer with a 1.2 km straight test track and
+  a 60 m/s forward-moving camera. Surfaces fps, camera Z, and visible
+  strip count for the manual visual check.
+- Added unit tests:
+  - `src/road/__tests__/trackCompiler.test.ts` (9 cases): empty input,
+    `ceil(len / SEGMENT_LENGTH)` expansion, monotonic indices and
+    worldZ, minimum-one-block guarantee, curve and grade scaling, NaN
+    and Infinity sanitisation with single warning, ring-buffer total
+    length, and authoredRef preservation.
+  - `src/road/__tests__/segmentProjector.test.ts` (11 cases): empty
+    list, degenerate viewport, monotonic screenY and screenW on a flat
+    straight track, drift on a constant curve, mirrored sign behaviour
+    on opposite curves, maxY cull on a sharp crest, lap wrap, drawDistance
+    cap on tiny tracks, near-plane culling, and an analytical scale check.
+- Wired `road` and `render` index re-exports.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 76/76 (20 new + 56 existing).
+- `npm run build` succeeds; `/dev/road` ships at 2.75 kB route size.
+- `grep` for U+2014 and U+2013 across all touched files returns nothing.
+- Manual visual verification at `/dev/road` deferred to a human run of
+  `npm run dev`; the dot's "60 fps on a 2020-class laptop" check requires
+  a real browser. Headless Vitest cannot render Canvas2D; this is logged
+  here per RULE 8.
+
+### Decisions and assumptions
+- The maxY cull walks **near to far**, mirroring Gordon's racer.js
+  pattern, not the back-to-front order originally described in the
+  research dot. The two yield the same set of culled strips on flat
+  ground (no cull), but only the near-to-far walk treats `maxY` as the
+  smallest screenY seen so far, which is what the cull semantics
+  actually require. Updated the comment in `segmentProjector.ts` to
+  reflect the corrected order; the research dot is preserved as is.
+- Strip pairing in the drawer uses `(strips[n-1], strips[n])` as
+  `(near, far)`. The drawer walks the strip list far-to-near so closer
+  strips paint on top of distant ones.
+- `cameraOffsetWithinSegment` is computed inside the projector so the
+  closest strip sits exactly at the camera position rather than snapping
+  to the nearest segment boundary. Without this, the road would visibly
+  jitter as the camera crossed each segment boundary.
+- The strip array always preserves `drawDistance` slots even when the
+  maxY cull marks some as not visible. Keeping array indices stable
+  lets the drawer pair adjacent strips reliably without re-indexing
+  after the cull.
+- Sprite billboards, parallax background, and weather VFX are scoped
+  out of this slice. Dot text confirms they belong to follow-up slices.
+
+### Followups created
+- None. Sprite atlas, background parallax, and authored multi-curve
+  tracks are already tracked as separate ready dots.
+
+### GDD edits
+- None. Implementation matches the §16 visible characteristics, §21
+  pipeline shape, and §9 road dimensions without GDD changes.
+
+---
+
 ## 2026-04-26: Slice: Fixed-step simulation loop (§21 Game loop)
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
