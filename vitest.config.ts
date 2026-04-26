@@ -10,7 +10,12 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "tests/unit/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "tests/unit/**/*.test.ts",
+      "scripts/**/*.test.ts",
+    ],
     exclude: ["e2e/**", "node_modules/**", ".next/**"],
     coverage: {
       provider: "v8",

@@ -731,19 +731,42 @@ old replays migrate forward).
 ## F-020: `scripts/content-lint.ts` to enforce the LEGAL_SAFETY denylist
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** `docs/LEGAL_SAFETY.md` section 9 sets the contract for a future
-content-lint script that runs as part of `npm run verify` and fails the
-build on (a) any binary in `public/` missing an asset manifest entry,
-(b) track JSON that references a real-circuit name from a denylist
-(Nurburgring, Spa, Suzuka, Monza, Silverstone, Imola, Estoril, Le Mans,
-Monaco, Daytona, Indianapolis), (c) car names matching a manufacturer
-denylist (Skyline, Mustang, Civic, Camaro, Supra, Lancer), and (d) any
-text content matching a Top Gear denylist (`Top Gear`, `topgear`,
-`Kemco`, `Snowblind`). The denylists in the doc are illustrative; the
-authoritative list lives in the script when it lands. Write the lint
-under `scripts/content-lint.ts`, wire it into `npm run verify`, and
-unit-test the denylist matcher with positive and negative cases.
+**Status:** done (2026-04-26, `feat/content-lint-script`)
+**Notes:** Closed by `feat/content-lint-script`. The new script
+`scripts/content-lint.ts` ships four passes wired into `npm run verify`
+via `npm run content-lint` (which calls `vite-node --script` against
+the script). The script exports four pure pass functions
+(`lintBinaryManifest`, `lintTrackNames`, `lintCarNames`,
+`lintTopGearText`) plus `runContentLint` and the matcher helpers
+(`buildDenylistRegex`, `findDenylistHit`, `formatHit`,
+`isBinaryAssetPath`). The four denylists live as `readonly`
+exports (`TRACK_REAL_CIRCUIT_DENYLIST`, `CAR_MANUFACTURER_DENYLIST`,
+`TOPGEAR_TEXT_DENYLIST`, `BINARY_EXTENSIONS`) so a future term gets
+appended in one place.
+
+Scope decisions:
+- (a) `public/` does not exist today, so the binary-without-manifest
+  pass no-ops; once the asset pipeline ships its first binary, every
+  entry must be declared via a `*.manifest.json` listing under
+  `public/` (array of strings or array of `{ src }` entries) or the
+  caller injects an explicit `manifestEntries` array.
+- (b) and (c) match whole-word case-insensitively via
+  `buildDenylistRegex` so generic words ("space", "spaceport",
+  "uncivic") do not false-positive. The track pass restricts itself to
+  JSON that looks like a track (carries `segments` and `laps` keys) so
+  a future sponsor or championship JSON does not trip the rule on a
+  mention.
+- (d) is scoped to data JSON only (`src/data/**/*.json` and
+  `public/**/*.json`). Source code, README, page copy, and `docs/`
+  legitimately describe the project as a spiritual successor to Top
+  Gear 2 per `docs/gdd/01-title-and-high-concept.md`; scoping the
+  trademark scan to data files avoids tripping on those references.
+
+Coverage: 45 unit cases in `scripts/__tests__/content-lint.test.ts`
+covering each matcher, every pass on positive and negative fixtures
+written to a temp directory, the cross-pass `runContentLint` ordering,
+and a smoke check that runs the lint against the live repo and
+asserts zero hits.
 
 ## F-019: Race session integration of the §13 damage model
 **Created:** 2026-04-26

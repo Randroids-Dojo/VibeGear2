@@ -6,6 +6,100 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-020 content-lint script enforces LEGAL_SAFETY denylist
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) IP perimeter (no narrative
+edits; this slice ships the automated enforcement of the perimeter rules
+already pinned by `docs/LEGAL_SAFETY.md`).
+**Branch / PR:** `feat/content-lint-script`, PR pending.
+**Status:** Implemented. Closes `VibeGear2-implement-f-020-26d95165` and
+F-020 in `docs/FOLLOWUPS.md`. `docs/LEGAL_SAFETY.md` section 9 said the
+content lint was "future"; this slice makes it real and wires it into
+`npm run verify` so a denylisted real-circuit, manufacturer, or
+trademark name cannot ship from the repo without tripping the build.
+
+### Done
+- `scripts/content-lint.ts`: the lint, with four pass functions
+  (`lintBinaryManifest`, `lintTrackNames`, `lintCarNames`,
+  `lintTopGearText`) plus the public matcher helpers
+  (`buildDenylistRegex`, `findDenylistHit`, `formatHit`,
+  `isBinaryAssetPath`) and the four denylist constants
+  (`TRACK_REAL_CIRCUIT_DENYLIST`, `CAR_MANUFACTURER_DENYLIST`,
+  `TOPGEAR_TEXT_DENYLIST`, `BINARY_EXTENSIONS`). `runContentLint`
+  composes the passes in stable order and `main()` prints each hit on
+  one line and exits non-zero on any hit.
+- `scripts/__tests__/content-lint.test.ts`: 45 unit cases covering
+  every matcher, every pass on positive and negative fixtures written
+  to a temp directory, the cross-pass `runContentLint` ordering, and
+  a smoke check that runs the lint against the live repo and asserts
+  zero hits (so a future content drop that introduces a denied term
+  fails this suite first).
+- `package.json`: `content-lint` script entry plus `verify` chained
+  to call it after lint, typecheck, and test.
+- `vitest.config.ts`: include glob extended to
+  `scripts/**/*.test.ts` so the new test file runs under
+  `npm test` alongside the existing suite.
+- `docs/LEGAL_SAFETY.md`: section 9 rewritten from "future script"
+  prose to a description of the shipping enforcement, with a pointer
+  to the authoritative denylist constants in the script.
+- `docs/FOLLOWUPS.md`: F-020 marked `done` with a summary of scope
+  decisions (binary-pass no-op until `public/` ships, trademark scan
+  scoped to data JSON, whole-word case-insensitive matchers).
+
+### Verified
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: full suite green (1,896 cases including the 45 new
+  content-lint cases).
+- `npm run content-lint`: clean against the repo (no false positives
+  on the existing track / car / sponsor / championship / AI driver
+  JSON catalogue).
+- `npm run build`: clean static output, no new route surface.
+- `npm run test:e2e`: full Playwright suite green (48 cases).
+
+### Decisions and assumptions
+- Top Gear / publisher denylist scoped to data JSON only. The README,
+  the page tagline (`src/app/page.tsx`), the layout title
+  (`src/app/layout.tsx`), and a comment in `src/game/transmission.ts`
+  legitimately describe the project as a spiritual successor to Top
+  Gear 2 per `docs/gdd/01-title-and-high-concept.md`. Scoping the
+  trademark scan to `src/data/**/*.json` and `public/**/*.json`
+  catches attempts to bake the trademark into shipped content while
+  leaving the legitimate "spiritual successor" prose untouched.
+- Whole-word case-insensitive matching via lookarounds rather than
+  `\b`. The `Le Mans` token has an internal space; `\b` would split
+  the match on the space and miss it. The `(?<![A-Za-z0-9])X(?![A-Za-z0-9])`
+  pattern matches multi-word tokens cleanly and rejects substring
+  embeddings like `space` for `Spa` or `respawn` for `Spa`.
+- Track-pass JSON probe via `"segments"` and `"laps"` keys rather
+  than schema validation. The lint must run against any JSON file
+  shape, including future formats that add fields the current
+  `TrackSchema` would reject. Probing two key names is robust enough
+  to avoid running the real-circuit denylist against sponsor or
+  championship JSON that mention a denied term in a different
+  context.
+- Binary-without-manifest pass no-ops while `public/` is absent.
+  Today the asset pipeline ships nothing under `public/`; the
+  `manifestForTrack` builder in `src/asset/manifest.ts` produces a
+  per-race manifest at runtime but no on-disk binary exists for the
+  lint to flag. Once the visual-polish slice drops its first sprite
+  atlas, every entry must be referenced by a `*.manifest.json`
+  listing under `public/` (or by an explicit `manifestEntries`
+  injection from the caller).
+- `vite-node --script` rather than `tsx` / `ts-node`. The repo
+  already depends on `vite-node` (a vitest peer); adding another
+  TS runner just for one CLI script would inflate the
+  devDependency tree. The same pattern lands the bench script.
+
+### Followups
+- F-020 closes here. The binary-without-manifest pass becomes
+  load-bearing the moment the asset pipeline ships its first
+  `public/` binary; that lands with the visual-polish slice
+  (`VibeGear2-implement-visual-polish-7d31d112`).
+
+---
+
 ## 2026-04-26: Slice: F-032 wire leaderboard client into race results surface
 
 **GDD sections touched:**

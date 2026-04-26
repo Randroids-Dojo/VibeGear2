@@ -184,8 +184,9 @@ Maintainers gate merges on these box-tickers.
 
 ## 9. Enforcement: content lint
 
-A future `scripts/content-lint.ts` script will run as part of `npm run
-verify` and fail the build on any of the following:
+The `scripts/content-lint.ts` script runs as part of `npm run verify`
+(via the `content-lint` step) and fails the build on any of the
+following:
 
 - Any binary in `public/` that is missing an asset manifest entry.
 - Any track JSON that references a real-circuit name from a denylist
@@ -193,14 +194,17 @@ verify` and fail the build on any of the following:
   Monaco, Daytona, Indianapolis; this list will grow).
 - Any car name that matches a manufacturer denylist (Skyline, Mustang,
   Civic, Camaro, Supra, Lancer; this list will also grow).
-- Any text content that matches a Top Gear denylist (`Top Gear`,
+- Any data JSON whose content matches a Top Gear denylist (`Top Gear`,
   `topgear`, `Kemco`, `Snowblind`, plus any future trademarks the
-  maintainer adds).
+  maintainer adds). Scoped to `src/data/**/*.json` and `public/**/*.json`
+  so the README, page copy, and source comments can legitimately
+  describe the project as a spiritual successor.
 
-The denylist examples here are illustrative. The authoritative list lives
-in the lint script when it lands; this section sets the contract that the
-script enforces. The follow-up to author the script is tracked in
-[`FOLLOWUPS.md`](FOLLOWUPS.md) under a `nice-to-have` priority.
+The denylist examples here are illustrative. The authoritative list
+lives in the script (`TRACK_REAL_CIRCUIT_DENYLIST`,
+`CAR_MANUFACTURER_DENYLIST`, `TOPGEAR_TEXT_DENYLIST`); appending a new
+term is a one-line change. Run `npm run content-lint` directly to scan
+without going through the rest of `verify`.
 
 ## 10. Enforcement: visual and audio review
 
