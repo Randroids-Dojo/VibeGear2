@@ -177,4 +177,45 @@ describe("SaveGameSchema", () => {
     };
     expect(SaveGameSchema.safeParse(broken).success).toBe(false);
   });
+
+  it("accepts a record with optional bestSplitsMs (sector splits)", () => {
+    const withSplits = {
+      ...saveGameExample,
+      records: {
+        "velvet-coast/harbor-run": {
+          bestLapMs: 60000,
+          bestRaceMs: 180000,
+          bestSplitsMs: [20000, 40000, 60000],
+        },
+      },
+    };
+    expect(SaveGameSchema.safeParse(withSplits).success).toBe(true);
+  });
+
+  it("rejects a record with negative bestSplitsMs entries", () => {
+    const broken = {
+      ...saveGameExample,
+      records: {
+        "velvet-coast/harbor-run": {
+          bestLapMs: 60000,
+          bestRaceMs: 180000,
+          bestSplitsMs: [20000, -1, 60000],
+        },
+      },
+    };
+    expect(SaveGameSchema.safeParse(broken).success).toBe(false);
+  });
+
+  it("accepts a v1 record without bestSplitsMs (backwards-compatible)", () => {
+    const v1Record = {
+      ...saveGameExample,
+      records: {
+        "velvet-coast/harbor-run": {
+          bestLapMs: 60000,
+          bestRaceMs: 180000,
+        },
+      },
+    };
+    expect(SaveGameSchema.safeParse(v1Record).success).toBe(true);
+  });
 });

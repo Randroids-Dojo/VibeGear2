@@ -393,6 +393,15 @@ export type SaveGameProgress = z.infer<typeof SaveGameProgressSchema>;
 export const SaveGameRecordSchema = z.object({
   bestLapMs: positiveInt,
   bestRaceMs: positiveInt,
+  /**
+   * Per-sector best splits in milliseconds for the §20 ghost-delta widget.
+   * One entry per sector; `bestSplitsMs[i]` is the cumulative time (from the
+   * start line) at which the player crossed checkpoint `i + 1` on the best
+   * lap. Optional so v1 saves written before this field was added still
+   * load. Per the sector-splits dot only overwritten when the overall
+   * `bestLapMs` improves; per-sector regressions never write.
+   */
+  bestSplitsMs: z.array(z.number().nonnegative()).optional(),
 });
 export type SaveGameRecord = z.infer<typeof SaveGameRecordSchema>;
 

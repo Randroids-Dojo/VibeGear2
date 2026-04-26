@@ -89,6 +89,20 @@ export interface HudState {
    * existing minimal HUD wiring continues to work without minimap data.
    */
   minimap?: HudMinimapState;
+  /**
+   * Best lap time in milliseconds. Optional: omitted before the player has
+   * completed any lap, or when the §20 best-lap widget is not wired by the
+   * caller. The §20 polish slice owns the canonical wiring; downstream
+   * consumers must treat `undefined` as "no best yet".
+   */
+  bestLapMs?: number | null;
+  /**
+   * Signed sector delta in milliseconds for the current sector, vs the
+   * best-known split for that sector on this track. Positive = current is
+   * SLOWER (red); negative = current is FASTER (green); `null` = no
+   * comparable best yet (first run on the track, or partial sector).
+   */
+  sectorDeltaMs?: number | null;
 }
 
 /** Conversion factors. SI base is m/s. */

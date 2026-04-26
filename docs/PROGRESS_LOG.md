@@ -6,6 +6,84 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: sector splits + ghost delta HUD widget
+
+**GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) (Race HUD list:
+"lap timer", "best lap"; wireframe: "Top-right: best lap / ghost delta"),
+[§22](gdd/22-data-schemas.md) (Track checkpoints; SaveGame records).
+**Branch / PR:** `feat/sector-splits` (stacked on `feat/difficulty-preset`),
+PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/sectorTimer.ts`: pure state machine for the §20 ghost
+  delta widget. `createSectorState`, `onCheckpointPass`, `startNewLap`,
+  `splitsForLap`, `sectorDeltaMs`, `bestSplitsForTrack`, and
+  `shouldWriteBestSplits`. Sign convention pinned: positive delta = current
+  is slower; negative = current is faster. Zero / one checkpoint tracks
+  collapse to a single whole-lap sector and the widget reverts to lap-timer
+  mode. Out-of-order labels are no-ops so the §7 anti-shortcut layer remains
+  the single source of truth for correctness.
+- Added `src/render/hudSplits.ts`: Canvas2D drawer for the top-right
+  splits widget. At most three text drawcalls (timer, sector label, signed
+  delta). `formatLapTime` and `formatDelta` (rounded to 100 ms granularity
+  per the dot). Delta colour token picked by sign (red for slower, green
+  for faster). Reduced-motion safe: no animation.
+- Extended `HudState` in `src/game/hudState.ts` with optional
+  `bestLapMs` and `sectorDeltaMs` fields so the §20 polish slice can wire
+  them without a downstream contract break.
+- Extended `SaveGameRecordSchema` in `src/data/schemas.ts` with optional
+  `bestSplitsMs: z.array(z.number().nonnegative()).optional()`. Optional
+  so v1 saves continue to validate; the dot pins "best-splits write only
+  when the OVERALL bestLap improves" and `shouldWriteBestSplits` enforces
+  it at the call site.
+- Added `src/game/__tests__/sectorTimer.test.ts` (25 tests) covering the
+  initial state shapes, sector advance, lap reset, ms formatting,
+  cumulative split math, the pinned sign convention, the v1-backfill
+  behaviour for `bestSplitsForTrack`, and replay-determinism.
+- Added `src/render/__tests__/hudSplits.test.ts` (18 tests) with a
+  mock-canvas drawcall snapshot per fixture: positive vs negative delta
+  colour, two-vs-three drawcall count for null-vs-non-null delta,
+  context-state restoration, and replay-determinism.
+- Added three SaveGame schema cases in `src/data/schemas.test.ts`
+  covering `bestSplitsMs` accepted, negative entries rejected, and v1
+  records (no `bestSplitsMs`) still validate.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (557 tests, 46 new across the three suites).
+- `npm run build` clean. No route-size delta (the new modules are
+  pure / drawer surfaces and not yet imported by `/race`).
+- `npm run test:e2e` passes (15 specs, no new e2e specs in this slice
+  because the widget is not wired into `/race` yet; the §20 polish slice
+  owns the wiring).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- The dot description names a `TrackRecordSchema`, but the actual schema
+  surface in `src/data/schemas.ts` is `SaveGameRecordSchema`. Extended
+  the existing surface rather than introducing a new schema name; the
+  field shape (`bestSplitsMs?: readonly number[]`) matches the dot.
+- The `currentSectorIdx` ascends as the player passes checkpoints; it
+  does not wrap. `startNewLap` resets it to 0 explicitly so the displayed
+  sector is the first sector after a lap-line crossing per the dot.
+- Out-of-order or unknown checkpoint labels are silent no-ops in this
+  module. The §7 anti-shortcut guard owns correctness; the widget never
+  decides whether the player took a valid path.
+- The drawer is not yet wired from `src/render/uiRenderer.ts` or the
+  `/race` page. The §20 polish slice (`implement-hud-ui-6c1b130d`) owns
+  full HUD composition; this slice ships the math + drawcall builder so
+  that polish slice can call into it without re-deriving anything.
+
+### Followups created
+- None.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: difficulty preset selection in /options Difficulty pane
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md) (Difficulty
