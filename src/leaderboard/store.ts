@@ -12,23 +12,29 @@
  *
  *   - Unset, empty, or `"noop"` (case-insensitive): returns the noop
  *     store. This is the documented default in `AGENTS.md` RULE 7
- *     (backend services are optional later phases) and the only branch
- *     that ships today.
+ *     (backend services are optional later phases).
  *
- *   - Anything else: throws. A typoed value should fail loudly at boot
- *     rather than silently fall back to the noop store and discard real
- *     submissions. Future Redis / Vercel KV slices add their factories
- *     to the switch.
+ *   - `"vercel-kv"` (case-insensitive): dynamically imports
+ *     `./store-vercel-kv` and returns a Vercel KV-backed store. The
+ *     dynamic import keeps `@vercel/kv` out of the bundle on the noop
+ *     and static-export deploy shapes per the dot
+ *     `VibeGear2-implement-leaderboard-client-48a44048` "loaded
+ *     dynamically when LEADERBOARD_BACKEND=vercel-kv so the bundle
+ *     stays slim" requirement.
+ *
+ *   - Anything else: throws. A typoed value should fail loudly at
+ *     boot rather than silently fall back to the noop store and
+ *     discard real submissions.
  *
  * Pure: returns a fresh store on every call so a route handler holding
  * a stale reference cannot leak state across hot-reload boundaries in
- * dev. The noop store is stateless, so this is free; future stateful
- * stores will sibling-cache their connection inside the factory.
+ * dev. The noop store is stateless, so this is free; the KV factory
+ * caches its connection inside the dynamically loaded module.
  *
- * Why one resolver instead of importing the noop factory directly: the
- * route handlers stay backend-agnostic. Adding a Vercel KV store later
- * means editing this file (and the dot's followup) without touching the
- * route handlers or their tests.
+ * Why one resolver instead of importing each factory directly: the
+ * route handlers stay backend-agnostic. Adding a Redis or Upstash
+ * store later means editing this file (and the dot's followup) without
+ * touching the route handlers or their tests.
  */
 
 import { createNoopStore } from "./store-noop";
@@ -36,10 +42,10 @@ import type { LeaderboardStore } from "./types";
 
 /**
  * The set of backend tags the resolver recognises today. Adding a tag
- * (e.g. `"vercel-kv"`) requires only extending this union and the switch
- * below; the route handlers stay untouched.
+ * (e.g. `"upstash-redis"`) requires only extending this union and the
+ * switch below; the route handlers stay untouched.
  */
-export type LeaderboardBackendTag = "noop";
+export type LeaderboardBackendTag = "noop" | "vercel-kv";
 
 /**
  * Resolve which backend tag to use given the raw env value. Exported so
@@ -53,8 +59,11 @@ export function resolveBackendTag(
   if (normalized === "" || normalized === "noop") {
     return "noop";
   }
+  if (normalized === "vercel-kv") {
+    return "vercel-kv";
+  }
   throw new Error(
-    `resolveBackendTag: unknown LEADERBOARD_BACKEND value "${envValue}". Known values: noop`,
+    `resolveBackendTag: unknown LEADERBOARD_BACKEND value "${envValue}". Known values: noop, vercel-kv`,
   );
 }
 
@@ -62,13 +71,22 @@ export function resolveBackendTag(
  * Build the store the route handlers should use. Reads
  * `process.env.LEADERBOARD_BACKEND` by default; tests pass an explicit
  * value to avoid mutating the process env.
+ *
+ * Async because the `vercel-kv` branch dynamically imports its module
+ * to keep `@vercel/kv` out of the noop deploy bundle. The noop branch
+ * resolves synchronously inside the returned Promise; awaiting it
+ * costs one microtask.
  */
-export function resolveLeaderboardStore(
+export async function resolveLeaderboardStore(
   envValue: string | undefined = process.env.LEADERBOARD_BACKEND,
-): LeaderboardStore {
+): Promise<LeaderboardStore> {
   const tag = resolveBackendTag(envValue);
   switch (tag) {
     case "noop":
       return createNoopStore();
+    case "vercel-kv": {
+      const mod = await import("./store-vercel-kv");
+      return mod.createVercelKvStoreFromEnv();
+    }
   }
 }

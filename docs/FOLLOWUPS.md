@@ -10,6 +10,28 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-030: Provision Vercel KV and swap LEADERBOARD_BACKEND in production
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/leaderboard-client` slice ships
+`src/leaderboard/client.ts` (gated by `NEXT_PUBLIC_LEADERBOARD_ENABLED`)
+and `src/leaderboard/store-vercel-kv.ts` (loaded dynamically via
+`resolveLeaderboardStore` only when `LEADERBOARD_BACKEND=vercel-kv`).
+The Vercel KV adapter is a producer waiting on three manual steps that
+cannot land inside an autonomous slice: (1) `vercel kv create
+leaderboard-prod` against the production Vercel project, (2) link the
+KV instance which auto-provisions `KV_REST_API_URL` and
+`KV_REST_API_TOKEN` env vars, (3) `npm i @vercel/kv` and set
+`LEADERBOARD_BACKEND=vercel-kv` plus `NEXT_PUBLIC_LEADERBOARD_ENABLED=true`
+in the production env. Verify by submitting one signed lap from the
+deployed `/race` flow and reading it back via `GET
+/api/leaderboard/test%2Fstraight`. Until this lands, the production
+deploy continues to use the noop store and `submitLap` short-circuits
+to the `disabled` sentinel client-side. The `KvLike` interface in
+`store-vercel-kv.ts` is narrow enough that an Upstash Redis swap is a
+one-line change if the KV pricing tier shifts before launch.
+
 ## F-029: Playwright e2e race-finish spec
 **Created:** 2026-04-26
 **Priority:** nice-to-have

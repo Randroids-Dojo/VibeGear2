@@ -112,7 +112,7 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  const store = resolveLeaderboardStore();
+  const store = await resolveLeaderboardStore();
   const id = await store.submit({
     trackId: submission.trackId,
     carId: submission.carId,

@@ -6,13 +6,16 @@
  *
  *   - Unset / empty / case-insensitive `"noop"` values pick the noop
  *     store.
+ *   - `"vercel-kv"` is a recognised tag (the store factory itself is
+ *     not exercised here; the dynamic import requires a configured
+ *     `@vercel/kv` package, which is the FOLLOWUPS task).
  *   - Any unknown value throws (loud failure on misconfigured deploy
  *     per AGENTS.md RULE 7).
  *   - The factory returns a fresh store object on each call so a
  *     hot-reloaded route handler does not leak state.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   resolveBackendTag,
@@ -37,15 +40,20 @@ describe("resolveBackendTag", () => {
     expect(resolveBackendTag("Noop")).toBe("noop");
   });
 
+  it("returns vercel-kv for the literal 'vercel-kv' (case-insensitive, trimmed)", () => {
+    expect(resolveBackendTag("vercel-kv")).toBe("vercel-kv");
+    expect(resolveBackendTag("  Vercel-KV  ")).toBe("vercel-kv");
+  });
+
   it("throws on an unknown value rather than falling back silently", () => {
-    expect(() => resolveBackendTag("vercel-kv")).toThrow(/LEADERBOARD_BACKEND/);
     expect(() => resolveBackendTag("redis")).toThrow(/LEADERBOARD_BACKEND/);
+    expect(() => resolveBackendTag("upstash")).toThrow(/LEADERBOARD_BACKEND/);
   });
 });
 
 describe("resolveLeaderboardStore", () => {
   it("returns a store satisfying the LeaderboardStore contract for noop", async () => {
-    const store = resolveLeaderboardStore("noop");
+    const store = await resolveLeaderboardStore("noop");
     await expect(store.submit({
       trackId: "test/straight",
       carId: "sparrow-gt",
@@ -57,9 +65,40 @@ describe("resolveLeaderboardStore", () => {
     await expect(store.clear("test/straight")).resolves.toBeUndefined();
   });
 
-  it("returns a fresh store per call (no shared identity)", () => {
-    const a = resolveLeaderboardStore("noop");
-    const b = resolveLeaderboardStore("noop");
+  it("returns a fresh store per call (no shared identity)", async () => {
+    const a = await resolveLeaderboardStore("noop");
+    const b = await resolveLeaderboardStore("noop");
     expect(a).not.toBe(b);
+  });
+});
+
+describe("resolveLeaderboardStore(vercel-kv)", () => {
+  // The kv-from-env factory throws when KV_REST_API_URL or
+  // KV_REST_API_TOKEN are missing. We strip both around this suite so
+  // the resolver promise rejects with the expected message regardless
+  // of how the local shell happens to be configured. This pins the
+  // "loud failure on misconfigured deploy" contract per AGENTS.md
+  // RULE 7 without requiring `@vercel/kv` to be installed.
+  let savedUrl: string | undefined;
+  let savedToken: string | undefined;
+
+  beforeEach(() => {
+    savedUrl = process.env.KV_REST_API_URL;
+    savedToken = process.env.KV_REST_API_TOKEN;
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+  });
+
+  afterEach(() => {
+    if (savedUrl === undefined) delete process.env.KV_REST_API_URL;
+    else process.env.KV_REST_API_URL = savedUrl;
+    if (savedToken === undefined) delete process.env.KV_REST_API_TOKEN;
+    else process.env.KV_REST_API_TOKEN = savedToken;
+  });
+
+  it("rejects with a configuration error when env vars are absent", async () => {
+    await expect(resolveLeaderboardStore("vercel-kv")).rejects.toThrow(
+      /KV_REST_API_URL|KV_REST_API_TOKEN/,
+    );
   });
 });

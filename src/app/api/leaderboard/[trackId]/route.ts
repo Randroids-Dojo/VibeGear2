@@ -78,7 +78,7 @@ export async function GET(
   }
   const limit = parsedLimit ?? DEFAULT_LIMIT;
 
-  const store = resolveLeaderboardStore();
+  const store = await resolveLeaderboardStore();
   const entries = await store.top(trackId, limit);
 
   return json(200, { ok: true, trackId, entries });
