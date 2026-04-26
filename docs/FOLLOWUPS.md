@@ -422,22 +422,26 @@ optional fields when it ships the essential / full toggle.
 ## F-035: Wire stipend lever into the tour-entry flow
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/economy-catch-up` slice landed
-`computeStipend(save, tour)`, `getStipendClaimed(save, tourId)`, and
-`recordStipendClaim(save, tourId)` in `src/game/catchUp.ts`. The
-functions have no in-app caller yet: the tour-entry surface owned
-by `VibeGear2-implement-tour-region-d9ca9a4d` is the natural
-consumer. At the moment the player selects a tour and confirms
-entry, the wiring should:
-1. Call `computeStipend(save, { id: tour.id, index: tour.index })`.
-2. If the result is non-zero, credit the wallet via the equivalent
-   of `awardCredits` (or a new `creditFlat(save, amount)` helper if
-   that path lands first) and then call `recordStipendClaim` so a
-   second tour-entry does not double-pay.
-3. Persist the merged save via `saveSave`.
-The `tour.index` is 1-based (first tour in a championship is
-index 1) per `StipendTourContext` in `src/game/catchUp.ts`.
+**Status:** done (2026-04-26, `feat/f-035-stipend-at-tour-entry`)
+**Notes:** Closed by `feat/f-035-stipend-at-tour-entry`. The pure
+`enterTour(save, championship, tourId)` in `src/game/championship.ts`
+now resolves the tour's 0-indexed position in `championship.tours`,
+calls `computeStipend(save, { id: tourId, index: position + 1 })` with
+the 1-based index, and on a non-zero amount credits
+`save.garage.credits` and calls `recordStipendClaim` before returning
+the merged `SaveGame`. `EnterTourResult.ok` gained a `stipend: number`
+field so the future `/world` page surface can render a one-shot
+"+N credits stipend" toast without re-deriving the delta. Six new
+unit cases in `src/game/__tests__/championship.test.ts` cover the
+first-tour gate, the threshold gate (strict less-than, including the
+boundary), the happy-path grant on a non-first tour with a low wallet,
+the idempotent re-entry, the input-save purity contract on the
+stipend-firing path, and the rejected-`tour_locked` no-op path. The
+`/world` page wiring (consume the stipend field, render the toast,
+persist via `saveSave`) lands as part of the parent
+`VibeGear2-implement-tour-region-d9ca9a4d` dot's page slice; the
+pure-module side of F-035 is closed here so the page can wire the
+stipend without a second module change.
 
 ---
 

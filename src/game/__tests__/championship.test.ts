@@ -29,6 +29,11 @@ import {
   type ActiveTour,
   type TourRaceResult,
 } from "../championship";
+import {
+  STIPEND_AMOUNT,
+  STIPEND_THRESHOLD_CREDITS,
+  getStipendClaimed,
+} from "../catchUp";
 import { PLACEMENT_POINTS } from "../raceResult";
 
 function freshSave(): SaveGame {
@@ -100,6 +105,72 @@ describe("enterTour", () => {
     enterTour(save, FIXTURE_CHAMPIONSHIP, "first-tour");
     enterTour(save, FIXTURE_CHAMPIONSHIP, "ghost-tour");
     enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(save).toEqual(before);
+  });
+
+  it("returns stipend = 0 on the first tour entry (1-based index 1) regardless of wallet", () => {
+    const save = unlockedSave("first-tour");
+    save.garage.credits = 0;
+    const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "first-tour");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.stipend).toBe(0);
+    expect(result.save.garage.credits).toBe(0);
+    expect(getStipendClaimed(result.save, "first-tour")).toBe(false);
+  });
+
+  it("grants STIPEND_AMOUNT and records the claim on a non-first tour with low wallet", () => {
+    const save = unlockedSave("first-tour", "second-tour");
+    save.garage.credits = STIPEND_THRESHOLD_CREDITS - 1;
+    const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.stipend).toBe(STIPEND_AMOUNT);
+    expect(result.save.garage.credits).toBe(
+      STIPEND_THRESHOLD_CREDITS - 1 + STIPEND_AMOUNT,
+    );
+    expect(getStipendClaimed(result.save, "second-tour")).toBe(true);
+  });
+
+  it("does not grant a stipend when the wallet is at or above the threshold", () => {
+    const save = unlockedSave("first-tour", "second-tour");
+    save.garage.credits = STIPEND_THRESHOLD_CREDITS;
+    const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.stipend).toBe(0);
+    expect(result.save.garage.credits).toBe(STIPEND_THRESHOLD_CREDITS);
+    expect(getStipendClaimed(result.save, "second-tour")).toBe(false);
+  });
+
+  it("is idempotent on re-entry: a second entry on the same tour returns 0", () => {
+    const save = unlockedSave("first-tour", "second-tour");
+    save.garage.credits = STIPEND_THRESHOLD_CREDITS - 1;
+    const first = enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.stipend).toBe(STIPEND_AMOUNT);
+    const second = enterTour(first.save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.stipend).toBe(0);
+    expect(second.save.garage.credits).toBe(first.save.garage.credits);
+  });
+
+  it("does not mutate the input save when the stipend lever fires", () => {
+    const save = unlockedSave("first-tour", "second-tour");
+    save.garage.credits = STIPEND_THRESHOLD_CREDITS - 1;
+    const before = JSON.parse(JSON.stringify(save));
+    enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(save).toEqual(before);
+  });
+
+  it("rejects with tour_locked without granting a stipend or mutating the save", () => {
+    const save = freshSave();
+    save.garage.credits = 0;
+    const before = JSON.parse(JSON.stringify(save));
+    const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(result).toEqual({ ok: false, code: "tour_locked" });
     expect(save).toEqual(before);
   });
 });

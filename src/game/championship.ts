@@ -6,8 +6,13 @@
  * Surface (all pure):
  * - `enterTour(save, championship, tourId)`: validate the tour is unlocked
  *   and seed `progress.activeTour = { tourId, raceIndex: 0, results: [] }`.
- *   Rejects when the tour id is not in `championship.tours` or when the
- *   tour is locked. Pure: returns a fresh `SaveGame` on success.
+ *   On success also fires the §12 catch-up stipend lever via
+ *   `computeStipend` / `recordStipendClaim`: when the lever fires, the
+ *   returned save has `garage.credits` incremented by the stipend amount
+ *   and `progress.stipendsClaimed[tourId]` set to `true` so a second
+ *   entry on the same tour returns 0. Rejects when the tour id is not in
+ *   `championship.tours` or when the tour is locked. Pure: returns a
+ *   fresh `SaveGame` on success.
  * - `recordResult(activeTour, raceResult)`: append the per-race outcome
  *   and advance `raceIndex`. Never mutates the input. Caller decides
  *   whether to persist (the §20 results screen owns the save commit).
@@ -39,9 +44,6 @@
  * - The `/world` page surface (region map, tour-tile picker, "Enter
  *   tour" affordance). The pure module here is the data plane the page
  *   consumes; the page wiring lands in a follow-up sub-slice.
- * - F-035 stipend wiring at tour entry: this module supplies
- *   `enterTour` as the consumer; the stipend call wires alongside in a
- *   follow-up so the §12 stipend lever is paid once per tour.
  * - F-037 / F-039 tour-clear bonus wiring: `tourComplete` is the
  *   consumer; the bonus calls wire alongside in a follow-up so the §12
  *   easy-mode bonus and the §12 tour-completion bonus credit the wallet.
@@ -51,6 +53,7 @@
 
 import type { Championship, ChampionshipTour, SaveGame } from "@/data/schemas";
 
+import { computeStipend, recordStipendClaim } from "./catchUp";
 import { PLACEMENT_POINTS } from "./raceResult";
 
 /**
@@ -94,7 +97,20 @@ export interface ActiveTour {
 
 /** Discriminated result returned by `enterTour`. */
 export type EnterTourResult =
-  | { readonly ok: true; readonly save: SaveGame; readonly activeTour: ActiveTour }
+  | {
+      readonly ok: true;
+      readonly save: SaveGame;
+      readonly activeTour: ActiveTour;
+      /**
+       * §12 catch-up stipend amount granted at entry, in credits. The
+       * returned `save.garage.credits` already reflects the credit; the
+       * field is exposed so the `/world` surface can render a one-shot
+       * "+N credits stipend" toast without re-deriving the delta. `0`
+       * when the lever did not fire (first tour, wallet at or above
+       * threshold, or claim already recorded).
+       */
+      readonly stipend: number;
+    }
   | { readonly ok: false; readonly code: EnterTourFailureCode };
 
 /**
@@ -162,12 +178,22 @@ function findTour(
 /**
  * Enter the named tour. Verifies the tour exists in the championship
  * and is in `save.progress.unlockedTours`; on success returns a fresh
- * `SaveGame` with the same shape (no schema-level mutation here; the
- * cursor `ActiveTour` lives in memory) plus the seeded cursor.
+ * `SaveGame` (the cursor `ActiveTour` lives in memory) plus the seeded
+ * cursor and the §12 stipend amount granted (if any).
  *
  * The first tour of a championship (index 0) must already appear in
  * `save.progress.unlockedTours` for the player to enter it; the seeding
  * lives with the championship-onboarding flow (out of scope here).
+ *
+ * §12 catch-up stipend is fired here per F-035: on a successful entry,
+ * `computeStipend(save, { id: tourId, index: lookup.index + 1 })` is
+ * called with the 1-based tour index. When the lever returns a non-zero
+ * amount, the returned save has `garage.credits` incremented by the
+ * stipend and `progress.stipendsClaimed[tourId] = true` so a second
+ * entry on the same tour returns 0. The lever respects the §12 gate:
+ * the first tour of a championship (1-based index 1) never grants a
+ * stipend, and a wallet at or above `STIPEND_THRESHOLD_CREDITS`
+ * suppresses the grant.
  *
  * Failure shapes:
  * - `unknown_tour`: the tour id is not present in `championship.tours`.
@@ -185,14 +211,32 @@ export function enterTour(
   if (!save.progress.unlockedTours.includes(tourId)) {
     return { ok: false, code: "tour_locked" };
   }
+  const stipend = computeStipend(save, {
+    id: tourId,
+    index: lookup.index + 1,
+  });
+  const nextSave =
+    stipend > 0
+      ? recordStipendClaim(
+          {
+            ...save,
+            garage: {
+              ...save.garage,
+              credits: save.garage.credits + stipend,
+            },
+          },
+          tourId,
+        )
+      : save;
   return {
     ok: true,
-    save,
+    save: nextSave,
     activeTour: {
       tourId,
       raceIndex: 0,
       results: [],
     },
+    stipend,
   };
 }
 
