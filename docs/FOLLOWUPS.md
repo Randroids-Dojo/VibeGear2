@@ -769,19 +769,55 @@ deferral pattern.
 ## F-022: Render the ghost car in `pseudoRoadCanvas.ts`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** in-progress (drawer side landed in `feat/f-022-ghost-car-render`)
 **Notes:** The ghost slice produces a `Player` whose `readNext(tick)`
 returns the input the recorded driver pressed on each tick. The
 consumer drives a second physics step from those inputs (same
 `step()` call, separate `CarState`) to derive the ghost's `(z, x,
 speed)` for the current tick, then passes that to
-`pseudoRoadCanvas.drawRoad` as a `ghostCar?: { z: number; x: number;
-alpha: number }` field. The drawer paints the ghost with `ctx
-.globalAlpha = 0.5` (the dot stress-test item 9 default) using the
-same player-car atlas frame the live car renders, optionally tinted
-blue or desaturated to differentiate. The atlas frames land with the
-visual-polish slice (`VibeGear2-implement-visual-polish-7d31d112`);
-do this slice after that one.
+`pseudoRoadCanvas.drawRoad`.
+
+**Drawer side (landed in `feat/f-022-ghost-car-render`):**
+`drawRoad` now accepts an optional `ghostCar?: { screenX: number;
+screenY: number; screenW: number; alpha?: number; fill?: string }`
+field. The drawer paints a translucent placeholder rectangle at the
+projected ground point using `ctx.globalAlpha = GHOST_CAR_DEFAULT_ALPHA`
+(0.5 per the F-022 stress-test item 9) and `GHOST_CAR_DEFAULT_FILL`
+(blue tint, `#5fb6ff`) so the ghost reads as "other player" without
+the §17 sprite atlas being wired in. The rect lands AFTER the road
+strips (so the ghost reads as on the road) and BEFORE the dust pool
+(so off-road dust the live car kicks up still occludes the ghost).
+Shake offset is intentionally not applied so a §16 impact shake does
+not drag the recorded path with the live car. Coordinate convention
+shifted from world `(z, x)` (in the original dot text) to screen-space
+`(screenX, screenY, screenW)` so the projection happens once at the
+caller, mirroring the §20 minimap and HUD overlay convention. Unit
+tests in `src/render/__tests__/pseudoRoadCanvas.test.ts` cover the
+default alpha, explicit alpha override, alpha clamp to `[0, 1]`, fill
+override, omitted prop no-op, `null` prop no-op, non-positive
+`screenW` short-circuit, non-finite coordinate short-circuit,
+`globalAlpha` restoration, and zero-area viewport.
+
+**Consumer side (deferred):**
+The §6 Time Trial route still needs to (1) compile a `Replay` from
+`save.ghosts[track.id]` via `bestGhostFor`, (2) instantiate
+`createPlayer(replay)` on the green-light tick, (3) drive a second
+`step()` call per tick from `player.readNext(tick)` against a separate
+`CarState`, (4) project the ghost's `(z, x)` to screen via the same
+`segmentProjector.project` strip math the road draw uses, and (5) pass
+the projected `(screenX, screenY, screenW)` plus alpha into the
+`ghostCar` prop. Lands alongside the time-trial slice
+(`VibeGear2-implement-time-trial-5d65280a`) since that slice owns the
+recorder lifecycle as well.
+
+**Atlas-frame upgrade (deferred):**
+The placeholder rect ships today; the `LoadedAtlas` integration that
+samples the same player-car atlas frame the live car renders (per the
+original dot text) lands in the same slice that wires `LoadedAtlas`
+into the renderer for the live player car (currently the live car is
+also a placeholder; both upgrades land together). Until then the
+`fill` override on the prop lets the consumer pin a per-car tint without
+touching the renderer.
 
 ## F-021: SaveGameSchema integration for ghost replays + v2 migration
 **Created:** 2026-04-26

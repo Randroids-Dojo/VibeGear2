@@ -6,6 +6,101 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-022 ghost car overlay (drawer side) in `pseudoRoadCanvas.ts`
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) "Time Trial" (the ghost-replay overlay surface).
+[§16](gdd/16-rendering-and-visual-design.md) "Sprites and effects" (the
+ghost is a translucent silhouette in the same screen space as the live
+car). No narrative edits.
+**Branch / PR:** `feat/f-022-ghost-car-render`, PR pending.
+**Status:** Implemented as the F-022 drawer-side producer slice. The
+consumer (Time Trial route wiring that compiles a `Replay`, drives the
+ghost physics step, projects to screen, and feeds the renderer) lands
+alongside the time-trial parent slice
+(`VibeGear2-implement-time-trial-5d65280a`). F-022 in
+`docs/FOLLOWUPS.md` flipped from `open` to `in-progress` with the
+deferred consumer steps documented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: new optional
+  `ghostCar?: { screenX: number; screenY: number; screenW: number;
+  alpha?: number; fill?: string }` field on `DrawRoadOptions`. When set,
+  the drawer paints a translucent placeholder rectangle at the projected
+  ground point in screen space. Pinned defaults exported as
+  `GHOST_CAR_DEFAULT_ALPHA = 0.5` (per the F-022 stress-test item 9
+  default) and `GHOST_CAR_DEFAULT_FILL = "#5fb6ff"` (blue tint so the
+  ghost reads as "other player" without the §17 atlas being wired in).
+  Draw order: AFTER road strips (so the ghost reads as on the road) and
+  BEFORE the dust pool (so off-road dust the live car kicks up still
+  occludes the ghost). Shake offset is intentionally not applied: a §16
+  impact shake should not drag the recorded path with the live car. The
+  empty-strips early-return restructured into a guarded `strips.length
+  >= 2` branch so the ghost overlay still paints on dev / test scenes
+  that draw the sky but no road. Coordinate convention shifted from
+  world `(z, x)` (the original dot text) to screen-space
+  `(screenX, screenY, screenW)` so projection happens once at the
+  caller, mirroring the §20 minimap and HUD overlay convention.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: new test file with
+  10 cases. Pins: default alpha at 0.5 with default fill, explicit
+  alpha override, alpha clamp to `[0, 1]`, fill override, omitted prop
+  is a no-op (only the sky paints), `null` prop is a no-op,
+  non-positive `screenW` short-circuits, non-finite `screenX` /
+  `screenY` short-circuits, the post-call `globalAlpha` matches the
+  caller's pre-call value, zero-area viewport short-circuits.
+- `docs/FOLLOWUPS.md`: F-022 status flipped from `open` to
+  `in-progress (drawer side landed in feat/f-022-ghost-car-render)`
+  with separate Drawer / Consumer / Atlas-frame sections covering the
+  shipped surface, the deferred Time Trial wiring, and the deferred
+  atlas-frame upgrade (which lands alongside the live player car
+  atlas-frame upgrade since both are placeholders today).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green; the new 10 ghost-overlay cases pass alongside the
+  existing suite (2012 total).
+- `npm run build` clean; postbuild source-map scrub ran (16 / 16).
+- `npm run test:e2e` green (48 / 48).
+
+### Decisions and assumptions
+- Coordinate convention. The original F-022 dot text named
+  `ghostCar?: { z: number; x: number; alpha: number }` (world space).
+  The drawer would have to project internally, which means dragging
+  `Camera` plus the compiled segment list into `DrawRoadOptions`
+  alongside `parallax.camera`. The simpler, more idiomatic shape
+  matches the §20 minimap and the HUD overlay: pre-project at the
+  caller (the race-page render callback already calls
+  `segmentProjector.project` for the strips), and the renderer takes
+  screen-space `(screenX, screenY, screenW)` plus alpha. Documented in
+  the F-022 followup so the consumer slice knows what the contract is.
+- Atlas-frame deferral. The dot text says "using the same player-car
+  atlas frame the live car renders, optionally tinted blue or
+  desaturated". The live player car is not currently rendered into the
+  road canvas (the §17 atlas integration for the live car is a separate
+  followup). Until that lands, both the live car and the ghost render
+  as placeholder rects; pairing the two upgrades into one slice
+  guarantees the live car / ghost differentiation stays consistent
+  (same atlas, same frame index, just a different alpha and tint on
+  the ghost). The `fill` override on the prop lets the consumer pin a
+  per-car tint without touching the renderer in the meantime.
+- Draw-order placement. Ghost over strips so the recorded path reads
+  as on the road; ghost under dust so a live car kicking up dust
+  hides the ghost rather than the ghost showing through the plume.
+  No shake on the ghost so the recorded path stays anchored to the
+  world geometry rather than translating with the live impact frame.
+
+### Followups
+- F-022 consumer wiring (Time Trial route compiles `Replay`, drives
+  ghost physics step from `Player.readNext`, projects to screen, feeds
+  `ghostCar` prop). Tracked in F-022 alongside the time-trial parent
+  slice.
+- F-022 atlas-frame upgrade (sample player-car sprite at the same
+  facing index as the live car; tint or desaturate for the ghost).
+  Tracked in F-022 to land with the live-car atlas-frame slice.
+
+---
+
 ## 2026-04-26: Slice: F-015 pin race-session integration tests for off-road persistent damage
 
 **GDD sections touched:**

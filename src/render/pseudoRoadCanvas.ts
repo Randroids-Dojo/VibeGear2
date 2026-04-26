@@ -28,6 +28,26 @@ import { drawDust, type DustState } from "./dust";
 import { drawParallax, type ParallaxLayer } from "./parallax";
 import { drawVfx, type VfxState } from "./vfx";
 
+/**
+ * Default alpha for the ghost car overlay. Pinned by the F-022 dot
+ * stress-test item 9: a translucent second car following the player's
+ * recorded path so the live driver can see their best line without the
+ * ghost occluding the road. Kept as a named constant so the §6 Time Trial
+ * UI can dim or brighten the ghost from a settings toggle without
+ * re-pinning the magic number at every call site.
+ */
+export const GHOST_CAR_DEFAULT_ALPHA = 0.5;
+
+/**
+ * Default fill colour for the ghost car placeholder rectangle. The §6
+ * Time Trial spec calls out a desaturated / blue tint to differentiate
+ * the ghost from the live car; we ship the blue tint as the default so
+ * the placeholder reads as "other player" without the §17 sprite atlas
+ * being wired in. The atlas-frame variant lands in the same slice that
+ * threads `LoadedAtlas` into the renderer (followup F-022 consumer side).
+ */
+export const GHOST_CAR_DEFAULT_FILL = "#5fb6ff";
+
 export interface RoadColors {
   skyTop: string;
   skyBottom: string;
@@ -70,6 +90,32 @@ export interface DrawRoadOptions {
    * pass it in here; the drawer never advances the pool itself.
    */
   dust?: DustState;
+  /**
+   * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
+   * a second physics step from the recorded `Player.readNext` inputs to
+   * derive the ghost's world position, projects it to the screen with
+   * the same camera the live road uses, and passes the resulting
+   * placement here. The drawer paints a translucent placeholder rect
+   * BEHIND the dust pool (so off-road dust still occludes the ghost) but
+   * AFTER the road strips (so the ghost reads as "on the road" rather
+   * than driving through it). The atlas-frame draw variant lands when
+   * the F-022 consumer slice threads a `LoadedAtlas` reference through
+   * the renderer; until then the placeholder rect is the contract.
+   *
+   * `screenX` / `screenY` are CSS pixels (the render-time coordinates the
+   * caller already computed via `segmentProjector.project`); `screenW` is
+   * the projected car width in CSS pixels (commonly `strip.screenW *
+   * carWidthFraction`); `alpha` defaults to `GHOST_CAR_DEFAULT_ALPHA`
+   * when omitted. `null` / `undefined` skips the draw entirely so a fresh
+   * Time Trial run with no stored ghost paints nothing extra.
+   */
+  ghostCar?: {
+    screenX: number;
+    screenY: number;
+    screenW: number;
+    alpha?: number;
+    fill?: string;
+  } | null;
 }
 
 const FALLBACK_COLORS: RoadColors = {
@@ -150,21 +196,87 @@ export function drawRoad(
   // restore around the strip loop.
   const shakeOffset = options.vfx ? drawVfx(ctx, options.vfx, viewport) : null;
 
-  if (strips.length < 2) return;
+  if (strips.length >= 2) {
+    if (shakeOffset && (shakeOffset.dx !== 0 || shakeOffset.dy !== 0)) {
+      ctx.save();
+      ctx.translate(shakeOffset.dx, shakeOffset.dy);
+      drawStrips(ctx, strips, viewport, colors);
+      ctx.restore();
+    } else {
+      drawStrips(ctx, strips, viewport, colors);
+    }
+  }
 
-  if (shakeOffset && (shakeOffset.dx !== 0 || shakeOffset.dy !== 0)) {
-    ctx.save();
-    ctx.translate(shakeOffset.dx, shakeOffset.dy);
-    drawStrips(ctx, strips, viewport, colors);
-    ctx.restore();
-  } else {
-    drawStrips(ctx, strips, viewport, colors);
+  // Ghost car paints over the road strips so the player sees their best
+  // line, but BEFORE the dust pool so off-road dust the live car kicks
+  // up still occludes the ghost rather than the ghost showing through
+  // the plume. The shake offset is intentionally not applied to the
+  // ghost: a §16 impact shake should not drag the recorded path with
+  // the live car. Painted unconditionally on a non-empty `ghostCar`
+  // prop so an empty strip array (test / dev scenes that draw the sky
+  // but no road) still surfaces the ghost overlay.
+  if (options.ghostCar) {
+    drawGhostCar(ctx, options.ghostCar, viewport);
   }
 
   // Dust paints last so particles sit over the road / grass strips.
   // The pool is owned by the caller; the drawer is read-only on it.
   if (options.dust) {
     drawDust(ctx, options.dust, viewport);
+  }
+}
+
+/**
+ * Paint the F-022 ghost car overlay as a translucent placeholder rect.
+ *
+ * The atlas-frame variant (sampling the player car sprite at the same
+ * facing the live car uses, optionally desaturated) lands in the F-022
+ * consumer slice that wires `LoadedAtlas` through the renderer. Until
+ * then the rect is the contract: a `screenW`-wide, half-square-tall
+ * box anchored at the projected ground point, painted at 0.5 alpha by
+ * default. The aspect choice (1:0.5) keeps the placeholder visually
+ * read as a car silhouette without claiming sprite-grade detail.
+ *
+ * No-op when the projection collapses to zero width (the ghost is past
+ * the draw distance / behind the camera) or when the viewport is
+ * zero-area, so callers do not need to gate the call themselves.
+ *
+ * The `globalAlpha` mutation is wrapped in a `try / finally` save and
+ * restore equivalent so a thrown rect (vanishingly unlikely on Canvas2D
+ * but possible if the host injects a custom context) cannot leak alpha
+ * into the next draw call.
+ */
+function drawGhostCar(
+  ctx: CanvasRenderingContext2D,
+  ghost: NonNullable<DrawRoadOptions["ghostCar"]>,
+  viewport: Viewport,
+): void {
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+  if (!Number.isFinite(ghost.screenW) || ghost.screenW <= 0) return;
+  if (!Number.isFinite(ghost.screenX) || !Number.isFinite(ghost.screenY)) return;
+
+  const alpha =
+    typeof ghost.alpha === "number" && Number.isFinite(ghost.alpha)
+      ? Math.max(0, Math.min(1, ghost.alpha))
+      : GHOST_CAR_DEFAULT_ALPHA;
+  if (alpha <= 0) return;
+
+  const fill = ghost.fill ?? GHOST_CAR_DEFAULT_FILL;
+  // 1:0.5 aspect places the rectangle centered on the projected ground
+  // point with the silhouette sitting just above it; matches the §17
+  // car-silhouette aspect well enough to read as a vehicle.
+  const halfW = ghost.screenW / 2;
+  const heightPx = ghost.screenW / 2;
+
+  const prevAlpha = ctx.globalAlpha;
+  const prevFill = ctx.fillStyle;
+  try {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = fill;
+    ctx.fillRect(ghost.screenX - halfW, ghost.screenY - heightPx, ghost.screenW, heightPx);
+  } finally {
+    ctx.globalAlpha = prevAlpha;
+    ctx.fillStyle = prevFill;
   }
 }
 

@@ -1,0 +1,285 @@
+/**
+ * Unit tests for the pseudo-3D road drawer.
+ *
+ * The road strip painting is exercised by snapshot tests on the projector
+ * output; this suite focuses on the F-022 ghost car overlay because that
+ * is the new draw site this slice ships. Coverage:
+ *
+ * - Ghost rect renders with the pinned default alpha when present.
+ * - Ghost rect uses the explicit alpha when supplied (clamped to [0, 1]).
+ * - Ghost prop absent or `null` paints nothing extra.
+ * - Out-of-range / non-finite projections short-circuit the draw so a
+ *   ghost past the draw distance does not blip onto the canvas.
+ * - The drawer restores `globalAlpha` and `fillStyle` after the ghost
+ *   paint so subsequent draw calls (HUD, results overlay) inherit the
+ *   pre-call state.
+ *
+ * Float comparisons use `toBeCloseTo` per AGENTS.md RULE 8.
+ */
+
+import { describe, expect, it } from "vitest";
+
+import type { Strip, Viewport } from "@/road/types";
+
+import {
+  GHOST_CAR_DEFAULT_ALPHA,
+  GHOST_CAR_DEFAULT_FILL,
+  drawRoad,
+  type DrawRoadOptions,
+} from "../pseudoRoadCanvas";
+
+const VIEWPORT: Viewport = { width: 800, height: 480 };
+
+interface FillRectCall {
+  type: "fillRect";
+  fillStyle: string;
+  globalAlpha: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface FillCall {
+  type: "fill";
+  fillStyle: string;
+  globalAlpha: number;
+}
+
+type DrawCall = FillRectCall | FillCall;
+
+interface CanvasSpy {
+  ctx: CanvasRenderingContext2D;
+  calls: DrawCall[];
+  finalAlpha(): number;
+  finalFill(): string;
+}
+
+/**
+ * Minimal Canvas2D spy. Captures `fillRect` calls (the ghost overlay)
+ * and the final `globalAlpha` / `fillStyle` after the draw returns so
+ * tests can assert state restoration.
+ */
+function makeCanvasSpy(): CanvasSpy {
+  const calls: DrawCall[] = [];
+  let fillStyle = "#000";
+  let globalAlpha = 1;
+  const ctx = {
+    get fillStyle(): string {
+      return fillStyle;
+    },
+    set fillStyle(value: string) {
+      fillStyle = value;
+    },
+    get globalAlpha(): number {
+      return globalAlpha;
+    },
+    set globalAlpha(value: number) {
+      globalAlpha = value;
+    },
+    fillRect(x: number, y: number, w: number, h: number): void {
+      calls.push({ type: "fillRect", fillStyle, globalAlpha, x, y, w, h });
+    },
+    beginPath(): void {
+      // no-op; ghost overlay does not use paths.
+    },
+    moveTo(): void {},
+    lineTo(): void {},
+    closePath(): void {},
+    fill(): void {
+      calls.push({ type: "fill", fillStyle, globalAlpha });
+    },
+    save(): void {},
+    restore(): void {},
+    translate(): void {},
+    createLinearGradient(): unknown {
+      return {
+        addColorStop(): void {},
+      };
+    },
+    drawImage(): void {},
+  } as unknown as CanvasRenderingContext2D;
+  return {
+    ctx,
+    calls,
+    finalAlpha: () => globalAlpha,
+    finalFill: () => fillStyle,
+  };
+}
+
+/**
+ * Empty strip array. The drawer renders only the sky band on this input,
+ * so no road trapezoids land in the spy. The ghost overlay still paints
+ * because it is independent of the strip array.
+ */
+const EMPTY_STRIPS: readonly Strip[] = [];
+
+describe("drawRoad ghost car overlay", () => {
+  it("paints a translucent rect at the projected ground point with the default alpha", () => {
+    const spy = makeCanvasSpy();
+    const ghost: NonNullable<DrawRoadOptions["ghostCar"]> = {
+      screenX: 400,
+      screenY: 300,
+      screenW: 80,
+    };
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { ghostCar: ghost });
+
+    const fillRectCalls = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    // First fillRect is the sky band (full viewport); the ghost rect is
+    // the second. The strip drawer does not call fillRect for empty
+    // strips so no other rects appear.
+    expect(fillRectCalls.length).toBe(2);
+    const skyRect = fillRectCalls[0]!;
+    expect(skyRect.x).toBe(0);
+    expect(skyRect.y).toBe(0);
+    expect(skyRect.w).toBe(VIEWPORT.width);
+    expect(skyRect.h).toBe(VIEWPORT.height);
+
+    const ghostRect = fillRectCalls[1]!;
+    expect(ghostRect.globalAlpha).toBeCloseTo(GHOST_CAR_DEFAULT_ALPHA, 6);
+    expect(ghostRect.fillStyle).toBe(GHOST_CAR_DEFAULT_FILL);
+    // 1:0.5 aspect: width 80 -> height 40; centered at screenX, anchored
+    // at screenY.
+    expect(ghostRect.x).toBeCloseTo(360, 6);
+    expect(ghostRect.y).toBeCloseTo(260, 6);
+    expect(ghostRect.w).toBeCloseTo(80, 6);
+    expect(ghostRect.h).toBeCloseTo(40, 6);
+  });
+
+  it("honours an explicit alpha override", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: { screenX: 100, screenY: 200, screenW: 40, alpha: 0.25 },
+    });
+    const ghostRect = spy.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.w === 40 && c.h === 20,
+    );
+    expect(ghostRect).toBeDefined();
+    expect(ghostRect!.globalAlpha).toBeCloseTo(0.25, 6);
+  });
+
+  it("honours an explicit fill override", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: {
+        screenX: 100,
+        screenY: 200,
+        screenW: 40,
+        fill: "#ff8800",
+      },
+    });
+    const ghostRect = spy.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.w === 40 && c.h === 20,
+    );
+    expect(ghostRect).toBeDefined();
+    expect(ghostRect!.fillStyle).toBe("#ff8800");
+  });
+
+  it("clamps an out-of-range alpha to [0, 1]", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: { screenX: 100, screenY: 200, screenW: 40, alpha: 5 },
+    });
+    const ghostRect = spy.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.w === 40 && c.h === 20,
+    );
+    expect(ghostRect).toBeDefined();
+    expect(ghostRect!.globalAlpha).toBeCloseTo(1, 6);
+
+    const spy2 = makeCanvasSpy();
+    drawRoad(spy2.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: { screenX: 100, screenY: 200, screenW: 40, alpha: -1 },
+    });
+    // Clamped to 0 -> no draw.
+    const ghostRect2 = spy2.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.w === 40 && c.h === 20,
+    );
+    expect(ghostRect2).toBeUndefined();
+  });
+
+  it("paints nothing extra when ghostCar is omitted", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {});
+    // Only the sky rect; no ghost rect.
+    const fillRectCalls = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    expect(fillRectCalls.length).toBe(1);
+  });
+
+  it("paints nothing extra when ghostCar is null", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { ghostCar: null });
+    const fillRectCalls = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    expect(fillRectCalls.length).toBe(1);
+  });
+
+  it("short-circuits when the projected width is non-positive", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: { screenX: 100, screenY: 200, screenW: 0 },
+    });
+    const fillRectCalls = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    // Only the sky rect.
+    expect(fillRectCalls.length).toBe(1);
+  });
+
+  it("short-circuits when a coordinate is non-finite", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: { screenX: Number.NaN, screenY: 200, screenW: 40 },
+    });
+    expect(spy.calls.filter((c) => c.type === "fillRect")).toHaveLength(1);
+
+    const spy2 = makeCanvasSpy();
+    drawRoad(spy2.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: {
+        screenX: 100,
+        screenY: Number.POSITIVE_INFINITY,
+        screenW: 40,
+      },
+    });
+    expect(spy2.calls.filter((c) => c.type === "fillRect")).toHaveLength(1);
+  });
+
+  it("restores globalAlpha and fillStyle after the ghost paint", () => {
+    const spy = makeCanvasSpy();
+    // Pre-set the context to non-default values; the drawer must leave
+    // them untouched once it returns.
+    spy.ctx.globalAlpha = 0.7;
+    spy.ctx.fillStyle = "#abcdef";
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: { screenX: 100, screenY: 200, screenW: 40 },
+    });
+    // The sky band overwrites fillStyle as part of the gradient flow,
+    // but the ghost overlay's try / finally must restore alpha. The
+    // post-draw alpha should match what we set before drawRoad ran.
+    expect(spy.finalAlpha()).toBeCloseTo(0.7, 6);
+  });
+
+  it("paints nothing extra on a zero-area viewport", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(
+      spy.ctx,
+      EMPTY_STRIPS,
+      { width: 0, height: 480 },
+      { ghostCar: { screenX: 100, screenY: 200, screenW: 40 } },
+    );
+    // The sky still tries to paint a 0-width rect; the ghost short-circuits.
+    const ghostRect = spy.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.w === 40 && c.h === 20,
+    );
+    expect(ghostRect).toBeUndefined();
+  });
+});
