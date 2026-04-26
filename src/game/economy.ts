@@ -5,6 +5,11 @@
  * Surface:
  * - `awardCredits(save, raceResult, opts)`: credit the player for a
  *   finishing position using the §12 finish-multiplier table.
+ * - `applyRepairCost(save, input)`: debit the wallet for a per-zone
+ *   repair using the §12 formula
+ *   `repairCost = damagePercent * carRepairFactor * tourTierScale`
+ *   and return a fresh `SaveGame` plus the post-repair `DamageState`
+ *   with the repaired zones zeroed.
  * - `getUpgradePrice(upgradeId)`: catalogue lookup, throws on unknown id.
  * - `purchaseUpgrade(save, upgradeId, carId)`: deduct credits and grant
  *   the upgrade as "owned" against the active save's installed-upgrade
@@ -23,10 +28,6 @@
  * code without re-deriving validity from the next state.
  *
  * Out of scope for this slice (filed as followups):
- * - `applyRepairCost`: §12 names the formula
- *   `repairCost = damagePercent * carRepairFactor * tourTierScale`. The
- *   §23 `tourTierScale` lookup now lives here (`TOUR_TIER_SCALE` /
- *   `tourTierScale`); the credit-debit wiring is filed as F-033.
  * - `tourBonus`: the 0.15x tour clear bonus is computed by the
  *   tour/region slice (`implement-tour-region-d9ca9a4d`) which owns the
  *   tour-clear lifecycle; this module supplies the per-race award only.
@@ -44,8 +45,17 @@ import {
 import { CARS_BY_ID } from "@/data/cars";
 import { UPGRADES_BY_ID } from "@/data/upgrades";
 
+import {
+  REPAIR_BASE_COST_CREDITS,
+  createDamageState,
+  type DamageState,
+  type DamageZone,
+} from "./damage";
 import { sumBonusCredits, type RaceBonus } from "./raceBonuses";
 import type { FinalCarRecord } from "./raceRules";
+
+/** Damage-zone identifiers re-exported so callers can build a `zones` list without importing damage.ts directly. */
+const DAMAGE_ZONE_KEYS: ReadonlyArray<DamageZone> = ["engine", "tires", "body"];
 
 /**
  * §12 finish-multiplier table. Index 0 is unused so placement reads the
@@ -196,10 +206,23 @@ export type EconomyFailure =
   | { code: "tier_skip"; category: UpgradeCategory; required: number; attempted: number }
   | { code: "unknown_car"; carId: string }
   | { code: "unknown_upgrade"; upgradeId: string }
-  | { code: "car_not_owned"; carId: string };
+  | { code: "car_not_owned"; carId: string }
+  | { code: "unknown_zone"; zone: string };
 
 export type EconomyResult<S = SaveGame> =
-  | { ok: true; state: S; cashEarned?: number; cashBaseEarned?: number; bonuses?: ReadonlyArray<RaceBonus> }
+  | {
+      ok: true;
+      state: S;
+      cashEarned?: number;
+      cashBaseEarned?: number;
+      bonuses?: ReadonlyArray<RaceBonus>;
+      /** Credits debited from the wallet for this operation (repair flow). */
+      cashSpent?: number;
+      /** Post-operation `DamageState` with the repaired zones zeroed (repair flow). */
+      damage?: DamageState;
+      /** Per-zone repair cost breakdown in the order the caller passed them (repair flow). */
+      repairBreakdown?: ReadonlyArray<{ zone: DamageZone; credits: number }>;
+    }
   | { ok: false; failure: EconomyFailure };
 
 // Credit awards ------------------------------------------------------------
@@ -341,6 +364,184 @@ function finishMultiplier(place: number): number {
 
 function difficultyMultiplier(difficulty: string): number {
   return DIFFICULTY_MULTIPLIERS[difficulty] ?? 1.0;
+}
+
+// Repair cost ------------------------------------------------------------
+
+/**
+ * Per-call input to `applyRepairCost`. The caller is the §20 results
+ * screen "Repair" button (and a future garage repair surface); both
+ * supply the in-flight `DamageState` along with the active car id and
+ * the championship tour index so the §12 / §23 formula resolves.
+ *
+ * Field semantics:
+ *
+ * - `carId`: which catalogue car the repair applies to. The car's
+ *   `repairFactor` (per `src/data/cars/*.json`) feeds the §12
+ *   `carRepairFactor` slot; an unknown id rejects with `unknown_car`.
+ * - `damage`: the in-flight `DamageState` for the active car. The
+ *   function reads `state.zones[zone]` for each requested zone and
+ *   uses `repairCostFor` (from `damage.ts`) for the per-zone base
+ *   cost. The damage state is not stored on `SaveGame` (it is a
+ *   per-race runtime value owned by `RaceSession`); the caller is
+ *   responsible for feeding the latest snapshot.
+ * - `tourTier`: 1-based championship tour index. Passes through to
+ *   `tourTierScale` so the §23 lookup applies. Out-of-range / NaN
+ *   inputs collapse to the in-table extremes per `tourTierScale`.
+ *   Quick-race / Practice / Time Trial use tour 1 (no scale-up).
+ * - `zones`: optional list of zones to repair. Defaults to all three
+ *   (`engine`, `tires`, `body`) for a "repair everything" call. A
+ *   garage UI offering per-zone toggles passes a subset; an unknown
+ *   string rejects with `unknown_zone`. Order is preserved in the
+ *   `repairBreakdown` field of the result so the UI can render the
+ *   line items in the order the player clicked.
+ */
+export interface ApplyRepairCostInput {
+  /** Catalogue car id; the car's `repairFactor` feeds the §12 formula. */
+  carId: string;
+  /** In-flight per-car damage snapshot. */
+  damage: Readonly<DamageState>;
+  /** 1-based tour index passed to `tourTierScale`. */
+  tourTier: number;
+  /** Optional subset; omitted means "repair all three zones". */
+  zones?: ReadonlyArray<DamageZone>;
+}
+
+/**
+ * Apply the §12 repair-cost formula and return a fresh save plus the
+ * post-repair `DamageState`.
+ *
+ * Per-zone cost formula:
+ *
+ *     zoneCost = damagePercent * carRepairFactor * tourTierScale * REPAIR_BASE_COST_CREDITS[zone]
+ *
+ * `damagePercent` is the in-flight `damage.zones[zone]` (already on
+ * `[0, 1]`). `carRepairFactor` is the catalogue car's `repairFactor`.
+ * `tourTierScale` is the §23 lookup for the 1-based tour index. The
+ * per-zone base cost (`REPAIR_BASE_COST_CREDITS`) is reused from
+ * `damage.ts` (`repairCostFor` does the `damagePercent * base` step
+ * for us; we then scale by `repairFactor * tourTierScale`).
+ *
+ * Each zone is rounded individually before summing so the §20 receipt
+ * can show line items that add up exactly to the deducted total.
+ *
+ * Rejection paths:
+ *
+ * - `unknown_car`: the carId is not in the catalogue.
+ * - `unknown_zone`: the zones list contains a value that is not a
+ *   valid `DamageZone`.
+ * - `insufficient_credits`: the wallet is below the summed cost. The
+ *   failure carries `required` and `available` so the UI can render a
+ *   "you need N more credits" hint without recomputing.
+ *
+ * Idempotency: a zone with zero damage costs zero credits and the
+ * post-repair state for that zone is unchanged (`repairCostFor`
+ * already returns 0 for `damage <= 0`). A "repair an undamaged car"
+ * call therefore returns the same save back, with `cashSpent === 0`
+ * and the damage state byte-equivalent to the input. Callers can
+ * skip the post-race repair UI when the total comes back as 0.
+ *
+ * Pure: input save and damage are never mutated. No `Date.now`,
+ * `Math.random`, or any IO.
+ */
+export function applyRepairCost(
+  save: SaveGame,
+  input: ApplyRepairCostInput,
+): EconomyResult {
+  const car = CARS_BY_ID.get(input.carId);
+  if (car === undefined) {
+    return { ok: false, failure: { code: "unknown_car", carId: input.carId } };
+  }
+
+  const requestedZones: ReadonlyArray<DamageZone> =
+    input.zones ?? DAMAGE_ZONE_KEYS;
+
+  for (const zone of requestedZones) {
+    if (!isDamageZone(zone)) {
+      return { ok: false, failure: { code: "unknown_zone", zone: String(zone) } };
+    }
+  }
+
+  // Deduplicate while preserving order so a caller passing
+  // ["engine", "engine"] is not double-billed but the breakdown still
+  // honours the first occurrence's slot.
+  const uniqueZones: DamageZone[] = [];
+  const seen = new Set<DamageZone>();
+  for (const zone of requestedZones) {
+    if (!seen.has(zone)) {
+      uniqueZones.push(zone);
+      seen.add(zone);
+    }
+  }
+
+  const scale = tourTierScale(input.tourTier);
+  const repairFactor = car.repairFactor;
+
+  const breakdown: Array<{ zone: DamageZone; credits: number }> = [];
+  let totalCost = 0;
+  for (const zone of uniqueZones) {
+    const damagePct = clampUnit(input.damage.zones[zone] ?? 0);
+    const baseCredits = damagePct * REPAIR_BASE_COST_CREDITS[zone];
+    const zoneCost = Math.max(0, Math.round(baseCredits * repairFactor * scale));
+    breakdown.push({ zone, credits: zoneCost });
+    totalCost += zoneCost;
+  }
+
+  if (totalCost > save.garage.credits) {
+    return {
+      ok: false,
+      failure: {
+        code: "insufficient_credits",
+        required: totalCost,
+        available: save.garage.credits,
+      },
+    };
+  }
+
+  const nextZones: Record<DamageZone, number> = {
+    engine: input.damage.zones.engine,
+    tires: input.damage.zones.tires,
+    body: input.damage.zones.body,
+  };
+  for (const zone of uniqueZones) {
+    nextZones[zone] = 0;
+  }
+
+  // `createDamageState` recomputes the weighted total from the new
+  // zone values so the §13 wreck check stays coherent across a repair.
+  // The off-road accumulator is preserved separately so a repair does
+  // not reset the per-race "time spent off-road" counter.
+  const nextDamage: DamageState = {
+    ...createDamageState(nextZones),
+    offRoadAccumSeconds: input.damage.offRoadAccumSeconds,
+  };
+
+  const next: SaveGame = {
+    ...save,
+    garage: {
+      ...save.garage,
+      credits: save.garage.credits - totalCost,
+    },
+  };
+
+  return {
+    ok: true,
+    state: next,
+    cashSpent: totalCost,
+    damage: nextDamage,
+    repairBreakdown: breakdown,
+  };
+}
+
+function isDamageZone(value: unknown): value is DamageZone {
+  return value === "engine" || value === "tires" || value === "body";
+}
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
 }
 
 // Upgrades ----------------------------------------------------------------

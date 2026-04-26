@@ -366,20 +366,29 @@ pattern.
 ## F-036: Wire `cappedRepairCost` into `applyRepairCost`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** open (unblocked)
 **Notes:** The `feat/economy-catch-up` slice landed
 `cappedRepairCost(rawCost, raceCashEarned, kind, difficulty)` in
-`src/game/catchUp.ts` with eleven cell-by-cell unit tests. The
-function has no in-app caller because `applyRepairCost` itself does
-not exist yet (F-033 owns it, blocked on §23 `tourTierScale`). When
-F-033 lands, `applyRepairCost` should:
-1. Compute the raw cost from the §12 formula
-   `damagePercent * carRepairFactor * tourTierScale`.
-2. Pass the raw cost plus the player's last race cash to
-   `cappedRepairCost(raw, raceIncome, kind, difficulty)`.
-3. Deduct the capped result from `save.garage.credits`.
+`src/game/catchUp.ts` with eleven cell-by-cell unit tests. F-033
+landed `applyRepairCost(save, { carId, damage, tourTier, zones? })`
+in `src/game/economy.ts` (`feat/apply-repair-cost`); the raw cost
+flow is now in place but the §12 essential-repair cap is not yet
+applied. The natural shape:
+1. The garage / results-screen repair surface picks `kind`
+   (essential vs full) and `zones` (subset of `engine`/`tires`/`body`).
+2. The surface calls `applyRepairCost` for the dry-run total
+   (`cashSpent` from the ok result).
+3. The surface passes the raw cost plus the player's last race cash
+   to `cappedRepairCost(raw, raceIncome, kind, difficulty)`.
+4. If the cap collapsed the cost, the surface either prompts the
+   player or calls a future `applyRepairCost(save, { ..., overrideCost })`
+   variant; today there is no override slot, so the simplest landing
+   is: derive the cap, debit the wallet directly via a small helper
+   in `src/game/catchUp.ts`, and zero the damage state via the same
+   `createDamageState` path `applyRepairCost` uses internally.
 The `kind` argument comes from the garage UI's repair-button
-selection (essential vs full).
+selection (essential vs full); the surface itself is owned by the
+parent §20 results-screen / garage dot.
 
 ---
 
@@ -436,23 +445,45 @@ wallet row renders a non-zero credit count.
 ## F-033: Implement `applyRepairCost` once §23 ships `tourTierScale`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open (unblocked)
+**Status:** done (2026-04-26, `feat/apply-repair-cost`)
 **Notes:** The `feat/economy-upgrade` slice intentionally deferred
 `applyRepairCost` because §12 names a `tourTierScale` factor in the
 formula `repairCost = damagePercent * carRepairFactor *
 tourTierScale` that had no §23 column. Q-010 resolved with option (a)
-in `feat/q-010-tour-tier-scale`: §23 now carries the "Repair cost
-tour tier scale" table and `src/game/economy.ts` exports
-`TOUR_TIER_SCALE` plus the `tourTierScale(tour)` resolver (clamping
-out-of-range / NaN to the in-table extremes). Add
-`applyRepairCost(save, { carId, zoneRepairs, tourTier })` to
-`src/game/economy.ts` reading per-zone damage from the in-flight
-`DamageState`, computing the credit cost via `repairCostFor` from
-`damage.ts`, multiplying by `tourTierScale(tourTier)`, and returning a
-fresh `SaveGame` with `garage.credits` decremented and (separately)
-the post-race damage zeroed. The caller (the §20 results-screen
-"Repair" button) is the natural consumer; until that surface lands,
-land the function with unit tests and leave the wiring as a follow-on.
+in `feat/q-010-tour-tier-scale`: §23 carries the "Repair cost tour
+tier scale" table and `src/game/economy.ts` exports `TOUR_TIER_SCALE`
+plus the `tourTierScale(tour)` resolver (clamping out-of-range / NaN
+to the in-table extremes).
+
+Closed by `feat/apply-repair-cost`. `applyRepairCost(save, input)`
+now lives in `src/game/economy.ts` with the input shape
+`{ carId, damage, tourTier, zones? }`. The function reads per-zone
+damage from the in-flight `DamageState`, scales each zone by the
+catalogue car's `repairFactor`, multiplies by `tourTierScale(tourTier)`,
+rounds per-zone before summing so the §20 receipt's line items add up
+exactly to the deducted total, and returns a fresh `SaveGame` with
+`garage.credits` debited plus a fresh `DamageState` with the requested
+zones zeroed. Off-road accumulator survives the repair so the per-race
+"time spent off-road" counter is not reset by a credit transaction.
+
+Result type extended additively: the existing `EconomyResult.ok`
+variant gains optional `cashSpent`, `damage`, and `repairBreakdown`
+fields; `EconomyFailure` gains an `unknown_zone` code. Sixteen new
+unit cases in `src/game/__tests__/economy.test.ts` cover the
+zero-damage idempotent path, every-zone default, the §23 tier-1 vs
+tier-8 scale ramp, the hand-computed example for tour 3 + tempest-r
+(`round(0.5 * 1500 * 1.15 * 1.30) = 1121`), per-zone repair leaving
+other zones untouched, off-road accumulator preservation, dedupe of
+duplicate zones, `insufficient_credits` / `unknown_car` /
+`unknown_zone` rejections, purity on success and failure paths,
+out-of-range tour clamping, determinism, the §13 weighted-total
+recomputation, and the per-catalogue-car `repairFactor` cross-check.
+
+The caller (the §20 results-screen "Repair" button or a future garage
+repair surface) is the natural consumer; the wiring is filed as F-036
+(`cappedRepairCost` consumer) which can now plug straight into the
+returned `cashSpent` against `cappedRepairCost(rawCost, raceCashEarned,
+kind, difficulty)`.
 
 ## F-032: Wire leaderboard client into race results surface
 **Created:** 2026-04-26

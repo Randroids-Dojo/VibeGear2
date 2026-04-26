@@ -11,9 +11,12 @@
 import { describe, expect, it } from "vitest";
 
 import { defaultSave } from "@/persistence/save";
+import { CARS_BY_ID } from "@/data/cars";
 import { UPGRADES_BY_ID } from "@/data/upgrades";
 
+import { createDamageState, REPAIR_BASE_COST_CREDITS } from "../damage";
 import {
+  applyRepairCost,
   awardCredits,
   computeRaceReward,
   DIFFICULTY_MULTIPLIERS,
@@ -25,6 +28,7 @@ import {
   purchaseUpgrade,
   tourBonus,
   TOUR_BONUS_RATE,
+  TOUR_TIER_SCALE,
   type EconomyFailure,
   type EconomyResult,
 } from "../economy";
@@ -40,7 +44,7 @@ function freshSave() {
 
 function assertOk<T>(
   result: EconomyResult<T>,
-): asserts result is { ok: true; state: T; cashEarned?: number } {
+): asserts result is Extract<EconomyResult<T>, { ok: true }> {
   if (!result.ok) {
     throw new Error(
       `expected ok result, got failure: ${JSON.stringify(result.failure)}`,
@@ -316,6 +320,306 @@ describe("tourBonus", () => {
   it("ignores negative rewards rather than clawing back the bonus", () => {
     const rewards = [1000, -500, 700];
     expect(tourBonus(rewards)).toBe(Math.round((1000 + 700) * TOUR_BONUS_RATE));
+  });
+});
+
+describe("applyRepairCost", () => {
+  // Sparrow GT repairFactor is 1.0 per its JSON, so the §12 formula
+  // collapses to `damagePercent * tourTierScale * basePerZone` for the
+  // starter car. Other cars override repairFactor; tests below pin a
+  // tour-3 / mid-engine example against tempest-r (1.15) per the dot
+  // verify item.
+  it("returns ok with a zeroed-out total when the car is undamaged", () => {
+    const before = freshSave();
+    before.garage.credits = 5000;
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage: createDamageState({}),
+      tourTier: 1,
+    });
+    assertOk(result);
+    expect(result.cashSpent).toBe(0);
+    expect(result.state.garage.credits).toBe(5000);
+    expect(result.damage?.zones).toEqual({ engine: 0, tires: 0, body: 0 });
+    expect(result.repairBreakdown).toEqual([
+      { zone: "engine", credits: 0 },
+      { zone: "tires", credits: 0 },
+      { zone: "body", credits: 0 },
+    ]);
+  });
+
+  it("repairs every zone by default and zeroes the post-repair damage", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 0.5, tires: 0.25, body: 0.5 });
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+    });
+    assertOk(result);
+    // Sparrow GT repairFactor 1.0, tier-1 scale 1.0:
+    //   engine = round(0.5 * 1500 * 1.0 * 1.0) = 750
+    //   tires  = round(0.25 * 600 * 1.0 * 1.0) = 150
+    //   body   = round(0.5 * 900 * 1.0 * 1.0) = 450
+    //   total  = 1350
+    expect(result.cashSpent).toBe(750 + 150 + 450);
+    expect(result.state.garage.credits).toBe(99999 - (750 + 150 + 450));
+    expect(result.damage?.zones).toEqual({ engine: 0, tires: 0, body: 0 });
+    expect(result.repairBreakdown).toEqual([
+      { zone: "engine", credits: 750 },
+      { zone: "tires", credits: 150 },
+      { zone: "body", credits: 450 },
+    ]);
+  });
+
+  it("scales by the §23 tourTierScale lookup for higher tours", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 1.0 });
+    const tier1 = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+      zones: ["engine"],
+    });
+    const tier8 = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 8,
+      zones: ["engine"],
+    });
+    assertOk(tier1);
+    assertOk(tier8);
+    // tier 1 -> 1.0x, tier 8 -> 2.8x
+    expect(tier1.cashSpent).toBe(REPAIR_BASE_COST_CREDITS.engine);
+    expect(tier8.cashSpent).toBe(
+      Math.round(REPAIR_BASE_COST_CREDITS.engine * TOUR_TIER_SCALE[8]),
+    );
+    // Sanity: tier 8 strictly more expensive than tier 1.
+    expect(tier8.cashSpent! > tier1.cashSpent!).toBe(true);
+  });
+
+  it("matches the hand-computed example for tour 3, mid-engine, tempest-r", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    // Use tempest-r (catalogue car, repairFactor 1.15, not in default
+    // ownedCars; the repair surface is car-agnostic so no ownership
+    // gate is needed here, mirroring `awardCredits`).
+    const damage = createDamageState({ engine: 0.5 });
+    const result = applyRepairCost(before, {
+      carId: "tempest-r",
+      damage,
+      tourTier: 3,
+      zones: ["engine"],
+    });
+    assertOk(result);
+    // Hand-computed:
+    //   damagePct = 0.5
+    //   base = 0.5 * 1500 = 750
+    //   repairFactor (tempest-r) = 1.15
+    //   tour-3 scale = 1.30
+    //   credits = round(750 * 1.15 * 1.30) = round(1121.25) = 1121
+    expect(result.cashSpent).toBe(1121);
+    expect(result.repairBreakdown).toEqual([
+      { zone: "engine", credits: 1121 },
+    ]);
+  });
+
+  it("only zeroes the requested zones; other zones survive", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 0.4, tires: 0.6, body: 0.2 });
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+      zones: ["tires"],
+    });
+    assertOk(result);
+    expect(result.damage?.zones.tires).toBe(0);
+    expect(result.damage?.zones.engine).toBeCloseTo(0.4, 9);
+    expect(result.damage?.zones.body).toBeCloseTo(0.2, 9);
+  });
+
+  it("preserves offRoadAccumSeconds across a repair", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = {
+      ...createDamageState({ engine: 0.3 }),
+      offRoadAccumSeconds: 4.5,
+    };
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+    });
+    assertOk(result);
+    expect(result.damage?.offRoadAccumSeconds).toBe(4.5);
+  });
+
+  it("dedupes a duplicated zone so the player is not double-billed", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 0.5 });
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+      zones: ["engine", "engine"],
+    });
+    assertOk(result);
+    expect(result.cashSpent).toBe(750);
+    expect(result.repairBreakdown).toEqual([{ zone: "engine", credits: 750 }]);
+  });
+
+  it("rejects with insufficient_credits when wallet is one credit short", () => {
+    const before = freshSave();
+    const damage = createDamageState({ engine: 1.0 });
+    // Tier-1 engine repair on Sparrow GT (1.0 * 1500 * 1.0 * 1.0 = 1500).
+    before.garage.credits = 1499;
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+      zones: ["engine"],
+    });
+    assertFail(result);
+    expect(result.failure).toEqual({
+      code: "insufficient_credits",
+      required: 1500,
+      available: 1499,
+    });
+  });
+
+  it("rejects unknown_car for a non-catalogue car id", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const result = applyRepairCost(before, {
+      carId: "ghost-car",
+      damage: createDamageState({ engine: 0.5 }),
+      tourTier: 1,
+    });
+    assertFail(result);
+    expect(result.failure).toEqual({ code: "unknown_car", carId: "ghost-car" });
+  });
+
+  it("rejects unknown_zone for a non-DamageZone string", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage: createDamageState({ engine: 0.5 }),
+      tourTier: 1,
+      // Cast through unknown to exercise the runtime guard; a TS caller
+      // would be blocked by the DamageZone type already.
+      zones: ["wing"] as unknown as ReadonlyArray<"engine" | "tires" | "body">,
+    });
+    assertFail(result);
+    expect(result.failure).toEqual({ code: "unknown_zone", zone: "wing" });
+  });
+
+  it("never mutates the input save (success path)", () => {
+    const before = freshSave();
+    before.garage.credits = 5000;
+    const snapshot = JSON.parse(JSON.stringify(before));
+    applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage: createDamageState({ engine: 0.4 }),
+      tourTier: 2,
+    });
+    expect(before).toEqual(snapshot);
+  });
+
+  it("never mutates the input save or damage (failure path)", () => {
+    const before = freshSave();
+    before.garage.credits = 0;
+    const snapshot = JSON.parse(JSON.stringify(before));
+    const damage = createDamageState({ engine: 0.5 });
+    const damageSnapshot = JSON.parse(JSON.stringify(damage));
+    applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+    });
+    expect(before).toEqual(snapshot);
+    expect(damage).toEqual(damageSnapshot);
+  });
+
+  it("clamps out-of-range tourTier to the §23 extremes", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 1.0 });
+    const tier99 = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 99,
+      zones: ["engine"],
+    });
+    const tier8 = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 8,
+      zones: ["engine"],
+    });
+    assertOk(tier99);
+    assertOk(tier8);
+    expect(tier99.cashSpent).toBe(tier8.cashSpent);
+  });
+
+  it("is deterministic across repeated calls", () => {
+    const before = freshSave();
+    before.garage.credits = 5000;
+    const damage = createDamageState({ engine: 0.5, body: 0.3 });
+    const a = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 4,
+    });
+    const b = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 4,
+    });
+    assertOk(a);
+    assertOk(b);
+    expect(a.state).toEqual(b.state);
+    expect(a.cashSpent).toBe(b.cashSpent);
+    expect(a.damage).toEqual(b.damage);
+  });
+
+  it("rolls the new total weight via the §13 weighting on the post-repair damage", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 0.4, tires: 1.0, body: 0.6 });
+    // Repair tires only.
+    const result = applyRepairCost(before, {
+      carId: STARTER_CAR,
+      damage,
+      tourTier: 1,
+      zones: ["tires"],
+    });
+    assertOk(result);
+    // §13 weights: engine 0.45, tires 0.20, body 0.35.
+    // Post-repair: 0.4 * 0.45 + 0 * 0.20 + 0.6 * 0.35 = 0.18 + 0 + 0.21 = 0.39
+    expect(result.damage?.total).toBeCloseTo(0.39, 9);
+  });
+
+  it("each catalogue car's repairFactor scales the cost as expected", () => {
+    const before = freshSave();
+    before.garage.credits = 99999;
+    const damage = createDamageState({ engine: 1.0 });
+    for (const car of CARS_BY_ID.values()) {
+      const result = applyRepairCost(before, {
+        carId: car.id,
+        damage,
+        tourTier: 1,
+        zones: ["engine"],
+      });
+      assertOk(result);
+      const expected = Math.round(REPAIR_BASE_COST_CREDITS.engine * car.repairFactor);
+      expect(result.cashSpent).toBe(expected);
+    }
   });
 });
 
