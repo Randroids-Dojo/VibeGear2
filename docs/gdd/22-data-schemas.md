@@ -142,9 +142,14 @@
 
 ## Save-game JSON schema
 
+Current schema major: **v2**. v1 saves migrate forward additively via
+`src/persistence/migrations/v1ToV2.ts`; existing v1 fields keep their shape and
+the new `audio`, `accessibility`, and `keyBindings` bundles are filled with
+the §20 / §19 documented defaults.
+
 ```
 {
-  "version": 1,
+  "version": 2,
   "profileName": "Player",
   "settings": {
     "displaySpeedUnit": "kph",
@@ -152,6 +157,30 @@
       "steeringAssist": false,
       "autoNitro": false,
       "weatherVisualReduction": false
+    },
+    "difficultyPreset": "normal",
+    "transmissionMode": "auto",
+    "audio": {
+      "master": 1,
+      "music": 0.8,
+      "sfx": 0.9
+    },
+    "accessibility": {
+      "colorBlindMode": "off",
+      "reducedMotion": false,
+      "largeUiText": false,
+      "screenShakeScale": 1
+    },
+    "keyBindings": {
+      "accelerate": ["ArrowUp", "KeyW"],
+      "brake": ["ArrowDown", "KeyS"],
+      "left": ["ArrowLeft", "KeyA"],
+      "right": ["ArrowRight", "KeyD"],
+      "nitro": ["Space"],
+      "handbrake": ["ShiftLeft", "ShiftRight"],
+      "pause": ["Escape"],
+      "shiftUp": ["KeyE"],
+      "shiftDown": ["KeyQ"]
     }
   },
   "garage": {
@@ -183,3 +212,9 @@
   }
 }
 ```
+
+`settings.audio`, `settings.accessibility`, and `settings.keyBindings` are
+optional in the runtime schema so a v1 save mid-migration still validates.
+Consumers that read settings should default missing fields to the documented
+v2 defaults; the v1 -> v2 migration always populates them, so a fully
+migrated save will never have them missing in practice.

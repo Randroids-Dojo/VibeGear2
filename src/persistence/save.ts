@@ -21,8 +21,13 @@
  */
 
 import { SaveGameSchema, type SaveGame } from "@/data/schemas";
+import { DEFAULT_KEY_BINDINGS } from "@/game/input";
 
 import { CURRENT_SAVE_VERSION, migrate } from "./migrations";
+import {
+  V2_ACCESSIBILITY_DEFAULTS,
+  V2_AUDIO_DEFAULTS,
+} from "./migrations/v1ToV2";
 
 const KEY_PREFIX = "vibegear2:save:v";
 const BACKUP_SUFFIX = ":backup";
@@ -69,6 +74,21 @@ const defaultLogger: SaveLogger = {
 };
 
 /**
+ * Deep-clone `DEFAULT_KEY_BINDINGS` into a plain mutable object so the
+ * persisted save shape stays JSON-serialisable and the runtime frozen
+ * defaults are not aliased into save state. Mirrors the equivalent helper
+ * inside `migrations/v1ToV2.ts` so the fresh-save and migrated-save shapes
+ * are byte-identical.
+ */
+function cloneDefaultKeyBindings(): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [action, keys] of Object.entries(DEFAULT_KEY_BINDINGS)) {
+    out[action] = [...keys];
+  }
+  return out;
+}
+
+/**
  * The default save handed back when no persisted state exists. A fresh
  * profile, no credits, no owned cars. Phase 2 garage flow will replace
  * this with a "create profile" wizard.
@@ -96,6 +116,15 @@ export function defaultSave(): SaveGame {
       difficultyPreset: "normal",
       // GDD §10 'Gear shifting' default: automatic. Manual is opt-in.
       transmissionMode: "auto",
+      // §20 audio mix defaults; same constants used by the v1 -> v2 migrator
+      // so a fresh save and a migrated v1 save observe identical defaults.
+      audio: { ...V2_AUDIO_DEFAULTS },
+      // §20 accessibility defaults; screenShakeScale 1.0 keeps the v1
+      // shake intensity unchanged.
+      accessibility: { ...V2_ACCESSIBILITY_DEFAULTS },
+      // §19 key bindings: clone the runtime defaults into a plain object
+      // so the persisted shape stays mutable and JSON-serialisable.
+      keyBindings: cloneDefaultKeyBindings(),
     },
     garage: {
       credits: 0,

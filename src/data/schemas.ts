@@ -479,6 +479,70 @@ export type PlayerDifficultyPreset = z.infer<
 export const TransmissionModeSchema = z.enum(["auto", "manual"]);
 export type TransmissionModePersisted = z.infer<typeof TransmissionModeSchema>;
 
+/**
+ * §20 'Audio' settings bundle. Each level is a unit-interval scalar applied as
+ * a multiplier on the matching mix bus. The Sound + Music dot consumes these
+ * fields; this schema is the shared persistence contract so the HUD and audio
+ * slices read and write the same shape.
+ *
+ * - `master`: global output gain. 1.0 is the GDD reference level.
+ * - `music`: music-bus multiplier, applied after `master`.
+ * - `sfx`: SFX-bus multiplier (engine, tyre, hazard, UI), applied after
+ *   `master`.
+ */
+export const AudioSettingsSchema = z.object({
+  master: unitInterval,
+  music: unitInterval,
+  sfx: unitInterval,
+});
+export type AudioSettings = z.infer<typeof AudioSettingsSchema>;
+
+/**
+ * §20 'Accessibility' settings bundle. Renderer / HUD / input slices each
+ * own a subset of these flags; this schema is the shared persistence
+ * contract.
+ *
+ * - `colorBlindMode`: tint LUT for the renderer. `off` keeps the default
+ *   palette. The runtime LUT lookup is owned by the §16 renderer slice; this
+ *   field only persists the player's preference.
+ * - `reducedMotion`: when true, the §16 renderer dampens screen shake and
+ *   skips parallax flicker. Independent of `screenShakeScale`; reducedMotion
+ *   reads as a stronger semantic preference (assistive-tech bridge) while
+ *   screenShakeScale is a fine-grained slider.
+ * - `largeUiText`: when true, the HUD scales body-text glyphs up. Headline
+ *   numerics (speed, lap timer) keep their HUD size so the layout does not
+ *   reflow.
+ * - `screenShakeScale`: 0..1 multiplier on the §16 shake intensity. 0
+ *   disables shake entirely; consumers must guard against multiplying NaN /
+ *   negative input by clamping to this range at parse time.
+ */
+export const AccessibilitySettingsSchema = z.object({
+  colorBlindMode: z.enum(["off", "protanopia", "deuteranopia", "tritanopia"]),
+  reducedMotion: z.boolean(),
+  largeUiText: z.boolean(),
+  screenShakeScale: unitInterval,
+});
+export type AccessibilitySettings = z.infer<typeof AccessibilitySettingsSchema>;
+
+/**
+ * §19 'Keyboard layout' persisted re-binding map. Keyed by the logical
+ * `Action` (see `src/game/input.ts`), mapped to a non-empty list of
+ * `KeyboardEvent.code` (or `key`) tokens that resolve to that action.
+ *
+ * The schema deliberately stays loose on the action key (`z.string()`) so
+ * a future action added to `src/game/input.ts` does not require a v3
+ * migration. The runtime input layer ignores keys it does not recognise
+ * and logs once at load time per the §19 'unknown binding' rule.
+ *
+ * Each token list is bounded to 4 entries so a hostile or corrupt save
+ * cannot force the input layer to walk an unbounded array per keypress.
+ */
+export const KeyBindingsSchema = z.record(
+  z.string().min(1),
+  z.array(z.string().min(1)).min(1).max(4),
+);
+export type KeyBindings = z.infer<typeof KeyBindingsSchema>;
+
 export const SaveGameSettingsSchema = z.object({
   displaySpeedUnit: SpeedUnitSchema,
   assists: AssistSettingsSchema,
@@ -494,6 +558,25 @@ export const SaveGameSettingsSchema = z.object({
    * loaded save should treat `undefined` as `'auto'` per the §10 default.
    */
   transmissionMode: TransmissionModeSchema.optional(),
+  /**
+   * §20 audio mix levels. Optional so v1 saves migrate cleanly via
+   * `migrations/v1ToV2.ts`; the migrator fills documented defaults
+   * (master 1.0, music 0.8, sfx 0.9). `defaultSave()` always sets it.
+   */
+  audio: AudioSettingsSchema.optional(),
+  /**
+   * §20 accessibility prefs. Optional so v1 saves migrate cleanly. The
+   * v1ToV2 migrator fills documented defaults (colorBlindMode 'off',
+   * reducedMotion false, largeUiText false, screenShakeScale 1.0).
+   */
+  accessibility: AccessibilitySettingsSchema.optional(),
+  /**
+   * §19 key bindings. Optional so v1 saves migrate cleanly. The v1ToV2
+   * migrator fills the map from `DEFAULT_KEY_BINDINGS` in
+   * `src/game/input.ts`. Consumers reading from a loaded save should
+   * fall back to the defaults when a key is missing.
+   */
+  keyBindings: KeyBindingsSchema.optional(),
 });
 export type SaveGameSettings = z.infer<typeof SaveGameSettingsSchema>;
 

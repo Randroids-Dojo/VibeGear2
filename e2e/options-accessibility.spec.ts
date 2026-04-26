@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
  * `src/components/options/__tests__/accessibilityPaneState.test.ts`.
  */
 
-const SAVE_KEY = "vibegear2:save:v1";
+const SAVE_KEY = "vibegear2:save:v2";
 const ASSIST_KEYS = [
   "autoAccelerate",
   "brakeAssist",

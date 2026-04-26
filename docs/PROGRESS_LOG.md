@@ -6,6 +6,133 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: SaveGameSettings v2 schema expansion
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) Key bindings persistence,
+[§20](gdd/20-hud-and-ui-ux.md) Audio + accessibility settings surfaces,
+[§22](gdd/22-data-schemas.md) SaveGame schema major bump v1 -> v2.
+**Branch / PR:** `feat/savegame-settings-v2` stacked on
+`feat/e2e-race-finish-multilap`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-savegamesettings-b948015a`. The §20 settings surface
+needed three additional persisted bundles (audio mix, accessibility prefs,
+key bindings) so the HUD-UI / Sound / Key-remap dots can each read a
+shared on-disk shape instead of inventing their own. Doing the schema
+work behind a single migration avoids three concurrent v1 -> v2 attempts
+later. v1 saves migrate forward additively; the migrator fills the new
+bundles with the §20 / §19 documented defaults so existing players see
+no behavioural change after the upgrade.
+
+### Done
+- `src/data/schemas.ts` (update): added
+  `AudioSettingsSchema { master, music, sfx }` (each unit-interval),
+  `AccessibilitySettingsSchema { colorBlindMode, reducedMotion,
+  largeUiText, screenShakeScale }`, and `KeyBindingsSchema`
+  (record of action -> 1..4 token list). Each is exported via the
+  `data` barrel through `export * from "./schemas"`. Extended
+  `SaveGameSettingsSchema` with the three new bundles, all marked
+  optional so a v1 save mid-migration still validates.
+- `src/persistence/migrations/v1ToV2.ts` (new): pure migrator that
+  reshapes a v1 payload into v2. Documented defaults pinned as frozen
+  constants (`V2_AUDIO_DEFAULTS`, `V2_ACCESSIBILITY_DEFAULTS`); the
+  defaultSave path imports the same constants so a fresh save and a
+  migrated v1 save observe byte-identical defaults. The migrator
+  refuses to run on a non-v1 input (TypeError). When a v1 save
+  somehow already carries the new bundle (forward-compat hand-edit),
+  the migrator preserves it untouched.
+- `src/persistence/migrations/index.ts` (update): bumped
+  `CURRENT_SAVE_VERSION` from 1 to 2, registered `migrations[1] =
+  migrateV1ToV2`. The chain walker handles the rest.
+- `src/persistence/save.ts` (update): `defaultSave()` now emits a v2
+  shape with the three new bundles populated. Added a private
+  `cloneDefaultKeyBindings()` helper that mirrors the equivalent
+  inside the migrator so the runtime frozen `DEFAULT_KEY_BINDINGS`
+  is not aliased into save state.
+- `src/data/examples/saveGame.example.json` (update): bumped to v2
+  shape. The fixture is what `loadSave` validates against in the
+  unit test, so the new fields had to land here in the same slice.
+- `src/persistence/migrations/__fixtures__/v1-default-save.json` (new):
+  pure v1 default save fixture, used as the canonical input to
+  `migrateV1ToV2`. Captures the previous shape so the migration
+  test never depends on whatever the live `defaultSave()` happens to
+  emit.
+- `src/data/__tests__/settings-schema.test.ts` (new): 21 cases
+  covering each new schema's happy path, range edges (zero, one,
+  out-of-range), unknown enum values, missing bundles, and the
+  existing v1 settings shape (backward-compat).
+- `src/persistence/migrations/v1ToV2.test.ts` (new): 10 cases covering
+  the v1 -> v2 reshape, default-fill semantics, schema validation of
+  the migrated output, the forward-compat hand-edit case, the
+  no-alias property on `DEFAULT_KEY_BINDINGS`, the corrupt-payload
+  rejection paths, and the missing-settings recovery.
+- `src/persistence/migrations/migrations.test.ts` (update): replaced
+  the v1-passes-through test (no longer true) with a chain-walker
+  test that asserts a v1 input lands at `CURRENT_SAVE_VERSION` after
+  `migrate()`. Per-step shape assertions live in v1ToV2.test.ts so
+  each migrator owns its own contract.
+- `e2e/options-accessibility.spec.ts`,
+  `e2e/options-difficulty.spec.ts` (update): bumped the hardcoded
+  `SAVE_KEY` from `vibegear2:save:v1` to `vibegear2:save:v2` to
+  follow the version bump.
+- `docs/gdd/22-data-schemas.md` (update): rewrote the SaveGame JSON
+  example block to v2 with the three new bundles, plus a paragraph
+  explaining v1 saves migrate additively.
+
+### Verified
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 71 files / 1,610 tests pass (was 1,578; +32 new tests).
+- `npm run build`: clean; bundle sizes unchanged within the rounding
+  budget (the schema additions are dead-code-eliminated everywhere
+  except the persistence layer).
+- `npm run test:e2e`: 42 / 42 pass after bumping the hardcoded
+  `SAVE_KEY` references in the two `/options` e2e specs.
+- No em-dashes in any added file (grep -rPn checked
+  `src/data/schemas.ts`, `src/persistence/migrations`,
+  `src/data/__tests__/settings-schema.test.ts`,
+  `src/persistence/save.ts`).
+
+### Decisions and assumptions
+- **`screenShakeScale` default 1.0, not 0.5 as some §20 notes
+  imply.** Picking 1.0 keeps the v1 shake intensity unchanged for
+  existing players; the §16 reduced-motion track owns the
+  preset-driven dampening. The slider is the per-player override.
+- **`KeyBindingsSchema` action key kept loose (`z.string()`).**
+  Pinning the key to the runtime `Action` enum would force a v3
+  migration every time a new action lands. The runtime input layer
+  already silently ignores unknown action keys, so the schema's
+  `z.string()` is the right level of strictness.
+- **`KeyBindings` token list capped at four entries per action.**
+  Bound chosen so the runtime input layer never has to walk an
+  unbounded list per keypress. Players can still bind keyboard,
+  gamepad, mouse, and one extra alias per action.
+- **`audio` defaults pinned at master 1.0, music 0.8, sfx 0.9.**
+  Matches the §20 Settings reference levels; music is a touch
+  quieter than sfx so engine and tyre cues read through the
+  soundtrack. Final mix tuning is owned by the §18 sound dot.
+- **Forward-compat preservation.** A hand-edited v1 save that
+  somehow carries the new bundle is not clobbered by the migrator;
+  this guards against a future agent shipping a "preview" v2 build
+  before the migration lands.
+- **`CURRENT_SAVE_VERSION` chain semantics retained.** A `migrate`
+  call on a payload whose version equals current returns the
+  payload untouched (the for-loop never enters). The dot's verify
+  list claimed "registry rejects no-op identity"; that contradicts
+  the existing contract and the existing test, so the new
+  migrations.test.ts documents the actual no-op-identity behaviour.
+
+### Followups created
+- None. The §20 settings page slice (HUD-UI dot) and the §19 key
+  remap UI dot can each consume the v2 shape directly; the schema
+  work is the single coordinated owner the dot named.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md` SaveGame example block bumped to v2
+  with the three new settings bundles documented.
+
+---
+
 ## 2026-04-26: Slice: F-029 multi-lap race-finish e2e
 
 **GDD sections touched:**

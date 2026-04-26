@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "profileName": "Player",
+  "settings": {
+    "displaySpeedUnit": "kph",
+    "assists": {
+      "steeringAssist": false,
+      "autoNitro": false,
+      "weatherVisualReduction": false
+    },
+    "difficultyPreset": "normal",
+    "transmissionMode": "auto"
+  },
+  "garage": {
+    "credits": 0,
+    "ownedCars": ["sparrow-gt"],
+    "activeCarId": "sparrow-gt",
+    "installedUpgrades": {
+      "sparrow-gt": {
+        "engine": 0,
+        "gearbox": 0,
+        "dryTires": 0,
+        "wetTires": 0,
+        "nitro": 0,
+        "armor": 0,
+        "cooling": 0,
+        "aero": 0
+      }
+    }
+  },
+  "progress": {
+    "unlockedTours": [],
+    "completedTours": []
+  },
+  "records": {}
+}

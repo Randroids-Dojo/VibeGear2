@@ -5,21 +5,25 @@
  * registry is keyed by the source version and returns the input shaped for
  * the next version up; `migrate` walks the chain to `CURRENT_SAVE_VERSION`.
  *
- * v1 is the initial schema; there are no migrations registered yet.
+ * v1 was the initial schema. v2 expanded `SaveGameSettings` with audio,
+ * accessibility, and key-bindings bundles per
+ * `docs/gdd/22-data-schemas.md` and the
+ * `implement-savegamesettings-b948015a` dot.
  *
  * docs/WORKING_AGREEMENT.md §11 requires dev confirmation before dropping
  * or renaming persisted save fields. New migrations must be additive or
  * re-mapped, never destructive without a logged decision.
  */
 
-export const CURRENT_SAVE_VERSION = 1 as const;
+import { migrateV1ToV2 } from "./v1ToV2";
+
+export const CURRENT_SAVE_VERSION = 2 as const;
 
 export type Migration = (input: unknown) => unknown;
 
 export const migrations: Record<number, Migration> = {
   // Each entry maps from-version to a function that returns the from+1 shape.
-  // Example, when v2 is introduced:
-  //   1: (raw) => ({ ...raw as object, version: 2, /* ... */ }),
+  1: migrateV1ToV2,
 };
 
 /**

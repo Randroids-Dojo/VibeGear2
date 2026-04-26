@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "profileName": "Player",
   "settings": {
     "displaySpeedUnit": "kph",
@@ -9,7 +9,29 @@
       "weatherVisualReduction": false
     },
     "difficultyPreset": "normal",
-    "transmissionMode": "auto"
+    "transmissionMode": "auto",
+    "audio": {
+      "master": 1,
+      "music": 0.8,
+      "sfx": 0.9
+    },
+    "accessibility": {
+      "colorBlindMode": "off",
+      "reducedMotion": false,
+      "largeUiText": false,
+      "screenShakeScale": 1
+    },
+    "keyBindings": {
+      "accelerate": ["ArrowUp", "KeyW"],
+      "brake": ["ArrowDown", "KeyS"],
+      "left": ["ArrowLeft", "KeyA"],
+      "right": ["ArrowRight", "KeyD"],
+      "nitro": ["Space"],
+      "handbrake": ["ShiftLeft", "ShiftRight"],
+      "pause": ["Escape"],
+      "shiftUp": ["KeyE"],
+      "shiftDown": ["KeyQ"]
+    }
   },
   "garage": {
     "credits": 18250,
