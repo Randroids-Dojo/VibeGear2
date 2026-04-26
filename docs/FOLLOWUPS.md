@@ -13,29 +13,37 @@ or `obsolete` so the trail is preserved.
 ## F-048: Apply `CPU_DIFFICULTY_MODIFIERS` scalars in the AI runtime
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** `src/game/aiDifficulty.ts` now exposes
+**Status:** in-progress
+**Notes:** `src/game/aiDifficulty.ts` exposes
 `CPU_DIFFICULTY_MODIFIERS` keyed by `PlayerDifficultyPreset` (Easy /
-Normal / Hard / Master). The runtime side of the §23 wiring still
-needs three call-sites:
+Normal / Hard / Master). The runtime side of the §23 wiring needs
+three call-sites; the `paceScalar` slice landed in
+`feat/cpu-tier-pace-scalar-in-tickai`:
 
-- `tickAI` in `src/game/ai.ts`: multiply the per-driver
-  `driver.paceScalar` by `getCpuModifiers(tierId).paceScalar`
-  before computing `targetSpeed`. Today `tickAI` reads only the
-  per-driver scalar; thread the resolved tier id from the save's
-  `difficultyPreset` field through `raceSession.createRaceSession`
-  so the AI tick sees both the archetype identity and the
-  player-facing difficulty.
-- `mistakeScalar`: stack on `AIDriver.mistakeRate` once the
-  mistake-injection pipeline lands. Clean_line is currently
+- `tickAI` in `src/game/ai.ts`: **done.** A new optional
+  `cpuModifiers` parameter (defaults to identity) stacks
+  `cpuModifiers.paceScalar` on the per-driver
+  `driver.paceScalar` at the targetSpeed compute site.
+  `raceSession.stepRaceSession` resolves the tier once per tick
+  via `resolveCpuModifiers(config.player.difficultyPreset)` and
+  forwards the cached frozen reference into every `tickAI` call so
+  the AI tick sees both the archetype identity (per-driver) and
+  the player-facing difficulty (per-tier). The composed target
+  is re-clamped at `stats.topSpeed` so a Master-tier driver with
+  an authored `paceScalar > 1` still cannot exceed the chassis
+  ceiling. Tests cover Hard > Easy under matched inputs, the
+  per-driver composition, the topSpeed clamp, and the
+  identity-default byte-equivalence with the omitted-arg path.
+- `mistakeScalar`: **open.** Stack on `AIDriver.mistakeRate` once
+  the mistake-injection pipeline lands. Clean_line is currently
   zero-randomness; the consumer arrives with `aggressive`,
-  `chaotic`, and `bully` archetypes.
-- `recoveryScalar`: stack on the rubber-banding catch-up term once
-  it lands. §15 lists rubber-banding as deferred; no consumer
-  module exists yet.
+  `chaotic`, and `bully` archetypes (full-AI dot owns it).
+- `recoveryScalar`: **open.** Stack on the rubber-banding catch-up
+  term once it lands. §15 lists rubber-banding as deferred; no
+  consumer module exists yet.
 
-The constant is authoritative for the future wiring; the binding is
-in place so the wiring slices can read a single source of truth.
+Close this followup once `mistakeScalar` and `recoveryScalar`
+also consume their respective scalars at their consumer sites.
 
 ---
 

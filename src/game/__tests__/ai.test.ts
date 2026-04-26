@@ -22,11 +22,13 @@ import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import {
   AI_TUNING,
   DEFAULT_AI_TRACK_CONTEXT,
+  IDENTITY_CPU_MODIFIERS,
   INITIAL_AI_STATE,
   tickAI,
   type AIState,
   type PlayerView,
 } from "@/game/ai";
+import { getCpuModifiers } from "@/game/aiDifficulty";
 import { INITIAL_CAR_STATE, type CarState } from "@/game/physics";
 import { createRaceState, type RaceState } from "@/game/raceState";
 import { compileSegments, type CompiledSegmentBuffer } from "@/road/trackCompiler";
@@ -374,6 +376,142 @@ describe("tickAI (purity and determinism)", () => {
       expect(result.input).toEqual(reference.input);
       expect(result.nextAiState).toEqual(reference.nextAiState);
     }
+  });
+});
+
+describe("tickAI (§23 CPU difficulty tier paceScalar)", () => {
+  // §23 "CPU difficulty modifiers" stacks the player-facing tier
+  // `paceScalar` on top of the per-driver `AIDriver.paceScalar`. These
+  // tests pin the runtime side of F-048: a clean_line driver under
+  // identical inputs targets a higher speed at Hard than at Easy, and
+  // omitting the `cpuModifiers` argument is byte-identical to passing
+  // the Normal (identity) row.
+
+  it("Hard tier yields a higher targetSpeed than Easy under matched inputs", () => {
+    // Mid-sweeper at curve=0.5: rawTarget = 61 * (1 - 0.6 * 0.5) * 1.0
+    // * tier paceScalar. All four tiers stay below `topSpeed` here so
+    // the clamp does not flatten the comparison.
+    const easy = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ z: 900, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("easy"),
+    );
+    const hard = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ z: 900, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("hard"),
+    );
+    expect(hard.nextAiState.targetSpeed).toBeGreaterThan(
+      easy.nextAiState.targetSpeed,
+    );
+  });
+
+  it("Normal tier (identity) is byte-identical to omitting cpuModifiers", () => {
+    // The default-arg path resolves to `IDENTITY_CPU_MODIFIERS` which
+    // matches `getCpuModifiers("normal")`. Passing the Normal row
+    // explicitly must not drift any field of the result, so callers
+    // that adopt the binding can flip in stages without altering the
+    // pre-binding behaviour for any tier they have not yet wired.
+    const omitted = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ z: 900, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const explicitNormal = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ z: 900, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("normal"),
+    );
+    expect(explicitNormal.input).toEqual(omitted.input);
+    expect(explicitNormal.nextAiState).toEqual(omitted.nextAiState);
+  });
+
+  it("composes per-driver paceScalar with the tier paceScalar", () => {
+    // §23 spec: a clean_line driver with `paceScalar = 1.02` running at
+    // Hard sees an effective `1.02 * 1.05` composed pace; at Easy the
+    // same driver sees `1.02 * 0.92`. The mid-sweeper segment keeps
+    // both targets below `topSpeed` so the multiplicative composition
+    // is observable without the chassis ceiling clamp.
+    const driver: AIDriver = { ...CLEAN_LINE_DRIVER, paceScalar: 1.02 };
+    const easy = tickAI(
+      driver,
+      freshAi(),
+      freshCar({ z: 900, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("easy"),
+    );
+    const hard = tickAI(
+      driver,
+      freshAi(),
+      freshCar({ z: 900, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("hard"),
+    );
+    // Mid-sweeper curvePenalty: 1 - 0.6 * 0.5 = 0.7. raw = 61 * 0.7 *
+    // 1.02 * tier paceScalar. Both stay below `topSpeed = 61`.
+    const baseRaw = STARTER_STATS.topSpeed * 0.7 * 1.02;
+    expect(easy.nextAiState.targetSpeed).toBeCloseTo(baseRaw * 0.92, 6);
+    expect(hard.nextAiState.targetSpeed).toBeCloseTo(baseRaw * 1.05, 6);
+  });
+
+  it("re-clamps composed target at topSpeed so Master cannot exceed the chassis ceiling", () => {
+    // Straight with `paceScalar = 1.0` and Master tier
+    // (`paceScalar = 1.09`) composes to `1.09 * topSpeed`; the clamp
+    // brings it back to `topSpeed` so a Master-tier driver cannot
+    // physically out-run the chassis. Mirrors the existing per-driver
+    // `paceScalar > 1` clamp test on the straight.
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ speed: 10 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("master"),
+    );
+    expect(result.nextAiState.targetSpeed).toBe(STARTER_STATS.topSpeed);
+  });
+
+  it("IDENTITY_CPU_MODIFIERS matches the §23 Normal row", () => {
+    expect(IDENTITY_CPU_MODIFIERS).toBe(getCpuModifiers("normal"));
   });
 });
 

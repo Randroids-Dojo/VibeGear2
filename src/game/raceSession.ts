@@ -50,6 +50,10 @@ import {
   type AITrackContext,
 } from "./ai";
 import {
+  resolveCpuModifiers,
+  type CpuDifficultyModifiers,
+} from "./aiDifficulty";
+import {
   applyAssists,
   INITIAL_ASSIST_MEMORY,
   type AssistBadge,
@@ -758,6 +762,21 @@ export function stepRaceSession(
   const playerAssistScalars: Readonly<AssistScalars> = resolvePresetScalars(
     config.player.difficultyPreset ?? undefined,
   );
+  // §23 CPU difficulty modifiers: resolved each tick from the same
+  // saved preset id and forwarded into every `tickAI` call so the AI
+  // tier scalars (`paceScalar`, plus the reserved `recoveryScalar` /
+  // `mistakeScalar`) stack on top of the per-driver `AIDriver.paceScalar`
+  // from `src/data/ai/*.json`. `resolveCpuModifiers` returns the same
+  // frozen object reference per preset id (frozen-table lookup) so this
+  // is allocation-free per tick. Unlike `playerAssistScalars` which
+  // tunes the player car, this row tunes every AI car uniformly per
+  // §23 "CPU difficulty modifiers" (one tier-wide row, per-driver
+  // identity stays in the AI JSON). Defaults to the Normal (identity)
+  // row when the save has no preset (older v1 saves before the field
+  // landed) so existing call sites preserve pre-binding behaviour.
+  const cpuModifiers: Readonly<CpuDifficultyModifiers> = resolveCpuModifiers(
+    config.player.difficultyPreset ?? undefined,
+  );
 
   // §19 accessibility assists: rewrite the player's resolved input
   // before any downstream reducer (nitro, transmission, drafting,
@@ -886,6 +905,7 @@ export function stepRaceSession(
       aiConfig.stats,
       aiContext,
       dt,
+      cpuModifiers,
     );
   });
 

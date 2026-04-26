@@ -27,22 +27,52 @@
  * carried through so later mistake-prone archetypes can stream a
  * dedicated PRNG without a breaking signature change.
  *
+ * §23 "CPU difficulty modifiers" wiring: `tickAI` accepts an optional
+ * `cpuModifiers` parameter (the §15-tier scalars from
+ * `aiDifficulty.getCpuModifiers`) and stacks `cpuModifiers.paceScalar`
+ * on top of the per-driver `AIDriver.paceScalar` at the targetSpeed
+ * compute site. `mistakeScalar` and `recoveryScalar` are reserved on
+ * the same shape but have no consumer yet (mistake injection lands
+ * with the aggressive / chaotic / bully archetypes; rubber-banding
+ * lands with the §15 deferred catch-up slice). Defaults to identity
+ * (`getCpuModifiers("normal")`) so existing callers keep their
+ * pre-binding behaviour bit-for-bit; `raceSession` resolves the
+ * tier once per session via `resolveCpuModifiers` and forwards the
+ * cached reference into every AI tick.
+ *
  * Out of scope for this slice (deferred to follow-up AI dots):
  * - Overtake / lane-shift behaviour. §15 lists it; the clean_line single
  *   AI may collide with the player. Collision avoidance lands with the
  *   full grid slice.
  * - Nitro firing. The clean_line AI never fires nitro in this slice.
- * - Mistake injection (miss apex, brake too early in fog, etc.).
+ * - Mistake injection (miss apex, brake too early in fog, etc.). The
+ *   §23 `mistakeScalar` consumer lands with that pipeline.
  * - Weather skill modulation of `paceScalar`.
- * - Rubber-banding catch-up logic.
+ * - Rubber-banding catch-up logic. The §23 `recoveryScalar` consumer
+ *   lands with that slice.
  */
 
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import { CURVATURE_SCALE, ROAD_WIDTH, SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
+import {
+  getCpuModifiers,
+  type CpuDifficultyModifiers,
+} from "./aiDifficulty";
 import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
+
+/**
+ * Identity §23 CPU modifiers row used as the default when a caller does
+ * not supply tier-resolved scalars. Equivalent to
+ * `getCpuModifiers("normal")`: each scalar is `1.0` so the per-driver
+ * `paceScalar` (and future `mistakeScalar` / `recoveryScalar` consumers)
+ * pass through untouched, preserving pre-binding behaviour bit-for-bit
+ * for any caller that has not yet adopted the tier wiring.
+ */
+export const IDENTITY_CPU_MODIFIERS: CpuDifficultyModifiers =
+  getCpuModifiers("normal");
 
 /**
  * Per-AI runtime state. Pinned by the dot stress-test:
@@ -193,6 +223,7 @@ export function tickAI(
   stats: Readonly<CarBaseStats>,
   context: Readonly<AITrackContext> = DEFAULT_AI_TRACK_CONTEXT,
   _dt: number = 0,
+  cpuModifiers: Readonly<CpuDifficultyModifiers> = IDENTITY_CPU_MODIFIERS,
 ): AITickResult {
   const segment = currentSegment(track, aiCar.z);
   // `segment.curve` is the per-compiled-segment dx contribution, already
@@ -220,8 +251,17 @@ export function tickAI(
   // Target speed per segment. §15 "AI chooses a lane offset target" plus
   // a per-driver `paceScalar` from §22 maps onto a curve-aware target
   // speed. The MIN_AI_SPEED floor keeps pathological corners drivable.
+  // §23 "CPU difficulty modifiers" stacks the player-facing tier
+  // `paceScalar` on top of the per-driver scalar so a clean_line driver
+  // at Hard targets ~5% above the same driver at Normal, while at Easy
+  // the same driver targets ~8% below. Identity modifiers (the default
+  // when a caller has not threaded the resolved tier) preserve
+  // pre-binding behaviour bit-for-bit. The composed target is then
+  // re-clamped at `stats.topSpeed` so a Master-tier driver with an
+  // authored `paceScalar > 1` still cannot exceed the chassis ceiling.
   const curvePenalty = 1 - AI_TUNING.CLEAN_LINE_CURVE_DECEL * Math.abs(authoredCurve);
-  const rawTarget = stats.topSpeed * Math.max(0, curvePenalty) * driver.paceScalar;
+  const composedPaceScalar = driver.paceScalar * cpuModifiers.paceScalar;
+  const rawTarget = stats.topSpeed * Math.max(0, curvePenalty) * composedPaceScalar;
   const targetSpeed = clamp(rawTarget, AI_TUNING.MIN_AI_SPEED, stats.topSpeed);
 
   // The state we will return regardless of phase. Mirrors the car so
