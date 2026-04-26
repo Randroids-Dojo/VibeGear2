@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: PR #5 review comment fixes
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) "Loading screen accessibility",
+[§21](gdd/21-technical-design-for-web-implementation.md) "App shell" and
+"Asset pipeline",
+[§22](gdd/22-data-schemas.md) "Save-game JSON schema" and "Ghost replay".
+**Branch / PR:** `feat/f-023-timetrial-recorder-lifecycle`, PR #5
+(already merged before this follow-up).
+**Status:** Implemented review fixes.
+
+### Done
+- `src/components/error/ErrorBoundary.tsx`: added an explicit
+  `hasError` state flag so `throw null` still renders the fallback, and
+  swallowed clipboard write rejections in the Copy error path.
+- `src/components/loading/LoadingGate.tsx`: switched preload effect
+  invalidation from manifest object identity to a content-derived
+  stable key, so equivalent rebuilt manifest objects do not restart
+  preloading.
+- `src/components/loading/loadingState.ts`: deduped repeated warning and
+  critical failure entry ids so retries or duplicate progress callbacks
+  do not inflate the UI counts.
+- `docs/gdd/22-data-schemas.md`: aligned the save-game schema docs with
+  the v3 example by documenting the v2 -> v3 `ghosts` migration and
+  showing `"version": 3` plus `"ghosts": {}` in the example.
+- Added targeted tests for the null-throw boundary sentinel, clipboard
+  rejection swallow, manifest stable key, failure dedupe, and schema
+  example validation.
+
+### Verified
+- `npx vitest run src/components/error/__tests__/ErrorBoundary.test.tsx src/components/error/__tests__/formatErrorReport.test.ts src/components/loading/__tests__/LoadingGate.test.ts src/components/loading/__tests__/loadingState.test.ts src/data/schemas.test.ts src/persistence/save.test.ts` green.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+
+### Decisions and assumptions
+- The PR description mismatch thread is historical: PR #5 was already
+  merged before this follow-up, and the branch has been fast-forwarded to
+  current `main`. The follow-up keeps the branch code aligned rather than
+  splitting an already-merged PR.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: updated the save-game schema section to
+  current major v3 and documented the `ghosts` map migration.
+
+---
+
 ## 2026-04-26: Slice: Review fixes for save and lap timing
 
 **GDD sections touched:**
@@ -7401,7 +7450,7 @@ declares provenance).
 
 ---
 
-## 2026-04-26 — Slice: Bootstrap implementation plan and working agreement
+## 2026-04-26: Slice: Bootstrap implementation plan and working agreement
 
 **GDD sections touched:** none (meta)
 **Branch / PR:** `claude/gdd-implementation-plan-Z0cpN`, PR pending
@@ -7425,11 +7474,11 @@ declares provenance).
 - Treated `GDD.docx` as a historical artefact; Markdown is canonical.
 - Assumed Next.js + TypeScript + Canvas2D stack as implied by
   `01-title-and-high-concept.md` and `21-technical-design-for-web-implementation.md`
-  (the latter is not yet authored — flagged as Q-001).
+  (the latter is not yet authored, flagged as Q-001).
 - Chose squash-merge as the default merge strategy, reversible by dev request.
 
 ### Followups created
-- F-001 Author the eleven missing GDD sections (18–28) before Phase 0 can
+- F-001 Author the eleven missing GDD sections (18-28) before Phase 0 can
   close.
 - F-002 Stand up the Next.js + TypeScript project skeleton with CI and a
   deploy target.

@@ -18,7 +18,15 @@
  * preloader drops their failures from the result.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 import {
   hasCriticalFailure,
@@ -56,6 +64,11 @@ interface GateState {
 
 export function LoadingGate(props: LoadingGateProps): ReactElement {
   const { manifest, fetcher, reducedMotion = false, children, onSnapshot } = props;
+  const manifestKey = stableManifestKey(manifest);
+  const stableManifestRef = useRef(manifest);
+  if (stableManifestKey(stableManifestRef.current) !== manifestKey) {
+    stableManifestRef.current = manifest;
+  }
 
   const [state, setState] = useState<GateState>(() => ({
     snapshot: startLoading(manifest.id, manifest.entries.length),
@@ -70,21 +83,23 @@ export function LoadingGate(props: LoadingGateProps): ReactElement {
     onSnapshotRef.current = onSnapshot;
   }, [onSnapshot]);
 
-  // Reset the snapshot whenever the manifest identity changes or a retry is
+  // Reset the snapshot whenever the manifest content changes or a retry is
   // requested. The actual preload is kicked off in the run-effect below.
   useEffect(() => {
+    const currentManifest = stableManifestRef.current;
     setState((prev) => ({
-      snapshot: startLoading(manifest.id, manifest.entries.length),
+      snapshot: startLoading(currentManifest.id, currentManifest.entries.length),
       result: null,
       attempt: prev.attempt,
     }));
-  }, [manifest.id, manifest.entries.length]);
+  }, [manifestKey]);
 
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
+    const currentManifest = stableManifestRef.current;
 
-    void preloadAll(manifest, {
+    void preloadAll(currentManifest, {
       fetcher,
       signal: controller.signal,
       onProgress: (event) => {
@@ -113,7 +128,7 @@ export function LoadingGate(props: LoadingGateProps): ReactElement {
       cancelled = true;
       controller.abort();
     };
-  }, [manifest, fetcher, state.attempt]);
+  }, [manifestKey, fetcher, state.attempt]);
 
   const handleRetry = useCallback(() => {
     setState((prev) => ({
@@ -143,4 +158,19 @@ export function LoadingGate(props: LoadingGateProps): ReactElement {
       onRetry={result && hasCriticalFailure(result) ? handleRetry : undefined}
     />
   );
+}
+
+export function stableManifestKey(manifest: AssetManifest): string {
+  const entriesKey = manifest.entries
+    .map((entry) =>
+      [
+        entry.id,
+        entry.kind,
+        entry.src,
+        entry.critical ? "1" : "0",
+        entry.license,
+      ].join("\u0000"),
+    )
+    .join("\u0001");
+  return [manifest.id, entriesKey].join("\u0002");
 }

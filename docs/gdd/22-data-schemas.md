@@ -142,14 +142,16 @@
 
 ## Save-game JSON schema
 
-Current schema major: **v2**. v1 saves migrate forward additively via
+Current schema major: **v3**. v1 saves migrate forward additively via
 `src/persistence/migrations/v1ToV2.ts`; existing v1 fields keep their shape and
 the new `audio`, `accessibility`, and `keyBindings` bundles are filled with
-the §20 / §19 documented defaults.
+the §20 / §19 documented defaults. v2 saves migrate forward additively via
+`src/persistence/migrations/v2ToV3.ts`; existing v2 fields keep their shape and
+the new `ghosts` map is filled with `{}`.
 
 ```
 {
-  "version": 2,
+  "version": 3,
   "profileName": "Player",
   "settings": {
     "displaySpeedUnit": "kph",
@@ -210,6 +212,7 @@ the §20 / §19 documented defaults.
       "bestRaceMs": 214555
     }
   },
+  "ghosts": {},
   "writeCounter": 12
 }
 ```
@@ -226,3 +229,8 @@ consistency". It is independent of the schema `version`, optional so v1
 saves and pre-counter v2 saves still validate (the loader treats
 `undefined` as `0`), and incremented by `saveSave` on every persist. The
 v1 -> v2 migrator seeds it to `0` if absent.
+
+`ghosts` is the §6 Time Trial PB replay map keyed by track id. It is optional
+in the runtime schema so v1 / v2 saves still validate before migration, but a
+fully migrated v3 save carries at least an empty map. Each stored entry uses
+the Ghost replay schema below.

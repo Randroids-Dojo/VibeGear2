@@ -40,11 +40,13 @@ export interface ErrorBoundaryProps {
 }
 
 interface ErrorBoundaryState {
+  hasError: boolean;
   error: unknown;
   componentStack: string | null;
 }
 
 const INITIAL_STATE: ErrorBoundaryState = {
+  hasError: false,
   error: null,
   componentStack: null,
 };
@@ -53,7 +55,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   override state: ErrorBoundaryState = INITIAL_STATE;
 
   static getDerivedStateFromError(error: unknown): Partial<ErrorBoundaryState> {
-    return { error };
+    return { hasError: true, error };
   }
 
   override componentDidCatch(error: unknown, info: ErrorInfo): void {
@@ -70,8 +72,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   override render(): ReactNode {
-    const { error, componentStack } = this.state;
-    if (error === null) {
+    const { hasError, error, componentStack } = this.state;
+    if (!hasError) {
       return this.props.children;
     }
     const report = formatErrorReport({ error, componentStack });
@@ -92,7 +94,7 @@ function DefaultFallback({ error, report }: DefaultFallbackProps): ReactNode {
 
   const onCopy = (): void => {
     if (typeof navigator === "undefined" || !navigator.clipboard) return;
-    void navigator.clipboard.writeText(report);
+    copyErrorReportToClipboard(navigator.clipboard, report);
   };
 
   const onReload = (): void => {
@@ -144,6 +146,13 @@ function DefaultFallback({ error, report }: DefaultFallbackProps): ReactNode {
       </div>
     </main>
   );
+}
+
+export function copyErrorReportToClipboard(
+  clipboard: Pick<Clipboard, "writeText">,
+  report: string,
+): void {
+  void clipboard.writeText(report).catch(() => {});
 }
 
 const fallbackButton = {

@@ -58,11 +58,15 @@ export interface ProgressEvent {
  */
 export function applyProgress(prev: LoadingSnapshot, event: ProgressEvent): LoadingSnapshot {
   const warnings =
-    event.outcome === "failure" && !event.critical
+    event.outcome === "failure" &&
+    !event.critical &&
+    !prev.warnings.includes(event.entryId)
       ? [...prev.warnings, event.entryId]
       : prev.warnings;
   const criticalFailures =
-    event.outcome === "failure" && event.critical
+    event.outcome === "failure" &&
+    event.critical &&
+    !prev.criticalFailures.includes(event.entryId)
       ? [...prev.criticalFailures, event.entryId]
       : prev.criticalFailures;
   const settled = event.completed + event.failed;

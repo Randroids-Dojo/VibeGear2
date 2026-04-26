@@ -142,6 +142,34 @@ describe("applyProgress", () => {
     expect(before.warnings).toBe(beforeWarnings);
     expect(before.warnings).toEqual([]);
   });
+
+  it("dedupes repeated warning and critical failure events by entry id", () => {
+    let snap = startLoading(MANIFEST_ID, 4);
+    const warning = progress({
+      outcome: "failure",
+      critical: false,
+      entryId: "optional-atlas",
+      completed: 0,
+      failed: 1,
+    });
+    snap = applyProgress(snap, warning);
+    snap = applyProgress(snap, warning);
+    expect(snap.warnings).toEqual(["optional-atlas"]);
+
+    const critical = progress({
+      outcome: "failure",
+      critical: true,
+      entryId: "required-atlas",
+      completed: 0,
+      failed: 2,
+    });
+    snap = applyProgress(snap, critical);
+    snap = applyProgress(snap, critical);
+    expect(snap.criticalFailures).toEqual(["required-atlas"]);
+    expect(formatLoadingText(snap)).toBe(
+      "Loading failed: 1 required asset unavailable",
+    );
+  });
 });
 
 describe("formatLoadingText", () => {
