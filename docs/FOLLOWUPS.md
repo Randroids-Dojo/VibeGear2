@@ -10,6 +10,23 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-020: `scripts/content-lint.ts` to enforce the LEGAL_SAFETY denylist
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** `docs/LEGAL_SAFETY.md` section 9 sets the contract for a future
+content-lint script that runs as part of `npm run verify` and fails the
+build on (a) any binary in `public/` missing an asset manifest entry,
+(b) track JSON that references a real-circuit name from a denylist
+(Nurburgring, Spa, Suzuka, Monza, Silverstone, Imola, Estoril, Le Mans,
+Monaco, Daytona, Indianapolis), (c) car names matching a manufacturer
+denylist (Skyline, Mustang, Civic, Camaro, Supra, Lancer), and (d) any
+text content matching a Top Gear denylist (`Top Gear`, `topgear`,
+`Kemco`, `Snowblind`). The denylists in the doc are illustrative; the
+authoritative list lives in the script when it lands. Write the lint
+under `scripts/content-lint.ts`, wire it into `npm run verify`, and
+unit-test the denylist matcher with positive and negative cases.
+
 ## F-019: Race session integration of the §13 damage model
 **Created:** 2026-04-26
 **Priority:** nice-to-have

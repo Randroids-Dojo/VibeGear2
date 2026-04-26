@@ -66,3 +66,9 @@ the `verify` job runs unconditionally and is the meaningful CI gate.
 3. [`docs/WORKING_AGREEMENT.md`](docs/WORKING_AGREEMENT.md) for how to behave while building it.
 4. [`GDD.md`](GDD.md) and [`docs/gdd/`](docs/gdd/) for the design itself.
 5. [`docs/PROGRESS_LOG.md`](docs/PROGRESS_LOG.md), [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md), and [`docs/FOLLOWUPS.md`](docs/FOLLOWUPS.md) for current state.
+
+Legal safety: see [`docs/LEGAL_SAFETY.md`](docs/LEGAL_SAFETY.md) for the
+canonical safe and unsafe content patterns, the PR checklist, and the
+`legal-review` escalation path. Read this before contributing any art,
+audio, track data, or non-trivial code that resembles existing
+copyrighted material.

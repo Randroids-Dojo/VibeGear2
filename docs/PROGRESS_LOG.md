@@ -6,6 +6,86 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: LEGAL_SAFETY.md authoring per GDD §26
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) (the IP-contamination
+rules and the suggested issue labels including `legal-review`),
+[§27](gdd/27-risks-and-mitigations.md) (legal / IP drift named as a
+primary risk; this document is the named mitigation), and the IP
+perimeter from
+[§1](gdd/01-title-and-high-concept.md) and
+[§2](gdd/02-spiritual-successor-boundaries.md).
+**Branch / PR:** `feat/legal-safety-doc` (stacked on
+`feat/manual-transmission-race-wiring`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Authored `docs/LEGAL_SAFETY.md` with all 14 sections from the dot's
+  binding outline: purpose and audience, the IP perimeter, safe content
+  patterns with concrete examples, unsafe content patterns with concrete
+  counter-examples, the grey-zone escalation surface, the asset
+  manifest provenance contract, originality statement guidance, the PR
+  checklist (reproduced verbatim from CONTRIBUTING for self-containment),
+  the future content-lint denylist contract, the visual / audio review
+  bar, the `legal-review` label protocol, the take-down request
+  protocol, the issues / wiki rules, and the update-this-document
+  protocol.
+- Cross-linked the doc to `LICENSE`, `ASSETS-LICENSE`, the eventual
+  `DATA-LICENSE`, `CONTRIBUTING.md`, the eventual `MODDING.md`, and the
+  GDD sections that anchor the IP perimeter.
+- Added a "Legal safety" one-liner to the README's "Reading order for
+  new contributors" block so new contributors land on the doc before
+  they ship art or audio.
+- Filed `F-020` against the future `scripts/content-lint.ts`: the
+  contract for what the lint enforces lives in LEGAL_SAFETY.md §9, the
+  script that enforces it ships separately. `nice-to-have` priority,
+  matches the dot's "Verify" bullet.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green.
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em-dashes (U+2014) or en-dashes (U+2013) in
+  `docs/LEGAL_SAFETY.md`, the `README.md` diff, or the `FOLLOWUPS.md`
+  diff (`grep -P "[\x{2014}\x{2013}]"` returns nothing for each).
+
+### Decisions and assumptions
+- Cross-linked to `DATA-LICENSE` even though the file does not exist
+  yet. The dot's "Edge Cases" allows forward links to as-yet-unwritten
+  siblings; the licence-files slice will land the file shortly. Until
+  then, the doc states the convention (track JSON is CC BY-SA 4.0 by
+  GDD §26) so contributors are not blocked.
+- Cross-linked to `docs/MODDING.md` even though that file is owned by a
+  separate dot (`implement-modding-md-efbf1c83`). Same forward-link
+  rationale.
+- Reproduced the PR checklist verbatim from `docs/CONTRIBUTING.md`
+  rather than cross-link only. The dot's outline §8 explicitly asked
+  for reproduction so the file stays self-contained; the duplication
+  is intentional and the maintainer keeps both copies in sync at
+  edit time.
+- Did not enumerate every conceivable real-circuit name in the
+  denylist illustration; the doc states the lists are illustrative and
+  the authoritative version lives in the lint script when it lands
+  (F-020). This avoids false implication that the doc is the
+  enforceable surface.
+- Did not name any specific real driver, current Formula 1 team, or
+  current racing organisation, even as a "do not use" example. The
+  dot's "Edge Cases" forbade that pattern; the doc uses generic
+  placeholders ("any real-world racing-circuit name") instead.
+
+### Followups created
+- `F-020`: `scripts/content-lint.ts` implementing the §9 denylist
+  contract.
+
+### GDD edits
+- None. The doc cites GDD §26 §27 §1 §2 verbatim; no GDD changes
+  required.
+
+---
+
 ## 2026-04-26: Slice: manual transmission race-session wiring
 
 **GDD sections touched:**
