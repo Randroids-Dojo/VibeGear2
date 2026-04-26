@@ -10,6 +10,23 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-017: Playwright e2e specs for touch / mobile input
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The touch / mobile slice unit-tested the pure projector,
+the stateful manager (cancellation, blur, multi-touch, dispose), the
+`mergeWithTouch` precedence rule, and the `createInputManager`
+integration (38 cases). The dot also asked for a Playwright spec
+(`e2e/touch-input.spec.ts`) on emulated `device: 'iPhone 13'` that
+taps accelerator and drags the steer stick; that spec is deferred
+because the project still has no Playwright runner configured (F-002
+tracks the harness slice). Land this once the harness exists: emulate
+mobile, navigate to `/dev/road` (or the race route once it lands),
+tap accelerator and assert speed > 0, drag the stick right and assert
+the lateral camera position changes; then tap pause and assert the
+overlay opens.
+
 ## F-016: Playwright e2e specs for pause overlay and error boundary
 **Created:** 2026-04-26
 **Priority:** nice-to-have
@@ -51,11 +68,17 @@ save file. §19 lists this as a first-class feature on desktop.
 ## F-013: Touch and mobile input
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** §19 explicitly defers touch to future work and the keyboard +
 gamepad slice did not implement it. When this lands, model it as another
 source feeding into `mergeInputs` so the existing keyboard / pad path is
-unchanged.
+unchanged. Closed 2026-04-26 by `feat/touch-mobile-input`: the new
+`src/game/inputTouch.ts` ships the pure projector `inputFromTouchState`
+plus the stateful `createTouchInputSource`; `src/game/input.ts` exposes
+`touchTarget` / `touchLayout` on `InputManagerOptions` and a new
+`mergeWithTouch(base, touch)` helper that the manager calls after
+`mergeInputs(keyboard, pad)`. Visual overlay lives at
+`src/components/touch/TouchControls.tsx` and gates on `pointer:coarse`.
 
 ## F-004 — Playwright save/load round-trip via the garage UI
 **Created:** 2026-04-26

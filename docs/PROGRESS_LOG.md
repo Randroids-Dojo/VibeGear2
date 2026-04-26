@@ -6,6 +6,127 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Touch / mobile input source (§19, closes F-013)
+
+**GDD sections touched:** [§19](gdd/19-controls-and-input.md)
+**Branch / PR:** `feat/touch-mobile-input`, PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/inputTouch.ts` with the pure projector
+  `inputFromTouchState({ pointers, layout }) -> Input` and the stateful
+  `createTouchInputSource({ target, layout, resetOnBlur }) -> { sample,
+  hasActivePointers, dispose }`. The projector classifies each pointer
+  by its origin position into one of four right-zone buttons
+  (accelerator, brake, nitro corner, pause corner) or as the steering
+  pointer. Steering reads as the dominant left-zone pointer's X offset
+  from its anchor, clamped by `stickMaxRadius` and normalised to
+  `[-1, 1]`. Multi-touch is required so a player can hold accelerator
+  with one finger and steer with another; the manager tracks each
+  pointer by `pointerId` and routes per-zone.
+- Edge-case rules per the dot:
+  - Two pointers in the steer zone: latest wins (so re-anchoring
+    with a fresh finger takes effect immediately).
+  - Two pointers in the right zone: any in accelerator counts as
+    held (so a player can lift and replace fingers without losing
+    throttle).
+  - `pointercancel` (system gesture, palm reject, OS modal) releases
+    the captured pointer, mirroring `pointerup`.
+  - `blur` clears all active pointers, mirroring the keyboard
+    manager's window-blur behaviour.
+  - Non-finite or zero-radius layouts are guarded to avoid NaN.
+- Added `mergeWithTouch(base, touch) -> Input` in `src/game/input.ts`.
+  Steering uses the louder-wins rule (larger absolute steer wins);
+  throttle / brake take the max; booleans OR. The asymmetric
+  keyboard-beats-pad-on-steer rule from `mergeInputs` does not apply
+  (a virtual stick is analog like the gamepad).
+- Extended `InputManagerOptions` with optional `touchTarget` and
+  `touchLayout`. When `touchTarget` is set, `createInputManager`
+  attaches a `createTouchInputSource` and folds its sample into the
+  pipeline via `mergeWithTouch(mergeInputs(kb, pad), touch)`. When
+  unset (the default), no touch listeners attach and behaviour is
+  unchanged from the prior keyboard + pad slice. Added a `hasTouch()`
+  diagnostic alongside `hasGamepad()`.
+- Added `src/components/touch/TouchControls.tsx`: presentational SVG
+  overlay sized off `DEFAULT_TOUCH_LAYOUT`. Renders a left-side stick
+  with a moving knob, plus accelerator, brake, nitro, and pause
+  buttons in their layout positions. Visibility gates on
+  `pointer:coarse` via `matchMedia` (SSR safe; defaults to hidden).
+  `forceVisible` opt-out for the dev page and tests. `reducedMotion`
+  prop disables the knob's CSS transition without affecting input.
+  The overlay does not own input state; it subscribes to its own SVG
+  for visual knob tracking only. Sets `pointer-events: none` on the
+  root so taps still reach the underlying touch input target.
+- Added `src/game/inputTouch.test.ts` with 38 cases covering: empty
+  state, in-zone vs out-of-zone steer, max-radius clamp, partial
+  drag, accelerator vs brake routing, multi-touch composition,
+  steer-latest-wins, accelerator-and-brake-coexist, nitro and pause
+  corner taps, no-handbrake-or-shifts contract, zero-radius and NaN
+  guards, manager event tracking, ignored unknown pointermove,
+  pointercancel, blur, dispose listener count and idempotency,
+  `resetOnBlur: false`, client-to-local coord conversion via
+  `getBoundingClientRect()`, null-target SSR path, re-anchor on next
+  pointerdown, layout supplier picked up per sample, plus three
+  `createInputManager(touchTarget)` integration cases (no listeners
+  when unset, sample merges throttle, dispose tears down).
+- Updated `docs/FOLLOWUPS.md`: marked F-013 `done` with the slice
+  reference; filed F-017 for the deferred Playwright spec (no harness
+  yet, mirrors F-016).
+- Updated the touch deferral comment at the top of
+  `src/game/input.ts` so future readers see the new `touchTarget`
+  option instead of the F-NNN placeholder.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 234/234 (38 new across `inputTouch.test.ts` plus
+  196 prior).
+- `npm run build` succeeds.
+- `grep -P '[\x{2013}\x{2014}]'` across the touched files returns
+  nothing (no em-dashes, no en-dashes).
+- Manual visual verification of the overlay defers to a human run on a
+  touchscreen device or with Chrome devtools' device emulation. The
+  pure projector and stateful manager are fully covered by the new
+  unit tests.
+
+### Decisions and assumptions
+- The dot asked for the e2e Playwright spec on `device: 'iPhone 13'`.
+  Deferred to F-017 because the project has no Playwright runner yet
+  (F-002 still tracks the harness slice). The same precedent was set
+  by the pause-overlay slice's F-016.
+- The TouchControls component subscribes to its own SVG for the
+  visual knob, not the underlying input source. This avoids a
+  cross-module subscription contract and keeps the overlay's render
+  cadence independent of the sim sample cadence. The actual input
+  reading goes through `createTouchInputSource` (or
+  `createInputManager(touchTarget)`), which the race scene wires once
+  to its canvas element.
+- Pointer-events on the SVG root are set to `none` so finger taps
+  pass through to the canvas (which is the touch target). The visible
+  overlay is decoration; the real listener lives on the canvas.
+- `mergeWithTouch` uses the louder-wins steer rule rather than the
+  keyboard-priority rule from `mergeInputs(keyboard, pad)`. Justified
+  in the doc comment: virtual stick is analog like the pad, so
+  symmetric resolution is the intuitive default for a player
+  multi-modal mixing keyboard with a touchscreen laptop.
+- Layout stays a single constant (`DEFAULT_TOUCH_LAYOUT`) for now;
+  the future calibration / orientation work called out in the dot's
+  edge cases lives behind the `layout` supplier so a settings UI can
+  swap it without touching the source.
+- Race route wiring (`src/app/race/page.tsx`) is still future work
+  because that route does not exist yet; the dev road page does not
+  need touch since it has no race state. Race-route wiring will land
+  with the §6 race-mode slice that owns that page.
+
+### Followups created
+- F-017: Playwright e2e spec for touch / mobile input (deferred until
+  F-002 lands the Playwright harness).
+
+### GDD edits
+- None. Implementation conforms to §19 "Touch and mobile future work".
+
+---
+
 ## 2026-04-26: Slice: Pause overlay + global error boundary (§20, §21)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md), [§21](gdd/21-technical-design-for-web-implementation.md)

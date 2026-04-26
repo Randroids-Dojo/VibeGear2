@@ -16,8 +16,13 @@
  * `sample()` call. Tests inject a `KeyTarget` and a synthetic gamepad
  * source so no DOM is required.
  *
- * Touch / mobile is out of scope for this slice (tracked as F-NNN).
+ * Touch / mobile lives in `./inputTouch.ts` (closed F-013). This module
+ * exposes a `touchTarget` option on `InputManagerOptions` that wires the
+ * touch source into the same merge pipeline so callers do not have to
+ * compose three sources by hand.
  */
+
+import { createTouchInputSource, type TouchLayoutSource, type TouchTarget } from "./inputTouch";
 
 /**
  * Stable input shape sampled once per sim tick.
@@ -147,6 +152,33 @@ export function mergeInputs(keyboard: Input, pad: Input): Input {
   };
 }
 
+/**
+ * Layer a touch-derived `Input` on top of an already-merged
+ * keyboard+pad `Input`. The larger absolute steer wins (so a tilted
+ * stick beats a slight finger drift, and vice versa); throttle / brake
+ * take the max so a hold from any source counts; booleans OR.
+ *
+ * The asymmetric rules in `mergeInputs` (keyboard digital wins steer
+ * over pad analog) do not apply here: a virtual stick is analog like
+ * the gamepad, so the symmetric "louder wins" rule reads as the
+ * intuitive default for a player who happens to be touching the
+ * keyboard while holding the screen. F-013 is the slice that landed
+ * this; closing it here.
+ */
+export function mergeWithTouch(base: Input, touch: Input): Input {
+  const steer = Math.abs(touch.steer) > Math.abs(base.steer) ? touch.steer : base.steer;
+  return {
+    steer,
+    throttle: Math.max(base.throttle, touch.throttle),
+    brake: Math.max(base.brake, touch.brake),
+    nitro: base.nitro || touch.nitro,
+    handbrake: base.handbrake || touch.handbrake,
+    pause: base.pause || touch.pause,
+    shiftUp: base.shiftUp || touch.shiftUp,
+    shiftDown: base.shiftDown || touch.shiftDown,
+  };
+}
+
 // Gamepad mapping ----------------------------------------------------------
 
 /**
@@ -260,6 +292,16 @@ export interface InputManagerOptions {
    * values; the sample loop accepts either.
    */
   bindings?: Readonly<Record<Action, readonly string[]>>;
+  /**
+   * Optional touch target. When set, the manager wires a touch input
+   * source to this element and merges its samples into the same
+   * pipeline as keyboard + gamepad via `mergeWithTouch`. When unset
+   * (the default) no touch listeners are attached and behaviour is
+   * unchanged from the pre-F-013 keyboard + pad slice.
+   */
+  touchTarget?: TouchTarget | null;
+  /** Optional layout supplier for the touch source. Defaults per `inputTouch.ts`. */
+  touchLayout?: TouchLayoutSource;
 }
 
 export interface InputManager {
@@ -269,6 +311,8 @@ export interface InputManager {
   dispose: () => void;
   /** True if the manager currently sees a connected gamepad. Diagnostic only. */
   hasGamepad: () => boolean;
+  /** True if the touch source has any active pointers. Diagnostic only. */
+  hasTouch: () => boolean;
 }
 
 /**
@@ -315,6 +359,10 @@ function defaultGamepadSource(): GamepadSource | null {
 /**
  * Build an input manager. Subscribes to keyboard + (optional) gamepad
  * sources eagerly; call `dispose()` when the race ends.
+ *
+ * If `touchTarget` is set, a touch source is also attached and merged
+ * into the sample via `mergeWithTouch`. Otherwise the touch path is
+ * inert and `hasTouch()` always returns false.
  */
 export function createInputManager(options: InputManagerOptions = {}): InputManager {
   const bindings = options.bindings ?? DEFAULT_KEY_BINDINGS;
@@ -325,6 +373,13 @@ export function createInputManager(options: InputManagerOptions = {}): InputMana
   const heldActions = new Set<Action>();
   let disposed = false;
   let lastPadConnected = false;
+
+  const touchSource = options.touchTarget
+    ? createTouchInputSource({
+        target: options.touchTarget,
+        layout: options.touchLayout,
+      })
+    : null;
 
   function tokenize(ev: KeyboardEvent): string[] {
     const tokens: string[] = [];
@@ -402,7 +457,9 @@ export function createInputManager(options: InputManagerOptions = {}): InputMana
   function sample(): Input {
     const keyboard = inputFromActions(heldActions);
     const pad = readGamepad();
-    return mergeInputs(keyboard, pad);
+    const merged = mergeInputs(keyboard, pad);
+    if (!touchSource) return merged;
+    return mergeWithTouch(merged, touchSource.sample());
   }
 
   function dispose(): void {
@@ -413,6 +470,7 @@ export function createInputManager(options: InputManagerOptions = {}): InputMana
       keyTarget.removeEventListener("keyup", onKeyUp);
       keyTarget.removeEventListener("blur", onBlur);
     }
+    if (touchSource) touchSource.dispose();
     heldActions.clear();
   }
 
@@ -420,5 +478,9 @@ export function createInputManager(options: InputManagerOptions = {}): InputMana
     return lastPadConnected;
   }
 
-  return { sample, dispose, hasGamepad };
+  function hasTouch(): boolean {
+    return touchSource ? touchSource.hasActivePointers() : false;
+  }
+
+  return { sample, dispose, hasGamepad, hasTouch };
 }
