@@ -6,6 +6,100 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Arcade physics step for player car (§10)
+
+**GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md), [§11](gdd/11-cars-and-stats.md), [§23](gdd/23-balancing-tables.md)
+**Branch / PR:** `feat/arcade-physics`, PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/physics.ts` exposing the pure step function
+  `step(state, input, stats, context, dt) -> CarState`. Implements §10's
+  acceleration / top-speed clamp / brake / coasting drag / lane-relative
+  steering / off-road slowdown. State is the minimal `{ z, x, speed }`
+  triple; future slices for traction loss, drifting, jumps, drafting,
+  nitro, weather, damage, and collisions can extend it additively.
+- Tunable constants surfaced from §10 "Suggested tunable constants":
+  `OFF_ROAD_CAP_M_PER_S`, `OFF_ROAD_DRAG_M_PER_S2`,
+  `COASTING_DRAG_M_PER_S2`, `STEER_RATE_LOW_RAD_PER_S`,
+  `STEER_RATE_HIGH_RAD_PER_S`. Started with the starter-tier values; the
+  per-car `topSpeed`, `accel`, `brake`, `gripDry` from
+  `data/cars/*.json` drive the per-vehicle behaviour.
+- Steering uses the §10 lerp: `steerRate = lerp(low, high,
+  speed/topSpeed)`, then `yawDelta = steerInput * steerRate * dt *
+  tractionScalar`. Lateral velocity is `yawDelta * speed`, which gives
+  the dot's "no lateral movement at zero speed" behaviour for free.
+- Off-road detection uses `Math.abs(x) > roadHalfWidth` against the
+  renderer's `ROAD_WIDTH` constant. Off-road halves grip and applies
+  `OFF_ROAD_DRAG`, then caps speed at `OFF_ROAD_CAP`. Damage on
+  persistent off-road at high speed is deferred to the §13 damage slice.
+- Re-exported physics from `src/game/index.ts`.
+- Added `src/app/dev/physics/page.tsx`. Drives the starter car
+  (Sparrow GT) along a 12 km straight using the deterministic input
+  layer and the same `startLoop` 60 Hz cadence the real race uses.
+  Shows live speed (m/s and km/h), lateral x, forward z, off-road
+  flag, and per-input values for visual smoke.
+- Added `src/game/__tests__/physics.test.ts` (27 cases). Covers
+  acceleration curve, top-speed clamp, brake (no inversion past zero,
+  brake-from-zero stays at zero, brake + throttle held), coasting
+  drag, steering (zero at zero speed, magnitude scales with input,
+  authority drops with speed), off-road detection / drag / cap,
+  dt = 0 / negative / NaN edge cases, purity, determinism (1000-run
+  identical-output check + 100-step trajectory equality), and
+  forward-z integration sanity.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 159/159 (27 new + 132 prior).
+- `npm run build` succeeds; `/dev/physics` ships as a static route at
+  3.6 kB.
+- `grep -P '[\x{2013}\x{2014}]'` across the four touched files returns
+  nothing (no em-dashes, no en-dashes).
+- Manual visual verification at `/dev/physics` deferred to a human run
+  of `npm run dev`. Unit tests cover the math; the dev page is for
+  feel-checking.
+
+### Decisions and assumptions
+- The yaw-equation in §10 produces an angular delta. The MVP renderer
+  does not show vehicle heading, so we project the yaw onto a lateral
+  velocity by multiplying by forward speed. This matches the dot's
+  "lane-relative" steering and the design pillar that "steering at
+  zero speed produces no lateral movement". A future slice that
+  introduces a real heading angle replaces the projection but keeps
+  the §10 equation intact.
+- Coasting drag and steering rates are sourced from the §10 "starter
+  target" column. A future balancing slice can plumb mid / late tier
+  values per car class. The per-car `gripDry` already differentiates
+  the starter cars (Sparrow 1.00, Breaker 1.08, Vanta 0.93).
+- Brake clamps at zero rather than inverting (no reverse in MVP).
+  Reverse is not in §10's MVP scope and the dot lists "brake while
+  reversing: do not invert velocity past zero" as a hard edge case.
+- Off-road halves `gripDry` and applies `OFF_ROAD_DRAG`. §10 says
+  "reduce traction" + "apply strong drag" + "cap top speed"; the half
+  and the cap together give a readable transition without over-tuning
+  the constant. Persistent off-road damage is deferred to F-015.
+- The physics step is pure: no globals, no time source, no RNG.
+  Determinism is mandatory per AGENTS.md RULE 8 so the §21 ghost /
+  replay system can rebuild identical traces from a recorded input
+  stream.
+- Brake + throttle held at the physics layer applies both forces (net
+  delta = (accel - brake) * dt). The input layer already resolves the
+  ambiguous "both keys held" case to throttle = 0, brake = 1 before
+  reaching physics, so the only callers that hit the physics-layer
+  combination are tests, AI drivers (intentional), and replay
+  playback.
+
+### Followups created
+- F-015 in FOLLOWUPS.md: persistent off-road damage. §10 calls it out
+  ("Increase damage slightly if the player persists off-road at high
+  speed") but damage is owned by the §13 slice.
+
+### GDD edits
+- None. The implementation conforms to §10 as written.
+
+---
+
 ## 2026-04-26: Slice: Keyboard + gamepad input layer (§19)
 
 **GDD sections touched:** [§19](gdd/19-controls-and-input.md), [§21](gdd/21-technical-design-for-web-implementation.md)

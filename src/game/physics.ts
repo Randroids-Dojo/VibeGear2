@@ -1,0 +1,221 @@
+/**
+ * Arcade physics step for the player car.
+ *
+ * Source of truth: `docs/gdd/10-driving-model-and-physics.md`. Numeric
+ * defaults derive from `docs/gdd/11-cars-and-stats.md` and
+ * `docs/gdd/23-balancing-tables.md` (per-car `baseStats`).
+ *
+ * The step is a pure function:
+ *
+ *   step(state, input, context, dt) -> state
+ *
+ * No globals, no time source, no RNG. Same arguments produce identical
+ * outputs across runs, which is what the §21 replay/ghost system requires
+ * (AGENTS.md RULE 8 "Determinism is mandatory").
+ *
+ * Coordinate conventions:
+ * - `z` is forward distance along the track centerline, in meters. Always
+ *   non-decreasing while the car is moving forward.
+ * - `x` is lateral offset from the road centerline, in meters. Negative is
+ *   left, positive is right. The drivable surface spans
+ *   `[-ROAD_WIDTH, +ROAD_WIDTH]`; outside that band is off-road.
+ * - `speed` is forward speed in m/s. Always non-negative for the MVP.
+ *   Reverse is not modelled in this slice (see Phase 2 followup).
+ *
+ * MVP scope: this slice covers acceleration, top-speed clamp, brake,
+ * lane-relative steering, and off-road slowdown. Collisions, traction
+ * loss, drifting, jumps, drafting, nitro, weather, and damage are all
+ * tracked as later slices per `docs/IMPLEMENTATION_PLAN.md`. The state
+ * shape is intentionally minimal so those slices can extend it
+ * additively without a breaking rewrite.
+ */
+
+import type { CarBaseStats } from "@/data/schemas";
+import { ROAD_WIDTH } from "@/road/constants";
+import type { Input } from "./input";
+
+/**
+ * Off-road handling tunables from §10 "Suggested tunable constants".
+ *
+ * These are the starter-tier values from the table. Mid and late tier
+ * variants exist; we plumb a single set here and let the per-car stats
+ * layer decide whether to override later. Off-road behaviour is mostly
+ * grip-class agnostic in §10, so a shared constant is faithful to the
+ * design until a balancing slice proves otherwise.
+ */
+export const OFF_ROAD_CAP_M_PER_S = 24;
+export const OFF_ROAD_DRAG_M_PER_S2 = 18;
+
+/**
+ * Coast (no throttle, no brake) drag in m/s^2. §10 lists 4.5 / 4.0 / 3.5
+ * across starter/mid/late tiers; we use the starter value for the MVP.
+ */
+export const COASTING_DRAG_M_PER_S2 = 4.5;
+
+/**
+ * Steering rate band, in radians per second. §10 lists three tiers; the
+ * starter values are used for the MVP. The "rate" here is the angular
+ * authority of the front wheels, not the heading; we translate it into a
+ * lateral velocity contribution in `step()` so the car drifts toward the
+ * side the driver is steering.
+ *
+ * Why an angular rate? §10 specifies `yawDelta = steerInput * steerRate
+ * * dt * tractionScalar`. The MVP renderer does not show yaw, so we
+ * project the yaw delta onto a lateral velocity by multiplying by the
+ * forward speed. That keeps the §10 equation intact while producing the
+ * lane-relative behaviour the dot calls for.
+ */
+export const STEER_RATE_LOW_RAD_PER_S = 2.3;
+export const STEER_RATE_HIGH_RAD_PER_S = 1.25;
+
+/**
+ * Speed at which steering response transitions from "low" (tight) to
+ * "high" (subtle). The §10 lerp uses `speedNorm` against the car's top
+ * speed; we keep that ratio here.
+ */
+function steerRateForSpeed(speed: number, topSpeed: number): number {
+  if (topSpeed <= 0) return STEER_RATE_LOW_RAD_PER_S;
+  const speedNorm = clamp(speed / topSpeed, 0, 1);
+  return lerp(STEER_RATE_LOW_RAD_PER_S, STEER_RATE_HIGH_RAD_PER_S, speedNorm);
+}
+
+/**
+ * Pure car kinematic state. Extended additively by later slices
+ * (heading, traction, nitro charges, damage). Nothing in this slice
+ * stores time references; the loop owns the clock.
+ */
+export interface CarState {
+  /** Forward distance along track centerline in meters. */
+  z: number;
+  /** Lateral offset from centerline in meters. Negative = left. */
+  x: number;
+  /** Forward speed in m/s. Always >= 0 in the MVP. */
+  speed: number;
+}
+
+/** Initial state convenience: stationary at the centerline at z=0. */
+export const INITIAL_CAR_STATE: Readonly<CarState> = Object.freeze({
+  z: 0,
+  x: 0,
+  speed: 0,
+});
+
+/**
+ * Track context the physics layer needs from the renderer. Kept narrow on
+ * purpose: passing the full `Track` would couple physics to data-schemas
+ * and force tests to construct full tracks for trivial cases.
+ *
+ * `roadHalfWidth` is the lateral half-width of the drivable surface. The
+ * default is `ROAD_WIDTH` from the renderer. Tracks may override it once
+ * the data schema gains a per-track override field.
+ */
+export interface TrackContext {
+  roadHalfWidth: number;
+}
+
+/** Default context using the renderer's `ROAD_WIDTH` constant. */
+export const DEFAULT_TRACK_CONTEXT: Readonly<TrackContext> = Object.freeze({
+  roadHalfWidth: ROAD_WIDTH,
+});
+
+/**
+ * Advance the car state by `dt` seconds. Pure: no mutation of the input
+ * `state`; a fresh object is returned even when nothing changes. Callers
+ * should treat the result as the canonical next state.
+ *
+ * Edge cases handled here (per the dot's "Edge Cases" section):
+ * - `dt <= 0`: state unchanged. The loop never feeds us negative dt, but
+ *   defending against zero keeps the function safe for unit tests that
+ *   want to evaluate "did anything happen this frame".
+ * - `speed` clamped at `stats.topSpeed`. Acceleration cannot push past it.
+ * - Brake while at zero speed does not invert the velocity. We treat
+ *   "brake" as deceleration toward zero, never below.
+ * - Steering at zero speed produces no lateral movement: the §10 yaw
+ *   formula is multiplied by `speed` so the car cannot crab sideways.
+ * - Off-road for one frame: reduces traction (via `gripDry` halving) and
+ *   applies extra drag, but no damage. Damage is a later slice.
+ */
+export function step(
+  state: Readonly<CarState>,
+  input: Readonly<Input>,
+  stats: Readonly<CarBaseStats>,
+  context: Readonly<TrackContext>,
+  dt: number,
+): CarState {
+  if (!Number.isFinite(dt) || dt <= 0) {
+    return { z: state.z, x: state.x, speed: state.speed };
+  }
+
+  const offRoad = isOffRoad(state.x, context.roadHalfWidth);
+
+  // Longitudinal: integrate throttle, brake, drag, then clamp.
+  let nextSpeed = state.speed;
+  const throttle = clamp(input.throttle, 0, 1);
+  const brake = clamp(input.brake, 0, 1);
+
+  if (throttle > 0) {
+    nextSpeed += stats.accel * throttle * dt;
+  }
+  if (brake > 0) {
+    // Brake decelerates toward zero. Never inverts velocity.
+    const delta = stats.brake * brake * dt;
+    nextSpeed = Math.max(0, nextSpeed - delta);
+  } else if (throttle === 0) {
+    // Coasting drag. Decays toward zero only; cannot push us below 0.
+    const delta = COASTING_DRAG_M_PER_S2 * dt;
+    nextSpeed = Math.max(0, nextSpeed - delta);
+  }
+
+  if (offRoad) {
+    // §10 "Off-road should reduce traction, apply strong drag, cap top speed."
+    const dragDelta = OFF_ROAD_DRAG_M_PER_S2 * dt;
+    nextSpeed = Math.max(0, nextSpeed - dragDelta);
+    if (nextSpeed > OFF_ROAD_CAP_M_PER_S) {
+      nextSpeed = OFF_ROAD_CAP_M_PER_S;
+    }
+  }
+
+  // Top-speed clamp last so accel cannot overshoot via accumulated dt.
+  if (nextSpeed > stats.topSpeed) {
+    nextSpeed = stats.topSpeed;
+  }
+
+  // Lateral: §10 yaw equation, projected onto lateral velocity by speed.
+  // Grip on-road uses `gripDry`; off-road halves grip per §10's
+  // "reduce traction" requirement. A future weather slice replaces the
+  // dry-vs-wet selector; clamp guards against degenerate stat values.
+  const baseGrip = clamp(stats.gripDry, 0, 2);
+  const tractionScalar = offRoad ? baseGrip * 0.5 : baseGrip;
+  const steerInput = clamp(input.steer, -1, 1);
+  const steerRate = steerRateForSpeed(nextSpeed, stats.topSpeed);
+  const yawDelta = steerInput * steerRate * dt * tractionScalar;
+  // Lateral velocity in m/s = yaw rate * forward speed. At zero speed the
+  // car cannot move sideways, satisfying the dot's edge case.
+  const lateralVelocity = yawDelta * nextSpeed;
+  const nextX = state.x + lateralVelocity;
+
+  // Forward integration uses the post-update speed. Trapezoidal would be
+  // more accurate but the §21 fixed-step loop runs at 60 Hz which keeps
+  // per-frame error below visible thresholds.
+  const nextZ = state.z + nextSpeed * dt;
+
+  return { z: nextZ, x: nextX, speed: nextSpeed };
+}
+
+/** True if `x` is outside the drivable surface. */
+export function isOffRoad(x: number, roadHalfWidth: number): boolean {
+  return Math.abs(x) > roadHalfWidth;
+}
+
+// Numeric helpers ----------------------------------------------------------
+
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}

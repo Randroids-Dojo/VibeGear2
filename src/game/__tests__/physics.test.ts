@@ -1,0 +1,297 @@
+/**
+ * Unit tests for the arcade physics step.
+ *
+ * Covers the §10 design pillars: acceleration curve, top-speed clamp,
+ * brake (no inversion), steering response (lane-relative + zero at zero
+ * speed), off-road slowdown and cap, plus the dot's listed edge cases:
+ * dt = 0 leaves state unchanged, brake while reversing does not invert,
+ * steering at zero speed produces no lateral motion.
+ *
+ * Includes a determinism check: 1000 identical runs produce identical
+ * outputs (AGENTS.md RULE 8).
+ *
+ * Float comparisons use `toBeCloseTo` per AGENTS.md RULE 8.
+ */
+
+import { describe, expect, it } from "vitest";
+
+import type { CarBaseStats } from "@/data/schemas";
+import { NEUTRAL_INPUT, type Input } from "@/game/input";
+import {
+  COASTING_DRAG_M_PER_S2,
+  DEFAULT_TRACK_CONTEXT,
+  INITIAL_CAR_STATE,
+  OFF_ROAD_CAP_M_PER_S,
+  isOffRoad,
+  step,
+  type CarState,
+  type TrackContext,
+} from "@/game/physics";
+
+// Test fixtures ------------------------------------------------------------
+
+/** Sparrow GT, the starter car. Matches `src/data/cars/sparrow-gt.json`. */
+const STARTER_STATS: CarBaseStats = Object.freeze({
+  topSpeed: 61.0,
+  accel: 16.0,
+  brake: 28.0,
+  gripDry: 1.0,
+  gripWet: 0.82,
+  stability: 1.0,
+  durability: 0.95,
+  nitroEfficiency: 1.0,
+});
+
+/** Standard 60 Hz fixed step. */
+const DT = 1 / 60;
+
+const ROAD: TrackContext = DEFAULT_TRACK_CONTEXT;
+
+function withInput(overrides: Partial<Input>): Input {
+  return { ...NEUTRAL_INPUT, ...overrides };
+}
+
+function freshState(overrides: Partial<CarState> = {}): CarState {
+  return { ...INITIAL_CAR_STATE, ...overrides };
+}
+
+/**
+ * Roll the sim forward `n` steps with a constant input. Returns the final
+ * state. Useful for sanity-checking integrated quantities like top speed.
+ */
+function rollForward(
+  initial: CarState,
+  input: Input,
+  stats: CarBaseStats,
+  steps: number,
+  context: TrackContext = ROAD,
+  dt: number = DT,
+): CarState {
+  let s = initial;
+  for (let i = 0; i < steps; i += 1) s = step(s, input, stats, context, dt);
+  return s;
+}
+
+// Tests --------------------------------------------------------------------
+
+describe("step (acceleration)", () => {
+  it("accelerates from rest under full throttle", () => {
+    const s = step(freshState(), withInput({ throttle: 1 }), STARTER_STATS, ROAD, DT);
+    // Expected delta = accel * dt = 16 * 1/60 = 0.2667 m/s
+    expect(s.speed).toBeCloseTo(STARTER_STATS.accel * DT, 6);
+    expect(s.z).toBeGreaterThan(0);
+    expect(s.x).toBe(0);
+  });
+
+  it("matches accel*dt across many steps before drag dominates", () => {
+    // After 30 steps (0.5 s) at 16 m/s^2 we expect roughly 8 m/s. Drag is
+    // disabled while throttle is held, so the integrated speed equals
+    // accel*time exactly until top-speed.
+    const s = rollForward(freshState(), withInput({ throttle: 1 }), STARTER_STATS, 30);
+    expect(s.speed).toBeCloseTo(STARTER_STATS.accel * 30 * DT, 6);
+  });
+
+  it("clamps speed at topSpeed even after many steps of accumulated accel", () => {
+    // Far more steps than needed to saturate top speed (61 m/s at 16 m/s^2
+    // takes ~3.8 s = 230 ticks). Use 600 to ensure we are fully clamped.
+    const s = rollForward(freshState(), withInput({ throttle: 1 }), STARTER_STATS, 600);
+    expect(s.speed).toBe(STARTER_STATS.topSpeed);
+  });
+
+  it("respects throttle magnitude (analog inputs)", () => {
+    const halfThrottle = step(
+      freshState(),
+      withInput({ throttle: 0.5 }),
+      STARTER_STATS,
+      ROAD,
+      DT,
+    );
+    expect(halfThrottle.speed).toBeCloseTo(STARTER_STATS.accel * 0.5 * DT, 6);
+  });
+});
+
+describe("step (braking)", () => {
+  it("decelerates under brake input", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, withInput({ brake: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBeCloseTo(30 - STARTER_STATS.brake * DT, 6);
+  });
+
+  it("does not invert velocity past zero (brake-while-reversing edge case)", () => {
+    // 0.1 m/s of forward speed, brake at 28 m/s^2 for one 1/60 s tick (delta
+    // = 0.467 m/s) would overshoot to a negative value. The step must clamp
+    // at 0 instead.
+    const start = freshState({ speed: 0.1 });
+    const s = step(start, withInput({ brake: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBe(0);
+  });
+
+  it("brake from zero stays at zero", () => {
+    const s = step(freshState(), withInput({ brake: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBe(0);
+  });
+
+  it("brake with throttle held resolves to braking (input layer rule)", () => {
+    // The input layer resolves brake+throttle held to throttle=0 brake=1.
+    // Verify that direct construction with both fields > 0 still respects
+    // the brake (we do not silently re-resolve here; both are applied).
+    const start = freshState({ speed: 20 });
+    const s = step(start, { ...NEUTRAL_INPUT, throttle: 1, brake: 1 }, STARTER_STATS, ROAD, DT);
+    // Net delta = (accel - brake) * dt = (16 - 28) * dt = -0.2 m/s.
+    expect(s.speed).toBeCloseTo(20 + (STARTER_STATS.accel - STARTER_STATS.brake) * DT, 6);
+  });
+});
+
+describe("step (coasting drag)", () => {
+  it("applies coasting drag when neither throttle nor brake is held", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBeCloseTo(30 - COASTING_DRAG_M_PER_S2 * DT, 6);
+  });
+
+  it("coasting drag does not invert velocity past zero", () => {
+    const start = freshState({ speed: 0.001 });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBe(0);
+  });
+});
+
+describe("step (steering)", () => {
+  it("produces no lateral movement at zero speed", () => {
+    const s = step(freshState(), withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.x).toBe(0);
+  });
+
+  it("steers right at moderate speed", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.x).toBeGreaterThan(0);
+  });
+
+  it("steers left at moderate speed", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, withInput({ steer: -1 }), STARTER_STATS, ROAD, DT);
+    expect(s.x).toBeLessThan(0);
+  });
+
+  it("steering authority decreases with speed (low > high)", () => {
+    const slow = freshState({ speed: 5 });
+    const fast = freshState({ speed: 60 });
+    // Equal absolute steer input. The faster car should produce a smaller
+    // *normalized-by-speed* lateral delta because the steer rate dropped.
+    const slowResult = step(slow, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    const fastResult = step(fast, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    const slowYawDelta = slowResult.x / slow.speed;
+    const fastYawDelta = fastResult.x / fast.speed;
+    expect(slowYawDelta).toBeGreaterThan(fastYawDelta);
+  });
+
+  it("steer = 0 leaves x unchanged at any speed", () => {
+    const start = freshState({ speed: 50, x: 1.2 });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(s.x).toBe(start.x);
+  });
+
+  it("respects analog steer magnitude", () => {
+    const start = freshState({ speed: 30 });
+    const half = step(start, withInput({ steer: 0.5 }), STARTER_STATS, ROAD, DT);
+    const full = step(start, withInput({ steer: 1.0 }), STARTER_STATS, ROAD, DT);
+    expect(half.x).toBeCloseTo(full.x * 0.5, 6);
+  });
+});
+
+describe("step (off-road)", () => {
+  it("isOffRoad detects positions outside road half-width", () => {
+    expect(isOffRoad(0, ROAD.roadHalfWidth)).toBe(false);
+    expect(isOffRoad(ROAD.roadHalfWidth, ROAD.roadHalfWidth)).toBe(false);
+    expect(isOffRoad(ROAD.roadHalfWidth + 0.01, ROAD.roadHalfWidth)).toBe(true);
+    expect(isOffRoad(-ROAD.roadHalfWidth - 0.01, ROAD.roadHalfWidth)).toBe(true);
+  });
+
+  it("applies extra drag when off-road", () => {
+    const onRoadStart = freshState({ speed: 30, x: 0 });
+    const offRoadStart = freshState({ speed: 30, x: ROAD.roadHalfWidth + 1 });
+    const onRoad = step(onRoadStart, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    const offRoad = step(offRoadStart, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(offRoad.speed).toBeLessThan(onRoad.speed);
+  });
+
+  it("caps speed at OFF_ROAD_CAP when crossing onto grass at high speed", () => {
+    // Even while accelerating off-road, speed cannot exceed the cap.
+    const start = freshState({ speed: 50, x: ROAD.roadHalfWidth + 1 });
+    const s = step(start, withInput({ throttle: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBeLessThanOrEqual(OFF_ROAD_CAP_M_PER_S);
+  });
+
+  it("off-road for one frame does not damage state shape", () => {
+    // No damage modelled yet; just verify we get back a usable CarState.
+    const start = freshState({ speed: 30, x: ROAD.roadHalfWidth + 0.5 });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(Number.isFinite(s.speed)).toBe(true);
+    expect(Number.isFinite(s.x)).toBe(true);
+    expect(Number.isFinite(s.z)).toBe(true);
+  });
+});
+
+describe("step (dt edge cases)", () => {
+  it("dt = 0 returns the same state values", () => {
+    const start = freshState({ speed: 30, x: 1.5, z: 100 });
+    const s = step(start, withInput({ throttle: 1, steer: 1 }), STARTER_STATS, ROAD, 0);
+    expect(s.speed).toBe(start.speed);
+    expect(s.x).toBe(start.x);
+    expect(s.z).toBe(start.z);
+  });
+
+  it("negative dt is treated as zero (defensive)", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, withInput({ throttle: 1 }), STARTER_STATS, ROAD, -0.1);
+    expect(s.speed).toBe(start.speed);
+  });
+
+  it("non-finite dt is treated as zero", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, withInput({ throttle: 1 }), STARTER_STATS, ROAD, Number.NaN);
+    expect(s.speed).toBe(start.speed);
+  });
+});
+
+describe("step (purity and determinism)", () => {
+  it("does not mutate the input state", () => {
+    const start = freshState({ speed: 10, x: 0.5, z: 5 });
+    const snapshot = { ...start };
+    step(start, withInput({ throttle: 1, steer: 1 }), STARTER_STATS, ROAD, DT);
+    expect(start).toEqual(snapshot);
+  });
+
+  it("returns identical outputs across 1000 identical runs", () => {
+    const start = freshState({ speed: 25, x: 0.3, z: 12 });
+    const input = withInput({ throttle: 0.7, steer: 0.4, brake: 0.1 });
+    const reference = step(start, input, STARTER_STATS, ROAD, DT);
+    for (let i = 0; i < 1000; i += 1) {
+      const s = step(start, input, STARTER_STATS, ROAD, DT);
+      expect(s.speed).toBe(reference.speed);
+      expect(s.x).toBe(reference.x);
+      expect(s.z).toBe(reference.z);
+    }
+  });
+
+  it("integrates a 100-step trajectory deterministically", () => {
+    const input = withInput({ throttle: 1, steer: 0.2 });
+    const a = rollForward(freshState(), input, STARTER_STATS, 100);
+    const b = rollForward(freshState(), input, STARTER_STATS, 100);
+    expect(a).toEqual(b);
+  });
+});
+
+describe("step (forward integration)", () => {
+  it("z advances at speed * dt under steady cruising", () => {
+    const start = freshState({ speed: 40 });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    // After one tick, z advanced by (post-update speed) * dt. With coasting
+    // drag the speed dropped slightly, so z is between (start.speed - drag)
+    // * dt and start.speed * dt.
+    expect(s.z).toBeCloseTo(s.speed * DT, 6);
+    expect(s.z).toBeGreaterThan(0);
+    expect(s.z).toBeLessThanOrEqual(start.speed * DT);
+  });
+});

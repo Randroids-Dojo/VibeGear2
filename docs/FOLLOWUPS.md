@@ -10,6 +10,18 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-015: Persistent off-road damage at high speed
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** §10 "Road edge and off-road slowdown" calls for "Increase
+damage slightly if the player persists off-road at high speed". The
+arcade physics slice ships drag and a top-speed cap when off-road but
+defers damage to the §13 damage / repairs slice that owns the damage
+state machine. When the §13 slice lands, plumb a `damage` accumulator
+into the physics state and increment it in `step()` proportional to
+(speed * dt) while off-road.
+
 ## F-014: Key remapping UI and persistence
 **Created:** 2026-04-26
 **Priority:** nice-to-have
