@@ -1,88 +1,58 @@
-# 3. Top Gear 2 Research Summary
+# 3. Top Gear 2 research summary
 
-## Research Status
+Top Gear 2 on SNES is a 1993 Gremlin/Kemco racer that broadened the first game’s structure into a world tour of 64 races across 16 countries, with four races per country and a password awarded after clearing each country. The game added a between-race shop, weather-sensitive wet and dry tires, armor upgrades, gearbox upgrades up to a seventh gear, and nitro upgrades, along with a more demanding handling model and visible damage compared with the first game. [4]
 
-This section summarizes source research into *Top Gear 2* as design context. It separates verified facts from inferred behavior. VibeGear2 uses these observations to identify what made the experience memorable, then creates original systems.
+The manual’s championship page shows the SNES scoring table for a country tour as 10, 6, 4, 3, 2, 1 for the top six finishers, emphasizing aggregate results across four linked races rather than one-off wins. The password page and racing-tips page reinforce the between-country progression loop and the need to buy wet tires before rain and snow events. [5]
 
-## Verified Core Structure
+A GameFAQs reference for the SNES version documents the country sequence used by the password system—Australasia, Britain, Canada, Egypt, France, Germany, Greece, India, Ireland, Italy, Japan, Scandinavia, South America, Spain, Switzerland, and the United States—which confirms that the game treated progression as a world tour of themed country blocks rather than a menu of isolated tracks. [6]
 
-*Top Gear 2* is an SNES arcade racing game built around career progression, upgrades, and repeated races across real-world themed locations. The [official SNES manual](https://ia600702.us.archive.org/27/items/SNESManuals/Top%20Gear%202%20%28USA%29.pdf) describes race setup, player options, car setup, race information, HUD elements, upgrades, money, points, pickups, and passwords. [MobyGames](https://www.mobygames.com/game/6910/top-gear-2/) and other historical references describe the campaign as 16 countries with 4 circuits each, for 64 total circuits, with four-race blocks acting as local championships.
+Player guidance and shop notes archived on GameFAQs describe the upgrade set in practical gameplay terms: engines improve acceleration; wet and dry tires improve traction in their matching conditions; gearbox upgrades add fifth, sixth, and seventh gears; nitro upgrades increase boost power and likely extend duration; and front, rear, and side armor preserve control under collisions. Those same notes repeatedly frame nitro as one of the most important purchases and describe late countries as sharply harder if the player arrives under-upgraded. [7]
 
-| System | Verified Behavior |
-|---|---|
-| Campaign | 16 countries, 4 races each, 64 races total. |
-| Race pack | Player races against a large field. MobyGames describes 19 opponent cars. |
-| Advancement | Top 10 finish was required to continue. |
-| Scoring | Top 6 earned championship-style points. |
-| Money | Placement payouts and track pickups funded upgrades. |
-| Passwords | Passwords allowed continuation after completing a country. |
-| Race info | Pre-race information showed current location, circuit length, laps, weather, and race start time. |
-| HUD | Displayed tachometer, speed, gear, nitros, stopwatch, track diagram, fuel, damage, position, and lap. |
-| Upgrades | Engine, gearbox, tires, nitro, armor, and paint customization were available. |
-| Weather | Rain and snow mattered enough that the manual recommended wet tires for rain/snow. |
-| Multiplayer | Two-player mode used top and bottom split-screen. |
+MobyGames’ overview and review snippets support the same broad picture from another angle: players praised the sensation of speed, track variety, upgrade tactics, and balanced difficulty curve, while some community discussion later noted repetition over a full playthrough and the comparative iconic status of the first game’s soundtrack. [8]
 
-## Core Systems and Why They Mattered
+## Core systems and why they mattered
 
-| System | Why It Worked | VibeGear2 Design Takeaway |
-|---|---|---|
-| Four-race regions | Short arcs gave players medium-term goals. | Use 4-race original regions with clear standings. |
-| Top-10 qualification | A race could matter even without winning. | Let players advance by surviving, but reward podium pushing. |
-| Upgrade economy | Winnings created meaningful garage decisions. | Make repairs vs upgrades a recurring tension. |
-| Weather previews | The player could prepare before the race. | Forecasts should clearly inform tire and risk choices. |
-| Damage | Crashes mattered beyond temporary speed loss. | Damage should create pressure without making one mistake fatal. |
-| Pickups | Lane choice mattered moment to moment. | Use optional pickups as risk-reward, not mandatory chores. |
-| Dense HUD | Racing, money, damage, and boost information stayed visible. | Keep high-information arcade HUD, but redesign it. |
+Tour progression  
+The four-race country structure turned a racing game into a sequence of digestible mini-campaigns. It created tension even after a mediocre race because the player could recover in the next three. That is one of the most reusable design lessons.
 
-## Player Experience Takeaways
+Economy and upgrades  
+The shop mattered because it sat directly between races and translated finishing position into a tangible edge. Tires mattered because weather could punish the wrong choice. Gearbox mattered because top-speed growth was staged rather than flat. Nitro mattered because it was both a catch-up tool and a “get clear early” tool. [9]
 
-- The player starts with a capable but imperfect car and earns power over time.
-- The campaign is structured around repeated short races rather than long simulation events.
-- Upgrade choices matter because the next region may change weather, speed, or handling demands.
-- A crowded pack makes passing feel active even on simple road geometry.
-- Weather, damage, and boost make every race slightly unstable.
-- Dense HUD information supports strategic play, but modern readability should improve it.
+Damage and armor  
+Damage turned collisions from a simple slowdown into a medium-term threat. The archived guide notes that low armor makes the car easier to spin out, which means the game used damage as performance-state pressure, not just as cosmetic flavor. [9]
 
-## Controls, HUD, and Transmission
+Weather as preparation, not only spectacle  
+The manual and guide both make weather practical. The advice to purchase wet tires for rain and snow is blunt and systemic, not decorative. That is valuable because it ties atmospheric variety to player agency. [10]
 
-The manual describes steering, acceleration, braking, nitro, pausing, and manual gear shifting. It also includes multiple controller layouts and automatic/manual transmission selection. The race HUD was dense, showing speed, gear, nitro, fuel, damage, position, lap, and track information.
+## Player experience takeaways
 
-**Design takeaway for VibeGear2:** Support keyboard and gamepad remapping, automatic transmission by default, and manual shifting for players who want mastery. Keep a dense arcade HUD, but redesign the layout, iconography, and color language.
+The strongest emotional takeaways are clear:
 
-## Upgrade System
+- Preparation matters, but races remain arcade-fast.
+- Progress feels local and immediate.
+- The player usually feels slightly underpowered until a key upgrade lands.
+- Weather increases drama without turning the game into simulation.
+- Difficulty spikes are memorable, especially when a tour’s tracks become long, foggy, or sharply curved. [11]
 
-*Top Gear 2* centered long-term progression on a single upgradeable car rather than a large car roster. The manual and fan documentation describe engine, wet tires, dry tires, gearboxes, nitro systems, armor, and paint customization. [GameFAQs player documentation](https://gamefaqs.gamespot.com/snes/588781-top-gear-2/faqs/7599) and [TASVideos notes](https://tasvideos.org/4384M) show that upgrade routing is strategically meaningful for both casual progression and optimized play.
+## Known limitations worth improving
 
-**Design takeaway for VibeGear2:** The garage should be strategic and readable. Upgrades should change the feel of the car, not just increase numbers.
+The research points to several pain points that VibeGear2 should retain as tension but smooth as friction:
 
-## Damage, Weather, and Risk
+- Long full-game runs can feel repetitive when too many races share similar course structure or visual language. [12]
+- Difficulty could feel tied more to equipment thresholds than to pure player mastery in later tours, especially when top pack cars had clearly superior pace. [9]
+- Some weather and visibility effects were memorable but also obscured hazards in ways that could feel unfair rather than exciting. [13]
+- Public documentation does not give a fully reliable, primary-source account of every SNES viewport mode, exact CPU count, or all underlying physics constants, so any spiritual-successor reproduction of those details would be speculative. This document therefore preserves experience goals rather than pretending the original’s exact numbers are fully known. [14]
 
-The manual states that crashes can reduce performance or break down the player's car, and that the damage meter communicates condition. Rain and snow were meaningful enough that pre-race setup mattered. Community and review sources, including [SNES Central](https://snescentral.com/reviews/topgear2.php) and [GameFAQs reviews](https://gamefaqs.gamespot.com/snes/588781-top-gear-2/reviews/166481), note that damage and difficulty could feel harsh.
+## Differences across the SNES trilogy
 
-**Design takeaway for VibeGear2:** Damage and weather should create tension, not unavoidable frustration. Repairs must be meaningful, but the game should rarely make a race feel hopeless after one mistake.
+Top Gear 1 centered on prebuilt car choice, fuel and pit-stop management, qualification through regions, and a notably split-screen-oriented presentation; its GameFAQs guide describes four named cars, manual or automatic transmission options, nitro, and a progression rule that required top-five finishes and top-three regional ranking to advance. Top Gear 2 pivoted toward upgrades, damage, weather, and a denser between-race economy. Top Gear 3000 then pushed the formula into sci-fi territory with credits, weapons, new itemization, a full-screen single-player option in championship mode, route-splitting enabled by DSP-4 hardware, and broader versus options. [15]
 
-## Visual and Technical Feel
+Design conclusion:  
+VibeGear2 should take its main lineage from Top Gear 2, borrow a little menu clarity and accessibility from Top Gear 3000, and avoid reviving Top Gear 1’s fuel-and-pit burden unless it serves a very specific mode.
 
-*Top Gear 2* belongs to the pseudo-3D arcade road-racing tradition associated with scaling sprites, road color bands, horizon backgrounds, roadside objects, and a fixed chase camera. Modern JavaScript pseudo-3D racing references, especially Jake Gordon's [JavaScript Racer](https://jakesgordon.com/writing/javascript-racer/) and [Code inComplete tutorial](https://codeincomplete.com/articles/javascript-racer-v1-straight/), describe implementing this feel with projected road segments, sprite scaling, `requestAnimationFrame` loops, draw distance, camera depth, and tunable acceleration/braking/off-road values.
+## Technical lessons from SNES-style pseudo-3D
 
-**Design takeaway for VibeGear2:** Build a deterministic pseudo-3D segment renderer. Do not attempt a literal hardware recreation. Use modern browser tools to capture the readable, fast, layered road illusion.
+Modern pseudo-3D road references that closely match the era’s visual tricks describe a practical architecture built from segments projected relative to the camera, center-line offsets to fake curves, per-segment or per-strip perspective, and layered roadside sprites and backgrounds rather than full 3D geometry. Jake Gordon’s JavaScript racer notes that curves can be created by steadily shifting the road centerline instead of modeling full 3D road meshes, and his reference project also calls out hills, clutter, weather, day/night, splits, and HUD/camera work as the features that turn a tech demo into a real game. Lou Gorenfeld’s pseudo-3D page, surfaced by the same reference chain, describes the effect as a raster-road technique rather than “true” 3D. [16]
 
-## Differences Between Related Games
-
-| Game | Relevant Difference |
-|---|---|
-| *Top Gear* | Earlier structure included pit stops and fuel pressure as major race concerns. See [MobyGames: Top Gear](https://www.mobygames.com/game/940/top-gear/). |
-| *Top Gear 2* | Moves strongly into upgrade-driven career progression, weather prep, damage, pickups, and a single customized player car. |
-| *Top Gear 3000* | Later futuristic direction expanded upgrades and moved the series farther from grounded road racing. See [Top Gear 3000 overview](https://en.wikipedia.org/wiki/Top_Gear_3000). |
-
-## Known Limitations to Improve On
-
-| Limitation Observed in Sources or Player Discussion | VibeGear2 Improvement |
-|---|---|
-| Harsh damage could make a race feel unwinnable. | Add graded damage, accessibility options, and partial recovery. |
-| Late game may become too easy after full upgrades. | Scale AI, track complexity, hazards, and optional medals beyond basic completion. |
-| Limited music variety can become repetitive. | Use more race themes, adaptive layers, and unlockable playlists. |
-| Tire squeal/effects can fight music. | Mix audio dynamically and expose separate volume sliders. |
-| Password continuation is dated. | Use local saves, optional retro code export as novelty. |
-| Exact progression was fixed. | Support official tours plus modded tours. |
-| Two-player split-screen is technically demanding. | MVP solo first, ghost racing next, split-screen later. |
+Design conclusion:  
+VibeGear2 should not attempt to imitate any undocumented SNES renderer at the hardware level. It should implement the same class of illusion in a web-friendly way: segment data, projected road strips, billboard cars, parallax horizon layers, and deterministic lane-relative logic.

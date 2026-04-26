@@ -1,56 +1,62 @@
-# 2. Spiritual Successor Boundaries
+# 2. Spiritual successor boundaries
 
-## What Should Be Inspired by Top Gear 2
+The project should borrow structure and feeling, not expression.
 
-VibeGear2 may be inspired by broad, non-proprietary design patterns:
+## What should be inspired by Top Gear 2
 
-| Inspiration Area | Safe Design Interpretation |
-|---|---|
-| Upgrade-driven racing | The player earns credits and improves performance over a campaign. |
-| Fast pseudo-3D road racing | The camera faces down a winding road with scaling sprites and parallax. |
-| Crowded arcade races | Large packs create passing, blocking, and collision tension. |
-| Regional progression | Groups of races form themed tours. |
-| Weather strategy | Pre-race information influences tire and upgrade decisions. |
-| Boost management | Limited speed bursts reward timing and risk. |
-| Damage pressure | Crashes create mechanical consequences and repair costs. |
-| Local competition | Optional split-screen or ghost play can echo couch racing energy. |
-| Memorable soundtrack energy | Original high-energy synth, breakbeat, rock, or chiptune-inspired music. |
+The following inspirations are desirable because they are systemic rather than proprietary:
 
-## What Must Be Original
+- Four-race tour structure with aggregate standings.
+- Meaningful between-race economy.
+- Upgrade categories that alter performance and preparedness.
+- Weather-aware race prep.
+- Damage creating strategic tension.
+- Fast arcade handling with enough instability to feel dramatic.
+- Distinct regional atmosphere per tour.
+- A “just one more race” cadence driven by short event loops and visible advancement.
 
-VibeGear2 must create original versions of all expressive content:
+These are the highest-confidence takeaways from the research corpus: Top Gear 2’s SNES version expanded the original into a 64-track, 16-country structure; added upgrades, damage, and weather-sensitive tire choices; and used passwords to preserve progress between countries. [3]
 
-| Content Type | Rule |
-|---|---|
-| Game title | Must not use Top Gear, Gremlin, Kemco, Lotus, or related marks. |
-| Tracks | Must not copy country/city/track names, order, layouts, hazards, passwords, or progression map. |
-| Cars | Must not copy car silhouettes, names, colors as identity, sprites, stats, or fictional equivalents. |
-| Music | Must be newly composed or properly licensed. No melodies, arrangements, samples, or soundalikes. |
-| UI | Must not copy HUD layout pixel-for-pixel, icons, menu wording, fonts, or screen composition. |
-| Sprites | Must be original or open-license, not traced or ripped. |
-| Mechanics | General arcade racing systems are acceptable, but exact numeric tables and content structures should be redesigned. |
-| Text | No manual text, in-game text, race names, password text, or copied descriptions. |
+## What must be original
 
-## Legal and IP Safety Guidelines
+VibeGear2 must not reuse or imitate the following in a way that would create confusion with Top Gear 2:
 
-This document is not legal advice. The project should follow conservative creative boundaries:
+- Game title, subtitle, logos, menu labels, or fictional branding.
+- Country ordering, location names, track names, world-map presentation, or password syntax.
+- Exact car silhouettes, colorways, dashboard layout, or damage-diagram design.
+- Original track geometry, backgrounds, skyline compositions, object placements, weather overlays, or roadside sprites.
+- Music melodies, chord progressions, patches, pacing, or soundalike cues that evoke specific Top Gear tunes.
+- Original upgrade labels, UI copy, announcer text, or results-screen language.
+- Exact race/reward values if they are being preserved only as homage rather than because they are the best design choice.
 
-1. Do not use ROM-derived material.
-2. Do not use ripped, traced, or decompiled assets.
-3. Do not recreate commercial tracks under different names.
-4. Do not build by matching screenshots frame by frame.
-5. Public materials should describe VibeGear2 as an original arcade racer, not as a remake.
-6. Do not imply endorsement by the owners of Top Gear 2.
-7. Use public research for broad understanding, then create new specs, names, assets, and numbers.
+## Legal and IP safety guidelines
 
-## Naming, Art, Music, and Track Originality Rules
+| Area | Rule |
+| --- | --- |
+| Names | Use entirely original game, car, region, and track names. No “Top,” “Racer,” “Gear,” or near-soundalike series branding in discoverable product identity outside the title VibeGear2, which is the user’s project name. |
+| Track content | Do not recreate real Top Gear 2 race locations, signature turns, or recognizable country/course naming patterns. |
+| Visuals | Use a new HUD composition, new icon set, new palette strategy, and original car profiles. |
+| Audio | Commission or create original compositions and synth patches. No rearrangements, “inspired by” melodies, or near-covers. |
+| Cars | Fictitious vehicles only. Avoid licensed brands and avoid making obvious stand-ins for Top Gear 2 box-art or roster imagery. |
+| Messaging | Public-facing copy should describe the game as a “retro-inspired arcade racer,” not a clone, remake, or unofficial sequel. |
+| Contributions | All contributors must affirm that code, art, music, writing, and data are original or properly licensed. |
 
-| Domain | Required Rule |
-|---|---|
-| Region names | Use fictional or stylized names such as `Neon Harbor` or `Glass Canyon`, not the original game's country/city list. |
-| Track names | Use original names based on the region theme. |
-| Cars | Use invented body styles and fictional manufacturer names, or no manufacturers at all. |
-| Music | Compose original tracks with references such as `high-energy synth arcade racing`, not `like this exact song`. |
-| UI | Use a new visual hierarchy. The HUD may show common racing info but must not duplicate the original arrangement. |
-| Pickups | Use original iconography and behavior names such as `Pulse Charge`, `Credit Chip`, or `Grip Token`. |
-| Passwords | Prefer modern save files. If retro passwords are included as a novelty, use a new encoding and visual style. |
+## Naming, art, music, and track originality rules
+
+Naming rules
+
+- Region names should be fictional but evocative.
+- Track names should describe mood, terrain, or local landmarks invented for VibeGear2.
+- Car names should suggest archetype, not mimic real marques.
+
+Art rules
+
+- Cars should be proportionally stylized, not direct analogs to Top Gear’s sprites.
+- UI typography should lean into a contemporary retro look rather than imitating SNES box/menu fonts.
+- Backgrounds should emphasize broad silhouettes and parallax shapes rather than replicating any specific Top Gear scene.
+
+Music rules
+
+- Compose in a retro-arcade idiom using original tempos, chord motion, and motifs.
+- Avoid recognizable cadences associated with Barry Leitch-era Top Gear tracks.
+- Build thematic identity around region motifs rather than song-by-song homage.

@@ -1,57 +1,40 @@
-# 1. Title and High Concept
+# 1. Title and high concept
 
-## Game Title
+Game title: VibeGear2
 
-**VibeGear2**
+One-sentence pitch:  
+A stylish browser racer where players blast through four-race tours, earn cash, repair damage, tune their machine, and chase podiums across an original world of weather-heavy pseudo-3D tracks.
 
-## One-Sentence Pitch
+High concept:  
+VibeGear2 is not a remake. It is an original game designed to evoke the emotional loop that made Top Gear 2 memorable: prepare for the next race, survive a difficult field, earn just enough money for a meaningful upgrade, and immediately want to run the next event. The intended feel is “16-bit arcade pressure with modern readability and open-source extensibility.”
 
-**VibeGear2 is a fast, retro-modern, pseudo-3D web racing game where players survive aggressive road races, manage damage, earn credits, upgrade their ride, and climb through original themed racing tours.**
+## Design pillars
 
-## High Concept
+| Pillar | Practical meaning |
+| --- | --- |
+| Fast readable arcade racing | Controls must feel immediate on keyboard and gamepad. The player should understand grip, danger, and reward at a glance. |
+| Upgrade-driven momentum | Every race should either unlock, repair, or improve something. Progression should matter every 5 to 10 minutes. |
+| Weather changes decisions | Tires, setup, and driving line should all matter more when conditions change. |
+| Tour-based progression | Four linked races create mini-arcs and make aggregate standings exciting. |
+| Retro presentation, original content | The game should feel era-inspired without copying proprietary assets, names, layouts, or audiovisual content. |
+| Moddable data-first architecture | Tracks, cars, AI profiles, and tours should be JSON-driven so the community can extend the game safely. |
 
-VibeGear2 captures the emotional loop of a 16-bit arcade road racer:
+## Target audience
 
-- Start near the back of a crowded pack.
-- Thread through traffic at high speed.
-- Survive weather, hazards, and tight curves.
-- Collect boost and cash pickups.
-- Finish high enough to advance.
-- Spend winnings on meaningful upgrades.
-- Return to the track feeling faster, riskier, and more capable.
+VibeGear2 is for players who enjoy retro racers, score attack loops, garage progression, and games that feel good on a keyboard. The primary audience is desktop players using keyboard or controller. Secondary audiences include speedrunners, retro game fans, open-source contributors, and creators who want to add custom tracks or visual packs.
 
-The game is not a remake. It is a new open-source web game with original cars, tracks, music, visuals, UI, progression, and content.
+## Platform and technology assumptions
 
-## Design Pillars
+The current VibeRacer repository uses TypeScript with Next.js 15, React 19, Three.js, Zod, Vitest, Playwright, and Upstash Redis, and it already includes a game page flow, editor flow, local control settings, tuning storage, audio systems, and server-backed track and leaderboard routes. The repo’s current shipped concept is “every URL is a track,” with a browser-based 3D arcade racer, track editing, and a tuning-lab workflow. [2]
 
-| Pillar | Meaning | Implementation Target |
-|---|---|---|
-| **Instant velocity** | Racing should feel fast within 5 seconds. | Quick countdown, high starting speed, short time to first overtake. |
-| **Arcade clarity** | Handling should be readable, responsive, and forgiving. | Simple controls, visible road curvature, clear collision feedback. |
-| **Upgrade tension** | Every race should create a money decision. | Repairs vs upgrades, weather prep, boost stock, and strategic purchases. |
-| **Retro-modern style** | The game should evoke 16-bit spectacle without copying. | Low-res inspired sprites, palette discipline, parallax, modern readability. |
-| **Mod-first content** | Tracks, cars, tours, AI, and balance should be data-driven. | JSON schemas, validation, clear authoring rules, local mods. |
-| **Open-source practicality** | The design must be buildable by a small team. | MVP-first scope, reusable VibeRacer architecture patterns, automated tests. |
+Assumed VibeGear2 platform targets
 
-## Target Audience
-
-| Audience | What They Want |
-|---|---|
-| Retro racing fans | Fast arcade handling, music, upgrade progression, nostalgic presentation. |
-| Web game players | Instant play, no install, short sessions, keyboard support. |
-| Modders | Simple track files, visible schemas, community content rules. |
-| Open-source contributors | Clean TypeScript architecture, testable systems, limited asset lock-in. |
-| Speedrunners and leaderboard players | Time trial, ghosts, daily challenges, deterministic physics. |
-
-## Platform and Technology Assumptions
-
-| Area | Assumption |
-|---|---|
-| Primary platform | Desktop browsers. |
-| Future platform | Mobile browser or PWA, after desktop feel is stable. |
-| Input | Keyboard first, gamepad second, touch later. |
-| Rendering | Canvas2D pseudo-3D road renderer for MVP, with optional Three.js use for garage/editor previews. |
-| Framework | Reuse VibeRacer patterns: Next.js, React, TypeScript, custom math, Web Audio, local storage, schema validation, and automated tests. |
-| Multiplayer | Solo first. Ghost racing and local split-screen are stretch goals. |
-| Persistence | Local save for MVP. Optional server leaderboard later. |
-| Licensing | Code under a permissive open-source license. Assets under original permissive asset licenses. |
+| Item | Target |
+| --- | --- |
+| Primary platform | Modern desktop browsers |
+| Secondary platform | Steam Deck class handheld browsers / web wrappers |
+| Future platform | Mobile browsers after v1.0 stabilization |
+| Input | Keyboard first, gamepad fully supported, touch later |
+| Rendering | Pseudo-3D road renderer in Canvas 2D or hybrid Canvas/WebGL |
+| Persistence | Local save first, optional server-backed leaderboards and ghosts |
+| Distribution | Static web app plus optional wrapper builds |

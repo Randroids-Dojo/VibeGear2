@@ -1,89 +1,51 @@
-# 7. Race Rules and Structure
+# 7. Race rules and structure
 
-## Starting Grid
+## Starting grid
 
-| Mode | Starting Position |
-|---|---|
-| Career race 1 of region | Player starts 18th of 20. |
-| Career later races | Based on prior regional points, but never better than 8th without a medal bonus. |
-| Quick race | Configurable. |
-| Time trial | Rolling start or standing start. |
-| Practice | Standing start, rolling start, or free drive. |
+- Default field size: 12 racers in championship and quick race.
+- Grid rule: first race of a tour seeds the player mid-pack, such as 7th.
+- Later races seed by current aggregate standings, with tie-breaks on best finish then fastest lap.
 
-## Number of Racers
+This is intentionally smaller than the likely opponent density remembered from the SNES game, because browser readability and solo-dev AI scope matter more than strict mimicry.
 
-| Build Stage | Racer Count |
-|---|---:|
-| Prototype | 6 including player |
-| Vertical slice | 12 including player |
-| v1.0 target | 20 including player |
-| Low-performance fallback | 10 including player |
+## Number of laps
 
-## Laps
+| Track archetype | Lap target |
+| --- | --- |
+| Short sprint | 4 to 5 laps |
+| Standard circuit | 3 laps |
+| Long scenic | 2 laps |
+| Final-tour endurance | 2 to 3 long laps |
 
-| Track Length | Target Laps |
-|---|---:|
-| Very short | 5-6 |
-| Short | 4 |
-| Medium | 3 |
-| Long | 2 |
-| Endurance challenge | 5-8, optional |
+## Qualification and advancement
 
-Target race duration should stay between **2 and 4 minutes** for most campaign races.
+- Top 8 finishers score points.
+- After four races, the top 4 drivers in tour standings advance.
+- Difficulty can tune this to top 5 on easy, top 4 on normal, top 3 on hard.
 
-## Qualification Rules
+## Fail states
 
-| Placement | Career Result |
-|---|---|
-| 1st-3rd | Podium reward, strong points, unlock medal checks. |
-| 4th-7th | Points, good reward, advances. |
-| 8th-10th | Qualifies with low payout. |
-| 11th or worse | Fails career race unless assist is used. |
-| DNF | Fails, receives small consolation credits unless hard mode. |
+A player fails or must retry a tour only if one of the following happens:
 
-## Fail States
+- Does not place high enough overall after all four races.
+- Car damage reaches catastrophic state and the player chooses to retire.
+- Optional hard mode: three DNFs in one tour.
 
-| Fail State | Result |
-|---|---|
-| Finish below qualification | Retry, practice, or garage review. |
-| Total mechanical failure | DNF, repair required. |
-| Timeout after leader finishes | Finish position determined by distance. |
-| Wrong-way exploit or invalid track bounds | Lap invalidation. |
-| Save corruption | Fallback to last valid save snapshot. |
+## Retry flow
 
-## Retry Flow
+- Standard mode: retry current race without resetting tour economy once per race.
+- Easy mode: unlimited race retries.
+- Hard mode: no retry, only restart tour.
 
-After failing:
+## Finish rewards
 
-1. Show exact failure reason.
-2. Show `needed 10th, finished 12th by 3.2 seconds`.
-3. Offer retry, repair and retry, practice, assist adjustment, or exit to tour map.
+Rewards are based on finishing place, difficulty, and track grade.
 
-## Finish Rewards
+## Tie handling
 
-| Placement | Base Credits | Tour Points |
-|---|---:|---:|
-| 1st | 12,000 | 12 |
-| 2nd | 8,500 | 9 |
-| 3rd | 6,500 | 7 |
-| 4th | 4,800 | 5 |
-| 5th | 3,600 | 3 |
-| 6th | 2,700 | 2 |
-| 7th | 2,000 | 1 |
-| 8th | 1,500 | 0 |
-| 9th | 1,100 | 0 |
-| 10th | 800 | 0 |
-| 11th-20th | 300 participation credits | 0 |
+Standings tie-breaks:
 
-These are original VibeGear2 targets, not copied reward values.
-
-## Tie Handling
-
-| Tie Type | Resolution |
-|---|---|
-| Race finish time tie | Higher position goes to car farther along road at previous simulation tick. |
-| Tour points tie | Better highest finish wins. |
-| Still tied | Better total race time across region wins. |
-| Still tied | Lower damage total wins. |
-| Still tied | Player wins against AI for accessibility in normal difficulty. |
-| Leaderboard tie | Earlier submission timestamp ranks higher, but display both. |
+- Best single-race finish.
+- Fastest lap in tour.
+- Lowest total repair spend.
+- Earliest unlock order as deterministic fallback.
