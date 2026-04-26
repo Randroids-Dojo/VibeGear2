@@ -15,7 +15,17 @@
  * - `countdownRemainingSec`: lights-out timer. Zero outside the countdown.
  * - `lastLapTimeMs`: most recent completed lap, or `null` before any finish.
  * - `bestLapTimeMs`: fastest completed lap, or `null` before any finish.
+ * - `lastCheckpoint`: snapshot of the most recently forward-crossed
+ *   checkpoint, or `null` before the player has crossed any. Owned by the
+ *   `raceCheckpoints` module; consumed by §6 practice resetToCheckpoint,
+ *   §15 AI recovery spawn, and the §22 sector splits widget.
+ * - `passedCheckpointsThisLap`: set of segment indices passed since the
+ *   start-line cross. Cleared on lap rollover. Read by the §7 anti-shortcut
+ *   guard via `hasPassedAllCheckpoints`.
  */
+
+import type { LastCheckpointSnapshot } from "./raceCheckpoints";
+import { EMPTY_PASSED_SET } from "./raceCheckpoints";
 
 export type RacePhase = "countdown" | "racing" | "finished";
 
@@ -32,6 +42,19 @@ export interface RaceState {
   lastLapTimeMs: number | null;
   /** Fastest completed lap time in milliseconds, or null before any finish. */
   bestLapTimeMs: number | null;
+  /**
+   * Snapshot of the most recently forward-crossed checkpoint, or `null`
+   * before any checkpoint has been crossed (typical at session creation
+   * and during the countdown phase). Owned by `raceCheckpoints`.
+   */
+  lastCheckpoint: LastCheckpointSnapshot | null;
+  /**
+   * Set of segment indices the player has forward-crossed since the
+   * start of the current lap. Reset on lap rollover by
+   * `resetCheckpointsForNewLap`. Used by the §7 anti-shortcut guard
+   * (`hasPassedAllCheckpoints`) before crediting a lap.
+   */
+  passedCheckpointsThisLap: ReadonlySet<number>;
 }
 
 export interface CreateRaceStateOptions {
@@ -66,5 +89,7 @@ export function createRaceState(
     countdownRemainingSec: countdownSec,
     lastLapTimeMs: null,
     bestLapTimeMs: null,
+    lastCheckpoint: null,
+    passedCheckpointsThisLap: EMPTY_PASSED_SET,
   };
 }

@@ -74,6 +74,7 @@ import {
   type CarState,
   type TrackContext,
 } from "./physics";
+import { EMPTY_PASSED_SET } from "./raceCheckpoints";
 import {
   DEFAULT_COUNTDOWN_SEC,
   type RaceState,
@@ -331,6 +332,8 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     countdownRemainingSec: countdownSec,
     lastLapTimeMs: null,
     bestLapTimeMs: null,
+    lastCheckpoint: null,
+    passedCheckpointsThisLap: EMPTY_PASSED_SET,
   };
 
   const sectorTimer = createSectorState(config.track.checkpoints);

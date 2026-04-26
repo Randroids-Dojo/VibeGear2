@@ -6,6 +6,84 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: race checkpoint pass tracking (RaceState fields, runtime detector, anti-shortcut guard)
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) (lap counting, anti-shortcut),
+[§22](gdd/22-data-schemas.md) (Track.checkpoints schema, now consumed at
+runtime). The §22 schema declares `checkpoints: [{segmentIndex, label}]`
+but the only runtime consumer was the §20 sector-splits widget; this
+slice adds the per-tick detector that the §7 lap-credit guard, the §6
+practice resetToCheckpoint, and the §15 AI recover-spawn all share.
+**Branch / PR:** `feat/race-checkpoint-tracking` (stacked on
+`feat/pure-race-rules-module`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Authored `src/game/raceCheckpoints.ts` as a pure helpers module
+  carrying `detectCheckpointPass`, `applyCheckpointPass`,
+  `resetCheckpointsForNewLap`, and `hasPassedAllCheckpoints`. No
+  `Math.random`, no `Date.now`; same inputs always produce the same
+  output across runs (AGENTS.md RULE 8 determinism).
+- Extended `RaceState` (`src/game/raceState.ts`) with two additive
+  fields: `lastCheckpoint: LastCheckpointSnapshot | null` (the most
+  recently forward-crossed checkpoint plus a defensive copy of the
+  player's `CarState`) and `passedCheckpointsThisLap: ReadonlySet<number>`
+  (the set of segment indices passed since the last start-line cross,
+  cleared on lap rollover). Both default to the empty / null value at
+  session creation.
+- Updated `raceSession.ts` to construct the new fields when building
+  the initial `RaceState`. Existing `...state.race` spreads in the
+  countdown / racing branches preserve them automatically; no behaviour
+  change for the active session.
+- The detector pins forward-only pass detection, wrap-around handling
+  for lap rollover (start-line checkpoint at `segmentIndex = 0` is
+  detected on the wrap, not on the way up to `prevZ`), and a
+  movement-window guard that returns `null` when the per-tick advance
+  exceeds half the track length (the `loop`'s 250 ms accumulator cap
+  makes this structurally impossible at 60 Hz, but the detector
+  defends anyway).
+- Multi-checkpoint per tick returns the LAST crossed (highest z)
+  checkpoint with a stable lex-on-label tie-break for the rare
+  same-z case; this keeps the API one event per tick and matches the
+  iter-19 stress-test guidance.
+- `EMPTY_PASSED_SET` is a frozen empty set shared across every fresh
+  `RaceState` so a no-checkpoint-yet session does not allocate a new
+  set per call. `addToFrozenSet` returns a fresh frozen set so the
+  `RaceState` snapshot a downstream replay holds cannot be mutated.
+- Test fixture `src/game/__tests__/raceCheckpoints.test.ts` (22 cases)
+  pins the eight `detectCheckpointPass` cell-level cases from the dot
+  (empty list, forward pass, no pass, wrap, reverse, multi-pass,
+  half-track guard, non-finite inputs), the `applyCheckpointPass`
+  purity / defensive-copy / idempotent behaviours, the
+  `resetCheckpointsForNewLap` clear-but-preserve semantics, and the
+  full `hasPassedAllCheckpoints` truth table for 0 / 1 / 2 / 5
+  checkpoint counts.
+
+### Verified
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 987 / 987 (43 files), including the new
+  `raceCheckpoints.test.ts` and all 44 existing
+  `raceSession.test.ts` cases.
+- `npm run build`: clean (Next.js static export of all 15 routes).
+- `npm run test:e2e`: 28 / 28.
+- `grep -P '[\x{2013}\x{2014}]'` over the new files: nothing.
+
+### Followups
+- The §7 lap-credit guard (`hasPassedAllCheckpoints`) is now exported
+  but not yet wired into `raceSession.ts` lap detection. The parent
+  race-rules dot (`VibeGear2-implement-race-rules-b30656ae`) will land
+  the wire-up once it picks up the now-pinned helpers.
+- The `raceSession` does not yet call `detectCheckpointPass` per tick
+  so `lastCheckpoint` and `passedCheckpointsThisLap` stay at their
+  initial values during a live race. Wiring these into the racing
+  branch (alongside the existing sector-splits tick) is the
+  follow-up wiring slice; the consumers (practice reset, AI recovery)
+  will need it before this slice is fully load-bearing.
+
+---
+
 ## 2026-04-26: Slice: pure raceRules.ts module (countdown labels, DNF timers, ranking, final-state builder)
 
 **GDD sections touched:**
