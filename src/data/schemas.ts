@@ -453,6 +453,18 @@ export type SaveGameGarage = z.infer<typeof SaveGameGarageSchema>;
 export const SaveGameProgressSchema = z.object({
   unlockedTours: z.array(slug),
   completedTours: z.array(slug),
+  /**
+   * One-shot tour-stipend claim ledger per `docs/gdd/12-upgrade-and-economy-system.md`
+   * "Catch-up mechanisms". Maps a tour id to `true` once the under-threshold
+   * stipend has been granted for that tour. Optional so v1 saves written
+   * before this field was added still load; consumers reading from a
+   * loaded save should treat `undefined` as `{}` per the catch-up
+   * module's `getStipendClaimed` helper. The literal-true value (rather
+   * than a count) is intentional: the §12 stipend is one-shot per tour,
+   * and a future "second stipend" would land as a new field rather than
+   * overloading this one.
+   */
+  stipendsClaimed: z.record(slug, z.literal(true)).optional(),
 });
 export type SaveGameProgress = z.infer<typeof SaveGameProgressSchema>;
 

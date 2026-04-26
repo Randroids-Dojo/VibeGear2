@@ -9,6 +9,104 @@ they are part of the design history.
 
 ---
 
+## Q-007: Practice mode weather preview surface
+
+**GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
+mechanisms" #4, [§6](gdd/06-game-modes.md) "Practice mode"
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** §12 says "practice mode can preview track weather so bad
+setup choices feel fair, not hidden." The catch-up module currently
+returns the track's full `weatherOptions` array verbatim
+(`practiceWeatherPreview`) so the player sees every weather the track
+might roll. Should the practice surface (a) keep this deterministic
+"all options" preview, (b) preview the actual seeded roll for the
+upcoming session (so the player sees the exact weather), or (c)
+preview a probability-weighted sample? Option (a) is fair but reveals
+no per-session info; (b) leaks the seed to the UI which complicates
+the §21 deterministic-replay invariants; (c) needs a probability
+table that §12 does not pin.
+
+**Recommended default.** Option (a). Keep the deterministic full-set
+preview until the practice-mode slice
+(`VibeGear2-implement-practice-quick-ad3ba399`) confirms with dev
+which surface is right. Option (a) ships now and is the smallest
+spec.
+
+**Blocking?** No. The catch-up module ships today with option (a);
+the practice slice may revisit.
+
+---
+
+## Q-006: Easy-mode tour-clear bonus rate
+
+**GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
+mechanisms" #3
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** §12 says "easy mode grants bonus cash for tour clears"
+on top of the flat 0.15x §12 tour bonus, but does not pin the bonus
+rate. Pinned 0.20x of summed race rewards
+(`EASY_MODE_TOUR_BONUS_FRACTION` in `src/game/catchUp.ts`) so the
+total easy-mode tour-clear payout is `0.15 + 0.20 = 0.35x` of summed
+race rewards. Does dev want a different rate (lower for less
+dependency, higher for more catch-up runway)?
+
+**Recommended default.** 0.20x. Lands the lever now and keeps the
+balancing-pass slice
+(`VibeGear2-implement-balancing-pass-71a57fd5`) responsible for
+final tuning.
+
+**Blocking?** No.
+
+---
+
+## Q-005: Essential-repair cap fraction
+
+**GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
+mechanisms" #2
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** §12 says "essential repairs are capped at a low
+percentage of race income" without pinning the percentage. Pinned
+0.40 (`REPAIR_CAP_FRACTION` in `src/game/catchUp.ts`) per the dot
+spec. Repair cap applies on easy and normal only; hard, master, and
+extreme always pay full price. Does dev want a different fraction
+or a different difficulty gate?
+
+**Recommended default.** 0.40 with the easy / normal gate. Lands
+the lever now; balancing pass owns the final number.
+
+**Blocking?** No.
+
+---
+
+## Q-004: Tour stipend threshold and amount
+
+**GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
+mechanisms" #1
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** §12 says "players below a cash threshold receive a
+tour stipend" without pinning the threshold or grant amount. Pinned
+`STIPEND_THRESHOLD_CREDITS = 1500` and `STIPEND_AMOUNT = 1000` in
+`src/game/catchUp.ts`. The first-tour gate (no stipend on tour 1)
+and one-claim-per-tour invariant are encoded in `computeStipend`.
+Does dev want different numbers or a different gate?
+
+**Recommended default.** Keep 1500 / 1000 with the first-tour gate.
+The threshold buys roughly two tier-1 cooling upgrades; the amount
+matches a mid-table finish at base 2000 / normal so the lever is a
+catch-up not a free win.
+
+**Blocking?** No.
+
+---
+
 ## Q-003 — Auto-deploy target
 
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md), §26

@@ -10,6 +10,66 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-037: Wire `easyModeBonus` into the tour-clear bonus payout
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/economy-catch-up` slice landed
+`easyModeBonus(save, sumRewards)` in `src/game/catchUp.ts` and proved
+the rate with eight unit tests. The function has no in-app caller
+yet: the tour-clear surface owned by
+`VibeGear2-implement-tour-region-d9ca9a4d` is the natural consumer.
+At tour-clear, the wiring should call
+`tourBonus(rewards) + easyModeBonus(save, rewards)` and credit the
+combined amount via `awardCredits` (or a new
+`creditFlat(save, amount)` helper if that path lands first).
+Mirrors the F-026 / F-032 / F-034 producer-without-consumer
+pattern.
+
+---
+
+## F-036: Wire `cappedRepairCost` into `applyRepairCost`
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/economy-catch-up` slice landed
+`cappedRepairCost(rawCost, raceCashEarned, kind, difficulty)` in
+`src/game/catchUp.ts` with eleven cell-by-cell unit tests. The
+function has no in-app caller because `applyRepairCost` itself does
+not exist yet (F-033 owns it, blocked on §23 `tourTierScale`). When
+F-033 lands, `applyRepairCost` should:
+1. Compute the raw cost from the §12 formula
+   `damagePercent * carRepairFactor * tourTierScale`.
+2. Pass the raw cost plus the player's last race cash to
+   `cappedRepairCost(raw, raceIncome, kind, difficulty)`.
+3. Deduct the capped result from `save.garage.credits`.
+The `kind` argument comes from the garage UI's repair-button
+selection (essential vs full).
+
+---
+
+## F-035: Wire stipend lever into the tour-entry flow
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/economy-catch-up` slice landed
+`computeStipend(save, tour)`, `getStipendClaimed(save, tourId)`, and
+`recordStipendClaim(save, tourId)` in `src/game/catchUp.ts`. The
+functions have no in-app caller yet: the tour-entry surface owned
+by `VibeGear2-implement-tour-region-d9ca9a4d` is the natural
+consumer. At the moment the player selects a tour and confirms
+entry, the wiring should:
+1. Call `computeStipend(save, { id: tour.id, index: tour.index })`.
+2. If the result is non-zero, credit the wallet via the equivalent
+   of `awardCredits` (or a new `creditFlat(save, amount)` helper if
+   that path lands first) and then call `recordStipendClaim` so a
+   second tour-entry does not double-pay.
+3. Persist the merged save via `saveSave`.
+The `tour.index` is 1-based (first tour in a championship is
+index 1) per `StipendTourContext` in `src/game/catchUp.ts`.
+
+---
+
 ## F-034: Wire `awardCredits` into the race-finish flow
 **Created:** 2026-04-26
 **Priority:** nice-to-have

@@ -6,6 +6,99 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §12 catch-up mechanisms (stipend, repair cap, easy-mode bonus, weather preview)
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms"
+(all four levers), [§22](gdd/22-data-schemas.md) `SaveGameProgressSchema`
+(additive `stipendsClaimed` field).
+**Branch / PR:** stacked on `feat/economy-upgrade`, PR pending.
+**Status:** Implemented (`src/game/catchUp.ts` ships
+`computeStipend`, `recordStipendClaim`, `getStipendClaimed`,
+`cappedRepairCost`, `easyModeBonus`, `practiceWeatherPreview` plus
+the four pinned-placeholder constants. `SaveGameProgressSchema`
+gains the optional `stipendsClaimed` ledger. 32 cell-by-cell
+catchUp tests green; full verify chain green.).
+
+### Done
+- `src/game/catchUp.ts` (new): four §12 catch-up levers as pure
+  functions on `SaveGame` / `Track`. Pinned placeholders
+  `STIPEND_THRESHOLD_CREDITS = 1500`, `STIPEND_AMOUNT = 1000`,
+  `REPAIR_CAP_FRACTION = 0.40`,
+  `EASY_MODE_TOUR_BONUS_FRACTION = 0.20`. `computeStipend` enforces
+  the first-tour gate (`tour.index >= 2`), the strict-less-than
+  threshold, and the one-claim-per-tour invariant via the new
+  `save.progress.stipendsClaimed` map. `cappedRepairCost`
+  applies on `essential` repairs only and only on easy / normal /
+  novice difficulty. `easyModeBonus` is gated on
+  `save.settings.difficultyPreset === "easy"`.
+  `practiceWeatherPreview` returns the track's `weatherOptions`
+  array unchanged as the deterministic preview surface.
+- `src/data/schemas.ts` (update): `SaveGameProgressSchema` gains an
+  optional `stipendsClaimed: Record<slug, true>` field. Additive,
+  no migration needed (default `{}` on load per `getStipendClaimed`).
+  Doc comment cites §12 and the one-shot invariant.
+- `src/game/__tests__/catchUp.test.ts` (new): 32 cases covering
+  every cell on the dot-spec verify list. Stipend (threshold,
+  first-tour gate, double-pay guard, cross-tour independence,
+  purity, determinism). Repair cap (cap on normal / easy / novice,
+  no-cap on hard / master / extreme, no-cap on full repair, zero
+  income, negative-income clamp, negative-cost clamp, rounding
+  spot-check). Easy-mode bonus (gating per preset including
+  legacy-undefined v1 saves, empty-list, negative-reward filter,
+  purity, determinism). Practice preview (identity behaviour,
+  single-option track, reference equality, determinism).
+- `docs/OPEN_QUESTIONS.md` (update): four new entries Q-004 through
+  Q-007 flagging the pinned placeholders for dev confirmation
+  before the balancing-pass slice closes.
+
+### Verified
+- `npm run lint` green (no new warnings).
+- `npm run typecheck` green.
+- `npm test` green: 1461 tests pass, 0 fail (32 new catchUp cases
+  on top of the prior 1429).
+- `npm run build` green: no new routes, no bundle-size impact (the
+  catch-up module is data-side and currently has no UI consumer).
+- Em-dash sweep: `grep -rPn "[\x{2013}\x{2014}]"` over the new and
+  edited files returns nothing.
+
+### Decisions and assumptions
+- **Pinned placeholders for all four levers.** §12 names the levers
+  but does not pin numbers. The four constants are exported so the
+  balancing-pass slice
+  (`VibeGear2-implement-balancing-pass-71a57fd5`) can swap them
+  without rewriting call sites. Q-004 through Q-007 flag each for
+  dev confirmation.
+- **Stipend ledger as a literal-true map.** §12 stipend is
+  one-shot per tour. A counter would suggest a future "second
+  stipend" overload; a literal `true` keeps the schema honest
+  (additive when a second stipend ships).
+- **Repair cap difficulty gate.** Easy / normal / novice eligible;
+  hard / master / extreme always pay full price per §15's
+  expectation that higher tiers manage the risk directly. Q-005
+  flags the gate for dev confirmation.
+- **Module is pure-only; no in-app caller.** The dot description
+  mentions wiring `awardCredits`, `applyRepairCost`, and
+  `tourComplete` to the levers, but neither `applyRepairCost` nor a
+  tour-complete surface exists yet (F-033 owns the repair-flow,
+  F-034 owns the race-finish flow, and the tour-region slice owns
+  tour clear). Wiring is filed as F-035 / F-036 / F-037 to land
+  alongside the matching slices.
+
+### Followups created
+- F-035: Wire `computeStipend` + `recordStipendClaim` into the
+  tour-entry flow (tour-region slice).
+- F-036: Wire `cappedRepairCost` into `applyRepairCost` once that
+  function lands per F-033.
+- F-037: Wire `easyModeBonus` into the tour-clear bonus payout
+  (tour-region slice).
+
+### GDD edits
+- None. §12 already names the four catch-up levers; this slice
+  pins placeholder constants without changing the GDD.
+
+---
+
 ## 2026-04-26: Slice: §12 economy + upgrade catalogue (awardCredits, purchaseUpgrade, tourBonus, 32-entry catalogue)
 
 **GDD sections touched:**
