@@ -338,9 +338,35 @@ export const AssistSettingsSchema = z.object({
 });
 export type AssistSettings = z.infer<typeof AssistSettingsSchema>;
 
+/**
+ * Player-facing difficulty preset, picked in the /options Difficulty pane
+ * (GDD §15 'Difficulty tiers' table). Distinct from the championship-side
+ * `DifficultyPresetSchema` enum: the championship value is fixed at
+ * tour-enter time and may use a wider taxonomy (novice through extreme),
+ * while the save-game preset is the player's current default for new
+ * tours and quick-race sessions and matches the §15 four-tier ladder
+ * exactly. Master is unlock-gated per §15 (one championship completed
+ * at Hard); the gate is enforced at the UI layer, not by the schema.
+ */
+export const PlayerDifficultyPresetSchema = z.enum([
+  "easy",
+  "normal",
+  "hard",
+  "master",
+]);
+export type PlayerDifficultyPreset = z.infer<
+  typeof PlayerDifficultyPresetSchema
+>;
+
 export const SaveGameSettingsSchema = z.object({
   displaySpeedUnit: SpeedUnitSchema,
   assists: AssistSettingsSchema,
+  /**
+   * Optional so v1 saves written before this field was added still load.
+   * `defaultSave()` always sets it to `'normal'`; consumers reading from a
+   * loaded save should treat `undefined` as `'normal'` for §15 compatibility.
+   */
+  difficultyPreset: PlayerDifficultyPresetSchema.optional(),
 });
 export type SaveGameSettings = z.infer<typeof SaveGameSettingsSchema>;
 

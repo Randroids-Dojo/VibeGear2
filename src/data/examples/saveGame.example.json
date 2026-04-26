@@ -7,7 +7,8 @@
       "steeringAssist": false,
       "autoNitro": false,
       "weatherVisualReduction": false
-    }
+    },
+    "difficultyPreset": "normal"
   },
   "garage": {
     "credits": 18250,

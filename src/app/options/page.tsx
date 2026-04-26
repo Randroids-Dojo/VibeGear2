@@ -28,15 +28,32 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, ReactElement } from "react";
 
+import { DifficultyPane } from "@/components/options/DifficultyPane";
+
 import styles from "./page.module.css";
 import { TAB_ORDER, isTabNavKey, nextTabIndex, type TabKey } from "./tabNav";
 
 interface TabSpec {
   readonly key: TabKey;
   readonly label: string;
-  readonly headline: string;
-  readonly body: string;
-  readonly dotId: string;
+  /**
+   * Headline shown above the pane body. When `pane` is provided the
+   * headline is suppressed and the pane owns its own chrome. Kept for
+   * the placeholder tabs that have not yet had real panes mounted.
+   */
+  readonly headline?: string;
+  readonly body?: string;
+  /**
+   * Dot id of the slice that ships the real pane content. Rendered into
+   * the placeholder body so future agents can grep for it. When `pane`
+   * is provided the dot is no longer surfaced (the slice has shipped).
+   */
+  readonly dotId?: string;
+  /**
+   * Optional shipped pane component. When present, the panel renders
+   * this instead of the "coming soon" placeholder.
+   */
+  readonly pane?: () => ReactElement;
 }
 
 const TABS: ReadonlyArray<TabSpec> = [
@@ -71,9 +88,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   {
     key: "difficulty",
     label: "Difficulty",
-    headline: "Difficulty preset coming soon",
-    body: "Casual, Normal, Veteran, and Custom preset selection plus per-axis tuning will land here.",
-    dotId: "VibeGear2-implement-difficulty-preset-d1daf557",
+    pane: () => <DifficultyPane />,
   },
   {
     key: "performance",
@@ -204,14 +219,22 @@ export default function OptionsPage(): ReactElement {
           data-active-tab={activeTab.key}
           tabIndex={0}
         >
-          <h2 className={styles.panelTitle}>{activeTab.headline}</h2>
-          <p className={styles.panelBody}>{activeTab.body}</p>
-          <p
-            className={styles.dotRef}
-            data-testid={`options-panel-${activeTab.key}-dot`}
-          >
-            Tracked by dot {activeTab.dotId}
-          </p>
+          {activeTab.pane ? (
+            activeTab.pane()
+          ) : (
+            <>
+              <h2 className={styles.panelTitle}>{activeTab.headline}</h2>
+              <p className={styles.panelBody}>{activeTab.body}</p>
+              {activeTab.dotId ? (
+                <p
+                  className={styles.dotRef}
+                  data-testid={`options-panel-${activeTab.key}-dot`}
+                >
+                  Tracked by dot {activeTab.dotId}
+                </p>
+              ) : null}
+            </>
+          )}
         </section>
 
         <footer className={styles.footer}>

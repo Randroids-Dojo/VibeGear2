@@ -84,6 +84,8 @@ export function defaultSave(): SaveGame {
         autoNitro: false,
         weatherVisualReduction: false,
       },
+      // GDD §15 'Normal' is the baseline tier and the §28 default.
+      difficultyPreset: "normal",
     },
     garage: {
       credits: 0,

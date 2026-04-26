@@ -6,6 +6,117 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: difficulty preset selection in /options Difficulty pane
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md) (Difficulty
+tiers table: Easy, Normal, Hard, Master with AI pace, rubber banding,
+mistakes, economy pressure rows), [§20](gdd/20-hud-and-ui-ux.md) (Settings
+six-pane list; Difficulty tab is the host),
+[§28](gdd/28-appendices-and-research-references.md) (Beginner / Balanced /
+Expert tuning table; Normal is the §28 baseline).
+**Branch / PR:** `feat/difficulty-preset` (stacked on `feat/options-screen`),
+PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/components/options/difficultyPaneState.ts` with the pure
+  §15 model: a four-entry `PRESETS` table (Easy / Normal / Hard /
+  Master) carrying the verbatim §15 row values; `readPreset` falling
+  back to `'normal'` for v1 saves missing the optional field;
+  `isMasterUnlocked` (conservative `completedTours.length >= 1`
+  approximation while championship-completion-at-difficulty tracking
+  ships); `applyPresetSelection` returning a tagged `applied` /
+  `noop:same-preset` / `noop:locked` result; and the
+  `MASTER_UNLOCK_HINT` and `MID_TOUR_NOTE` string constants.
+- Added `src/components/options/DifficultyPane.tsx`. Thin Client
+  Component shell: hydrates from `loadSave()` after mount (mirrors
+  `src/app/garage/cars/page.tsx`), renders a four-tile radio group
+  with stable testids, and a detail panel (`difficulty-detail`) showing
+  the §15 row for the active preset. Master tile is disabled until
+  unlocked; the locked badge surfaces and the `<label>` `title`
+  tooltip names the §15 unlock condition. A mid-tour caveat note sits
+  above the radio group and explains that switching the preset only
+  affects future tours.
+- Updated `src/data/schemas.ts` to add `PlayerDifficultyPresetSchema`
+  (`'easy' | 'normal' | 'hard' | 'master'`, matches §15 exactly) and
+  an optional `difficultyPreset` field on `SaveGameSettings`. Optional
+  so the v1 save shape continues to validate without a migration; the
+  `readPreset` helper backfills `'normal'` for any save written before
+  this slice.
+- Updated `src/persistence/save.ts` `defaultSave()` to set
+  `difficultyPreset: 'normal'` per the §28 dot default.
+- Updated `src/data/examples/saveGame.example.json` to include
+  `difficultyPreset: 'normal'` so the canonical example reflects the
+  new field.
+- Updated `src/app/options/page.tsx`: replaced the Difficulty tab's
+  "coming soon" placeholder with `<DifficultyPane />`. The `TabSpec`
+  type now carries an optional `pane` factory; placeholder tabs still
+  render their headline / body / dot id triple, while shipped tabs
+  render their pane component instead. The other five tabs are
+  unchanged.
+- Added `src/components/options/__tests__/difficultyPaneState.test.ts`
+  (21 tests) covering the §15 table verbatim values, the locked /
+  unlocked Master predicate, the pure mutation helper (applied,
+  same-preset noop, locked noop, save immutability, side-fields
+  preserved), the v1 backfill behaviour, and the no-em-dash project
+  rule on every preset string and the two constants.
+- Added `src/components/options/__tests__/DifficultyPane.test.tsx`
+  (2 tests). SSR-shape contract: the pane renders the loading marker
+  before hydration and never includes an em-dash. Interactive flows
+  live in the e2e spec because RTL is not in the project.
+- Added `e2e/options-difficulty.spec.ts` (4 tests): all four §15 tiles
+  render with Normal selected by default, the detail panel shows the
+  Normal row; Master is locked with the §15 unlock condition in its
+  tooltip; selecting Hard updates the detail panel and persists to
+  `vibegear2:save:v1` (and survives a reload); the mid-tour caveat
+  note renders.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (511 tests; 23 new across the two suites).
+- `npm run build` clean. `/options` route grew from 2.21 kB to 4.13 kB
+  / 125 kB first-load (the DifficultyPane and its style block).
+- `npm run test:e2e` passes (15 specs, 4 new).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns only the
+  test-side regex literals (no em-dashes in actual copy).
+
+### Decisions and assumptions
+- Reused the §15 four-tier names (Easy / Normal / Hard / Master) for
+  the player-facing preset enum, even though the §28 tuning table
+  uses Beginner / Balanced / Expert. The dot description allows
+  either; §15 is the more canonical source for the player-facing
+  ladder, and the §28 dot ships the underlying tuning numbers. The
+  championship-side `DifficultyPresetSchema` (novice / easy / normal /
+  hard / extreme) is left unchanged: it is captured at tour-enter time
+  and may use a wider taxonomy than the player picker.
+- The new `difficultyPreset` save field is optional. Adding a required
+  field would require a v2 schema bump and a migration; making it
+  optional with a `'normal'` backfill at read time is additive per
+  `WORKING_AGREEMENT.md` §11 ("dropping or renaming persisted save
+  fields" is the gated case; adding fields is allowed).
+- Master unlock predicate is conservative
+  (`completedTours.length >= 1`) rather than the precise §15 condition
+  ("complete one championship at Hard"). The save layer does not yet
+  record championship-completion-at-difficulty. The locked tile's
+  tooltip surfaces the canonical §15 wording so the player still sees
+  the right condition; the predicate can tighten in a later slice
+  without changing the UI contract.
+- Followed the established `renderToStaticMarkup` test style for the
+  `.tsx` shell test rather than pulling in React Testing Library.
+  Interactive selection / persistence coverage lives in
+  `difficultyPaneState.test.ts` (pure model) and the new Playwright
+  spec (real browser). This matches how `e2e/options-screen.spec.ts`
+  splits its concerns.
+
+### Followups created
+- None. The §28 dot still owes the underlying tuning numbers, but
+  that is its own ready task and does not block this UI slice. Once
+  championship-completion-at-difficulty tracking ships, tighten
+  `isMasterUnlocked` to the precise §15 predicate.
+
+---
+
 ## 2026-04-26: Slice: options screen route /options (settings UI scaffold)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) (Settings six-pane
