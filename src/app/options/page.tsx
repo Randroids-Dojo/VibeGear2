@@ -10,9 +10,8 @@
  * insertion point.
  *
  * - The Reset to defaults button is intentionally disabled: full reset
- *   semantics depend on the SaveGameSettings v2 schema landing
- *   (`VibeGear2-implement-savegamesettings-b948015a`). When that ships
- *   the disabled prop and the title hint should both be removed.
+ *   semantics need F-049 persistence wiring so each shipped pane can
+ *   reset without clobbering fields still owned by placeholder panes.
  * - Pressing Esc returns to the title screen via `history.back()` when
  *   there is browser history, otherwise it falls through to a hard
  *   navigation to "/". This matches the §20 pause-menu Exit-to-title
@@ -104,7 +103,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   },
 ];
 
-const RESET_PENDING_DOT = "VibeGear2-implement-savegamesettings-b948015a";
+const RESET_PENDING_FOLLOWUP = "F-049";
 
 export default function OptionsPage(): ReactElement {
   const [activeIndex, setActiveIndex] = useState<number>(0);
@@ -252,7 +251,7 @@ export default function OptionsPage(): ReactElement {
             data-testid="options-reset-defaults"
             disabled
             aria-disabled="true"
-            title={`Disabled until ${RESET_PENDING_DOT} ships the v2 settings schema.`}
+            title={`Disabled until ${RESET_PENDING_FOLLOWUP} ships options reset persistence wiring.`}
           >
             Reset to defaults
           </button>

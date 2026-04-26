@@ -10,6 +10,21 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-049: Implement options reset persistence wiring
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `/options` footer renders a disabled "Reset to defaults"
+button. SaveGameSettings v2 has shipped, so the remaining blocker is not
+schema allocation; it is reset semantics across panes that now ship at
+different times. Implement the button once each mounted pane has a clear
+default source and persistence path. The action should reset only fields
+owned by shipped panes, leave placeholder-pane fields untouched, write
+through `saveSave`, and keep the existing disabled state until that full
+path is wired and tested.
+
+---
+
 ## F-048: Apply `CPU_DIFFICULTY_MODIFIERS` scalars in the AI runtime
 **Created:** 2026-04-26
 **Priority:** nice-to-have
@@ -909,7 +924,7 @@ also a placeholder; both upgrades land together). Until then the
 `fill` override on the prop lets the consumer pin a per-car tint without
 touching the renderer.
 
-## F-021: SaveGameSchema integration for ghost replays + v2 migration
+## F-021: SaveGameSchema integration for ghost replays + v3 migration
 **Created:** 2026-04-26
 **Priority:** nice-to-have
 **Status:** done (2026-04-26, `feat/ghost-replay-schema`)

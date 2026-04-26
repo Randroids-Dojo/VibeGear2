@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Docs accuracy audit after PR #5 fixes
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) "Settings",
+[§22](gdd/22-data-schemas.md) "Save-game JSON schema" and "Ghost replay".
+**Branch / PR:** `main`, post-merge documentation audit.
+**Status:** Implemented.
+
+### Done
+- Updated stale SaveGame ghost-replay migration language from a generic
+  v2 migration to the current v2 -> v3 migration in followup notes and
+  recorder comments.
+- Corrected the F-023 progress entry to show PR #5 as merged and to
+  point at the post-merge review-fix commit on `main`.
+- Replaced outdated options-screen reset text that still said the
+  button was blocked on the SaveGameSettings v2 schema. The schema has
+  shipped; the button now points at F-049 for reset persistence wiring.
+- Brought the PR #5 review-fix progress entry up to date with the full
+  local verification and `main` push that happened after the initial
+  log text was written.
+
+### Verified
+- `rg` scan for stale SaveGameSettings v2 reset blockers, stale ghost
+  migration wording, and stale F-023 PR-pending text returned only the
+  historical SaveGameSettings v2 slice entry.
+- `npx vitest run src/app/options/__tests__/page.test.tsx` green.
+- `npm run content-lint` clean.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/options-screen.spec.ts` green, 6 passed.
+- `git diff --check` clean.
+- No em or en dashes in touched files.
+
+### Decisions and assumptions
+- Historical progress-log entries were left as historical records unless
+  they described current branch, PR, or followup state for active work.
+
+### Followups created
+- F-049: Implement options reset persistence wiring.
+
+### GDD edits
+None. The existing §22 v3 schema text remains accurate.
+
+---
+
 ## 2026-04-26: Slice: PR #5 review comment fixes
 
 **GDD sections touched:**
@@ -14,8 +59,8 @@ Correct them by adding a new entry that references the old one.
 "Asset pipeline",
 [§22](gdd/22-data-schemas.md) "Save-game JSON schema" and "Ghost replay".
 **Branch / PR:** `feat/f-023-timetrial-recorder-lifecycle`, PR #5
-(already merged before this follow-up).
-**Status:** Implemented review fixes.
+(already merged before this follow-up), then `main` at `4c27f2e`.
+**Status:** Implemented review fixes and pushed them to `main`.
 
 ### Done
 - `src/components/error/ErrorBoundary.tsx`: added an explicit
@@ -39,12 +84,21 @@ Correct them by adding a new entry that references the old one.
 - `npx vitest run src/components/error/__tests__/ErrorBoundary.test.tsx src/components/error/__tests__/formatErrorReport.test.ts src/components/loading/__tests__/LoadingGate.test.ts src/components/loading/__tests__/loadingState.test.ts src/data/schemas.test.ts src/persistence/save.test.ts` green.
 - `npm run typecheck` clean.
 - `npm run lint` clean.
+- `npm test` green.
+- `npm run content-lint` clean.
+- `npm run build` clean.
+- `npm run test:e2e` green, 50 passed.
+- `git diff --check` clean.
+- No em or en dashes in touched files.
 
 ### Decisions and assumptions
 - The PR description mismatch thread is historical: PR #5 was already
   merged before this follow-up, and the branch has been fast-forwarded to
   current `main`. The follow-up keeps the branch code aligned rather than
-  splitting an already-merged PR.
+  splitting an already merged PR.
+- PR #5's body was updated with a post-merge review note. The old review
+  threads remain visible on GitHub because they are pinned to the
+  already merged PR head.
 
 ### Followups created
 None.
@@ -113,7 +167,8 @@ race timing contracts.
 recorder lifecycle this module orchestrates),
 [§22](gdd/22-data-schemas.md) "Ghost replay" (consumer of the
 `Replay` shape this module finalises into).
-**Branch / PR:** `feat/f-023-timetrial-recorder-lifecycle`, PR pending.
+**Branch / PR:** `feat/f-023-timetrial-recorder-lifecycle`, PR #5
+merged on 2026-04-26; post-merge review fixes landed in `4c27f2e`.
 **Status:** F-023 closed. Producer-only slice; the Next.js Time Trial
 route under `src/app/` stays owned by
 `VibeGear2-implement-time-trial-5d65280a`. Mirrors the F-021 / F-022
@@ -5268,7 +5323,7 @@ PR pending.
   with a fall-through to `/`.
 - Added `src/app/options/page.module.css` with the tab strip, panel,
   and footer styling. Reset to defaults button is rendered disabled
-  with the SaveGameSettings v2 dot id in its title attribute so the
+  with the F-049 reset wiring followup in its title attribute so the
   next agent can grep.
 - Added `src/app/options/tabNav.ts` with the pure `nextTabIndex`,
   `isTabNavKey`, and `TAB_ORDER` exports the page binds to. Lives
@@ -5286,7 +5341,7 @@ PR pending.
 - Added `e2e/options-screen.spec.ts` (6 tests) covering: all six tabs
   visible with Display selected, ArrowRight cycle plus wrap,
   ArrowLeft wrap from first to last, Reset to defaults disabled with
-  the v2 schema dot id in its title, back-to-title link, and Esc
+  the F-049 reset wiring followup in its title, back-to-title link, and Esc
   returning to `/`.
 - Updated `src/app/page.tsx` to enable the Options main-menu entry as a
   `Link` to `/options` with `data-testid="menu-options"`. Removed the

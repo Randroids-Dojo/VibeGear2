@@ -63,10 +63,9 @@
  * Out of scope for this slice (filed as followups):
  *
  *   - Save schema integration (`src/data/schemas.ts` `SaveGameSchema`
- *     gains a `ghosts` field, plus a v2 migration). The schema slot will
- *     be allocated by the next save-schema slice; this module already
- *     produces a JSON-clean `Replay` shape so the integration is purely
- *     additive when it lands.
+ *     gains a `ghosts` field, plus a v2 -> v3 migration). This landed
+ *     after the recorder producer slice, so the remaining consumer work
+ *     is Time Trial route wiring rather than schema allocation.
  *   - Renderer integration (`src/render/pseudoRoadCanvas.ts` accepts a
  *     translucent ghost car). Drawing a ghost requires the ghost car
  *     sprite atlas frames, which arrive with the visual-polish slice.

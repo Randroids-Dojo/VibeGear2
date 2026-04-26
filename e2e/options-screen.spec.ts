@@ -69,7 +69,7 @@ test.describe("options screen", () => {
     );
   });
 
-  test("Reset to defaults is disabled and cites the v2 schema dot", async ({ page }) => {
+  test("Reset to defaults is disabled and cites the reset wiring followup", async ({ page }) => {
     await page.goto("/options");
 
     const reset = page.getByTestId("options-reset-defaults");
@@ -77,7 +77,7 @@ test.describe("options screen", () => {
     await expect(reset).toBeDisabled();
     await expect(reset).toHaveAttribute(
       "title",
-      /VibeGear2-implement-savegamesettings-b948015a/,
+      /F-049/,
     );
   });
 

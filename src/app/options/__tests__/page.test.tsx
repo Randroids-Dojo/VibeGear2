@@ -63,14 +63,15 @@ describe("OptionsPage", () => {
     expect(html).toContain("VibeGear2-implement-visual-polish-7d31d112");
   });
 
-  it("disables the Reset to defaults button until SaveGameSettings v2 lands", () => {
+  it("disables the Reset to defaults button until reset persistence lands", () => {
     const reset = html.match(
       /<button[^>]*data-testid="options-reset-defaults"[^>]*>/,
     );
     expect(reset, "reset button not found").not.toBeNull();
     expect(reset?.[0]).toContain("disabled");
     expect(reset?.[0]).toContain('aria-disabled="true"');
-    expect(reset?.[0]).toContain("VibeGear2-implement-savegamesettings-b948015a");
+    expect(reset?.[0]).toContain("F-049");
+    expect(reset?.[0]).toContain("options reset persistence wiring");
   });
 
   it("renders a back-to-title link", () => {
