@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { formatBuildBadge } from "./buildInfo";
 import styles from "./page.module.css";
 
 /**
@@ -13,6 +14,14 @@ import styles from "./page.module.css";
  * the original `menu-options` test id that the e2e suite asserts on.
  *
  * Keyboard order is Start Race -> Garage -> Options (DOM order).
+ *
+ * The footer carries two pieces of metadata. The pre-existing
+ * `build-status` line tracks the design phase (kept verbatim so the
+ * existing e2e and unit suites stay green). A new
+ * `build-version` line stamps the compiled package version and the
+ * git short SHA per GDD §21 ("Asset pipeline -> Build-time checksum
+ * versioning") so a manual smoke can confirm the deployed build
+ * matches the expected commit. Source: `buildInfo.ts`.
  */
 
 interface MenuItem {
@@ -50,6 +59,9 @@ export default function TitlePage() {
         </nav>
         <footer className={styles.footer}>
           <span data-testid="build-status">Pre-alpha. Phase 0 scaffold.</span>
+          <span className={styles.buildVersion} data-testid="build-version">
+            {formatBuildBadge()}
+          </span>
         </footer>
       </section>
     </main>

@@ -6,6 +6,115 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §21 build version stamping (git SHA + version + sourcemaps)
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) (Asset
+pipeline -> Build-time checksum versioning, new "Build version
+stamping" subsection).
+**Branch / PR:** `feat/build-version-stamping` (stacked on
+`feat/leaderboard-client`), PR pending.
+**Status:** Implemented (next.config.mjs git SHA resolution, baked
+env vars, typed `buildInfo.ts` re-export, title-screen footer
+badge, GDD subsection, six new buildInfo unit tests, page.test
+updated; full verify chain green).
+
+### Done
+- `next.config.mjs` (update): `generateBuildId` now runs
+  `git rev-parse --short HEAD` (with a `GIT_SHA` env var fallback
+  for CI containers without a `.git` checkout, and a literal `dev`
+  sentinel when both fail). Added `productionBrowserSourceMaps:
+  true` so the future opt-in error reporter
+  (`VibeGear2-implement-opt-in-b65cbbb8`) can map minified stack
+  frames back to source. Bakes `NEXT_PUBLIC_BUILD_ID` and
+  `NEXT_PUBLIC_BUILD_VERSION` into the client bundle via the `env`
+  field; the version reads from `package.json` at config-load time
+  via `readFileSync` so the JSON does not get bundled.
+- `src/app/buildInfo.ts` (new): typed re-export of `BUILD_ID`,
+  `BUILD_VERSION`, `isDevBuild`, plus `formatBuildBadge()` for
+  reuse across the title screen and any future settings or error
+  surfaces. Documents the three downstream consumers (opt-in error
+  reporter, tagged-release smoke, cross-browser smoke) so a future
+  reader can find the asset trail without grepping every dot.
+- `src/app/__tests__/buildInfo.test.ts` (new): six cases covering
+  type-of-string, no whitespace, dev-fallback contract,
+  isDevBuild parity, and `formatBuildBadge` composition.
+- `src/app/page.tsx` (update): title-screen footer renders a small
+  dim `data-testid="build-version"` line below the existing
+  `build-status` line via `formatBuildBadge()`. Manual smoke can
+  read the stamp without inspecting the page source.
+- `src/app/page.module.css` (update): `.footer` becomes a column
+  flex with a `.buildVersion` child styled at 0.75rem opacity 0.7
+  with tabular-nums for stable digit width.
+- `src/app/__tests__/page.test.tsx` (update): asserts the new
+  `build-version` testid renders the dev-sentinel literal under
+  Vitest (which never runs `generateBuildId`).
+- `docs/gdd/21-technical-design-for-web-implementation.md` (update):
+  added the "Build version stamping" subsection under "Asset
+  pipeline" pinning the env vars, the SHA derivation, the source
+  map decision, and the title-screen footer placement.
+
+### Why
+- §21 already named "Build-time checksum versioning" as a required
+  asset-pipeline output but the repo shipped at version `0.0.0`
+  with no exposed SHA. Three downstream slices block on the env
+  surface this introduces: the opt-in error reporter needs a
+  per-error build attribution, the tagged-release smoke needs to
+  compare deployed vs tagged SHA, and the cross-browser smoke
+  matrix needs to log a precise commit per browser pass. Shipping
+  the env / re-export / footer scaffold first lets each downstream
+  slice be a thin consumer.
+- The compile-time `env` injection turns `BUILD_ID` and
+  `BUILD_VERSION` into string literals after tree-shaking; runtime
+  cost is zero and the badge is grep-friendly in deployed page
+  source.
+
+### Verified
+- `npm run lint`, `npm run typecheck`, `npm test` (1295 passing),
+  `npm run build`, `npm run test:e2e` (34 passing).
+- `.next/server/app/index.html` contains `v0.0.0 (a613cad)` in the
+  rendered title-screen footer.
+- `.next/BUILD_ID` matches the current git short SHA.
+- `.next/static/chunks/*.js.map` files exist (14 maps emitted).
+- No em-dashes or en-dashes in any added file
+  (`grep -rPn '[\x{2014}\x{2013}]' src/app/buildInfo.ts
+  src/app/__tests__/buildInfo.test.ts next.config.mjs
+  src/app/page.tsx src/app/page.module.css` returns nothing).
+
+### Decisions and assumptions
+- Picked `productionBrowserSourceMaps: true` (rather than uploading
+  source maps to a dedicated reporter and stripping them from the
+  deploy artefact) because the opt-in error reporter is two slices
+  away. The deploy host (Vercel / Cloudflare Pages) only serves
+  `.map` files when explicitly requested, so the runtime cost
+  stays zero.
+- Did NOT bump `package.json` version. That is the
+  `tagged-release-b3d30084` slice's job. The badge currently reads
+  `v0.0.0 (<sha>)` which is the truthful representation of the
+  pre-alpha state.
+- Footer badge stays in the shipped build (not gated behind a dev
+  flag). A version stamp on a shipped game is standard and the
+  badge is dim enough to not dominate the title screen.
+- `env` in `next.config.mjs` injects values at build time, not at
+  runtime. A redeploy without a code change will still pick up a
+  new SHA because Next.js re-runs `generateBuildId` on every
+  build.
+
+### Followups created
+- F-031: Source map workspace path leak in Next.js framework
+  chunks (`main-app-*.js.map` and `main-*.js.map`). Filed
+  `nice-to-have`; the leaks are inside Next.js framework files
+  (paths under `node_modules/next/dist/...`) rather than our own
+  source, so the privacy impact is minimal. Revisit when the
+  opt-in error-reporter slice lands and decide whether to scrub
+  paths during the source-map upload step.
+
+### GDD edits
+- `docs/gdd/21-technical-design-for-web-implementation.md`: added
+  the "Build version stamping" subsection under "Asset pipeline".
+
+---
+
 ## 2026-04-26: Slice: §21 leaderboard pure primitives (sign + noop store)
 
 **GDD sections touched:**

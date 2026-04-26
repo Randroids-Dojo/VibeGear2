@@ -10,6 +10,27 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-031: Source map workspace paths leak in Next.js framework chunks
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/build-version-stamping` slice enabled
+`productionBrowserSourceMaps: true` in `next.config.mjs` so the future
+opt-in error reporter can map minified frames back to source. The
+verify step `grep -E '/Users/|/home/' .next/static/chunks/*.js.map`
+flags two framework maps (`main-app-*.js.map`, `main-*.js.map`) whose
+sources reference `/Users/<dev>/.../node_modules/next/dist/...` paths.
+These leaks are inside Next.js framework code, not our own source, so
+the privacy impact is minimal: the paths only reveal that the build
+ran from a workspace whose absolute prefix matches the dev's
+filesystem layout, and our own chunks (where stack traces would point
+in any real bug) carry the expected webpack:// prefixes. Revisit when
+the opt-in error reporter slice lands and decide whether to scrub the
+absolute prefix during the source-map upload step rather than at
+build time. Workaround: the deploy host (Vercel / Cloudflare Pages)
+only serves `.map` files on explicit request, so the maps stay a
+build-only artefact in normal browsing.
+
 ## F-030: Provision Vercel KV and swap LEADERBOARD_BACKEND in production
 **Created:** 2026-04-26
 **Priority:** nice-to-have

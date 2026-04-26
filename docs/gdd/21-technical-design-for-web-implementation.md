@@ -125,6 +125,22 @@ Recommended pipeline:
 - Build-time checksum versioning
 - Content folder separate from code for easier mods
 
+### Build version stamping
+
+The "Build-time checksum versioning" line above resolves to the git short
+SHA at build time. `next.config.mjs` runs `git rev-parse --short HEAD` from
+its `generateBuildId` hook (falling back to the `GIT_SHA` env var, then to
+the literal `dev` sentinel) and also reads the `package.json` version. Both
+values are baked into the client bundle as `NEXT_PUBLIC_BUILD_ID` and
+`NEXT_PUBLIC_BUILD_VERSION` env vars and re-exported from
+`src/app/buildInfo.ts` as typed string constants (`BUILD_ID`,
+`BUILD_VERSION`). The title-screen footer renders them via
+`formatBuildBadge()` so a manual smoke can confirm the deployed build
+matches the expected commit. `productionBrowserSourceMaps` is enabled so
+the future opt-in error reporter can map minified stack frames back to
+source; source-map files are kept as build-only artefacts and are not
+served on every page load by the production host.
+
 ## Audio pipeline
 
 - Support both procedural and sample-stem modes

@@ -57,4 +57,12 @@ describe("TitlePage", () => {
     expect(html).toContain('data-testid="build-status"');
     expect(html).toContain("Phase 0");
   });
+
+  it("renders the build-version badge with the v<version> (<id>) format", () => {
+    // Vitest does not run next.config.mjs, so the badge falls back to
+    // the dev sentinels declared in `buildInfo.ts`. Pinning the
+    // expected literal here keeps the contract honest.
+    expect(html).toContain('data-testid="build-version"');
+    expect(html).toContain("v0.0.0-dev (dev)");
+  });
 });
