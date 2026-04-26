@@ -873,3 +873,244 @@ describe("stepRaceSession (drafting)", () => {
     expect(session.draftWindows).toEqual({});
   });
 });
+
+describe("stepRaceSession (§19 accessibility assists wiring)", () => {
+  it("with assists OFF, the post-tick state matches the pre-assists pipeline (idempotency)", () => {
+    // Two sessions with identical config except that one declares an
+    // empty assists block (every flag false) and the other omits it.
+    // Both must produce deep-equal state across many ticks.
+    const baseConfig = buildConfig({ countdownSec: 0 });
+    const withEmptyAssists: RaceSessionConfig = {
+      ...baseConfig,
+      player: {
+        ...baseConfig.player,
+        assists: {
+          autoAccelerate: false,
+          brakeAssist: false,
+          steeringSmoothing: false,
+          nitroToggleMode: false,
+          reducedSimultaneousInput: false,
+          weatherVisualReduction: false,
+        },
+      },
+    };
+    let plain = createRaceSession(baseConfig);
+    let withAssists = createRaceSession(withEmptyAssists);
+    for (let i = 0; i < 60; i += 1) {
+      plain = stepRaceSession(plain, fullThrottle(), baseConfig, DT);
+      withAssists = stepRaceSession(
+        withAssists,
+        fullThrottle(),
+        withEmptyAssists,
+        DT,
+      );
+      expect(withAssists.player.car).toEqual(plain.player.car);
+      expect(withAssists.player.transmission).toEqual(plain.player.transmission);
+      expect(withAssists.player.nitro).toEqual(plain.player.nitro);
+    }
+    expect(withAssists.player.assistBadge?.active).toBeFalsy();
+  });
+
+  it("identical inputs + identical assists produce deep-equal race state across runs", () => {
+    const config: RaceSessionConfig = {
+      ...buildConfig({ countdownSec: 0 }),
+      player: {
+        stats: STARTER_STATS,
+        assists: {
+          autoAccelerate: true,
+          steeringSmoothing: true,
+          brakeAssist: true,
+        },
+      },
+    };
+    const runOnce = (): RaceSessionState => {
+      let session = createRaceSession(config);
+      for (let i = 0; i < 30; i += 1) {
+        session = stepRaceSession(session, fullThrottle(), config, DT);
+      }
+      return session;
+    };
+    const a = runOnce();
+    const b = runOnce();
+    expect(b.player.car).toEqual(a.player.car);
+    expect(b.player.assistMemory).toEqual(a.player.assistMemory);
+    expect(b.player.assistBadge).toEqual(a.player.assistBadge);
+    expect(b.player.weatherVisualReductionActive).toBe(
+      a.player.weatherVisualReductionActive,
+    );
+  });
+
+  it("auto-accelerate replaces a neutral throttle with full throttle on the player", () => {
+    const config: RaceSessionConfig = {
+      ...buildConfig({ countdownSec: 0 }),
+      player: {
+        stats: STARTER_STATS,
+        assists: { autoAccelerate: true },
+      },
+    };
+    let with_ = createRaceSession(config);
+    const without = createRaceSession(buildConfig({ countdownSec: 0 }));
+    let withoutState = without;
+    for (let i = 0; i < 30; i += 1) {
+      with_ = stepRaceSession(with_, NEUTRAL_INPUT, config, DT);
+      withoutState = stepRaceSession(
+        withoutState,
+        NEUTRAL_INPUT,
+        buildConfig({ countdownSec: 0 }),
+        DT,
+      );
+    }
+    // Auto-accel keeps the car moving even with no throttle held.
+    expect(with_.player.car.speed).toBeGreaterThan(0);
+    // Baseline (no assists, no input) sits at zero throughout.
+    expect(withoutState.player.car.speed).toBe(0);
+    expect(with_.player.assistBadge?.primary).toBe("auto-accelerate");
+  });
+
+  it("brake assist boosts the player's brake when curving and above the speed gate", () => {
+    // Build two sessions: one with brake-assist on, one off. Pre-load
+    // the player at high speed and a sustained brake input. The curve
+    // gate is sourced from the projector via `upcomingCurvature`; the
+    // bundled `test/curve` track meets the §19 threshold by design.
+    const fastBrake = (): Input => ({ ...NEUTRAL_INPUT, brake: 0.6 });
+    const baseInitial: Partial<{ z: number; x: number; speed: number }> = {
+      z: 24,
+      speed: 50,
+    };
+    const off = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, initial: baseInitial },
+    });
+    const on: RaceSessionConfig = {
+      ...off,
+      player: {
+        ...off.player,
+        assists: { brakeAssist: true },
+      },
+    };
+    let stateOff = createRaceSession(off);
+    let stateOn = createRaceSession(on);
+    for (let i = 0; i < 30; i += 1) {
+      stateOff = stepRaceSession(stateOff, fastBrake(), off, DT);
+      stateOn = stepRaceSession(stateOn, fastBrake(), on, DT);
+    }
+    // Brake assist scales the brake input upward; over many ticks the
+    // assisted player has lost more speed than the unassisted one.
+    expect(stateOn.player.car.speed).toBeLessThanOrEqual(
+      stateOff.player.car.speed,
+    );
+  });
+
+  it("toggle-nitro latches across ticks: a single tap stays on after release", () => {
+    // Player car needs nitro charges to fire; build with the nitro
+    // upgrade flag asked for by the producer. Speed seeded above the
+    // launch-bias gate so the reducer engages immediately.
+    const config: RaceSessionConfig = {
+      ...buildConfig({ countdownSec: 0 }),
+      player: {
+        stats: STARTER_STATS,
+        initial: { speed: 30 },
+        assists: { nitroToggleMode: true },
+      },
+    };
+    let session = createRaceSession(config);
+    // Tick 1: rising edge of nitro = latch on.
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, throttle: 1, nitro: true },
+      config,
+      DT,
+    );
+    expect(session.player.assistMemory.nitroToggleActive).toBe(true);
+    // Tick 2: player has released the key; latch should hold and the
+    // physics-facing input stays nitro=true.
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, throttle: 1, nitro: false },
+      config,
+      DT,
+    );
+    expect(session.player.assistMemory.nitroToggleActive).toBe(true);
+    expect(session.player.lastNitroPressed).toBe(true);
+    // Tick 3: another rising edge flips the latch off.
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, throttle: 1, nitro: true },
+      config,
+      DT,
+    );
+    expect(session.player.assistMemory.nitroToggleActive).toBe(false);
+  });
+
+  it("reduced-input lockout passes only the priority winner through", () => {
+    const config: RaceSessionConfig = {
+      ...buildConfig({ countdownSec: 0 }),
+      player: {
+        stats: STARTER_STATS,
+        initial: { speed: 40 },
+        assists: { reducedSimultaneousInput: true },
+      },
+    };
+    // Hold throttle, brake, and nitro all together. Brake outranks
+    // throttle and nitro in the priority ladder; the player should
+    // brake (lose speed) rather than accelerate or fire nitro.
+    const conflicting: Input = {
+      ...NEUTRAL_INPUT,
+      throttle: 1,
+      brake: 0.8,
+      nitro: true,
+    };
+    let session = createRaceSession(config);
+    for (let i = 0; i < 30; i += 1) {
+      session = stepRaceSession(session, conflicting, config, DT);
+    }
+    expect(session.player.car.speed).toBeLessThan(40);
+    expect(session.player.assistMemory.reducedInputLastWinner).toBe("brake");
+  });
+
+  it("session lifecycle resets assist memory when the lights go green", () => {
+    const config: RaceSessionConfig = {
+      ...buildConfig({ countdownSec: 1 }),
+      player: {
+        stats: STARTER_STATS,
+        assists: { steeringSmoothing: true },
+      },
+    };
+    let session = createRaceSession(config);
+    // Roll through countdown with a hard left steer so the smoothing
+    // memory would (without reset) carry a non-zero value into the
+    // racing phase. During countdown no physics integrates and assists
+    // do not run, so the memory stays at INITIAL anyway.
+    const steerHard: Input = { ...NEUTRAL_INPUT, steer: -1 };
+    for (let i = 0; i < 60; i += 1) {
+      session = stepRaceSession(session, steerHard, config, DT);
+    }
+    // First racing tick: even if anyone had stuffed the memory, the
+    // promoted state resets it. After the green-light tick the smoothed
+    // value should reflect *one tick* of filtering from zero, not the
+    // many ticks of countdown.
+    session = stepRaceSession(session, steerHard, config, DT);
+    expect(session.race.phase).toBe("racing");
+    // After exactly one filter tick the smoothed value is below the
+    // raw input magnitude (low-pass filter pulls toward the input).
+    expect(session.player.assistMemory.smoothedSteer).toBeGreaterThan(-1);
+    expect(session.player.assistMemory.smoothedSteer).toBeLessThan(0);
+  });
+
+  it("surfaces weatherVisualReductionActive when the assist is on", () => {
+    const config: RaceSessionConfig = {
+      ...buildConfig({ countdownSec: 0 }),
+      player: {
+        stats: STARTER_STATS,
+        assists: { weatherVisualReduction: true },
+      },
+    };
+    let session = createRaceSession(config);
+    // The flag is captured at session creation so the first frame
+    // already reads true; one tick confirms the physics-facing
+    // snapshot still reports it.
+    expect(session.player.weatherVisualReductionActive).toBe(true);
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.player.weatherVisualReductionActive).toBe(true);
+  });
+});

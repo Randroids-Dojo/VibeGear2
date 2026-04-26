@@ -13,7 +13,7 @@
  * returns a `Strip[]` value and the renderer module consumes it.
  */
 
-import { DRAW_DISTANCE, ROAD_WIDTH, SEGMENT_LENGTH } from "./constants";
+import { CURVATURE_SCALE, DRAW_DISTANCE, ROAD_WIDTH, SEGMENT_LENGTH } from "./constants";
 import type { Camera, CompiledSegment, Strip, Viewport } from "./types";
 
 export interface ProjectorOptions {
@@ -135,4 +135,77 @@ export function project(
   }
 
   return strips;
+}
+
+/**
+ * Default lookahead window for `upcomingCurvature`, in meters. Picked to
+ * match the §19 brake-assist's "warning the player about a corner ahead"
+ * intent: at 60 m/s (the starter top speed) this is roughly 1.3 seconds
+ * of travel, which is the human reaction window the assist is sized for.
+ */
+export const DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M = 80;
+
+/**
+ * Sample the signed curvature in the next `lookaheadMeters` of compiled
+ * track ahead of the camera position `cameraZ`. Returns the curve sample
+ * with the largest magnitude in the window so the §19 brake-assist gate
+ * fires on the sharpest segment in the player's near future, not on the
+ * average (which a long straight followed by a tight hairpin would
+ * smear toward zero).
+ *
+ * Pure: depends only on the segment list and the position. Wraps the
+ * camera Z modulo the track length so a player crossing the start line
+ * still gets a real value rather than a clamped zero.
+ *
+ * Returns `0` when the segment list is empty, the lookahead is
+ * non-positive, or no segment in the window had a signed curve. The
+ * sign matches the segment's `curve` (negative = left, positive =
+ * right) so consumers can read direction as well as magnitude.
+ */
+export function upcomingCurvature(
+  segments: readonly CompiledSegment[],
+  cameraZ: number,
+  lookaheadMeters: number = DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M,
+): number {
+  if (segments.length === 0) return 0;
+  if (!Number.isFinite(lookaheadMeters) || lookaheadMeters <= 0) return 0;
+
+  const totalSegments = segments.length;
+  const trackLength = totalSegments * SEGMENT_LENGTH;
+  const wrappedCameraZ =
+    ((cameraZ % trackLength) + trackLength) % trackLength;
+  const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
+
+  // Cap the lookahead window at the full ring so a tiny test track does
+  // not double-sample its own segments. Round up so a partial-segment
+  // remainder still gets one sample.
+  const requestedSegments = Math.ceil(lookaheadMeters / SEGMENT_LENGTH);
+  const lookaheadSegments = Math.min(requestedSegments, totalSegments);
+
+  // Match the projector's convention: pre-scaled `curve` lives in dx
+  // accumulator units. We undo the `CURVATURE_SCALE` divide so the
+  // returned value is back in the [-1, 1] authored band the §19 brake
+  // assist expects.
+  let bestSigned = 0;
+  let bestMagnitude = 0;
+  for (let n = 0; n < lookaheadSegments; n++) {
+    const segIndex = (baseSegmentIndex + n) % totalSegments;
+    const segment = segments[segIndex];
+    if (!segment) continue;
+    const magnitude = Math.abs(segment.curve);
+    if (magnitude > bestMagnitude) {
+      bestMagnitude = magnitude;
+      bestSigned = segment.curve;
+    }
+  }
+  // Re-scale back into the [-1, 1] authored band. The compiler divides
+  // by `CURVATURE_SCALE` before storing so multiplying by it here lands
+  // back on the authored magnitude.
+  const reScaled = bestSigned * CURVATURE_SCALE;
+  // Clamp to [-1, 1] so a segment with a slightly out-of-band authored
+  // curve (e.g. a future authoring tool that allowed 1.05) does not
+  // confuse the assist's `Math.abs(...) >= threshold` gate.
+  if (reScaled > 1) return 1;
+  if (reScaled < -1) return -1;
+  return reScaled;
 }

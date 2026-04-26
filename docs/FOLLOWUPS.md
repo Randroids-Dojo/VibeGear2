@@ -28,7 +28,7 @@ slot) in the producer-without-consumer pattern.
 ## F-026: Wire `applyAssists` into the race session input pipeline
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
+**Status:** done
 **Notes:** The `feat/accessibility-assists` slice ships
 `src/game/assists.ts` as a producer module: `applyAssists`,
 `AssistContext`, `AssistMemory`, the six per-assist transforms, and
@@ -50,6 +50,26 @@ state machine must respect the visual-reduction flag when computing
 its grip scalar. Track this so the toggles in the new
 `/options/accessibility` pane move from "persisted" to "actually
 applied".
+
+**Resolution:** Closed by `feat/wire-applyassists-into-race-session`.
+Added `assists?: AssistSettingsRuntime` and `weather?: WeatherOption`
+to the race-session config, threaded a per-session `AssistMemory`
+through `RaceSessionPlayerCar`, called `applyAssists` once per tick
+ahead of nitro / transmission / drafting / physics so all downstream
+reducers consume the post-assist `Input`, reset `AssistMemory` on the
+green-light promotion tick, surfaced `assistBadge` and
+`weatherVisualReductionActive` on the player snapshot, exposed a new
+`upcomingCurvature(segments, cameraZ, lookahead)` helper from
+`src/road/segmentProjector.ts`, and wired the `/race` page to read
+`SaveGameSettings.assists` from `loadSave()` (or `defaultSave()` when
+no save exists) at session creation. New unit coverage: 7 race-session
+assist tests (toggle-nitro latch, reduced-input lockout, brake-assist
+firing on a curve, lifecycle reset on green-light, visual-only-weather
+flag passthrough, two determinism shapes) plus 7 segment-projector
+tests for the upcoming-curvature helper. The
+`weatherVisualReductionActive` flag is plumbed through the player
+snapshot with a `TODO(F-026/weather)` marker; the §14 weather slice
+will read it from there when it lands.
 
 ## F-024: Migrate `src/game/` randomness to `createRng` / `splitRng`
 **Created:** 2026-04-26

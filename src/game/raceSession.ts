@@ -34,8 +34,10 @@ import type {
   CarBaseStats,
   TransmissionModePersisted,
   UpgradeCategory,
+  WeatherOption,
 } from "@/data/schemas";
 import { SEGMENT_LENGTH } from "@/road/constants";
+import { upcomingCurvature } from "@/road/segmentProjector";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";
 
@@ -46,6 +48,13 @@ import {
   type AIState,
   type AITrackContext,
 } from "./ai";
+import {
+  applyAssists,
+  INITIAL_ASSIST_MEMORY,
+  type AssistBadge,
+  type AssistMemory,
+  type AssistSettingsRuntime,
+} from "./assists";
 import {
   computeWakeOffset,
   INITIAL_DRAFT_WINDOW,
@@ -108,6 +117,17 @@ export interface RaceSessionPlayer {
    * optimal shift point.
    */
   transmissionMode?: TransmissionModePersisted | null;
+  /**
+   * Snapshot of the §19 accessibility assists copied from
+   * `SaveGameSettings.assists`. The session reads each tick, runs the
+   * resolved input through `applyAssists`, and threads `AssistMemory`
+   * across ticks. Optional / partial so callers (and v1 saves loaded
+   * pre-assists) can omit it; `applyAssists` treats every missing flag
+   * as `false`. Mid-race toggles are not supported by the runtime, so
+   * the value is sampled once via the config reference held by
+   * `stepRaceSession` rather than a per-tick parameter.
+   */
+  assists?: Readonly<AssistSettingsRuntime> | null;
 }
 
 export interface RaceSessionAI {
@@ -155,6 +175,16 @@ export interface RaceSessionConfig {
    * randomised systems start identically across runs.
    */
   seed?: number;
+  /**
+   * Active weather option for the session, read by the §19 accessibility
+   * assist pipeline (`AssistContext.weather`) so visual-only-weather
+   * mode can flag the runtime. Defaults to the first entry in
+   * `track.weatherOptions` when the host does not pin one. Held on
+   * config (rather than a per-tick parameter) because weather is
+   * decided at race-start time and never flips mid-race in current
+   * builds.
+   */
+  weather?: WeatherOption;
 }
 
 /**
@@ -212,6 +242,38 @@ export interface RaceSessionPlayerCar {
   lastShiftUpPressed: boolean;
   /** Edge-detection mirror of the prior tick's `shiftDown` input. */
   lastShiftDownPressed: boolean;
+  /**
+   * Per-session §19 accessibility assist memory, threaded across ticks
+   * by `applyAssists`. Initialised at session creation to
+   * `INITIAL_ASSIST_MEMORY` and reset back to it the same tick the
+   * lights go green so a paused-during-countdown player always starts
+   * the race with a clean smoothing buffer / latched-toggle / reduced-
+   * input winner.
+   */
+  assistMemory: AssistMemory;
+  /**
+   * Snapshot of the most recent assist badge for the §20 HUD. Populated
+   * even on idle ticks so the HUD layer never sees a stale `undefined`
+   * after the player toggled an assist mid-pause; the badge mirror
+   * always reflects the current settings regardless of whether the
+   * player produced any input that tick. `null` only on the
+   * pre-physics initial snapshot, before the first call to
+   * `applyAssists` has run; consumers that need a default before the
+   * first tick can read the producer's badge for an empty
+   * `AssistSettingsRuntime` value.
+   */
+  assistBadge: AssistBadge | null;
+  /**
+   * §19 visual-only-weather flag the player asked for via assists,
+   * surfaced through the session so the future weather grip multiplier
+   * can read it from the same snapshot. The current physics layer does
+   * not yet consume this; the field exists as a producer-side hook so
+   * the weather slice (`VibeGear2-implement-weather-38d61fc2`) can
+   * flip its grip path without touching the assists pipeline.
+   * TODO(F-026/weather): wire into the weather grip multiplier in
+   * `physics.ts` once the §14 weather module lands.
+   */
+  weatherVisualReductionActive: boolean;
 }
 
 export interface RaceSessionState {
@@ -300,6 +362,10 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     }),
     lastShiftUpPressed: false,
     lastShiftDownPressed: false,
+    assistMemory: { ...INITIAL_ASSIST_MEMORY },
+    assistBadge: null,
+    weatherVisualReductionActive:
+      (config.player.assists?.weatherVisualReduction ?? false) === true,
   };
 
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
@@ -500,6 +566,9 @@ export function stepRaceSession(
           transmission: { ...state.player.transmission },
           lastShiftUpPressed: state.player.lastShiftUpPressed,
           lastShiftDownPressed: state.player.lastShiftDownPressed,
+          assistMemory: { ...state.player.assistMemory },
+          assistBadge: state.player.assistBadge,
+          weatherVisualReductionActive: state.player.weatherVisualReductionActive,
         },
         ai: state.ai.map((entry) => ({
           car: { ...entry.car },
@@ -533,6 +602,13 @@ export function stepRaceSession(
         transmission: { ...state.player.transmission },
         lastShiftUpPressed: state.player.lastShiftUpPressed,
         lastShiftDownPressed: state.player.lastShiftDownPressed,
+        // Lights-out resets the §19 assist memory so the smoothing
+        // filter, toggle-nitro latch, and reduced-input winner do not
+        // carry stale state from the warmup countdown into the race.
+        // Mirrors the lap-timer / sector-timer reset on the same tick.
+        assistMemory: { ...INITIAL_ASSIST_MEMORY },
+        assistBadge: state.player.assistBadge,
+        weatherVisualReductionActive: state.player.weatherVisualReductionActive,
       },
       ai: state.ai.map((entry) => ({
         car: { ...entry.car },
@@ -557,13 +633,45 @@ export function stepRaceSession(
   const playerStats = config.player.stats;
   const playerUpgradeTier = config.player.upgrades?.nitro;
 
+  // §19 accessibility assists: rewrite the player's resolved input
+  // before any downstream reducer (nitro, transmission, drafting,
+  // physics) reads it. Auto-accelerate, brake assist, steering
+  // smoothing, toggle-nitro, and reduced-input all collapse to no-ops
+  // when the player has the matching flag turned off, so opting out is
+  // exactly equivalent to the previous wiring (no allocation cost
+  // either: the producer returns the same input reference when no
+  // rewrite happened). `weatherVisualReductionActive` flows out of the
+  // same call so the future weather grip multiplier reads it from a
+  // single coherent snapshot per tick.
+  const assistSettings = config.player.assists ?? {};
+  const trackWeather =
+    config.weather ?? config.track.weatherOptions[0] ?? "clear";
+  const assistResult = applyAssists(
+    playerInput,
+    assistSettings,
+    {
+      speedMps: state.player.car.speed,
+      surface: state.player.car.surface,
+      weather: trackWeather,
+      upcomingCurvature: upcomingCurvature(
+        config.track.segments,
+        state.player.car.z,
+      ),
+      dt,
+    },
+    state.player.assistMemory,
+  );
+  const effectivePlayerInput = assistResult.input;
+
   // §10 nitro: advance the reducer for the player using their nitro
   // input, then feed `getNitroAccelMultiplier` into the physics step's
   // `accelMultiplier` slot so an active charge scales acceleration.
+  // Reads the post-assist input so toggle-nitro and reduced-input map
+  // through the rest of the pipeline cleanly.
   const playerNitroResult = tickNitro(
     state.player.nitro,
     {
-      nitroPressed: playerInput.nitro,
+      nitroPressed: effectivePlayerInput.nitro,
       wasPressed: state.player.lastNitroPressed,
       upgradeTier: playerUpgradeTier,
     },
@@ -585,14 +693,14 @@ export function stepRaceSession(
   // so the edge-gating below has no effect on auto-only players.
   const playerMaxGear = maxGearForUpgrades(config.player.upgrades ?? null);
   const playerShiftUpEdge =
-    playerInput.shiftUp && !state.player.lastShiftUpPressed;
+    effectivePlayerInput.shiftUp && !state.player.lastShiftUpPressed;
   const playerShiftDownEdge =
-    playerInput.shiftDown && !state.player.lastShiftDownPressed;
+    effectivePlayerInput.shiftDown && !state.player.lastShiftDownPressed;
   const playerTransmission = tickTransmission(
     state.player.transmission,
     {
-      throttle: playerInput.throttle,
-      brake: playerInput.brake,
+      throttle: effectivePlayerInput.throttle,
+      brake: effectivePlayerInput.brake,
       shiftUp: playerShiftUpEdge,
       shiftDown: playerShiftDownEdge,
       speed: state.player.car.speed,
@@ -636,7 +744,13 @@ export function stepRaceSession(
   // correctly.
   const field: DraftScanEntry[] = [];
   field.push(
-    scanEntry(PLAYER_CAR_ID, state.player.car, playerInput, state.race.lap, trackLength),
+    scanEntry(
+      PLAYER_CAR_ID,
+      state.player.car,
+      effectivePlayerInput,
+      state.race.lap,
+      trackLength,
+    ),
   );
   state.ai.forEach((entry, index) => {
     const tick = aiTickResults[index];
@@ -706,7 +820,7 @@ export function stepRaceSession(
   const playerDraftBonus = draftMultipliers.get(PLAYER_CAR_ID) ?? 1;
   const nextPlayerCar = step(
     state.player.car,
-    playerInput,
+    effectivePlayerInput,
     playerStats,
     trackContext,
     dt,
@@ -856,10 +970,20 @@ export function stepRaceSession(
     player: {
       car: nextPlayerCar,
       nitro: playerNitroResult.state,
-      lastNitroPressed: playerInput.nitro,
+      // Mirror the post-assist nitro value so the next tick's
+      // rising-edge detection in `tickNitro` matches the input the
+      // physics step actually consumed. This matters under
+      // toggle-nitro: the producer collapses the held key into a
+      // latched bool, so the session must remember what it forwarded
+      // (not what the player physically pressed) to keep the same
+      // tap from re-firing the nitro reducer next tick.
+      lastNitroPressed: effectivePlayerInput.nitro,
       transmission: playerTransmission,
-      lastShiftUpPressed: playerInput.shiftUp,
-      lastShiftDownPressed: playerInput.shiftDown,
+      lastShiftUpPressed: effectivePlayerInput.shiftUp,
+      lastShiftDownPressed: effectivePlayerInput.shiftDown,
+      assistMemory: assistResult.memory,
+      assistBadge: assistResult.badge,
+      weatherVisualReductionActive: assistResult.weatherVisualReductionActive,
     },
     ai: nextAi,
     tick: nextTick,
@@ -907,6 +1031,9 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
       transmission: { ...state.player.transmission },
       lastShiftUpPressed: state.player.lastShiftUpPressed,
       lastShiftDownPressed: state.player.lastShiftDownPressed,
+      assistMemory: { ...state.player.assistMemory },
+      assistBadge: state.player.assistBadge,
+      weatherVisualReductionActive: state.player.weatherVisualReductionActive,
     },
     ai: state.ai.map((entry) => ({
       car: { ...entry.car },

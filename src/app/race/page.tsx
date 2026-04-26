@@ -70,6 +70,7 @@ import { drawRoad } from "@/render/pseudoRoadCanvas";
 import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
 import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
+import { defaultSave, loadSave } from "@/persistence/save";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -211,9 +212,22 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Resolve persisted §19 accessibility assists at session start so
+    // the toggles in /options/accessibility actually shape the per-tick
+    // input. Sampled once: the runtime does not currently honour
+    // mid-race toggles (the pause menu would close, then a fresh race
+    // would re-read on next mount). Falls back to the defaults bundle
+    // when no save exists or the load failed; the runtime treats every
+    // missing flag as `false` already.
+    const persisted = loadSave();
+    const persistedAssists =
+      persisted.kind === "loaded"
+        ? persisted.save.settings.assists
+        : defaultSave().settings.assists;
+
     const config: RaceSessionConfig = {
       track: track.compiled,
-      player: { stats: STARTER_STATS },
+      player: { stats: STARTER_STATS, assists: persistedAssists },
       ai: [{ driver: DEMO_DRIVER, stats: STARTER_STATS }],
       seed: 1,
     };
@@ -288,6 +302,7 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
           playerId: PLAYER_ID,
           cars,
           speedUnit: "kph",
+          assistBadge: session.player.assistBadge ?? undefined,
         });
         drawHud(ctx, hud, viewport);
 

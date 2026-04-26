@@ -6,6 +6,121 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-026 wire applyAssists into the race-session input pipeline
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) (Accessibility controls; six §19
+assists become load-bearing in the per-tick simulation rather than
+just persisted), [§20](gdd/20-hud-and-ui-ux.md)
+(`HudState.assistBadge` is now populated by the live runtime so the
+§27 polish slice has a real data source), and
+[§22](gdd/22-data-schemas.md) (`SaveGameSettings.assists` is now
+sampled by the consumer, closing the producer-without-consumer
+followup tracked as `F-026` in `docs/FOLLOWUPS.md`).
+**Branch / PR:** `feat/wire-applyassists-into-race-session` (stacked
+on `feat/content-budget-cap`), PR pending.
+**Status:** Implemented (consumer wiring + lifecycle reset + race-page
+wiring + 14 new tests + F-026 closed; verify chain green).
+
+### Done
+- `src/road/segmentProjector.ts` exports a new
+  `upcomingCurvature(segments, cameraZ, lookahead)` helper plus
+  `DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M = 80` (~1.3 s of travel at
+  the starter top speed). Returns the largest-magnitude signed curve
+  in the lookahead window, recovers the authored `[-1, 1]` band by
+  multiplying back through `CURVATURE_SCALE`, wraps `cameraZ` modulo
+  the ring, and clamps the result so a slightly out-of-band authored
+  segment cannot confuse the §19 brake-assist gate.
+- `src/game/raceSession.ts` reads
+  `RaceSessionPlayer.assists`, builds an `AssistContext`
+  (`{ speedMps, surface, weather, upcomingCurvature, dt }`) every
+  tick, threads `AssistMemory` through a new `assistMemory` field on
+  `RaceSessionPlayerCar`, and runs `applyAssists` once per tick at the
+  top of the racing branch so nitro / transmission / drafting /
+  physics all consume the post-assist `Input`. The `lastNitroPressed`
+  / `lastShift*Pressed` mirrors track the post-assist values so the
+  toggle-nitro latch and shift edge-detection stay coherent across
+  ticks. `assistBadge` and `weatherVisualReductionActive` surface on
+  the player snapshot for the §20 HUD and the future weather grip
+  multiplier (TODO marker references this followup).
+- `RaceSessionConfig.weather` (defaults to the track's first weather
+  option, falling back to `"clear"`) so the assist context has a
+  weather value without forcing every caller to thread one explicitly.
+- Lights-out promotion resets `AssistMemory` back to
+  `INITIAL_ASSIST_MEMORY` so a paused-during-countdown player always
+  starts the race with a clean smoothing buffer / latched-toggle /
+  reduced-input winner. Mirrors the existing lap-timer / sector-timer
+  reset on the same tick.
+- `src/app/race/page.tsx` reads `loadSave().settings.assists` (or
+  `defaultSave().settings.assists` when no save exists) at session
+  creation so the toggles in `/options/accessibility` actually shape
+  the per-tick input. `deriveHudState` now receives
+  `session.player.assistBadge` so the §20 badge surface has live data.
+- `src/game/__tests__/raceSession.test.ts` adds 7 assist tests:
+  assists-off matches the pre-assists pipeline tick-for-tick,
+  identical inputs + assists produce deep-equal state across runs,
+  auto-accelerate keeps a no-throttle player moving, brake assist
+  costs more speed on a curve at high speed, toggle-nitro latches
+  across a key release and flips off on a second tap, reduced-input
+  picks the brake under throttle + brake + nitro contention, and the
+  green-light tick resets `AssistMemory`.
+- `src/road/__tests__/segmentProjector.test.ts` adds 7
+  upcoming-curvature tests: empty / non-positive / NaN / flat-track
+  guards, magnitude recovery, sharpest-in-window selection, clamp to
+  `[-1, 1]`, ring wraparound, and the default-lookahead behaviour.
+- `docs/FOLLOWUPS.md`: F-026 marked `done` with a resolution note
+  pointing at this branch and naming the new test counts.
+- Verify chain green: `npm run lint` (clean), `npm run typecheck`
+  (clean), `npm test` (1141 / 1141 across 50 files), `npm run build`
+  (static export succeeds; `/race` route grew from 5.96 kB to 7.26
+  kB First Load JS for the assists threading), `npm run test:e2e`
+  (31 / 31 across chromium + mobile).
+
+### Why
+- The §19 accessibility assists are a release-blocker per the GDD
+  (six assists across two presets, plus the visual-only-weather
+  flag). The producer module landed clean in iter-43, but the
+  toggles in `/options/accessibility` only persisted to localStorage;
+  the runtime ignored them. Without consumer wiring the entire
+  accessibility surface is paperwork. F-026 closes that gap.
+- Threading `AssistMemory` per session (not per-config or global)
+  matches AGENTS.md RULE 8: identical inputs + identical settings +
+  identical track + identical weather produce deep-equal state across
+  runs, so the slice does not contaminate the determinism property
+  the rest of the runtime depends on.
+- Resetting the memory at the green-light tick (rather than at
+  session creation) keeps a paused-during-countdown player from
+  carrying a stale smoothing buffer into the race, which would have
+  shown up as a phantom steer pull in the first tenth of a second.
+- Wiring the race page through `loadSave()` (rather than wiring it
+  through the pause menu) is the minimum that gets the toggle-to-
+  effect loop closed: mid-race toggling is documented as out of
+  scope on the dot, and pause-then-toggle would change the runtime
+  shape (every assist would need to flow through `RaceSessionConfig`
+  per tick rather than being held on the player snapshot).
+
+### Skip
+- Mid-race toggling. The runtime samples assists once at session
+  creation. A future slice that wants pause-menu mid-race toggling
+  can move the `assists` field from `RaceSessionPlayer` to a
+  per-tick parameter on `stepRaceSession` without changing the
+  internals.
+- HUD assist-badge renderer (F-027). The `assistBadge` field now
+  flows from the runtime to `HudState.assistBadge`, but the canvas
+  drawer in `src/render/uiRenderer.ts` still ignores it. F-027 is
+  open and assigned to the §20 polish slice.
+- Weather grip multiplier consumption of `weatherVisualReductionActive`.
+  The flag is plumbed onto `RaceSessionPlayerCar` and exported through
+  the snapshot, but the §14 weather slice has not yet shipped a grip
+  multiplier; the consumer will read from there when it lands.
+
+### Followups
+- F-027 (HUD assist-badge renderer) remains open; data plane is now
+  fully populated, so the renderer slice can land without further
+  runtime changes.
+
+---
+
 ## 2026-04-26: Slice: content budget cap + enforcement test (32 tracks / 6 cars)
 
 **GDD sections touched:**

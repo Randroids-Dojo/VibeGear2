@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CAMERA_DEPTH, CAMERA_HEIGHT, SEGMENT_LENGTH } from "../constants";
-import { project } from "../segmentProjector";
+import { CAMERA_DEPTH, CAMERA_HEIGHT, CURVATURE_SCALE, SEGMENT_LENGTH } from "../constants";
+import {
+  DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M,
+  project,
+  upcomingCurvature,
+} from "../segmentProjector";
 import type { Camera, CompiledSegment, Viewport } from "../types";
 
 function makeCamera(overrides: Partial<Camera> = {}): Camera {
@@ -168,5 +172,72 @@ describe("project (pseudo-3D segment projector)", () => {
     const second = strips[1]!;
     expect(second.visible).toBe(true);
     expect(second.scale).toBeCloseTo(CAMERA_DEPTH / SEGMENT_LENGTH, 6);
+  });
+});
+
+describe("upcomingCurvature", () => {
+  it("returns 0 on an empty segment list", () => {
+    expect(upcomingCurvature([], 0)).toBe(0);
+  });
+
+  it("returns 0 when the lookahead window is non-positive or NaN", () => {
+    const segs = flatTrack(8, { curve: 0.4 / CURVATURE_SCALE });
+    expect(upcomingCurvature(segs, 0, 0)).toBe(0);
+    expect(upcomingCurvature(segs, 0, -10)).toBe(0);
+    expect(upcomingCurvature(segs, 0, Number.NaN)).toBe(0);
+  });
+
+  it("returns 0 on a flat track regardless of camera Z", () => {
+    const segs = flatTrack(32);
+    expect(upcomingCurvature(segs, 0)).toBe(0);
+    expect(upcomingCurvature(segs, 5 * SEGMENT_LENGTH)).toBe(0);
+  });
+
+  it("recovers the authored curve magnitude for a uniformly-curved track", () => {
+    // Author at curve = 0.5 (compiled value = 0.5 / CURVATURE_SCALE).
+    const segs = flatTrack(64, { curve: 0.5 / CURVATURE_SCALE });
+    const result = upcomingCurvature(segs, 0, SEGMENT_LENGTH * 4);
+    expect(result).toBeCloseTo(0.5, 6);
+  });
+
+  it("returns the largest-magnitude curve in the window, signed", () => {
+    const segs = flatTrack(64);
+    // Insert one sharp left bend in the middle of the lookahead window.
+    segs[5] = { ...segs[5]!, curve: -0.8 / CURVATURE_SCALE };
+    // Plus a milder right bend further along.
+    segs[8] = { ...segs[8]!, curve: 0.3 / CURVATURE_SCALE };
+    const result = upcomingCurvature(segs, 0, SEGMENT_LENGTH * 12);
+    expect(result).toBeCloseTo(-0.8, 6);
+  });
+
+  it("clamps the recovered authored curve to [-1, 1]", () => {
+    const segs = flatTrack(8, { curve: 1.5 / CURVATURE_SCALE });
+    expect(upcomingCurvature(segs, 0)).toBe(1);
+    const segsLeft = flatTrack(8, { curve: -1.5 / CURVATURE_SCALE });
+    expect(upcomingCurvature(segsLeft, 0)).toBe(-1);
+  });
+
+  it("wraps cameraZ through the ring so a lap-rolling player still sees ahead", () => {
+    const segs = flatTrack(16);
+    segs[1] = { ...segs[1]!, curve: 0.6 / CURVATURE_SCALE };
+    // Camera Z one full lap ahead should wrap and see segment index 1.
+    const cameraZ = 16 * SEGMENT_LENGTH;
+    expect(upcomingCurvature(segs, cameraZ, SEGMENT_LENGTH * 4)).toBeCloseTo(
+      0.6,
+      6,
+    );
+  });
+
+  it("uses DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M when none is supplied", () => {
+    const segs = flatTrack(64);
+    // Place a curve well past the default lookahead so the helper does
+    // not read it.
+    const farIndex =
+      Math.ceil(DEFAULT_UPCOMING_CURVATURE_LOOKAHEAD_M / SEGMENT_LENGTH) + 5;
+    segs[farIndex] = { ...segs[farIndex]!, curve: 0.9 / CURVATURE_SCALE };
+    expect(upcomingCurvature(segs, 0)).toBe(0);
+    // And a curve inside the window does get picked up.
+    segs[2] = { ...segs[2]!, curve: 0.4 / CURVATURE_SCALE };
+    expect(upcomingCurvature(segs, 0)).toBeCloseTo(0.4, 6);
   });
 });
