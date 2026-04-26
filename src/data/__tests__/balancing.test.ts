@@ -21,13 +21,13 @@
  *     consumer table will live there. Tracked as F-043; this test pins
  *     the §23 column so the wiring slice can copy it verbatim once the
  *     module is in place.
- *  5. CPU difficulty modifiers (§23) -> deferred. The §23 column gives
+ *  5. CPU difficulty modifiers (§23) -> `CPU_DIFFICULTY_MODIFIERS`
+ *     in `src/game/aiDifficulty.ts`. The §23 column gives
  *     pace / recovery / mistake scalars per `Easy / Normal / Hard /
- *     Master` ladder. Today the AI ladder is per-driver
- *     (`paceScalar` on each `AIDriver` JSON) and there is no consumer
- *     for `recoveryScalar` / `mistakeScalar`; they will land with the
- *     difficulty-tier wiring slice. Tracked as F-044; this test pins
- *     the §23 column so the wiring slice can copy it verbatim.
+ *     Master` ladder. The catch-up consumer (`recoveryScalar`) and
+ *     mistake-injection consumer (`mistakeScalar`) have not landed
+ *     yet (rubber-banding and randomised mistakes are deferred §15
+ *     slices); the table here is the binding the wiring slices read.
  *  6. Track difficulty rating rubric (§23) -> qualitative weights, no
  *     runtime consumer; out of scope here.
  *
@@ -48,6 +48,8 @@ import {
   HIT_MAGNITUDE_RANGES,
   NITRO_WHILE_SEVERELY_DAMAGED_BONUS,
 } from "@/game/damage";
+import { CPU_DIFFICULTY_MODIFIERS } from "@/game/aiDifficulty";
+import type { PlayerDifficultyPreset } from "@/data/schemas";
 
 const TOL = 1e-9;
 
@@ -237,53 +239,80 @@ describe("§23 Weather modifiers (pinned for F-043)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 5. CPU difficulty modifiers (§23): deferred to F-044
+// 5. CPU difficulty modifiers (§23)
 // ---------------------------------------------------------------------------
 
 /**
- * §23 "CPU difficulty modifiers" pinned here for the wiring slice to
- * copy verbatim once the difficulty-tier consumer lands. Today the AI
- * ladder is per-driver (`AIDriver.paceScalar`); there is no consumer for
- * `recoveryScalar` / `mistakeScalar` yet.
+ * §23 "CPU difficulty modifiers" verbatim. Pin against
+ * `CPU_DIFFICULTY_MODIFIERS` from `src/game/aiDifficulty.ts`. Keyed by
+ * the §15 four-tier `PlayerDifficultyPreset` ladder so the cross-check
+ * is a direct lookup.
  */
-const CPU_DIFFICULTY_MODIFIERS: ReadonlyArray<{
-  difficulty: "Easy" | "Normal" | "Hard" | "Master";
-  paceScalar: number;
-  recoveryScalar: number;
-  mistakeScalar: number;
-}> = [
-  { difficulty: "Easy", paceScalar: 0.92, recoveryScalar: 0.95, mistakeScalar: 1.4 },
-  { difficulty: "Normal", paceScalar: 1.0, recoveryScalar: 1.0, mistakeScalar: 1.0 },
-  { difficulty: "Hard", paceScalar: 1.05, recoveryScalar: 1.03, mistakeScalar: 0.7 },
-  { difficulty: "Master", paceScalar: 1.09, recoveryScalar: 1.05, mistakeScalar: 0.45 },
-];
+const CPU_DIFFICULTY_TARGETS: Readonly<
+  Record<
+    PlayerDifficultyPreset,
+    { paceScalar: number; recoveryScalar: number; mistakeScalar: number }
+  >
+> = {
+  easy: { paceScalar: 0.92, recoveryScalar: 0.95, mistakeScalar: 1.4 },
+  normal: { paceScalar: 1.0, recoveryScalar: 1.0, mistakeScalar: 1.0 },
+  hard: { paceScalar: 1.05, recoveryScalar: 1.03, mistakeScalar: 0.7 },
+  master: { paceScalar: 1.09, recoveryScalar: 1.05, mistakeScalar: 0.45 },
+};
 
-describe("§23 CPU difficulty modifiers (pinned for F-044)", () => {
-  it("table shape matches the §23 row count", () => {
-    expect(CPU_DIFFICULTY_MODIFIERS.length).toBe(4);
+describe("§23 CPU difficulty modifiers", () => {
+  it.each(
+    (Object.keys(CPU_DIFFICULTY_TARGETS) as ReadonlyArray<
+      PlayerDifficultyPreset
+    >).map((tier) => [tier, CPU_DIFFICULTY_TARGETS[tier]] as const),
+  )("%s row matches the §23 table", (tier, expected) => {
+    const row = CPU_DIFFICULTY_MODIFIERS[tier];
+    expect(row.paceScalar).toBeCloseTo(expected.paceScalar, 9);
+    expect(row.recoveryScalar).toBeCloseTo(expected.recoveryScalar, 9);
+    expect(row.mistakeScalar).toBeCloseTo(expected.mistakeScalar, 9);
   });
 
   it("paceScalar is monotonically non-decreasing across the ladder", () => {
-    for (let i = 1; i < CPU_DIFFICULTY_MODIFIERS.length; i += 1) {
-      const prev = CPU_DIFFICULTY_MODIFIERS[i - 1]!;
-      const curr = CPU_DIFFICULTY_MODIFIERS[i]!;
+    const ladder: ReadonlyArray<PlayerDifficultyPreset> = [
+      "easy",
+      "normal",
+      "hard",
+      "master",
+    ];
+    for (let i = 1; i < ladder.length; i += 1) {
+      const prev = CPU_DIFFICULTY_MODIFIERS[ladder[i - 1]!];
+      const curr = CPU_DIFFICULTY_MODIFIERS[ladder[i]!];
       expect(curr.paceScalar).toBeGreaterThanOrEqual(prev.paceScalar - TOL);
     }
   });
 
   it("mistakeScalar is monotonically non-increasing across the ladder", () => {
-    for (let i = 1; i < CPU_DIFFICULTY_MODIFIERS.length; i += 1) {
-      const prev = CPU_DIFFICULTY_MODIFIERS[i - 1]!;
-      const curr = CPU_DIFFICULTY_MODIFIERS[i]!;
+    const ladder: ReadonlyArray<PlayerDifficultyPreset> = [
+      "easy",
+      "normal",
+      "hard",
+      "master",
+    ];
+    for (let i = 1; i < ladder.length; i += 1) {
+      const prev = CPU_DIFFICULTY_MODIFIERS[ladder[i - 1]!];
+      const curr = CPU_DIFFICULTY_MODIFIERS[ladder[i]!];
       expect(curr.mistakeScalar).toBeLessThanOrEqual(prev.mistakeScalar + TOL);
     }
   });
 
   it("Normal sits at identity for every column", () => {
-    const normal = CPU_DIFFICULTY_MODIFIERS.find((r) => r.difficulty === "Normal");
-    expect(normal).toBeDefined();
-    expect(normal?.paceScalar ?? Number.NaN).toBeCloseTo(1, 9);
-    expect(normal?.recoveryScalar ?? Number.NaN).toBeCloseTo(1, 9);
-    expect(normal?.mistakeScalar ?? Number.NaN).toBeCloseTo(1, 9);
+    const normal = CPU_DIFFICULTY_MODIFIERS.normal;
+    expect(normal.paceScalar).toBeCloseTo(1, 9);
+    expect(normal.recoveryScalar).toBeCloseTo(1, 9);
+    expect(normal.mistakeScalar).toBeCloseTo(1, 9);
+  });
+
+  it("CPU_DIFFICULTY_MODIFIERS is frozen so a stray write cannot drift §23", () => {
+    expect(Object.isFrozen(CPU_DIFFICULTY_MODIFIERS)).toBe(true);
+    for (const tier of Object.keys(CPU_DIFFICULTY_MODIFIERS) as ReadonlyArray<
+      PlayerDifficultyPreset
+    >) {
+      expect(Object.isFrozen(CPU_DIFFICULTY_MODIFIERS[tier])).toBe(true);
+    }
   });
 });

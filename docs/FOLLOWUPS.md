@@ -10,6 +10,35 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-048: Apply `CPU_DIFFICULTY_MODIFIERS` scalars in the AI runtime
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** `src/game/aiDifficulty.ts` now exposes
+`CPU_DIFFICULTY_MODIFIERS` keyed by `PlayerDifficultyPreset` (Easy /
+Normal / Hard / Master). The runtime side of the §23 wiring still
+needs three call-sites:
+
+- `tickAI` in `src/game/ai.ts`: multiply the per-driver
+  `driver.paceScalar` by `getCpuModifiers(tierId).paceScalar`
+  before computing `targetSpeed`. Today `tickAI` reads only the
+  per-driver scalar; thread the resolved tier id from the save's
+  `difficultyPreset` field through `raceSession.createRaceSession`
+  so the AI tick sees both the archetype identity and the
+  player-facing difficulty.
+- `mistakeScalar`: stack on `AIDriver.mistakeRate` once the
+  mistake-injection pipeline lands. Clean_line is currently
+  zero-randomness; the consumer arrives with `aggressive`,
+  `chaotic`, and `bully` archetypes.
+- `recoveryScalar`: stack on the rubber-banding catch-up term once
+  it lands. §15 lists rubber-banding as deferred; no consumer
+  module exists yet.
+
+The constant is authoritative for the future wiring; the binding is
+in place so the wiring slices can read a single source of truth.
+
+---
+
 ## F-047: Thread per-car `DamageState` through `raceSession` and feed `applyHit`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
@@ -53,18 +82,20 @@ into `RaceSessionPlayerCar` / `RaceSessionAICar`. Tracked as F-047.
 ## F-044: Wire §23 CPU difficulty modifiers into the AI / catch-up pipeline
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** §23 "CPU difficulty modifiers" gives a per-tier table of
 `paceScalar / recoveryScalar / mistakeScalar` for the
-`Easy / Normal / Hard / Master` ladder. Today the AI ladder is
-per-driver (`AIDriver.paceScalar` on each `src/data/ai/*.json`) and
-there is no consumer for `recoveryScalar` (catch-up rate) or
-`mistakeScalar` (mistake-rate multiplier). Once a difficulty-tier
-consumer lands (likely in `src/game/ai.ts` or a new
-`src/game/aiDifficulty.ts`), copy the table verbatim from the §23
-pin in `src/data/__tests__/balancing.test.ts` into a frozen
-`CPU_DIFFICULTY_MODIFIERS` lookup and replace the placeholder block in
-the balancing test with an import-and-assert cross-check.
+`Easy / Normal / Hard / Master` ladder. The wiring slice
+(`feat/cpu-difficulty-modifiers`) added
+`src/game/aiDifficulty.ts` with a frozen `CPU_DIFFICULTY_MODIFIERS`
+lookup keyed by `PlayerDifficultyPreset`, plus `getCpuModifiers` /
+`resolveCpuModifiers` helpers mirroring the §28 preset module.
+The balancing test now imports the constant and asserts every cell
+against the §23 source rather than re-pinning literals.
+The runtime consumers (apply `paceScalar` in `tickAI`, apply
+`mistakeScalar` to `AIDriver.mistakeRate` once mistake injection
+lands, apply `recoveryScalar` once rubber-banding lands) still need
+wiring. Tracked as F-048.
 
 ---
 

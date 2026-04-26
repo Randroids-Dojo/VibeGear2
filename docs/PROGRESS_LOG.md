@@ -6,6 +6,69 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-044 wire §23 CPU difficulty modifiers (`CPU_DIFFICULTY_MODIFIERS`)
+
+**GDD sections touched:**
+[§23](gdd/23-balancing-tables.md) CPU difficulty modifiers (now
+import-and-assert against the new constant).
+[§15](gdd/15-cpu-opponents-and-ai.md) Difficulty tiers (the four-tier
+`PlayerDifficultyPreset` ladder maps onto each row).
+**Branch / PR:** `feat/cpu-difficulty-modifiers` stacked on
+`feat/nitro-damaged-bonus`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-f-044-a931a220`. The §23 "CPU difficulty
+modifiers" table now has a single binding-site:
+`src/game/aiDifficulty.ts` exposes `CPU_DIFFICULTY_MODIFIERS`,
+keyed by `PlayerDifficultyPreset`, with `getCpuModifiers` and
+`resolveCpuModifiers` helpers that mirror the §28 preset module.
+The balancing test in `src/data/__tests__/balancing.test.ts`
+imports the constant and asserts every cell rather than re-pinning
+literals, so a §23 retune has exactly one place to edit. The
+runtime consumers (apply `paceScalar` in `tickAI`, apply
+`mistakeScalar` once mistake injection lands, apply
+`recoveryScalar` once rubber-banding lands) are filed as F-048.
+
+### Done
+- `src/game/aiDifficulty.ts` (new): frozen
+  `CPU_DIFFICULTY_MODIFIERS` keyed by `PlayerDifficultyPreset` with
+  the §23 row literals (Easy 0.92 / 0.95 / 1.40, Normal 1.00 /
+  1.00 / 1.00, Hard 1.05 / 1.03 / 0.70, Master 1.09 / 1.05 /
+  0.45). Frozen at both levels (table and per-tier objects).
+  `getCpuModifiers(tierId)` returns the same frozen reference
+  across calls; `resolveCpuModifiers(tierId | undefined)` falls
+  back to Normal for older v1 saves with no `difficultyPreset`
+  field. `CPU_TIER_IDS` exposes the §15 ladder order.
+  Distinct from `src/game/difficultyPresets.ts` (player-side §28
+  table); both keys map onto the same `PlayerDifficultyPreset`
+  enum so a single save pick resolves both sides of the tier.
+- `src/game/__tests__/aiDifficulty.test.ts` (new): pins each row
+  with `toEqual`, default-tier id, frozen-object semantics, the
+  out-of-band id fallback, and the monotonicity sanity bounds
+  (pace and recovery non-decreasing, mistake non-increasing across
+  Easy -> Master, Normal at identity).
+- `src/data/__tests__/balancing.test.ts` (update): replaced the
+  F-044 placeholder block with import-and-assert against
+  `CPU_DIFFICULTY_MODIFIERS`. Each tier's pace / recovery / mistake
+  cells cross-checked verbatim, monotonicity assertions retained,
+  and a frozen-object assertion added so a stray write trips
+  immediately. Updated the file header to drop the F-044
+  "deferred" note.
+- `docs/FOLLOWUPS.md` (update): F-044 marked `done` with the
+  module path and helper names; F-048 opened for the three
+  runtime call-sites that consume the scalars (`tickAI`,
+  mistake-injection, rubber-banding).
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: existing suites continue to pass; new
+  `aiDifficulty.test.ts` covers the binding; the §23
+  cross-check in `balancing.test.ts` now reads the new module.
+- `npm run build`: clean (no UI surface added).
+- `npm run test:e2e`: clean.
+
+---
+
 ## 2026-04-26: Slice: F-045 wire `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` into `applyHit`
 
 **GDD sections touched:**
