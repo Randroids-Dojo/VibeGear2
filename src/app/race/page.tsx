@@ -140,6 +140,22 @@ function resolveTrack(requestedId: string | null): ResolvedTrack {
 }
 
 /**
+ * Parse the optional `?laps=N` URL override. Used by the F-029 e2e to
+ * coerce a multi-lap run on the bundled single-lap test tracks without
+ * shipping a dedicated multi-lap data file. Returns `null` when the param
+ * is missing, non-integer, or outside `[1, 50]`. The upper bound matches
+ * the §7 race-rules sanity range so a malformed link cannot DoS the loop.
+ * Honoured by `RaceSessionConfig.totalLaps`; the data file's `laps` field
+ * remains the default.
+ */
+function resolveLapsOverride(raw: string | null): number | null {
+  if (raw === null) return null;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) return null;
+  return parsed;
+}
+
+/**
  * Convert a car's forward distance into a minimap marker by mapping
  * `car.z` (meters) to a compiled `[segmentIndex, progress]` pair and
  * delegating to `projectCar`. Negative or out-of-range `z` values are
@@ -182,15 +198,18 @@ function RaceShellLoading(): ReactElement {
 function RaceShell(): ReactElement {
   const search = useSearchParams();
   const requestedId = search?.get("track") ?? null;
+  const lapsRaw = search?.get("laps") ?? null;
   const track = useMemo(() => resolveTrack(requestedId), [requestedId]);
-  return <RaceCanvas track={track} />;
+  const lapsOverride = useMemo(() => resolveLapsOverride(lapsRaw), [lapsRaw]);
+  return <RaceCanvas track={track} lapsOverride={lapsOverride} />;
 }
 
 interface RaceCanvasProps {
   track: ResolvedTrack;
+  lapsOverride: number | null;
 }
 
-function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
+function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
@@ -214,12 +233,13 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
     "countdown",
   );
   const [countdownSecondsLeft, setCountdownSecondsLeft] = useState<number>(3);
+  const initialTotalLaps = lapsOverride ?? track.compiled.laps;
   const [hudSnapshot, setHudSnapshot] = useState<{
     speed: number;
     lap: number;
     totalLaps: number;
     position: number;
-  }>(() => ({ speed: 0, lap: 1, totalLaps: track.compiled.laps, position: 1 }));
+  }>(() => ({ speed: 0, lap: 1, totalLaps: initialTotalLaps, position: 1 }));
   const [resultMs, setResultMs] = useState<number | null>(null);
 
   const pause = usePauseToggle({ loop: () => handleRef.current });
@@ -270,6 +290,7 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
       player: { stats: STARTER_STATS, assists: persistedAssists },
       ai: [{ driver: DEMO_DRIVER, stats: STARTER_STATS }],
       seed: 1,
+      ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
 
     sessionRef.current = createRaceSession(config);
@@ -325,7 +346,7 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
       setHudSnapshot({
         speed: 0,
         lap: 1,
-        totalLaps: track.compiled.laps,
+        totalLaps: initialTotalLaps,
         position: 1,
       });
       handle.resume();
@@ -529,7 +550,7 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
       sessionRef.current = null;
       inputManager.dispose();
     };
-  }, [track, router]);
+  }, [track, router, lapsOverride, initialTotalLaps]);
 
   return (
     <main data-testid="race-canvas" data-track={track.id} style={shellStyle}>

@@ -280,7 +280,7 @@ one-line change if the KV pricing tier shifts before launch.
 ## F-029: Playwright e2e race-finish spec
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** The iter-19 stress-test on dot
 `VibeGear2-implement-race-rules-b30656ae` calls for an `e2e/race-finish.spec.ts`
 that runs a full multi-lap race against AI and asserts the results overlay
@@ -290,6 +290,18 @@ physics integration but does not surface a finish UI. Land this once the
 §7 results screen lands (likely the `economy-upgrade-ff73b279` slice or its
 HUD sibling). Until then, the `stepRaceSession` lap-completion and time-limit
 unit tests stand alone.
+
+**Resolution:** Closed by `feat/e2e-race-finish-multilap`. The race page
+now honours an optional `?laps=N` URL override (clamped to `[1, 50]`) so
+the bundled single-lap `test/straight` track can be coerced into a
+multi-lap run without shipping a dedicated fixture or mutating the data
+file's `laps: 1`. `e2e/race-finish.spec.ts` gained a second `describe`
+("F-029 multi-lap") that drives a three-lap race vs the bundled
+clean-line AI, asserts `hud-lap` reads `1 / 3` so the override actually
+threaded through, holds throttle until the natural-finish wiring routes
+to `/race/results`, and asserts both the player row and the `ai-0` row
+render with the §20 testids. Spec runs in ~1.1m on the local box; the
+prior F-038 single-lap spec is preserved untouched.
 
 ## F-028: Per-car DNF tracking in raceSession
 **Created:** 2026-04-26

@@ -6,6 +6,65 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-029 multi-lap race-finish e2e
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules.md) Multi-lap race-finish behaviour,
+[§20](gdd/20-hud-and-ui-ux.md) Results screen reachability.
+**Branch / PR:** `feat/e2e-race-finish-multilap` stacked on
+`feat/licence-files-finalisation`, PR pending.
+**Status:** Implemented. Closes F-029. The race page now honours
+an optional `?laps=N` URL override so the bundled single-lap test
+tracks can be coerced into a multi-lap run without shipping new
+fixture content. `e2e/race-finish.spec.ts` gained a second
+`describe` ("F-029 multi-lap") that drives a three-lap race on
+`test/straight` against the bundled clean-line AI, asserts the
+HUD lap label reads `1 / 3` so the override actually threaded
+through, holds throttle until the natural-finish wiring routes
+to `/race/results`, and asserts both the player row and the
+`ai-0` row render under the §20 testids. The earlier F-038
+single-lap spec is preserved untouched.
+
+### Done
+- `src/app/race/page.tsx` (update): added `resolveLapsOverride`
+  (parses `?laps=N`, clamps to `[1, 50]`, returns `null` when
+  missing or malformed) and threaded the override into
+  `RaceSessionConfig.totalLaps` plus the HUD seed snapshot. The
+  effect dependency list now includes the override so a route
+  hop with a different value re-mounts the loop. The dataflow
+  remains: missing or malformed param falls back to
+  `track.compiled.laps`, so existing call sites (title-screen
+  Start Race, race-demo spec, F-038 spec) keep their previous
+  semantics.
+- `e2e/race-finish.spec.ts` (update): added a second `describe`
+  block for F-029. The multi-lap test sets a 180 s test timeout
+  (analytical floor: 3 laps x 1,200 m / 61 m/s plus the 3 s
+  countdown is ~64 s; pad for CI jitter) and asserts the §20
+  results-row testids for both the player and the demo AI car.
+- `docs/FOLLOWUPS.md` (update): F-029 flipped from `open` to
+  `done` with a resolution note covering the URL-override
+  approach and the spec shape.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 69 files / 1,578 tests pass.
+- `npm run build`: clean (`/race` 8.84 kB unchanged within the
+  rounding budget).
+- `npm run test:e2e`: 42 / 42 pass; the new F-029 multi-lap test
+  runs in ~1.1 m on the local box.
+
+### GDD edits
+None.
+
+### Open questions raised
+None.
+
+### Followups created
+None.
+
+---
+
 ## 2026-04-26: Slice: F-038 wire natural race-finish into `/race/results`
 
 **GDD sections touched:**

@@ -7,11 +7,12 @@ import { expect, test } from "@playwright/test";
  * §20 results screen with the player row.
  *
  * Coordinated with sibling dot
- * `VibeGear2-implement-e2e-race-4a750bfc` (F-029): that dot owns a
- * fuller multi-lap spec; this one is the focused
- * natural-finish-wires-to-results contract for F-038. The two are
- * complementary and not redundant: F-029 stresses the multi-lap +
- * grid-of-AI surface, this spec pins the wiring boundary.
+ * `VibeGear2-implement-e2e-race-4a750bfc` (F-029): that dot owns the
+ * fuller multi-lap spec captured in the second `describe` below; this
+ * one is the focused natural-finish-wires-to-results contract for
+ * F-038. The two are complementary and not redundant: F-029 stresses
+ * the multi-lap + AI-on-the-grid surface, this spec pins the wiring
+ * boundary.
  */
 
 test.describe("race-finish wiring (F-038)", () => {
@@ -66,6 +67,86 @@ test.describe("race-finish wiring (F-038)", () => {
         "finished",
       );
       // Continue CTA renders so the player can return to the garage.
+      await expect(page.getByTestId("results-cta-continue")).toBeVisible();
+    },
+  );
+});
+
+/**
+ * Multi-lap race-finish e2e per F-029. Closes
+ * `VibeGear2-implement-e2e-race-4a750bfc`. Drives a full three-lap
+ * race against the bundled clean-line AI on `test/straight` (the
+ * lowest-curvature track in the bundle, so a held-throttle player
+ * cannot drift into the verge). The race page now honours an optional
+ * `?laps=N` URL override per the matching change in
+ * `src/app/race/page.tsx`; the bundled `test/straight` data file pins
+ * `laps: 1` so the e2e supplies the override at the URL boundary
+ * rather than mutating fixture content.
+ *
+ * Verifies (per task description): a multi-lap race against AI ends
+ * with the §20 results overlay rendered, with both the player row and
+ * the demo AI row present, and the totalLaps banner reflecting the
+ * override.
+ */
+
+test.describe("race-finish wiring (F-029 multi-lap)", () => {
+  test(
+    "multi-lap race vs AI on test/straight ends at /race/results with both rows",
+    async ({ page }) => {
+      // Three laps of test/straight is 3,600 m. Sparrow GT tops out at
+      // 61 m/s and the §3 race-rules hard cap is 600 s, so the natural
+      // finish lands around ~60 s of sim time plus the 3 s countdown.
+      // The CI box runs the loop at fixed step in real time, so pad
+      // generously above the analytical floor.
+      test.setTimeout(180_000);
+
+      await page.goto("/race?track=test/straight&laps=3");
+
+      const canvas = page.getByTestId("race-canvas-element");
+      await expect(canvas).toBeVisible();
+
+      // The HUD lap label is the first place we can sanity-check that
+      // the `?laps=` override actually threaded into the session
+      // config: a regression that drops the override would surface
+      // here as `1 / 1` instead of `1 / 3` and fail the assert before
+      // the slow finish wait.
+      await expect(page.getByTestId("hud-lap")).toHaveText("1 / 3", {
+        timeout: 10_000,
+      });
+
+      // Wait for the lights-out so the throttle below actually counts.
+      await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+        timeout: 10_000,
+      });
+
+      // Hold the throttle until the natural-finish wiring tears down
+      // the loop and routes to /race/results. The keyup is issued
+      // after the route hop so any stray frame between the post-lap
+      // tick and the unmount cannot leave a stuck input.
+      await canvas.focus();
+      await page.keyboard.down("ArrowUp");
+      await expect(page).toHaveURL(/\/race\/results/, { timeout: 150_000 });
+      await page.keyboard.up("ArrowUp");
+
+      // §20 root rendered with the source track id stamped on the
+      // banner, plus both the player and the single-AI rows seeded by
+      // the demo grid in `src/app/race/page.tsx`.
+      const root = page.getByTestId("race-results");
+      await expect(root).toBeVisible({ timeout: 10_000 });
+      await expect(root).toHaveAttribute("data-track", "test/straight");
+      await expect(page.getByTestId("results-row-player")).toBeVisible();
+      await expect(page.getByTestId("results-row-ai-0")).toBeVisible();
+
+      // The player crossed the line under their own throttle, so the
+      // row carries the `finished` status (the DNF path is owned by
+      // the pause-actions retire spec).
+      await expect(page.getByTestId("results-row-player")).toHaveAttribute(
+        "data-status",
+        "finished",
+      );
+
+      // Continue CTA is the §20 default focus; assert it renders so a
+      // post-finish navigation regression fails here too.
       await expect(page.getByTestId("results-cta-continue")).toBeVisible();
     },
   );
