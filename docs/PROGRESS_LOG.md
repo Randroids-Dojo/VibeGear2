@@ -6,6 +6,80 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Fixed-step simulation loop (§21 Game loop)
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/fixed-step-loop` (off `feat/localstorage-save`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/loop.ts` with `startLoop`, `FIXED_STEP_SECONDS`,
+  `FIXED_STEP_MS`, `MAX_ACCUMULATOR_MS`, plus `Scheduler`, `LoopOptions`,
+  `LoopHandle`, and `LoopTickResult` types. Implements the §21 recipe:
+  rAF-driven render, accumulator-based catch-up, fixed 60 Hz simulate
+  callback, fractional alpha passed to render for blending. Spiral of
+  death prevented by capping the accumulator at 250 ms (15 frames of
+  catch-up max); excess time is reported as `droppedSteps` so callers
+  can surface a hitch indicator if desired.
+- Added `src/game/loop.test.ts` (11 cases) covering: first-frame origin
+  (no sim, alpha=0), one tick per fixed step, exactly 6 ticks for
+  100 ms elapsed, fractional remainder carry across frames, accumulator
+  cap after a 5 s pause, custom max accumulator, rejection of a
+  too-small max, negative-dt clamp, render-every-tick invariant,
+  `stop()` idempotency and pending-handle cancel, and end-to-end
+  scheduler-driven run.
+- Added `src/app/dev/loop/page.tsx`, a client-only dev page at
+  `/dev/loop` that reports running fps, sim tick count, render frame
+  count, and the latest render alpha. Used for the manual
+  tab-backgrounding check in §21.
+- Wired `loop.ts` exports through `src/game/index.ts`.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test` passes 56/56 (11 new + 45 existing).
+- `npm run build` succeeds; `/dev/loop` ships at 1.32 kB route size.
+- `grep` for U+2014 and U+2013 across new files returns nothing.
+
+### Decisions and assumptions
+- The loop exposes a `tickFor(timestamp)` escape hatch on the returned
+  handle so deterministic unit tests can drive frames without any
+  timer or `vi.useFakeTimers()` setup. Production code never calls it
+  directly; the scheduler does.
+- Floating-point carry: `100 ms / (1000/60 ms) = 6.0` mathematically,
+  but six successive subtractions of `1000/60` from `100` can leave
+  the accumulator a few ULPs below zero, which would make the next
+  step boundary cross a real-time fence late. A `1e-9 ms` epsilon in
+  the loop's `>=` test pins exact-multiple cases to the expected step
+  count without affecting any tick that lands more than a nanosecond
+  off-boundary. Negative remainders are also clamped to zero.
+- Cap chosen at 250 ms per the dot spec. With a 1/60 s step that
+  buys 15 frames of catch-up, which keeps any single rAF tick under
+  ~5 ms of sim work even on a slow integrated-GPU laptop. Customisable
+  via `maxAccumulatorMs`; values below one fixed step are rejected as
+  RangeError because they would deadlock the loop.
+- `Scheduler` is its own one-method interface, not the DOM's
+  `Window['requestAnimationFrame']` signature, to keep the loop
+  testable from node and to allow future swap-out for a worker-driven
+  loop without refactoring callers.
+- Browser tab-backgrounding cannot be exercised from this agent's
+  environment. The deterministic accumulator-cap test stands in for
+  that scenario; manual browser verification via `/dev/loop` is left
+  for the human reviewer.
+- No `__tests__/` subdirectory was created. The repo's existing
+  convention (per `raceState.test.ts`, `schemas.test.ts`,
+  `save.test.ts`) co-locates `*.test.ts` next to the module under
+  test. Followed that convention rather than the dot's suggested
+  layout, per AGENTS.md RULE 9.
+
+### Followups created
+- None.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Versioned localStorage save/load (§21 Save system)
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md), [§22](gdd/22-data-schemas.md)
