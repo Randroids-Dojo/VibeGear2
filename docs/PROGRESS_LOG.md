@@ -6,6 +6,102 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: damage band performance scaling per §10 §13
+
+**GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md)
+("Damage effects on performance"),
+[§13](gdd/13-damage-repairs-and-risk.md) ("Mechanical effects").
+**Branch / PR:** `feat/damage-band` (stacked on `feat/damage-model`),
+PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/damageBands.ts`: pure
+  `getDamageScalars(damagePercent: number): DamageScalars` returning
+  `{ stability, gripScalar, topSpeedScalar, nitroEfficiency,
+  spinRiskMultiplier }` per the §10 "Damage effects on performance"
+  table. Five bands: cosmetic (0..24, identity), light (25..49,
+  stability and nitro hit), moderate (50..74, grip and top speed
+  start to drop), severe (75..99, heavy power loss), catastrophic
+  (100, limp). Boundary rule pinned to inclusive lower bound
+  (`>= 25` enters light). `MAX_SPIN_RISK_MULTIPLIER = 4` ceiling.
+  Companion `getDamageBand(percent)` returns the named band for HUD
+  consumers. `DAMAGE_BANDS` constant frozen so the lookup is
+  reviewable in one place.
+- Wired `damageScalars` through `physics.step()` as a new optional
+  `StepOptions` field (alongside the existing `draftBonus`). The
+  step consumes `topSpeedScalar` (shrinks the cap) and `gripScalar`
+  (derates traction); `stability`, `nitroEfficiency`, and
+  `spinRiskMultiplier` are exposed for the future steering
+  smoothing, nitro, and traction-loss slices to read off the same
+  scalars without a second resolve. Defaults to `PRISTINE_SCALARS`
+  when omitted (back-compat: existing call sites in
+  `raceSession.ts` and the dev page keep their behaviour).
+- Re-exported the new module from `src/game/index.ts`.
+- Added `src/game/__tests__/damageBands.test.ts` (37 tests):
+  the dot's nine boundary values (0, 24, 25, 49, 50, 74, 75, 99,
+  100) snapshot the documented tuples; monotonic invariants walk
+  every integer percent and assert non-increasing
+  stability/grip/topSpeed/nitroEfficiency and non-decreasing
+  spinRisk; out-of-range inputs (NaN, negatives, +/-Infinity)
+  clamp without throwing; determinism (1000-iter and full-table
+  re-snapshot) confirms no `Math.random` / `Date.now` leakage; the
+  physics integration test confirms a car at 80% damage caps at
+  `61 * 0.78 = 47.58 m/s` versus the pristine 61 m/s under
+  identical inputs and drifts 70% as far laterally for the same
+  steer input (matching the severe band's gripScalar = 0.7).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (787 tests, 37 new in `damageBands.test.ts`).
+- `npm run build` clean. No route-size delta (the new field is
+  optional and the renderer / race scene do not consume it yet).
+- `npm run test:e2e` passes (15 specs, no new e2e specs since the
+  band lookup is pure game logic).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Bands are inclusive at the lower bound. The dot's edge case asks
+  for the rounding rule to be explicit; `25.000` lives in the
+  light band, not the cosmetic band. Lookup walks `DAMAGE_BANDS`
+  highest-to-lowest and takes the first whose `min` is at most the
+  clamped input, which encodes the same rule.
+- Pinned numeric values per band (light: stability 0.92, nitro 0.9;
+  moderate: stability 0.8, grip 0.85, topSpeed 0.92, nitro 0.8,
+  spin 1.5; severe: stability 0.6, grip 0.7, topSpeed 0.78, nitro
+  0.6, spin 2.5; catastrophic: stability 0.45, grip 0.55, topSpeed
+  0.55, nitro 0.4, spin 4.0). §10 only pins the qualitative
+  effects; numbers are picked to keep a fully-damaged car
+  "limp but finishable" per the §13 "Balancing principle". A
+  future balancing pass owns the final values.
+- `spinRiskMultiplier` is exposed but no consumer reads it yet.
+  The future traction-loss slice will multiply it against its base
+  spin probability. `MAX_SPIN_RISK_MULTIPLIER = 4` pins the
+  ceiling so a tweak to the table cannot accidentally turn the
+  catastrophic band into "instant spin every tick".
+- 100% pin: §10 says "catastrophic state, either limp mode or
+  retire". This module owns only the limp side (the scalars). The
+  retire (DNF) decision is owned by the damage state machine
+  (`isWrecked()`) and the future race-rules engine.
+- Out-of-range inputs (NaN, < 0, > 100, +/-Infinity) clamp into
+  `[0, 100]` rather than throwing. Physics must not crash on a
+  stale damage value.
+
+### Followups created
+- None new. The §15 traction-loss / spin slice will consume
+  `spinRiskMultiplier` when it lands. The race session damage
+  integration slice (still tracked under F-019) will resolve the
+  band per-tick from `DamageState.total` and pass `damageScalars`
+  into `physics.step()`.
+
+### GDD edits
+- None. The §10 "Damage effects on performance" narrative is the
+  source; the per-band numeric pins live in the module's docstring
+  and the test file's snapshots.
+
+---
+
 ## 2026-04-26: Slice: damage model per §13
 
 **GDD sections touched:** [§13](gdd/13-damage-repairs-and-risk.md)

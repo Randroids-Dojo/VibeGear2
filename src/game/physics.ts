@@ -37,6 +37,8 @@
 
 import type { CarBaseStats } from "@/data/schemas";
 import { ROAD_WIDTH } from "@/road/constants";
+import type { DamageScalars } from "./damageBands";
+import { PRISTINE_SCALARS } from "./damageBands";
 import type { Input } from "./input";
 
 /**
@@ -162,17 +164,28 @@ export const DEFAULT_TRACK_CONTEXT: Readonly<TrackContext> = Object.freeze({
 /**
  * Optional per-tick modifiers to the physics step. Kept separate from
  * `TrackContext` because these vary per-tick (drafting), per-driver
- * (future damage band), or per-input frame, while `TrackContext` is
- * fixed for the duration of a race.
+ * (damage band), or per-input frame, while `TrackContext` is fixed for
+ * the duration of a race.
  *
  * `draftBonus` is a multiplicative scalar applied to the throttle-driven
  * acceleration. The pure helpers in `./drafting.ts` compute the value;
  * passing `1` (or omitting the field entirely) means "no bonus". The
  * field is clamped to a sane band (`[1, 1.5]`) inside `step()` so a buggy
  * caller cannot turn a draft bonus into a top-speed override.
+ *
+ * `damageScalars` are the per-band performance multipliers from
+ * `./damageBands.ts`. The race session resolves the band from the
+ * driver's current `DamageState.total` and passes the scalars in. When
+ * omitted, `step()` uses `PRISTINE_SCALARS` so existing callers keep
+ * their behaviour. Only `topSpeedScalar` and `gripScalar` are read
+ * inside `step()` today: the §10 "stability", "nitroEfficiency", and
+ * "spinRiskMultiplier" knobs are owned by their respective slices
+ * (steering smoothing, nitro system, traction loss) and read the
+ * scalars off the same field without a second resolve.
  */
 export interface StepOptions {
   draftBonus?: number;
+  damageScalars?: Readonly<DamageScalars>;
 }
 
 /** Conservative upper bound on the draft bonus inside the step. */
@@ -219,6 +232,12 @@ export function step(
   const throttle = clamp(input.throttle, 0, 1);
   const brake = clamp(input.brake, 0, 1);
   const draftBonus = clamp(options.draftBonus ?? 1, 1, DRAFT_BONUS_MAX);
+  // Damage scalars: clamp each consumed field defensively. A buggy
+  // upstream caller cannot turn a damage scalar into a speed boost; the
+  // upper bound for `topSpeedScalar` and `gripScalar` is 1.0.
+  const damageScalars = options.damageScalars ?? PRISTINE_SCALARS;
+  const topSpeedScalar = clamp(damageScalars.topSpeedScalar, 0, 1);
+  const damagedTopSpeed = stats.topSpeed * topSpeedScalar;
 
   if (throttle > 0) {
     nextSpeed += stats.accel * throttle * draftBonus * dt;
@@ -243,15 +262,20 @@ export function step(
   }
 
   // Top-speed clamp last so accel cannot overshoot via accumulated dt.
-  if (nextSpeed > stats.topSpeed) {
-    nextSpeed = stats.topSpeed;
+  // The damage band shrinks the cap; a heavily damaged car cannot reach
+  // its undamaged top speed even with full throttle.
+  if (nextSpeed > damagedTopSpeed) {
+    nextSpeed = damagedTopSpeed;
   }
 
   // Lateral: §10 yaw equation, projected onto lateral velocity by speed.
   // Grip on-road uses `gripDry`; off-road halves grip per §10's
   // "reduce traction" requirement. A future weather slice replaces the
   // dry-vs-wet selector; clamp guards against degenerate stat values.
-  const baseGrip = clamp(stats.gripDry, 0, 2);
+  // The damage band's `gripScalar` derates grip in the moderate band
+  // and above per §10 "reduced grip".
+  const damageGripScalar = clamp(damageScalars.gripScalar, 0, 1);
+  const baseGrip = clamp(stats.gripDry, 0, 2) * damageGripScalar;
   const tractionScalar = offRoad ? baseGrip * 0.5 : baseGrip;
   const steerInput = clamp(input.steer, -1, 1);
   const steerRate = steerRateForSpeed(nextSpeed, stats.topSpeed);
