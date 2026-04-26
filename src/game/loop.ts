@@ -68,6 +68,21 @@ export interface LoopHandle {
   /** True between start and stop. */
   isRunning: () => boolean;
   /**
+   * Pause the simulation. Render still fires every tick (so the last frame
+   * stays on screen and any UI overlay can repaint), but `simulate` is
+   * skipped and the accumulator is held at zero. Idempotent. Per the §20
+   * pause overlay dot, this is the entry point the overlay component uses
+   * when it opens.
+   */
+  pause: () => void;
+  /**
+   * Resume the simulation. The accumulator is left at zero so a long pause
+   * does not produce a sim-burst on the next frame. Idempotent.
+   */
+  resume: () => void;
+  /** True while paused. */
+  isPaused: () => boolean;
+  /**
    * Drive a single rAF tick using `timestamp`. Exposed for deterministic
    * tests; the production scheduler invokes this internally.
    */
@@ -131,6 +146,7 @@ export function startLoop(options: LoopOptions): LoopHandle {
   let accumulatorMs = 0;
   let lastTimestamp: number | null = null;
   let running = true;
+  let paused = false;
   let pendingHandle: number | null = null;
 
   function tickFor(timestamp: number): LoopTickResult {
@@ -139,6 +155,18 @@ export function startLoop(options: LoopOptions): LoopHandle {
     if (lastTimestamp === null) {
       // Establish the timing origin on the first frame. No sim runs.
       lastTimestamp = timestamp;
+      const alpha = 0;
+      render(alpha);
+      return { simSteps: 0, remainderMs: 0, alpha, droppedSteps: 0 };
+    }
+
+    if (paused) {
+      // Hold the timing origin at "now" so the moment we resume the
+      // accumulator starts from zero and we do not catch up the elapsed
+      // pause duration. Render still fires so any pause overlay can
+      // repaint over the last frame.
+      lastTimestamp = timestamp;
+      accumulatorMs = 0;
       const alpha = 0;
       render(alpha);
       return { simSteps: 0, remainderMs: 0, alpha, droppedSteps: 0 };
@@ -193,6 +221,21 @@ export function startLoop(options: LoopOptions): LoopHandle {
     },
     isRunning() {
       return running;
+    },
+    pause() {
+      paused = true;
+    },
+    resume() {
+      if (!paused) return;
+      paused = false;
+      // Drop any accumulated drift so a long pause does not produce a
+      // sim-burst on the next frame. The next tickFor call will treat
+      // its timestamp as the new origin.
+      accumulatorMs = 0;
+      lastTimestamp = null;
+    },
+    isPaused() {
+      return paused;
     },
     tickFor,
   };

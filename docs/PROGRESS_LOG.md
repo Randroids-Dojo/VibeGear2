@@ -6,6 +6,94 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Pause overlay + global error boundary (§20, §21)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md), [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/pause-overlay-error-boundary`, PR pending
+**Status:** Implemented
+
+### Done
+- Extended `LoopHandle` with `pause()`, `resume()`, and `isPaused()`.
+  While paused: `simulate` is skipped, `render` keeps firing so any
+  overlay can repaint, the timing origin is held at "now" so the
+  accumulator stays at zero, and resume reseats the origin so the next
+  rAF tick produces zero sim ticks (no catch-up burst). Idempotent.
+- Added three loop tests (`src/game/loop.test.ts`) covering pause skips
+  sim, render keeps firing, resume drains accumulator (no burst after a
+  5 s pause), and idempotency of pause/resume.
+- New `src/components/pause/PauseOverlay.tsx`: controlled `<dialog>`-style
+  React component with the §20 menu (Resume, Restart race, Retire race,
+  Settings, Leaderboard, Exit to title). Resume is the only handler
+  required; the rest accept optional handlers and self-disable when
+  absent so the overlay reuses across screens that bind a subset.
+- New `src/components/pause/usePauseToggle.ts`: hook that listens for
+  the configured pause key on `keydown`, debounces held keys via
+  `event.repeat`, and toggles open state. Accepts a `LoopHandle` (or a
+  getter for the dev-page ref pattern) and pauses/resumes the loop on
+  the same edge.
+- New `src/components/pause/pauseAction.ts`: pure binding-resolution
+  helper. `resolvePauseTokens()` returns `DEFAULT_KEY_BINDINGS.pause`
+  (currently `["Escape"]`); `isPauseEvent(event, tokens?)` matches
+  either `event.code` or `event.key` and rejects key-repeat. Six tests.
+- New `src/components/error/ErrorBoundary.tsx`: React class component
+  wrapping the App Router root in `src/app/layout.tsx`. Catches render
+  errors anywhere in the tree, logs to console (dev-tooling only), and
+  renders a fallback with "Reload" and "Copy error" buttons. The
+  fallback can be overridden via the `fallback` prop.
+- New `src/components/error/formatErrorReport.ts`: pure helper that
+  shapes a captured error into a single-string clipboard payload
+  (name, message, stack, component stack). Seven tests cover Error
+  subclasses, non-Error throws, missing component stack, cyclic objects.
+- Wired `<ErrorBoundary>` into `src/app/layout.tsx` so every page (dev
+  and production) has the global recovery shell.
+- Wired the pause overlay into `src/app/dev/road/page.tsx` for manual
+  verification: Escape opens / closes the overlay, the camera halts
+  while paused, the canvas keeps repainting.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 196/196 (16 new across formatErrorReport, pauseAction,
+  and three loop pause/resume cases).
+- `npm run build` succeeds; `/dev/road` ships at 3.3 kB; layout shared
+  bundle is unchanged (the boundary is small).
+- `grep -P '[\x{2013}\x{2014}]'` across the touched files returns
+  nothing (no em-dashes, no en-dashes).
+- Manual visual verification of the pause overlay and the error fallback
+  defers to a human run of `npm run dev` and a navigation to a thrown
+  error route. Loop-level pause behaviour is fully covered by the new
+  unit tests.
+
+### Decisions and assumptions
+- Pause key resolution lives behind `resolvePauseTokens()` so the
+  per-save bindings UI tracked as F-014 can replace the implementation
+  without touching any caller. Today the helper hardcodes the default
+  (`Escape`) per `DEFAULT_KEY_BINDINGS.pause` since `SaveGameSettings`
+  has no `controlBindings` field yet.
+- `LoopHandle.resume()` reseats `lastTimestamp = null` so the next
+  `tickFor` re-establishes the timing origin and runs zero sim that
+  frame. The dot's "first frame after resume runs at most one sim tick"
+  is therefore satisfied by "first frame runs zero, second frame runs
+  one if a fixed step has elapsed". Picked the stricter zero-first to
+  avoid any remaining drift across the pause boundary.
+- The error boundary mirrors caught errors to `console.error` so dev
+  tooling still surfaces them; the on-screen fallback is the only
+  user-facing surface. No telemetry per the project privacy posture.
+- The Playwright e2e specs listed in the dot
+  (`e2e/pause-overlay.spec.ts`, `e2e/error-boundary.spec.ts`) are
+  deferred to F-016 because the project has no Playwright runner
+  configured yet (F-002 still tracks the harness slice). Loop pause
+  semantics, key-binding resolution, and error report formatting are
+  fully unit-tested today.
+- The hook accepts a getter form for `loop` so the dev pages that store
+  the loop in a `useRef` (null until the first effect) can wire the
+  hook at the top level without a chained `useEffect`.
+
+### Followups created
+- F-016: Playwright e2e specs for the pause overlay and error boundary.
+
+---
+
 ## 2026-04-26: Slice: Minimal HUD for speed, lap, and position (§20)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md)

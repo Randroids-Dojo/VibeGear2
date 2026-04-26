@@ -181,6 +181,60 @@ describe("startLoop", () => {
     expect(cancels).toHaveLength(1);
   });
 
+  it("pause() skips simulate but keeps render firing", () => {
+    const { simCalls, renderAlphas, handle } = makeTestLoop();
+    handle.tickFor(0);
+    handle.tickFor(FIXED_STEP_MS);
+    expect(simCalls).toHaveLength(1);
+
+    handle.pause();
+    expect(handle.isPaused()).toBe(true);
+
+    // Drive 500 ms worth of frames while paused. Sim count must stay at 1,
+    // render must keep ticking so an overlay can repaint.
+    const renderCountBeforePause = renderAlphas.length;
+    for (let t = FIXED_STEP_MS + 50; t <= FIXED_STEP_MS + 500; t += 50) {
+      handle.tickFor(t);
+    }
+    expect(simCalls).toHaveLength(1);
+    expect(renderAlphas.length).toBeGreaterThan(renderCountBeforePause);
+  });
+
+  it("resume() drains the accumulator so no sim-burst follows a long pause", () => {
+    const { simCalls, handle } = makeTestLoop();
+    handle.tickFor(0);
+    handle.tickFor(FIXED_STEP_MS);
+    expect(simCalls).toHaveLength(1);
+
+    handle.pause();
+    handle.tickFor(5_000);
+    expect(simCalls).toHaveLength(1);
+
+    handle.resume();
+    expect(handle.isPaused()).toBe(false);
+
+    // First post-resume tick reseats the timing origin: no sim runs.
+    const firstAfter = handle.tickFor(5_010);
+    expect(firstAfter.simSteps).toBe(0);
+    expect(firstAfter.remainderMs).toBe(0);
+
+    // Subsequent ticks advance normally, one step per fixed step elapsed.
+    const next = handle.tickFor(5_010 + FIXED_STEP_MS);
+    expect(next.simSteps).toBe(1);
+    expect(simCalls).toHaveLength(2);
+  });
+
+  it("pause() and resume() are idempotent", () => {
+    const { handle } = makeTestLoop();
+    expect(handle.isPaused()).toBe(false);
+    handle.pause();
+    handle.pause();
+    expect(handle.isPaused()).toBe(true);
+    handle.resume();
+    handle.resume();
+    expect(handle.isPaused()).toBe(false);
+  });
+
   it("auto-runs through the scheduler when one fires the callback", () => {
     // Build a scheduler that fires the next requested callback synchronously
     // exactly once, with a stop-after counter so we do not recurse forever.

@@ -10,6 +10,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { PauseOverlay } from "@/components/pause/PauseOverlay";
+import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { startLoop, type LoopHandle } from "@/game/loop";
 import { deriveHudState, type RankedCar } from "@/game/hudState";
 import { createRaceState, type RaceState } from "@/game/raceState";
@@ -58,6 +60,7 @@ export default function RoadDevPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
   const [metrics, setMetrics] = useState<RoadDevMetrics>(INITIAL);
+  const pause = usePauseToggle({ loop: () => handleRef.current });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -192,6 +195,11 @@ export default function RoadDevPage() {
         <dt>Step length (m):</dt>
         <dd>{SEGMENT_LENGTH}</dd>
       </dl>
+      <p style={{ marginTop: "1rem", color: "var(--muted, #aaa)" }}>
+        Press Escape to toggle the pause overlay. While paused the camera
+        stops advancing but the canvas keeps repainting.
+      </p>
+      <PauseOverlay open={pause.open} onResume={pause.closeMenu} />
     </main>
   );
 }

@@ -10,6 +10,22 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-016: Playwright e2e specs for pause overlay and error boundary
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The pause overlay + error boundary slice unit-tested the
+loop pause semantics, the key binding resolution, and the error report
+formatter (16 cases, every path). The dot also listed two Playwright
+specs (`e2e/pause-overlay.spec.ts`, `e2e/error-boundary.spec.ts`) that
+were deferred because the project has no Playwright runner configured
+yet (F-002 still tracks the harness slice). Once the harness lands,
+add: (a) start a race, press Escape, assert overlay visible and
+speedometer unchanged after 500 ms; press Escape again, assert race
+resumes; press Retire while paused, assert results screen. (b) inject
+a thrown render error via a hidden `?test_error=1` route guard, assert
+the fallback renders, click Reload, assert the page reloads.
+
 ## F-015: Persistent off-road damage at high speed
 **Created:** 2026-04-26
 **Priority:** nice-to-have
