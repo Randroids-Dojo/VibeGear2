@@ -259,6 +259,52 @@ export const AIDriverSchema = z.object({
 });
 export type AIDriver = z.infer<typeof AIDriverSchema>;
 
+// Sprite atlas --------------------------------------------------------------
+
+/**
+ * Anchor offset relative to a frame's top-left, normalised in [0, 1].
+ * Defaults to `{ x: 0.5, y: 1 }` (foot of sprite) when omitted by the
+ * loader, but the schema accepts any in-bounds value so atlases can pin a
+ * different pivot per frame (e.g. centre for trackside billboards).
+ */
+const AtlasAnchorSchema = z.object({
+  x: unitInterval,
+  y: unitInterval,
+});
+
+/**
+ * Single source rect inside the atlas image. Width and height must be
+ * positive so the runtime never has to defend against zero-size blits.
+ */
+export const AtlasFrameSchema = z.object({
+  x: z.number().nonnegative(),
+  y: z.number().nonnegative(),
+  w: positiveNumber,
+  h: positiveNumber,
+  anchor: AtlasAnchorSchema.optional(),
+});
+export type AtlasFrame = z.infer<typeof AtlasFrameSchema>;
+
+/**
+ * Atlas metadata. `image` is a path relative to `public/` (resolved as
+ * `/<image>` at runtime). `sprites` maps a sprite id to an ordered frame
+ * list; frame 0 is the canonical "facing camera" frame per §17.
+ *
+ * The sprites map and every frame array are required to be non-empty so
+ * callers can index `[0]` without bounds checks.
+ */
+export const AtlasMetaSchema = z.object({
+  image: z.string().min(1),
+  width: positiveInt,
+  height: positiveInt,
+  sprites: z
+    .record(z.string().min(1), z.array(AtlasFrameSchema).min(1))
+    .refine((value) => Object.keys(value).length > 0, {
+      message: "atlas must declare at least one sprite",
+    }),
+});
+export type AtlasMeta = z.infer<typeof AtlasMetaSchema>;
+
 // Save-game -----------------------------------------------------------------
 
 export const SpeedUnitSchema = z.enum(["kph", "mph"]);

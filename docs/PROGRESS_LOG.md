@@ -6,6 +6,83 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Sprite atlas loader + frame index math
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md), [§17](gdd/17-art-direction.md), [§22](gdd/22-data-schemas.md)
+**Branch / PR:** `feat/sprite-atlas-loader` (stacked on `feat/title-screen-menu-wiring`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/render/spriteAtlas.ts`: pinned the API from stress-test
+  item 2 of `implement-visual-polish-7d31d112`. Exports `loadAtlas(meta,
+  options)` (always resolves; image load failure surfaces as
+  `{ image: null, fallback: true }` plus a single `console.error('[atlas]', path)`)
+  and `frame(atlas, spriteId, frameIdx)` (modulo wraps out-of-range
+  indices, throws `RangeError` on unknown sprite ids even in fallback
+  mode). Re-exports the `AtlasFrame` / `AtlasMeta` types from
+  `@/data/schemas` so render callers have one import surface. Ships a
+  shared `FALLBACK_FRAME` (32x32 magenta, anchored at foot) and
+  `FALLBACK_FILL = "#ff00ff"` so fallback rendering is reference-stable
+  for memoisation.
+- Added `AtlasMetaSchema` and `AtlasFrameSchema` to `src/data/schemas.ts`
+  per stress-test item 3. Frames require positive `w` / `h`, anchors are
+  optional and clamped to `[0, 1]`, and the sprites map plus every
+  frame array must be non-empty so callers can index `[0]` without
+  bounds checks.
+- Added `src/data/atlas/cars.json`: one full atlas fixture for the
+  Sparrow GT covering 12 directional frames across three damage
+  variants (clean / dented / battered) plus brake-light and nitro-glow
+  single frames per §17 "Car sprites".
+- Added `src/data/atlas/roadside.json`: one regional roadside atlas with
+  five prop categories (sign marker, pine tree, fence post, rock
+  boulder, light pole) per §16 "Roadside objects".
+- Added `src/render/__tests__/spriteAtlas.test.ts`: 16 tests covering
+  the schema (4 fixtures + 3 broken variants), `loadAtlas` (success,
+  error + log, leading-slash normalisation, missing Image constructor),
+  and `frame` (in-range, modulo wrap, negative wrap, unknown sprite
+  throws, fallback mode, fallback + unknown still throws, determinism).
+  The Image stub fires `onload` / `onerror` on a queued microtask so the
+  loader's promise behaves like real browser asynchrony.
+- Re-exported `spriteAtlas` from `src/render/index.ts` alongside the
+  existing road / UI renderer exports.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 361 tests passing (16 new in the sprite atlas suite).
+- `npm run build` clean. No route-size regression (unchanged from prior
+  slice; the atlas module is not yet imported by `/race`).
+- `npm run test:e2e` 4 of 4 passing (no UI changes in this slice).
+
+### Decisions and assumptions
+- `frame` returns `FALLBACK_FRAME` for known sprite ids when the atlas
+  is in fallback mode, but still throws `RangeError` for unknown ids.
+  The asymmetry is deliberate: a missing image is a runtime / network
+  condition the renderer must survive, but an unknown sprite id is a
+  programming error the test suite should catch even with a broken
+  atlas.
+- Image paths are stored relative to `public/` (e.g.
+  `art/cars/sparrow.png`) and the loader prepends `/` at resolve time.
+  Authors can also write the leading slash; both forms produce the
+  same runtime URL.
+- Tests stub `Image` with a queued-microtask shim rather than depending
+  on jsdom so the suite stays in Vitest's node environment, matching
+  the strategy already used in `src/asset/__tests__/preload.test.ts`.
+- The atlas loader does not validate against `AtlasMetaSchema` itself.
+  Validation belongs at the JSON-load boundary (the future asset
+  preloader will run `AtlasMetaSchema.safeParse` before calling
+  `loadAtlas`), so the loader trusts its `AtlasMeta` argument and stays
+  side-effect-free apart from the image fetch.
+
+### Followups created
+- None. The four sibling visual-polish dots (parallax bands, vfx flash
+  + shake, off-road dust, render perf bench) remain open and ready.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Title-screen menu wiring (Start Race, Garage, Options pending)
 
 **GDD sections touched:** [§5](gdd/05-core-gameplay-loop.md), [§20](gdd/20-hud-and-ui-ux.md)

@@ -3,4 +3,5 @@
  * See docs/gdd/21-technical-design-for-web-implementation.md §"Suggested module structure".
  */
 export * from "./pseudoRoadCanvas";
+export * from "./spriteAtlas";
 export * from "./uiRenderer";
