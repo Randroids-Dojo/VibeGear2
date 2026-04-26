@@ -42,7 +42,12 @@
 import { describe, expect, it } from "vitest";
 
 import { CARS_BY_ID } from "@/data/cars";
-import { STIPEND_AMOUNT, STIPEND_THRESHOLD_CREDITS } from "@/game/catchUp";
+import {
+  cappedRepairCost,
+  REPAIR_CAP_FRACTION,
+  STIPEND_AMOUNT,
+  STIPEND_THRESHOLD_CREDITS,
+} from "@/game/catchUp";
 import {
   BASE_REWARDS_BY_TRACK_DIFFICULTY,
   baseRewardForTrackDifficulty,
@@ -260,6 +265,62 @@ describe("§23 Tour stipend (catch-up mechanism #1)", () => {
 
   it("stipend amount sits below the threshold so the lever stays a catch-up", () => {
     expect(STIPEND_AMOUNT_TARGET).toBeLessThan(STIPEND_THRESHOLD_TARGET);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2d. Repair cap (§23 catch-up mechanism #2, per Q-005)
+// ---------------------------------------------------------------------------
+
+/**
+ * §23 "Repair cap (catch-up mechanism #2)" verbatim. Pin against
+ * `REPAIR_CAP_FRACTION` from `src/game/catchUp.ts`. Resolved by
+ * `Q-005` with the dot-spec defaults; the F-036 consumer slice
+ * (`feat/wire-capped-repair-cost`, commit `3ed8720`) wires
+ * `cappedRepairCost` into `applyRepairCost`.
+ *
+ * The §23 row pins four parameters: the fraction itself, the
+ * essential-only repair-kind gate, the easy / normal / novice
+ * difficulty gate, and the zero-income clamp behaviour. The
+ * fraction is the only numeric lever the balancing pass would tune;
+ * the three gates are protocol invariants that a future loop should
+ * not flip without re-opening Q-005.
+ */
+const REPAIR_CAP_FRACTION_TARGET = 0.4;
+
+describe("§23 Repair cap (catch-up mechanism #2)", () => {
+  it("essential-repair cap fraction matches §23", () => {
+    expect(REPAIR_CAP_FRACTION).toBeCloseTo(REPAIR_CAP_FRACTION_TARGET, 9);
+  });
+
+  it("fraction stays in the (0, 1) range so the cap is a discount not a free repair", () => {
+    expect(REPAIR_CAP_FRACTION_TARGET).toBeGreaterThan(0);
+    expect(REPAIR_CAP_FRACTION_TARGET).toBeLessThan(1);
+  });
+
+  it("essential repair on easy / normal / novice clamps to fraction of race income", () => {
+    for (const difficulty of ["easy", "normal", "novice"] as const) {
+      const result = cappedRepairCost(5000, 4000, "essential", difficulty);
+      expect(result).toBe(Math.round(4000 * REPAIR_CAP_FRACTION_TARGET));
+    }
+  });
+
+  it("essential repair on hard / master / extreme pays raw cost (cap excluded)", () => {
+    for (const difficulty of ["hard", "master", "extreme"] as const) {
+      const result = cappedRepairCost(5000, 4000, "essential", difficulty);
+      expect(result).toBe(5000);
+    }
+  });
+
+  it("full / cosmetic repair always pays raw cost regardless of difficulty", () => {
+    for (const difficulty of ["easy", "normal", "hard", "master"] as const) {
+      const result = cappedRepairCost(5000, 4000, "full", difficulty);
+      expect(result).toBe(5000);
+    }
+  });
+
+  it("zero race income collapses the essential-repair cap to 0", () => {
+    expect(cappedRepairCost(5000, 0, "essential", "normal")).toBe(0);
   });
 });
 

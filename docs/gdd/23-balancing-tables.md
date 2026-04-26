@@ -59,6 +59,27 @@ slice (see `feat/f-035-stipend-at-tour-entry`).
 | First-tour gate | Tour index >= 2 | Tour 1 reuses the starter cash; no double-dip on a fresh save. |
 | Per-tour claim cap | 1 claim per `(save, tour)` | Recorded in `save.progress.stipendsClaimed[tour.id]`. |
 
+## Repair cap (catch-up mechanism #2)
+
+Per §12 catch-up mechanism #2 essential repairs are capped at a low
+percentage of the previous race's cash income so an unlucky run
+cannot drain the wallet below upgrade-purchase budget. The cap fires
+only on essential (minimum-to-keep-racing) repairs; cosmetic / "full"
+repairs always pay full price. The cap is also gated on the
+player-facing difficulty: easy and normal tiers receive the cap,
+hard / master / extreme always pay full price so the higher tiers
+keep the full §12 economic risk surface. The pinned fraction lives in
+`REPAIR_CAP_FRACTION` in `src/game/catchUp.ts` and is consumed by
+`applyRepairCost` (see `feat/wire-capped-repair-cost`, commit
+`3ed8720`).
+
+| Lever | Value | Notes |
+| --- | --- | --- |
+| Essential-repair cap fraction | 0.40 | Capped cost is `min(rawCost, round(lastRaceCashEarned * 0.40))` so a minimum-repair player keeps the majority of their winnings. |
+| Repair-kind gate | `essential` only | `full` / cosmetic repairs always pay raw cost. |
+| Difficulty gate | `easy`, `normal`, `novice` only | `hard`, `master`, `extreme` always pay raw cost. |
+| Zero-income clamp | Cap collapses to 0 | A player with no race income gets a free essential repair (a future loss-leader race format clamps to 0 here). |
+
 ## Damage formula targets
 
 ```

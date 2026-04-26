@@ -6,6 +6,108 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Q-005 confirm essential-repair cap fraction
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms" #2
+(essential-repair cap lever),
+[§23](gdd/23-balancing-tables.md) "Repair cap (catch-up mechanism #2)"
+(new subsection that pins the fraction, the repair-kind gate, the
+difficulty gate, and the zero-income clamp).
+**Branch / PR:** `feat/answer-q-005-essential-repair-cap`, PR pending.
+**Status:** Q-005 closed. Doc plus content-test slice. The pinned
+constant `REPAIR_CAP_FRACTION = 0.4` in `src/game/catchUp.ts` already
+shipped (the F-036 slice `feat/wire-capped-repair-cost`, commit
+`3ed8720`, wires `cappedRepairCost` into `applyRepairCost`). This loop
+confirms the recommended default and pins the value into §23 so the
+balancing-pass slice finds it on the same page as the other catch-up
+levers. Q-006 (easy-mode tour-clear bonus rate) remains open in its
+own slot.
+
+### Done
+- `docs/OPEN_QUESTIONS.md`: Q-005 status flips from `open` to
+  `answered`. The new Resolution paragraph names the shipping
+  constant, names the F-036 consumer commit (`3ed8720`) that wires
+  it into `applyRepairCost`, and pins two re-evaluation triggers
+  (a balancing-pass run that shows the cap firing too often or
+  never engaging, or a §12 / §15 edit that retunes the per-race
+  cash awards or per-zone repair costs the fraction was calibrated
+  against).
+- `docs/gdd/23-balancing-tables.md`: new "Repair cap (catch-up
+  mechanism #2)" subsection between "Tour stipend (catch-up
+  mechanism #1)" and "Damage formula targets". Four-row table
+  (essential-repair cap fraction, repair-kind gate, difficulty
+  gate, zero-income clamp) plus a paragraph that names
+  `REPAIR_CAP_FRACTION`, the consumer site (`applyRepairCost` via
+  `cappedRepairCost`), and the F-036 commit that wired it.
+- `src/data/__tests__/balancing.test.ts`: new "§23 Repair cap
+  (catch-up mechanism #2)" describe block (section 2d) that mirrors
+  the §23 row as `REPAIR_CAP_FRACTION_TARGET` and pins it against
+  `REPAIR_CAP_FRACTION` from `src/game/catchUp.ts`. Five additional
+  invariants pin the protocol shape: the fraction stays inside
+  `(0, 1)` so the cap stays a discount; essential repair on
+  easy / normal / novice clamps to the fraction of race income;
+  essential repair on hard / master / extreme pays raw cost;
+  full / cosmetic repair always pays raw cost; and zero race income
+  collapses the cap to 0. A drift between the §23 markdown row, the
+  local target constant, the runtime export, or the gate behaviour
+  fails the build at a single readable site.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (new §23 repair-cap describe block green;
+  existing catchUp unit tests still green because they reference
+  the symbolic exports).
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- Adopted the recommended default verbatim. No constant value
+  change in `src/game/catchUp.ts`; the slice is doc-plus-test only.
+- Pinned the row in §23 even though Q-005 listed the §23 edit as
+  optional. Rationale matches the Q-004 slice: §23 is the
+  discoverability surface for the balancing-pass loop, and a
+  one-page index of all four catch-up levers is the point of §23.
+  Skipping the row would force the balancing pass to grep
+  `catchUp.ts` for the values, which defeats the §23 contract.
+- Pinned the protocol gates (essential-only repair-kind, easy /
+  normal / novice difficulty gate, zero-income clamp) as test
+  invariants alongside the fraction. Rationale: those gates were
+  named in the Q-005 question text as part of the dot spec, and a
+  balancing pass that flips the gate without re-opening Q-005
+  would silently change the §27 "AI frustration" risk surface
+  that catch-up mechanism #2 is designed against. The fraction is
+  the only knob the balancing pass should tune without a fresh
+  question.
+- Did not pre-empt Q-006 (easy-mode tour-clear bonus rate). The
+  §23 row added here covers the repair cap only. Q-006 remains
+  open and will land its own §23 row in the slice that closes it,
+  so each open question gets one slice that owns its row
+  end-to-end.
+- Did not edit `catchUp.ts` itself. The `OPEN_QUESTIONS.md Q-004
+  through Q-007` reference in the file header still spans the two
+  remaining slots (Q-006 open, Q-008 open in a different module);
+  collapsing the reference now would leave a stale comment after
+  Q-006 closes. The collapse will happen in the slice that closes
+  the last of the catch-up questions.
+
+### Followups added
+None new.
+
+### GDD edits
+- `docs/gdd/23-balancing-tables.md`: new "Repair cap (catch-up
+  mechanism #2)" subsection. Pins the four parameters of the
+  repair-cap lever (fraction, repair-kind gate, difficulty gate,
+  zero-income clamp) so the balancing-pass slice and any future
+  content loop can read every catch-up number from a single page.
+
+### Open questions raised
+None.
+
+---
+
 ## 2026-04-26: Slice: Q-004 confirm tour stipend threshold and amount
 
 **GDD sections touched:**

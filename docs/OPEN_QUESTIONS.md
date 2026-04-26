@@ -244,9 +244,11 @@ final tuning.
 ## Q-005: Essential-repair cap fraction
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
-mechanisms" #2
-**Status:** open
+mechanisms" #2, [§23](gdd/23-balancing-tables.md) "Repair cap
+(catch-up mechanism #2)"
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** §12 says "essential repairs are capped at a low
 percentage of race income" without pinning the percentage. Pinned
@@ -258,7 +260,33 @@ or a different difficulty gate?
 **Recommended default.** 0.40 with the easy / normal gate. Lands
 the lever now; balancing pass owns the final number.
 
-**Blocking?** No.
+**Resolution.** Adopted the recommended default verbatim. The
+pinned constant `REPAIR_CAP_FRACTION = 0.4` in `src/game/catchUp.ts`
+stays unchanged, the `essential`-only repair-kind gate stays
+unchanged, and the easy / normal / novice difficulty gate in
+`isCapEligibleDifficulty` stays unchanged. The F-036 consumer slice
+(`feat/wire-capped-repair-cost`, commit `3ed8720`) already wires
+`cappedRepairCost` into `applyRepairCost` so this resolution only
+confirms no value change is owed and pins the row in §23. §23 now
+carries a "Repair cap (catch-up mechanism #2)" subsection between
+"Tour stipend (catch-up mechanism #1)" and "Damage formula targets"
+that pins the fraction, the repair-kind gate, the difficulty gate,
+and the zero-income clamp on a single page so the balancing-pass
+slice (`VibeGear2-implement-balancing-pass-71a57fd5`) finds every
+lever in one place. Two re-evaluation triggers gate any future
+swap: a balancing-pass run that shows the cap is firing too often
+(raise the fraction toward 0.5) or never engaging because the cap
+ceiling never beats the raw cost (lower the fraction or extend the
+difficulty gate to include hard), or a §12 / §15 edit that retunes
+the per-race cash awards or the per-zone repair costs that the
+fraction was calibrated against. Q-006 (easy-mode tour-clear bonus
+rate) stays open in its own §12 catch-up slot; this slice does not
+pre-empt its resolution.
+
+**Blocking?** No. The constant ships today with the recommended
+default and the F-036 consumer is already wired; this resolution
+only confirms no value change is owed and pins the §23 row.
+Resolved.
 
 ---
 
