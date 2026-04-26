@@ -17,12 +17,20 @@ import { describe, expect, it } from "vitest";
 import { loadTrack } from "@/data";
 import {
   AI_GRID_OFFSET_BEHIND_PLAYER_M,
+  PLAYER_CAR_ID,
+  aiCarId,
   createRaceSession,
+  draftPairKey,
   stepRaceSession,
   totalProgress,
   type RaceSessionConfig,
   type RaceSessionState,
 } from "@/game/raceSession";
+import {
+  DRAFT_ENGAGE_MS,
+  DRAFT_MAX_ACCEL_MULTIPLIER,
+  DRAFT_MIN_SPEED_M_PER_S,
+} from "@/game/drafting";
 import { NEUTRAL_INPUT, type Input } from "@/game/input";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 
@@ -407,5 +415,213 @@ describe("stepRaceSession (nitro)", () => {
     }
     expect(boosted.player.car.speed).toBeGreaterThan(baseline.player.car.speed);
     expect(boosted.player.car.z).toBeGreaterThan(baseline.player.car.z);
+  });
+});
+
+describe("stepRaceSession (drafting)", () => {
+  const FAST = DRAFT_MIN_SPEED_M_PER_S + 30;
+
+  /**
+   * Build a 2-car tandem where the player follows the AI by 5 m at high
+   * speed. The AI sits ahead so its wake reaches back to the player. Both
+   * cars start above the §10 speed gate so the window can engage on the
+   * very first racing tick.
+   */
+  function tandem(overrides: Partial<RaceSessionConfig> = {}): RaceSessionConfig {
+    return {
+      track: loadTrack("test/straight"),
+      player: {
+        stats: STARTER_STATS,
+        initial: { speed: FAST, z: 0 },
+      },
+      ai: [
+        {
+          driver: TEST_DRIVER,
+          stats: STARTER_STATS,
+          initial: { z: 5, speed: FAST },
+        },
+      ],
+      countdownSec: 0,
+      totalLaps: 999,
+      seed: 42,
+      ...overrides,
+    };
+  }
+
+  it("creates an empty draftWindows map at session start", () => {
+    const session = createRaceSession(tandem());
+    expect(session.draftWindows).toEqual({});
+  });
+
+  it("opens the player's draft window after 0.6 s in the leader's wake", () => {
+    const config = tandem();
+    let session = createRaceSession(config);
+    // Roll past the 600 ms engagement gate. 36 ticks at 60 Hz hits 600 ms;
+    // 40 ticks gives the ramp a few ms to begin so the multiplier is > 1.
+    for (let i = 0; i < 40; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    const key = draftPairKey(PLAYER_CAR_ID, aiCarId(0));
+    const window = session.draftWindows[key];
+    expect(window).toBeDefined();
+    expect(window!.engagedMs).toBeGreaterThan(DRAFT_ENGAGE_MS);
+    expect(window!.accelMultiplier).toBeGreaterThan(1);
+    expect(window!.accelMultiplier).toBeLessThanOrEqual(DRAFT_MAX_ACCEL_MULTIPLIER);
+  });
+
+  it("closes the player's draft window on a brake tap (verify item: brake zeros bonus)", () => {
+    const config = tandem();
+    let session = createRaceSession(config);
+    for (let i = 0; i < 40; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    const key = draftPairKey(PLAYER_CAR_ID, aiCarId(0));
+    const engagedMultiplier = session.draftWindows[key]!.accelMultiplier;
+    expect(engagedMultiplier).toBeGreaterThan(1);
+    const brakeInput: Input = { ...NEUTRAL_INPUT, brake: 1 };
+    session = stepRaceSession(session, brakeInput, config, DT);
+    const reset = session.draftWindows[key]!;
+    expect(reset.engagedMs).toBe(0);
+    expect(reset.accelMultiplier).toBe(1);
+  });
+
+  it("closes the player's draft window on a side-step past the lateral break (verify item: side-step zeros bonus)", () => {
+    // Engage drafting first, then snap the player sideways past the
+    // lateral break threshold so the geometric scan no longer picks the
+    // AI as a leader. The window must reset to zero on the same tick.
+    const config = tandem();
+    let session = createRaceSession(config);
+    for (let i = 0; i < 40; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    const key = draftPairKey(PLAYER_CAR_ID, aiCarId(0));
+    expect(session.draftWindows[key]!.accelMultiplier).toBeGreaterThan(1);
+    // Snap the player two lanes off the centerline. The leader is at
+    // x=0 by default, so |dx| = 3 > DRAFT_LATERAL_BREAK_M (1.5).
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 3 },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    const reset = session.draftWindows[key]!;
+    expect(reset.engagedMs).toBe(0);
+    expect(reset.accelMultiplier).toBe(1);
+  });
+
+  it("is deterministic across 1000 ticks of two cars in tandem (verify item: 1000-tick determinism)", () => {
+    const config = tandem();
+    const a = rollForward(createRaceSession(config), fullThrottle(), config, 1000);
+    const b = rollForward(createRaceSession(config), fullThrottle(), config, 1000);
+    const key = draftPairKey(PLAYER_CAR_ID, aiCarId(0));
+    expect(a.player.car.z).toBe(b.player.car.z);
+    expect(a.player.car.speed).toBe(b.player.car.speed);
+    expect(a.ai[0]?.car.z).toBe(b.ai[0]?.car.z);
+    expect(a.draftWindows[key]).toEqual(b.draftWindows[key]);
+  });
+
+  it("applies the draft accel bonus to physics: a drafting follower out-accelerates a solo runner", () => {
+    // Two parallel sessions: one with an AI ahead (so the player drafts),
+    // one with no AI at all (solo runner). Both start above the §10
+    // speed gate so the window engages quickly, but well below topSpeed
+    // so the bonus has acceleration headroom to add real speed. Compare
+    // total distance after a window long enough for the engage gate
+    // (600 ms) plus a few hundred ms of bonus integration.
+    //
+    // Note: we put the leader far enough ahead that the player's added
+    // acceleration cannot close the gap and rear-end the leader inside
+    // the window. test/straight is 1200 m so 80 m of headroom is safe.
+    const startSpeed = DRAFT_MIN_SPEED_M_PER_S + 5; // 35 m/s, well under 61 topSpeed
+    const draftedConfig: RaceSessionConfig = {
+      track: loadTrack("test/straight"),
+      player: { stats: STARTER_STATS, initial: { speed: startSpeed, z: 0 } },
+      ai: [
+        {
+          driver: TEST_DRIVER,
+          stats: STARTER_STATS,
+          initial: { z: 10, speed: startSpeed },
+        },
+      ],
+      countdownSec: 0,
+      totalLaps: 999,
+      seed: 42,
+    };
+    const soloConfig: RaceSessionConfig = {
+      ...draftedConfig,
+      ai: [],
+    };
+    const drafted = rollForward(createRaceSession(draftedConfig), fullThrottle(), draftedConfig, 120);
+    const solo = rollForward(createRaceSession(soloConfig), fullThrottle(), soloConfig, 120);
+    expect(drafted.player.car.z).toBeGreaterThan(solo.player.car.z);
+  });
+
+  it("isolates parallel pairs so two tandems do not contaminate each other (verify item: pair-isolation)", () => {
+    // Four cars: player + ai-0 form one tandem at x=0, ai-1 + ai-2 form
+    // another tandem at x=3 (well past the lateral break threshold so
+    // the two pairs cannot draft each other). The player's window should
+    // engage only against ai-0; the ai-1 -> ai-2 pair, when it engages,
+    // should write a separate key in `draftWindows`.
+    //
+    // We cannot easily verify ai-2 drafting ai-1 without poking the AI
+    // controllers (they pick speeds based on their own logic), so this
+    // test focuses on the core invariant: the player's pair key does
+    // not leak into other follower keys.
+    const config = tandem({
+      ai: [
+        { driver: TEST_DRIVER, stats: STARTER_STATS, initial: { z: 5, speed: FAST } },
+        { driver: TEST_DRIVER, stats: STARTER_STATS, initial: { z: 0, x: 3, speed: FAST } },
+        { driver: TEST_DRIVER, stats: STARTER_STATS, initial: { z: 5, x: 3, speed: FAST } },
+      ],
+    });
+    let session = createRaceSession(config);
+    for (let i = 0; i < 50; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    const playerKey = draftPairKey(PLAYER_CAR_ID, aiCarId(0));
+    const playerWindow = session.draftWindows[playerKey];
+    expect(playerWindow).toBeDefined();
+    // The player's key must NOT match any key whose follower is a
+    // different car. Inspect every key in the map and assert any
+    // engaged window is properly scoped to its own follower.
+    for (const key of Object.keys(session.draftWindows)) {
+      if (key === playerKey) continue;
+      // Other keys are valid (e.g. ai-2 drafting ai-1 if that happens),
+      // but none should claim the same data as the player's window.
+      // A simple invariant: a key's prefix encodes the follower id.
+      expect(key.startsWith(`${PLAYER_CAR_ID}>>><`)).toBe(false);
+    }
+  });
+
+  it("does not award a bonus below the speed threshold", () => {
+    // Tandem at very low speed: the player sits behind the AI but both
+    // are well below DRAFT_MIN_SPEED_M_PER_S, so engagedMs cannot grow.
+    const config = tandem({
+      player: { stats: STARTER_STATS, initial: { speed: 5, z: 0 } },
+      ai: [{ driver: TEST_DRIVER, stats: STARTER_STATS, initial: { z: 5, speed: 5 } }],
+    });
+    let session = createRaceSession(config);
+    for (let i = 0; i < 40; i += 1) {
+      session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    }
+    const key = draftPairKey(PLAYER_CAR_ID, aiCarId(0));
+    const window = session.draftWindows[key];
+    if (window) {
+      expect(window.engagedMs).toBe(0);
+      expect(window.accelMultiplier).toBe(1);
+    }
+  });
+
+  it("does not advance the draft window during countdown", () => {
+    const config = tandem({ countdownSec: 1 });
+    let session = createRaceSession(config);
+    // Roll a few countdown ticks. Cars do not integrate physics; the
+    // draft scan should not run either.
+    for (let i = 0; i < 30; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    expect(session.race.phase).toBe("countdown");
+    expect(session.draftWindows).toEqual({});
   });
 });

@@ -45,7 +45,14 @@ import {
   type AIState,
   type AITrackContext,
 } from "./ai";
-import { type Input } from "./input";
+import {
+  computeWakeOffset,
+  INITIAL_DRAFT_WINDOW,
+  tickDraftWindow,
+  type DraftCarSnapshot,
+  type DraftWindowState,
+} from "./drafting";
+import { NEUTRAL_INPUT, type Input } from "./input";
 import {
   createNitroForCar,
   getNitroAccelMultiplier,
@@ -182,6 +189,23 @@ export interface RaceSessionState {
    * delta read `null` until a baseline exists.
    */
   baselineSplitsMs: readonly number[] | null;
+  /**
+   * Per-pair drafting windows keyed by `<followerId>>>><leaderId>` (see
+   * `draftPairKey`). Each pair's `DraftWindowState` accumulates only when
+   * that follower picks that leader as its current draft target. Switching
+   * leaders preserves the prior pair's window in the map, but the follower
+   * stops advancing it (it just sits there inert) until the same pair is
+   * picked again by the per-tick scan. Multiple pairs in the field are
+   * fully isolated from each other so two parallel tandems do not
+   * cross-contaminate, which is what the §10 dot's "pair-isolation"
+   * verify item calls for.
+   *
+   * Stored as a plain object rather than a `Map` so the immutable spread
+   * pattern the rest of the session uses applies uniformly. The key set
+   * is bounded by `(1 + ai.length) * ai.length` (each car can follow each
+   * other car), which is small even for a full 12-car grid.
+   */
+  draftWindows: Readonly<Record<string, DraftWindowState>>;
 }
 
 /**
@@ -256,6 +280,95 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     tick: 0,
     sectorTimer,
     baselineSplitsMs: null,
+    draftWindows: {},
+  };
+}
+
+/**
+ * Stable identifier for a car in the session. The player is always
+ * `"player"`; AI grid slots are `"ai-<index>"` matching their order in
+ * `RaceSessionConfig.ai`. These IDs key into `draftWindows` so a future
+ * slice that adds car-pickers / car-name HUD does not need to touch this
+ * mapping.
+ */
+export const PLAYER_CAR_ID = "player";
+export function aiCarId(index: number): string {
+  return `ai-${index}`;
+}
+
+/**
+ * Compose the per-pair draft window key. Stable string form so a
+ * spread-update on the `draftWindows` record stays cheap. The separator
+ * is a sequence that no `aiCarId` / `PLAYER_CAR_ID` can contain so a
+ * collision is structurally impossible.
+ */
+export function draftPairKey(followerId: string, leaderId: string): string {
+  return `${followerId}>>><${leaderId}`;
+}
+
+/**
+ * Local snapshot of every car in the field for the per-tick draft scan.
+ * `progress` collapses lap + lap-local z so a leader on the next lap
+ * still sits ahead of a follower on the current lap, matching the
+ * `totalProgress` ranking helper exported below.
+ */
+interface DraftScanEntry {
+  id: string;
+  car: Readonly<CarState>;
+  brake: boolean;
+  progress: number;
+}
+
+function scanEntry(
+  id: string,
+  car: Readonly<CarState>,
+  input: Readonly<Input>,
+  lap: number,
+  trackLength: number,
+): DraftScanEntry {
+  return {
+    id,
+    car,
+    brake: input.brake > 0,
+    progress: totalProgress(car.z, lap, trackLength),
+  };
+}
+
+function snapshot(entry: DraftScanEntry): DraftCarSnapshot {
+  return { x: entry.car.x, progress: entry.progress };
+}
+
+/**
+ * For `follower`, pick the closest leader in the field whose wake the
+ * follower is currently in. Returns the chosen leader entry plus the
+ * geometric snapshot, or `null` when no leader qualifies. The "closest"
+ * tiebreak is the smallest `longitudinalGap` (most directly behind the
+ * leader the follower is); ties past that are broken by lexical leader
+ * id so the result is deterministic across runs.
+ */
+function pickLeader(
+  follower: DraftScanEntry,
+  field: ReadonlyArray<DraftScanEntry>,
+): { leader: DraftScanEntry; followerSnap: DraftCarSnapshot; leaderSnap: DraftCarSnapshot } | null {
+  let best: { leader: DraftScanEntry; gap: number } | null = null;
+  const followerSnap = snapshot(follower);
+  for (const candidate of field) {
+    if (candidate.id === follower.id) continue;
+    const wake = computeWakeOffset(snapshot(candidate), followerSnap);
+    if (!wake.inWake) continue;
+    if (
+      best === null ||
+      wake.longitudinalGap < best.gap ||
+      (wake.longitudinalGap === best.gap && candidate.id < best.leader.id)
+    ) {
+      best = { leader: candidate, gap: wake.longitudinalGap };
+    }
+  }
+  if (best === null) return null;
+  return {
+    leader: best.leader,
+    followerSnap,
+    leaderSnap: snapshot(best.leader),
   };
 }
 
@@ -329,6 +442,7 @@ export function stepRaceSession(
         tick: state.tick + 1,
         sectorTimer: state.sectorTimer,
         baselineSplitsMs: state.baselineSplitsMs,
+        draftWindows: state.draftWindows,
       };
     }
     // Lights out. Flip to racing, zero the tick clock, reset the sector
@@ -355,6 +469,7 @@ export function stepRaceSession(
       tick: 0,
       sectorTimer: createSectorState(config.track.checkpoints),
       baselineSplitsMs: state.baselineSplitsMs,
+      draftWindows: state.draftWindows,
     };
     return stepRaceSession(promoted, playerInput, config, dt);
   }
@@ -385,26 +500,18 @@ export function stepRaceSession(
     },
   );
 
-  const nextPlayerCar = step(
-    state.player.car,
-    playerInput,
-    playerStats,
-    trackContext,
-    dt,
-    { accelMultiplier: playerNitroMultiplier },
-  );
-
-  const nextAi: RaceSessionAICar[] = state.ai.map((entry, index) => {
+  // Pre-compute every AI's tick output so the per-tick draft scan can
+  // read brake / position for the whole field before any physics
+  // integrates. Drafting (per §10) is decided from this tick's geometric
+  // snapshot: we look at where the cars are this tick and where each
+  // follower's brake input is this tick, then `physics.step` consumes
+  // the resulting multiplier the same tick. `tickAI` is called once per
+  // AI per session step; the second physics-step pass below reuses the
+  // captured `tick.input` and `tick.nextAiState` rather than re-running.
+  const aiTickResults = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
-    if (!aiConfig) {
-      return {
-        car: { ...entry.car },
-        state: { ...entry.state },
-        nitro: { ...entry.nitro },
-        lastNitroPressed: entry.lastNitroPressed,
-      };
-    }
-    const tick = tickAI(
+    if (!aiConfig) return null;
+    return tickAI(
       aiConfig.driver,
       entry.state,
       entry.car,
@@ -415,6 +522,104 @@ export function stepRaceSession(
       aiContext,
       dt,
     );
+  });
+
+  // Build the per-tick field snapshot for the draft scan. Each entry
+  // carries the car's pre-physics position (matching §10's "this tick's
+  // wake" interpretation) and brake-state from the input the same car
+  // will integrate. `progress` collapses lap+z so cross-lap tandem pairs
+  // (rare in practice, but possible at the lap-rollover tick) still rank
+  // correctly.
+  const field: DraftScanEntry[] = [];
+  field.push(
+    scanEntry(PLAYER_CAR_ID, state.player.car, playerInput, state.race.lap, trackLength),
+  );
+  state.ai.forEach((entry, index) => {
+    const tick = aiTickResults[index];
+    // If `aiTickResults[index]` is null (config missing for this slot)
+    // the AI is effectively idle; treat it as a brake-held neutral
+    // input so a stationary stale slot cannot confer drafting on a
+    // follower that happens to be behind it.
+    const aiInput: Input = tick?.input ?? { ...NEUTRAL_INPUT, brake: 1 };
+    field.push(
+      scanEntry(aiCarId(index), entry.car, aiInput, state.race.lap, trackLength),
+    );
+  });
+
+  // Drafting per follower per leader. We start with a shallow copy of
+  // the current map then, for each follower, advance the entry for
+  // every (follower, leader) pair that already exists OR that the
+  // per-tick scan picks as the current target. Pairs the follower is
+  // not currently in-wake with get advanced with `inWake: false` so a
+  // side-step / brake / out-of-gap event resets that pair's window the
+  // same tick the geometry breaks. This keeps multiple parallel pairs
+  // isolated (the §10 "pair-isolation" verify item) while honouring the
+  // §10 "Break instantly on side movement or brake input" rule.
+  const nextDraftWindows: Record<string, DraftWindowState> = { ...state.draftWindows };
+  const draftMultipliers = new Map<string, number>();
+  for (const follower of field) {
+    const pick = pickLeader(follower, field);
+    const followerSnap: DraftCarSnapshot = { x: follower.car.x, progress: follower.progress };
+    // Collect every leader id this follower currently has any window
+    // entry for, plus the freshly-picked leader so a new pair is seeded
+    // at INITIAL on first tick of contact.
+    const leaderIds = new Set<string>();
+    for (const key of Object.keys(nextDraftWindows)) {
+      const prefix = `${follower.id}>>><`;
+      if (key.startsWith(prefix)) leaderIds.add(key.slice(prefix.length));
+    }
+    if (pick) leaderIds.add(pick.leader.id);
+    for (const leaderId of leaderIds) {
+      const leaderEntry = field.find((entry) => entry.id === leaderId);
+      // If the leader has somehow vanished from the field (e.g. a
+      // future slice removes a DNF'd car), treat the wake as broken.
+      const wake = leaderEntry
+        ? computeWakeOffset(
+            { x: leaderEntry.car.x, progress: leaderEntry.progress },
+            followerSnap,
+          )
+        : { inWake: false as const, lateralOffset: Number.POSITIVE_INFINITY, longitudinalGap: 0, ageMs: 0 as const };
+      const key = draftPairKey(follower.id, leaderId);
+      const prior = nextDraftWindows[key] ?? INITIAL_DRAFT_WINDOW;
+      const advanced = tickDraftWindow(
+        prior,
+        wake,
+        { brake: follower.brake, followerSpeed: follower.car.speed },
+        dt,
+      );
+      nextDraftWindows[key] = advanced;
+      // Only the actively picked pair contributes to the physics bonus
+      // this tick. Other windows might be ramping back up from zero
+      // toward engagement on a future tick if the follower swings back
+      // behind that leader; their multiplier does not stack with the
+      // active pick.
+      if (pick && leaderId === pick.leader.id) {
+        draftMultipliers.set(follower.id, advanced.accelMultiplier);
+      }
+    }
+  }
+
+  const playerDraftBonus = draftMultipliers.get(PLAYER_CAR_ID) ?? 1;
+  const nextPlayerCar = step(
+    state.player.car,
+    playerInput,
+    playerStats,
+    trackContext,
+    dt,
+    { accelMultiplier: playerNitroMultiplier, draftBonus: playerDraftBonus },
+  );
+
+  const nextAi: RaceSessionAICar[] = state.ai.map((entry, index) => {
+    const aiConfig = config.ai[index];
+    const tick = aiTickResults[index];
+    if (!aiConfig || !tick) {
+      return {
+        car: { ...entry.car },
+        state: { ...entry.state },
+        nitro: { ...entry.nitro },
+        lastNitroPressed: entry.lastNitroPressed,
+      };
+    }
     const aiUpgradeTier = aiConfig.upgrades?.nitro;
     const aiNitroResult = tickNitro(
       entry.nitro,
@@ -432,13 +637,14 @@ export function stepRaceSession(
         carNitroEfficiency: aiConfig.stats.nitroEfficiency,
       },
     );
+    const aiDraftBonus = draftMultipliers.get(aiCarId(index)) ?? 1;
     const nextCar = step(
       entry.car,
       tick.input,
       aiConfig.stats,
       trackContext,
       dt,
-      { accelMultiplier: aiNitroMultiplier },
+      { accelMultiplier: aiNitroMultiplier, draftBonus: aiDraftBonus },
     );
     return {
       car: nextCar,
@@ -521,6 +727,7 @@ export function stepRaceSession(
     tick: nextTick,
     sectorTimer: nextSectorTimer,
     baselineSplitsMs: nextBaseline,
+    draftWindows: nextDraftWindows,
   };
 }
 
@@ -569,5 +776,6 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
     tick: state.tick,
     sectorTimer: state.sectorTimer,
     baselineSplitsMs: state.baselineSplitsMs,
+    draftWindows: state.draftWindows,
   };
 }

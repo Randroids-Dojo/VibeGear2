@@ -6,6 +6,71 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: drafting / slipstream race-session wiring
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) ("Drafting" subsection):
+the pure helpers in `src/game/drafting.ts` are now consumed by the
+race session each tick, so the on-track behaviour matches the §10
+"0.6 s engagement, break on side movement / brake" rules end to end.
+**Branch / PR:** `feat/drafting-race-wiring` (stacked on
+`feat/nitro-race-wiring`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Wired `computeWakeOffset` + `tickDraftWindow` into
+  `src/game/raceSession.ts` so every car (player + AI) runs a per-tick
+  draft scan and the resulting `accelMultiplier` flows into
+  `physics.step` via `StepOptions.draftBonus`.
+- Added `RaceSessionState.draftWindows` keyed by
+  `<followerId>>>><leaderId>` (`draftPairKey`) so multiple parallel
+  pairs in a full grid stay isolated. `PLAYER_CAR_ID` and `aiCarId`
+  exports give callers a stable id mapping.
+- Per-tick rule: each follower's `pickLeader` pass picks the closest
+  in-wake leader (deterministic tiebreak by lexical leader id), then
+  every existing pair entry for that follower is advanced through
+  `tickDraftWindow`. Pairs whose geometry now reads `inWake: false`
+  reset to `{ engagedMs: 0, accelMultiplier: 1 }` the same tick the
+  side-step / brake / out-of-gap event happens, matching §10's "break
+  instantly" rule.
+- Only the actively-picked pair contributes to the physics bonus; the
+  other windows persist for re-engagement bookkeeping but cannot stack
+  with the active pick.
+- Added 9 new tests under `stepRaceSession (drafting)` covering the
+  dot's verify items: 1000-tick determinism with 2 cars in tandem,
+  brake input zeroes the bonus, side-step zeroes the bonus,
+  pair-isolation in a 4-car field, no bonus below the speed threshold,
+  no advancement during countdown, and an end-to-end physics integration
+  check (a drafting follower out-distances a solo runner over 120 ticks).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (905 tests, 41 files).
+- `npm run build` clean.
+- `npm run test:e2e` green (28 specs across chromium and
+  mobile-chromium projects).
+- No em-dashes / en-dashes in any touched file (grep U+2014 / U+2013).
+
+### Decisions and assumptions
+- Pair-isolation is enforced by writing every existing follower pair
+  entry through `tickDraftWindow` each tick, not just the actively
+  picked one. The alternative (only advance the active pair, leave
+  others untouched) would let stale `engagedMs` linger across leader
+  switches and fail the §10 "break instantly" rule when the follower
+  swerves wide of one leader and into the wake of another.
+- `pickLeader` ties break by lexical leader id so two leaders at the
+  same `longitudinalGap` always resolve identically across runs. This
+  matters at race start where the grid spacing puts AI cars exactly
+  `AI_GRID_SPACING_M` apart.
+
+### Followups
+- None new. The §10 "Drafting" entry is now end-to-end wired; future
+  HUD work (F-NNN) might surface the engaged multiplier as a small
+  indicator next to the speedometer.
+
+---
+
 ## 2026-04-26: Slice: deferred Playwright e2e specs (F-016, F-017, F-018)
 
 **GDD sections touched:**
