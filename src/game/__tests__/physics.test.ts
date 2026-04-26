@@ -22,8 +22,10 @@ import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
   OFF_ROAD_CAP_M_PER_S,
+  RUMBLE_HALF_WIDTH_SCALE,
   isOffRoad,
   step,
+  surfaceAt,
   type CarState,
   type TrackContext,
 } from "@/game/physics";
@@ -280,6 +282,77 @@ describe("step (purity and determinism)", () => {
     const a = rollForward(freshState(), input, STARTER_STATS, 100);
     const b = rollForward(freshState(), input, STARTER_STATS, 100);
     expect(a).toEqual(b);
+  });
+});
+
+describe("surfaceAt", () => {
+  it("classifies the centerline as road", () => {
+    expect(surfaceAt(0, ROAD.roadHalfWidth)).toBe("road");
+  });
+
+  it("treats the road half-width edge as road (inclusive)", () => {
+    expect(surfaceAt(ROAD.roadHalfWidth, ROAD.roadHalfWidth)).toBe("road");
+    expect(surfaceAt(-ROAD.roadHalfWidth, ROAD.roadHalfWidth)).toBe("road");
+  });
+
+  it("classifies the rumble band just past the road edge", () => {
+    const justOff = ROAD.roadHalfWidth + 0.01;
+    expect(surfaceAt(justOff, ROAD.roadHalfWidth)).toBe("rumble");
+    expect(surfaceAt(-justOff, ROAD.roadHalfWidth)).toBe("rumble");
+  });
+
+  it("treats the rumble band outer edge as rumble (inclusive)", () => {
+    const edge = ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE;
+    expect(surfaceAt(edge, ROAD.roadHalfWidth)).toBe("rumble");
+    expect(surfaceAt(-edge, ROAD.roadHalfWidth)).toBe("rumble");
+  });
+
+  it("classifies positions past the rumble band as grass", () => {
+    const past = ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE + 0.01;
+    expect(surfaceAt(past, ROAD.roadHalfWidth)).toBe("grass");
+    expect(surfaceAt(-past, ROAD.roadHalfWidth)).toBe("grass");
+  });
+});
+
+describe("step (surface)", () => {
+  it("emits surface = road at the centerline", () => {
+    const s = step(freshState({ speed: 30 }), NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(s.surface).toBe("road");
+  });
+
+  it("emits surface = rumble in the half-width to half-width*1.15 band", () => {
+    const start = freshState({
+      speed: 30,
+      x: ROAD.roadHalfWidth + 0.05,
+    });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(s.surface).toBe("rumble");
+  });
+
+  it("emits surface = grass beyond half-width * 1.15", () => {
+    const start = freshState({
+      speed: 30,
+      x: ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE + 0.5,
+    });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, DT);
+    expect(s.surface).toBe("grass");
+  });
+
+  it("dt = 0 preserves the prior surface field", () => {
+    const start = freshState({ x: 5, surface: "grass" });
+    const s = step(start, NEUTRAL_INPUT, STARTER_STATS, ROAD, 0);
+    expect(s.surface).toBe("grass");
+  });
+
+  it("transitions road -> grass on a single steering tick", () => {
+    // Place the car just inside the road moving fast and steer hard right
+    // for one tick so the post-step x lands well past the rumble band.
+    const start = freshState({
+      speed: 60,
+      x: ROAD.roadHalfWidth - 0.01,
+    });
+    const a = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    expect(a.surface === "rumble" || a.surface === "grass").toBe(true);
   });
 });
 

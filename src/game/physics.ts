@@ -47,6 +47,33 @@ export const OFF_ROAD_CAP_M_PER_S = 24;
 export const OFF_ROAD_DRAG_M_PER_S2 = 18;
 
 /**
+ * Multiplier applied to `roadHalfWidth` to define the outer edge of the
+ * rumble band. Matches the strip drawer's `near.screenW * 1.15` rumble
+ * trapezoid in `pseudoRoadCanvas.drawStrips`. The drivable surface is
+ * `[-roadHalfWidth, +roadHalfWidth]`; the rumble band sits in
+ * `(roadHalfWidth, roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE]` on each side;
+ * grass is anything beyond.
+ *
+ * Why expose the constant rather than re-deriving from the drawer? The
+ * physics layer must agree with the renderer on what counts as rumble vs
+ * grass so dust particles only emit when the player is visually on grass.
+ * Pinning the scalar here keeps the two layers in lockstep without
+ * importing the renderer (which would invert the dependency direction).
+ */
+export const RUMBLE_HALF_WIDTH_SCALE = 1.15;
+
+/**
+ * Surface the car is on this tick. Derived from `|car.x|` against
+ * `roadHalfWidth`. `road` covers the drivable surface, `rumble` the band
+ * just outside, `grass` everything beyond.
+ *
+ * The renderer's dust pool consumes this flag to decide whether to emit
+ * particles; a future surface-audio slice can dispatch tyre-rumble SFX
+ * off the same flag without re-deriving the geometry.
+ */
+export type Surface = "road" | "rumble" | "grass";
+
+/**
  * Coast (no throttle, no brake) drag in m/s^2. §10 lists 4.5 / 4.0 / 3.5
  * across starter/mid/late tiers; we use the starter value for the MVP.
  */
@@ -83,6 +110,12 @@ function steerRateForSpeed(speed: number, topSpeed: number): number {
  * Pure car kinematic state. Extended additively by later slices
  * (heading, traction, nitro charges, damage). Nothing in this slice
  * stores time references; the loop owns the clock.
+ *
+ * `surface` is the surface classification the car is on as of the END of
+ * the most recent step. `INITIAL_CAR_STATE` pins it to `"road"` so a
+ * fresh state at the centerline reads consistently before any tick has
+ * run. Pure consumers (dust, future surface SFX) should treat this as
+ * the canonical signal rather than re-deriving from `x`.
  */
 export interface CarState {
   /** Forward distance along track centerline in meters. */
@@ -91,6 +124,8 @@ export interface CarState {
   x: number;
   /** Forward speed in m/s. Always >= 0 in the MVP. */
   speed: number;
+  /** Surface classification at the end of the most recent step. */
+  surface: Surface;
 }
 
 /** Initial state convenience: stationary at the centerline at z=0. */
@@ -98,6 +133,7 @@ export const INITIAL_CAR_STATE: Readonly<CarState> = Object.freeze({
   z: 0,
   x: 0,
   speed: 0,
+  surface: "road",
 });
 
 /**
@@ -143,7 +179,12 @@ export function step(
   dt: number,
 ): CarState {
   if (!Number.isFinite(dt) || dt <= 0) {
-    return { z: state.z, x: state.x, speed: state.speed };
+    return {
+      z: state.z,
+      x: state.x,
+      speed: state.speed,
+      surface: state.surface,
+    };
   }
 
   const offRoad = isOffRoad(state.x, context.roadHalfWidth);
@@ -199,12 +240,36 @@ export function step(
   // per-frame error below visible thresholds.
   const nextZ = state.z + nextSpeed * dt;
 
-  return { z: nextZ, x: nextX, speed: nextSpeed };
+  // Classify surface from the post-step lateral position. Done last so the
+  // surface field reflects "where the car ended up this tick", which is
+  // what the dust pool needs when it samples emissions per tick.
+  const nextSurface = surfaceAt(nextX, context.roadHalfWidth);
+
+  return { z: nextZ, x: nextX, speed: nextSpeed, surface: nextSurface };
 }
 
 /** True if `x` is outside the drivable surface. */
 export function isOffRoad(x: number, roadHalfWidth: number): boolean {
   return Math.abs(x) > roadHalfWidth;
+}
+
+/**
+ * Pure surface classifier. Bands:
+ *   |x| <= roadHalfWidth                            -> "road"
+ *   roadHalfWidth < |x| <= roadHalfWidth * 1.15     -> "rumble"
+ *   |x| > roadHalfWidth * 1.15                      -> "grass"
+ *
+ * The rumble upper bound matches the renderer's rumble trapezoid in
+ * `pseudoRoadCanvas.drawStrips` (see `RUMBLE_HALF_WIDTH_SCALE`). Edges
+ * are inclusive on the road and rumble bands so a car sitting exactly on
+ * the half-width line classifies as `road`, mirroring `isOffRoad`'s
+ * "strictly greater than" semantics.
+ */
+export function surfaceAt(x: number, roadHalfWidth: number): Surface {
+  const absX = Math.abs(x);
+  if (absX <= roadHalfWidth) return "road";
+  if (absX <= roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE) return "rumble";
+  return "grass";
 }
 
 // Numeric helpers ----------------------------------------------------------

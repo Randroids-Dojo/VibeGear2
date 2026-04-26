@@ -6,6 +6,132 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Off-road dust particles + physics surface flag
+
+**GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md), [§16](gdd/16-rendering-and-visual-design.md)
+**Branch / PR:** `feat/off-road-dust` (stacked on `feat/vfx-flash-shake`), PR pending
+**Status:** Implemented
+
+### Done
+- Extended `src/game/physics.ts`: added `Surface = "road" | "rumble" | "grass"`
+  type and a pure `surfaceAt(x, roadHalfWidth)` classifier. The road
+  band is `|x| <= roadHalfWidth`, rumble is `|x| <= roadHalfWidth * 1.15`,
+  grass is anything beyond. The 1.15 scalar matches the strip drawer's
+  rumble trapezoid in `pseudoRoadCanvas.drawStrips` so physics and
+  renderer stay in lockstep without inverting the dependency.
+  `RUMBLE_HALF_WIDTH_SCALE` is exported so balancing slices can tune
+  both layers from one place.
+- `CarState` gained a `surface` field. `INITIAL_CAR_STATE.surface` is
+  `"road"` so a fresh state at the centerline reads consistently before
+  any tick has run. `step()` classifies the post-step lateral position
+  via `surfaceAt` and returns the result on the new state. The
+  `dt <= 0` early return preserves the prior `surface` field rather
+  than re-deriving it (no input changed; no reason to recompute).
+- Added `src/render/dust.ts`: pinned the API per stress-test item 8 of
+  the visual-polish parent dot. Exports `INITIAL_DUST_STATE`,
+  `tickDust(state, params)`, `drawDust(ctx, state, viewport)`, plus
+  the tunables `MAX_DUST = 64`, `LIFETIME_MS = 600`,
+  `EMIT_INTERVAL_TICKS = 2`, `EMIT_SPEED_THRESHOLD_M_PER_S = 8`,
+  `PARTICLE_X_VELOCITY_PX_PER_S = 32`,
+  `PARTICLE_Y_VELOCITY_PX_PER_S = -18`, `PARTICLE_RADIUS_PX = 4`,
+  `DEFAULT_DUST_COLOR = "#c9b48a"`. Particles spawn at the caller's
+  emit origin (typically the projected car position); horizontal
+  velocity hashes off the (seed, particleIndex) integer pair via a
+  Mulberry32-style hash so two replays paint identical particles.
+- Pool-cap behaviour: when `state.particles.length` reaches `MAX_DUST`,
+  the next emission overwrites slot `nextRecycleIdx` in place, then
+  bumps the counter mod `MAX_DUST`. No allocation per emit once the
+  pool is full; FIFO recycling order survives wrap-around.
+- Lifetime: a particle is removed on the first tick whose post-add
+  `elapsedMs >= LIFETIME_MS`. dt = 0 still bumps `tickIdx` so the "every
+  2 ticks" cadence is dt-independent.
+- Wired `DustState` into `pseudoRoadCanvas.drawRoad` via a new optional
+  `DrawRoadOptions.dust`. The drawer paints dust AFTER the strip pass
+  so particles sit over both road and grass; the pool is owned by the
+  caller (read-only on the drawer side). Re-exported from
+  `src/render/index.ts`.
+- Added `src/render/__tests__/dust.test.ts`: 17 tests covering
+  emission gating (road no-emit, rumble no-emit, grass + speed-at-or-
+  under-threshold no-emit, grass + speed > threshold yields one
+  emission per `EMIT_INTERVAL_TICKS`, surface flip road->grass starts
+  emitting on the very tick); pool cap (65th emit recycles slot 0);
+  lifetime (removed at exactly the 600 ms mark, dt = 0 preserves
+  positions but advances tickIdx); determinism (two identical runs
+  produce identical particles, different seeds diverge horizontal
+  velocity); purity (input state never mutated); `drawDust` (one arc
+  per active particle with alpha decaying from 1, radius attenuates
+  linearly to 0 across lifetime, zero-area viewport short-circuits the
+  draw, globalAlpha is restored after painting).
+- Added 6 new tests to `src/game/__tests__/physics.test.ts`:
+  `surfaceAt` classifies centerline / inclusive road edge / inclusive
+  rumble edge / past-rumble; `step` emits the correct surface in each
+  band; `dt = 0` preserves the prior surface field; surface
+  transitions road -> grass on a single high-speed steering tick.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 429 tests passing (17 new in the dust suite, 6 new in
+  physics surface tests, 23 total new).
+- `npm run build` clean. Route sizes unchanged (`/race` stays at
+  7.49 kB / 130 kB; the dust module ships in the render layer but has
+  no runtime caller in this slice).
+- `npm run test:e2e` 4 of 4 passing (no UI changes in this slice).
+
+### Decisions and assumptions
+- `Surface` is an enum not a boolean because `rumble` is a distinct
+  band per the strip drawer ("trapezoid 15% wider than the road"). A
+  future tyre-rumble SFX slice can dispatch on `surface === "rumble"`
+  without re-deriving the geometry; collapsing to `boolean` now would
+  paint us into a corner.
+- `INITIAL_CAR_STATE.surface = "road"` rather than computing from `x`.
+  At `x = 0` both produce the same value, but pinning a literal keeps
+  the singleton frozen at module init time and avoids importing
+  `surfaceAt` into the constants file (which would create a
+  cycle-of-readability between the type and the helper).
+- The `dt <= 0` early-return path preserves the prior `surface` field
+  rather than re-classifying. No input changed; matching the existing
+  policy on `z`, `x`, `speed` (return verbatim) keeps the function's
+  "nothing happened this frame" contract intact.
+- Dust velocity hash is a separate copy of the Mulberry32-style chain
+  in `vfx.ts` rather than a shared util. Sharing would couple two
+  modules' deterministic outputs, so a tweak to the shake hash would
+  silently shift dust particle positions across replays. Keeping
+  per-module copies is a small DRY violation that buys per-system
+  golden-test independence.
+- `tickIdx` advances once per `tickDust` call regardless of dt or
+  emission. This makes the "every 2 ticks" rule independent of
+  wall-clock dt jitter, so a long-paused tab does not blast the pool
+  on resume. Matches the §21 fixed-step model: ticks are the unit of
+  time, not milliseconds.
+- The drawer paints dust AFTER the strip loop so particles sit over
+  the road / grass surfaces (matching the §16 "Dust roost" reference,
+  where the plume rises above the surface). Painting before the strips
+  would have the road occlude particles even at the spawn frame.
+- `DEFAULT_DUST_COLOR = "#c9b48a"` is a sandy tan picked to read
+  against both the dark grass (`#2f5a23` / `#3a6d2a`) and the light
+  road (`#5a5a5a`). Tunable by callers via the `color` field on
+  `tickDust` params for future weather variants (snow, mud).
+- `PARTICLE_RADIUS_PX = 4` is small enough that a saturated 64-particle
+  pool covers ~3 KB of overdraw at typical resolutions, well under the
+  §16 60-FPS budget. The render-perf bench dot will measure this.
+- No runtime integration with the race route in this slice. Wiring
+  the dust pool into `/race` requires a screen-space car projector
+  that the hud-ui-6c1b130d slice owns; doing it here would couple two
+  open dots. The drawer accepts the optional `dust` field today so the
+  follow-up slice can light it up without changing the renderer
+  contract.
+
+### Followups created
+- None. The render-perf benchmark sibling dot
+  (`implement-render-perf-f5492ef1`) covers measuring this module
+  against the §16 60-FPS budget.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: VFX flash + shake module with reduced-motion gate
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md), [§17](gdd/17-art-direction.md), [§19](gdd/19-controls-and-accessibility.md)

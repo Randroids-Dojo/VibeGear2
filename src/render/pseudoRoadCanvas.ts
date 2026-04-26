@@ -24,6 +24,7 @@ import {
 } from "@/road/constants";
 import type { Camera, Strip, Viewport } from "@/road/types";
 
+import { drawDust, type DustState } from "./dust";
 import { drawParallax, type ParallaxLayer } from "./parallax";
 import { drawVfx, type VfxState } from "./vfx";
 
@@ -61,6 +62,14 @@ export interface DrawRoadOptions {
    * an in-world impact flash should not occlude the player car.
    */
   vfx?: VfxState;
+  /**
+   * Optional dust pool. Painted AFTER the road strips so particles sit
+   * over the grass / road, matching the §16 "Dust roost" reference (the
+   * plume rises above the surface, never under it). Production sites
+   * tick the pool from the sim layer with the player's surface flag and
+   * pass it in here; the drawer never advances the pool itself.
+   */
+  dust?: DustState;
 }
 
 const FALLBACK_COLORS: RoadColors = {
@@ -148,10 +157,15 @@ export function drawRoad(
     ctx.translate(shakeOffset.dx, shakeOffset.dy);
     drawStrips(ctx, strips, viewport, colors);
     ctx.restore();
-    return;
+  } else {
+    drawStrips(ctx, strips, viewport, colors);
   }
 
-  drawStrips(ctx, strips, viewport, colors);
+  // Dust paints last so particles sit over the road / grass strips.
+  // The pool is owned by the caller; the drawer is read-only on it.
+  if (options.dust) {
+    drawDust(ctx, options.dust, viewport);
+  }
 }
 
 function drawStrips(
