@@ -6,6 +6,70 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Scaffold Next.js + TypeScript app shell
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/scaffold-next-app`, PR pending
+**Status:** Implemented
+
+### Done
+- Stood up the Next.js 15 (App Router) + React 18 + TypeScript 5 strict
+  project skeleton at the repo root: `package.json`, `tsconfig.json` with
+  strict + `noUncheckedIndexedAccess` + `@/*` path alias, `next.config.mjs`
+  with `outputFileTracingRoot` and typed routes, `.eslintrc.json` extending
+  `next/core-web-vitals` and `next/typescript`, `.gitignore` covering the
+  Next/Node/Playwright artefact paths plus `.dots/`.
+- Added the App Router skeleton: `src/app/layout.tsx`, `src/app/page.tsx`
+  (title screen with disabled menu placeholders for Start Race, Garage,
+  Options, plus a `data-testid="game-title"` hook for the upcoming Playwright
+  smoke), `src/app/globals.css`, and `src/app/page.module.css`.
+- Created the Phase 0 stub layout for the runtime modules under §21's
+  recommended structure: `src/game/`, `src/road/`, `src/render/` each with an
+  `index.ts` barrel referencing §21. Added `src/game/raceState.ts` with a
+  typed `createRaceState` constructor and three Vitest unit tests
+  (`raceState.test.ts`) so the test harness exercises real code from day one.
+- Added Vitest 2 unit harness via `vitest.config.ts` (node environment,
+  `src/**/*.test.ts` discovery, `@/*` alias mirror, v8 coverage), and npm
+  scripts `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:watch`,
+  `verify` (lint + typecheck + test).
+
+### Verified
+- `npm install` succeeds (436 packages, no peer-dep failures).
+- `npm run lint` passes with zero warnings.
+- `npm run typecheck` passes (`tsc --noEmit`, strict).
+- `npm run test` runs 3 unit tests, all green.
+- `npm run build` produces an optimised production build, prerenders `/`
+  statically (102 kB First Load JS).
+- `grep` for U+2014 and U+2013 across new files returns nothing.
+
+### Decisions and assumptions
+- Resolved Q-001: §21 is fully authored, so the slice adopts the recommended
+  layered architecture verbatim. Picked Next.js 15 (latest stable App Router)
+  rather than 14 because §21 specifies "Next.js" without pinning a major and
+  the canary tooling still works under 15.
+- Picked React 18 over React 19 deliberately: §21 says "Reuse VibeRacer
+  patterns" and React 18 is the current LTS-equivalent for Next.js + Vitest +
+  jsdom; revisit when Phase 1 needs concurrent features.
+- Deferred Playwright e2e harness to its own slice (`implement: add
+  Playwright e2e harness and title-screen smoke`) so this slice stays
+  PR-sized.
+- Deferred CI / auto-deploy to its own slice (`implement: GitHub Actions CI
+  + auto-deploy`), still blocked by Q-003.
+- Excluded `.dots/` from version control: the dots task tracker is a
+  per-developer working artefact, not a build input.
+- Marked the title-screen menu items disabled rather than wired-up: the
+  routes do not exist yet, and Phase 0 only owes a title screen.
+
+### Followups created
+- None new. F-001 marked `done` (sections 18 to 28 already exist; the
+  followup was based on a stale assumption). F-002 advanced to `in-progress`:
+  remaining slices are Playwright smoke and GitHub Actions CI.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26 — Slice: Bootstrap implementation plan and working agreement
 
 **GDD sections touched:** none (meta)

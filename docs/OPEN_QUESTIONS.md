@@ -47,9 +47,10 @@ and `ASSETS-LICENSE` files at repo root.
 
 ## Q-001 — Section 21 stack confirmation
 
-**GDD reference:** §21 (file not yet authored)
-**Status:** open
+**GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** [`docs/gdd/01-title-and-high-concept.md`](gdd/01-title-and-high-concept.md) says: "Reuse VibeRacer patterns:
 Next.js, React, TypeScript, custom math, Web Audio, local storage, schema
@@ -61,4 +62,13 @@ Router), React 18, TypeScript strict, Vitest for unit, Playwright for e2e,
 Zod for schema validation, Web Audio for sound, Canvas2D for the road
 renderer.
 
-**Blocking?** Yes for Phase 0 project skeleton (`F-002`).
+**Resolution.** §21 already exists in the canonical Markdown tree and
+specifies the recommended layers (App shell, Runtime core, Renderer, Audio,
+Data, Persistence, Mod layer) along with the suggested module structure under
+`src/game/`, `src/road/`, `src/render/`. The Phase 0 scaffold slice adopts
+that structure verbatim with the recommended default stack: Next.js 15 (App
+Router), React 18, TypeScript 5 strict, Zod 3, Vitest 2 for unit. Playwright,
+GitHub Actions CI, and the auto-deploy target (Q-003) ship in their own
+slices. See the matching `PROGRESS_LOG.md` entry.
+
+**Blocking?** Yes for Phase 0 project skeleton (`F-002`). Resolved.

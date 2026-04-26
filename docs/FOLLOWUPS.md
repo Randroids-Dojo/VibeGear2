@@ -20,18 +20,19 @@ that builds, runs the test suite, and deploys on every merge to `main`.
 ## F-002 — Project skeleton (Next.js + TypeScript + CI)
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
+**Status:** in-progress
 **Notes:** First implementation slice once Q-001 is answered. Must include
 lint, type-check, unit tests, e2e harness, and a smoke test that the dev
-server boots.
+server boots. App shell, lint (next lint), strict type-check, and the Vitest
+unit harness landed in the `feat/scaffold-next-app` slice. Remaining: Playwright
+e2e harness with title-screen smoke (own slice), then GitHub Actions CI (own
+slice, blocked by F-003 deploy target choice).
 
 ## F-001 — Author GDD sections 18–28
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
-**Notes:** `GDD.md` lists 28 sections; only 01–17 currently exist as files.
-Draft the remaining sections (18 Sound and Music, 19 Controls and Input,
-20 HUD and UI/UX, 21 Technical Design, 22 Data Schemas, 23 Balancing Tables,
-24 Content Plan, 25 Development Roadmap, 26 Open Source Project Guidance,
-27 Risks and Mitigations, 28 Appendices) from cross-references and flag
-unresolved spots for dev review. Each section should land in its own slice.
+**Status:** done
+**Notes:** Verified on 2026-04-26 during the scaffold slice: all 28 GDD section
+files exist under `docs/gdd/` (01 through 28). The original assumption that
+sections 18 to 28 were missing was incorrect at the time this followup was
+filed (or had been resolved before any later loop saw it). No action required.
