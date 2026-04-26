@@ -808,23 +808,32 @@ into `raceSession`: every car in the field carries a `damage` field
 that accumulates off-road persistent damage, takes per-pair `carHit`
 events on the §13 contact box, applies the §23 nitro+severe bonus,
 and flips the car to `dnf` with reason `wrecked` once `isWrecked`
-trips. The remaining open work for F-019 is two consumer call sites
-that the F-047 slice deliberately did not bundle:
+trips.
 
-- The physics step does not yet read `performanceMultiplier`. The
-  §13 narrative ("engine damage reduces top speed", "tire damage
-  reduces grip") wants `step()` to multiply `stats.topSpeed` and
-  `stats.accel` by `performanceMultiplier("engine", damage.zones.engine)`
-  and grip by `performanceMultiplier("tires", damage.zones.tires)`.
-  This is a follow-up wiring slice on `physics.ts` once a damaged
-  car's expected feel is pinned.
-- The hazard-runtime damage emitter (per-tick puddle / cone / debris
-  hits feeding `applyHit` with the matching `HitKind`) is owned by
-  the hazards-runtime dot
-  (`VibeGear2-implement-hazards-runtime-6085799c`); F-047 did not
-  bundle it because the hazards module does not yet exist.
+The `feat/wire-damage-scalars-into-physics` slice closes the physics
+consumer call site. `stepRaceSession` now resolves
+`getDamageScalars(state.player.damage.total * 100)` from
+`damageBands.ts` and forwards the result on the player's `step()`
+call as `StepOptions.damageScalars`; the same path lands on every AI
+car using `entry.damage.total * 100`. The physics step already read
+`damageScalars.topSpeedScalar` and `damageScalars.gripScalar` (added
+in the original `feat/damage-band` slice as a producer-side
+deferral), so the §10 narrative "engine damage reduces top speed"
+and "tire damage reduces grip" now bites end-to-end. Pre-step damage
+is the source of truth: scalars are resolved once per tick before
+the physics integration, so a tick that pushes the player across a
+band boundary still bills physics at the prior band (and the next
+tick reads the new band). PRISTINE damage collapses the multipliers
+to identity, so an undamaged car's behaviour is bit-for-bit
+identical to the pre-binding pipeline.
 
-Close F-019 once both consumer paths land.
+The remaining open consumer is the hazard-runtime damage emitter
+(per-tick puddle / cone / debris hits feeding `applyHit` with the
+matching `HitKind`) owned by the hazards-runtime dot
+(`VibeGear2-implement-hazards-runtime-6085799c`); F-047 did not
+bundle it because the hazards module does not yet exist.
+
+Close F-019 once the hazards-runtime path lands.
 
 ## F-018: Playwright e2e spec for the loading screen / preload gate
 **Created:** 2026-04-26

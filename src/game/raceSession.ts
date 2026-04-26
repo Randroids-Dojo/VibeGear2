@@ -70,7 +70,7 @@ import {
   type HitEvent,
   type HitKind,
 } from "./damage";
-import { getDamageBand } from "./damageBands";
+import { getDamageBand, getDamageScalars } from "./damageBands";
 import {
   resolvePresetScalars,
   type AssistScalars,
@@ -1095,6 +1095,17 @@ export function stepRaceSession(
   }
 
   const playerDraftBonus = draftMultipliers.get(PLAYER_CAR_ID) ?? 1;
+  // §13 / F-019: derive the player's per-tick damage scalars from the
+  // pre-step damage band. The §10 narrative wants engine damage to clip
+  // top speed and tire damage to scrub grip; the band table in
+  // `damageBands.ts` already maps `damage.total * 100` to the
+  // `topSpeedScalar` / `gripScalar` knobs `step()` consumes. Using the
+  // pre-step total keeps the same scalar source for the entire tick:
+  // post-step damage updates land in this tick's accumulator below and
+  // bite the next physics integration. PRISTINE_SCALARS at zero damage
+  // collapses the multipliers to identity, preserving pre-binding
+  // behaviour for an undamaged car.
+  const playerDamageScalars = getDamageScalars(state.player.damage.total * 100);
   // Skip physics integration entirely for non-racing players (DNF or
   // post-finish). Freezing the snapshot is what makes a retired player
   // sit in place across the rest of the race rather than continuing to
@@ -1110,6 +1121,7 @@ export function stepRaceSession(
           accelMultiplier: playerAccelMultiplier,
           draftBonus: playerDraftBonus,
           assistScalars: playerAssistScalars,
+          damageScalars: playerDamageScalars,
         },
       )
     : { ...state.player.car };
@@ -1168,13 +1180,24 @@ export function stepRaceSession(
     const aiGearMultiplier = gearAccelMultiplier(aiTransmission);
     const aiAccelMultiplier = aiNitroMultiplier * aiGearMultiplier;
     const aiDraftBonus = draftMultipliers.get(aiCarId(index)) ?? 1;
+    // §13 / F-019: AI cars run the same damage-scalars wiring as the
+    // player. The §28 / §15 split scopes the player-facing
+    // `assistScalars` to the player only; per-car damage is driver-
+    // agnostic, so every AI car reads its own pre-step damage band
+    // through the same band table. Identity scalars at zero damage keep
+    // the unscaled behaviour for an undamaged AI.
+    const aiDamageScalars = getDamageScalars(entry.damage.total * 100);
     const nextCar = step(
       entry.car,
       tick.input,
       aiConfig.stats,
       trackContext,
       dt,
-      { accelMultiplier: aiAccelMultiplier, draftBonus: aiDraftBonus },
+      {
+        accelMultiplier: aiAccelMultiplier,
+        draftBonus: aiDraftBonus,
+        damageScalars: aiDamageScalars,
+      },
     );
     return {
       car: nextCar,

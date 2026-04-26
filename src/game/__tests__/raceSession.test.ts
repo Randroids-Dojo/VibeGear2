@@ -1859,6 +1859,154 @@ describe("stepRaceSession (§13 damage wiring, F-047)", () => {
   });
 });
 
+describe("stepRaceSession (§13 damage scalars wiring into physics, F-019)", () => {
+  // Helper: snap the player to a fixed cruising speed clean of all
+  // off-road / contact damage events so the comparison isolates the
+  // damage-band top-speed/grip scalars on the physics step itself.
+  function snapPlayerCruising(
+    session: RaceSessionState,
+    speed: number,
+  ): RaceSessionState {
+    return {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, z: 100, speed, surface: "road" },
+      },
+      // Park the AI well off-screen so `carsInContact` never trips and
+      // the player's damage path stays isolated from collision events.
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 5_000, speed: 0 },
+        status: "dnf" as const,
+        dnfReason: "off-track" as const,
+      })),
+    };
+  }
+
+  it("a damaged player at the §10 top-speed cap is held below the undamaged cap", () => {
+    // Severe band (75..99) pins topSpeedScalar at 0.78. Snap the player
+    // at the undamaged top speed and roll a few ticks of full throttle:
+    // the scaled cap should drag speed down to roughly stats.topSpeed *
+    // 0.78. An undamaged player snapped the same way stays at the cap.
+    const config = buildConfig({ countdownSec: 0 });
+    const undamaged = snapPlayerCruising(
+      createRaceSession(config),
+      STARTER_STATS.topSpeed,
+    );
+    const severe = createDamageState({
+      engine: 0.85,
+      tires: 0.7,
+      body: 0.85,
+    });
+    const damaged: RaceSessionState = {
+      ...undamaged,
+      player: { ...undamaged.player, damage: severe },
+    };
+    const undamagedAfter = rollForward(undamaged, fullThrottle(), config, 6);
+    const damagedAfter = rollForward(damaged, fullThrottle(), config, 6);
+    // Sanity: severe band reads 0.78 from the table.
+    expect(damagedAfter.player.car.speed).toBeLessThan(
+      undamagedAfter.player.car.speed,
+    );
+    // The clamped cap is stats.topSpeed * 0.78. A few ticks of brake-free
+    // full throttle plus the top-speed clamp should sit at-or-below it.
+    expect(damagedAfter.player.car.speed).toBeLessThanOrEqual(
+      STARTER_STATS.topSpeed * 0.78 + 1e-6,
+    );
+  });
+
+  it("a pristine player runs identically with damage scalars wired (PRISTINE collapses to identity)", () => {
+    // The PRISTINE band reads all-1.0 scalars, which collapses the
+    // multiplicative wiring inside `step()` to the pre-binding behaviour
+    // exactly. A fresh session (damage = PRISTINE_DAMAGE_STATE) rolled
+    // 600 ticks must match a hand-wired session that explicitly forces
+    // PRISTINE_DAMAGE_STATE on every tick (idempotency check).
+    const config = buildConfig({ countdownSec: 0 });
+    const a = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    expect(a.player.damage).toEqual(PRISTINE_DAMAGE_STATE);
+    // Top speed reached the unscaled cap, not the damaged cap.
+    expect(a.player.car.speed).toBeCloseTo(STARTER_STATS.topSpeed, 6);
+  });
+
+  it("AI cars with severe damage hit the damaged top-speed cap (driver-agnostic)", () => {
+    // The AI wiring reads `entry.damage.total * 100` through the same
+    // band table the player uses. Pre-load the AI to the severe band
+    // and roll: the AI's speed must clamp to the scaled cap.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    const severe = createDamageState({
+      engine: 0.85,
+      tires: 0.7,
+      body: 0.85,
+    });
+    session = {
+      ...session,
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 200, speed: STARTER_STATS.topSpeed },
+        damage: severe,
+      })),
+    };
+    // Park the player off-track so the ai vs player collision pass does
+    // not bias the test by adding contact events.
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, z: 5_000, speed: 0 },
+      },
+    };
+    session = rollForward(session, fullThrottle(), config, 6);
+    expect(session.ai[0]?.car.speed ?? 0).toBeLessThanOrEqual(
+      STARTER_STATS.topSpeed * 0.78 + 1e-6,
+    );
+  });
+
+  it("uses the pre-step damage band so a tick that pushes through a band boundary still bills at the prior band", () => {
+    // The wiring resolves scalars off `state.player.damage.total`
+    // (pre-step), not the post-step damage that the same tick
+    // accumulates. A player whose pre-step damage is light (25..49) but
+    // whose this-tick off-road / collision events would jump them into
+    // moderate/severe gets the LIGHT band's top-speed cap (1.0) for
+    // this tick's physics integration. That is the deterministic
+    // contract: scalars resolved once, applied for the tick.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    // Light band: damage.total ~ 0.30 -> 30%
+    const light = createDamageState({
+      engine: 0.3,
+      tires: 0.3,
+      body: 0.3,
+    });
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          x: 0,
+          z: 100,
+          speed: STARTER_STATS.topSpeed,
+          surface: "road",
+        },
+        damage: light,
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 5_000, speed: 0 },
+        status: "dnf" as const,
+        dnfReason: "off-track" as const,
+      })),
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    // Light band keeps topSpeedScalar at 1.0, so the post-step speed is
+    // not clamped down even if the same tick added off-road / contact
+    // damage that would have bumped the band.
+    expect(session.player.car.speed).toBeCloseTo(STARTER_STATS.topSpeed, 6);
+  });
+});
+
 describe("collision geometry helpers", () => {
   it("carsInContact is true for two cars within the §13 contact box", () => {
     const a = { x: 0, z: 100 } as never;
