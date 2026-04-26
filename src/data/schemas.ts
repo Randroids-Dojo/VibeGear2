@@ -68,6 +68,20 @@ export const TrackSpawnSchema = z.object({
 });
 export type TrackSpawn = z.infer<typeof TrackSpawnSchema>;
 
+/**
+ * Optional author override for the minimap polyline. When present the
+ * track compiler honours these footprint coordinates verbatim instead of
+ * integrating per-segment headings. Used for hand-authored maps where
+ * the heading-integration projection looks distorted (open-ended tracks,
+ * intentional kinks). Per `docs/gdd/22-data-schemas.md` Track data model
+ * "minimap points".
+ */
+export const MinimapPointAuthoredSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+export type MinimapPointAuthored = z.infer<typeof MinimapPointAuthoredSchema>;
+
 export const TrackSchema = z.object({
   id: slug,
   name: z.string().min(1),
@@ -82,6 +96,13 @@ export const TrackSchema = z.object({
   segments: z.array(TrackSegmentSchema).min(1),
   checkpoints: z.array(TrackCheckpointSchema),
   spawn: TrackSpawnSchema,
+  /**
+   * Optional hand-authored minimap polyline. Length-zero arrays are
+   * rejected so callers can detect "absent" with a simple `=== undefined`
+   * check. When supplied, length must be at least 2 so the polyline has
+   * a well-defined direction.
+   */
+  minimapPoints: z.array(MinimapPointAuthoredSchema).min(2).optional(),
 });
 export type Track = z.infer<typeof TrackSchema>;
 

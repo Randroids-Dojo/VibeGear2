@@ -315,6 +315,35 @@ describe("compileTrack (full-track entry point)", () => {
     expect(compiled.segments[0]!.hazardIds).toBe(hazards);
   });
 
+  it("computes minimapPoints from segment headings when no override is supplied", () => {
+    const compiled = compileTrack(track());
+    expect(compiled.minimapPoints.length).toBe(compiled.totalCompiledSegments);
+    for (const p of compiled.minimapPoints) {
+      expect(p.x).toBeGreaterThanOrEqual(-1e-9);
+      expect(p.x).toBeLessThanOrEqual(1 + 1e-9);
+      expect(p.y).toBeGreaterThanOrEqual(-1e-9);
+      expect(p.y).toBeLessThanOrEqual(1 + 1e-9);
+    }
+  });
+
+  it("honours an authored minimapPoints override verbatim after fitToBox", () => {
+    const t = track({
+      minimapPoints: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+      ],
+    });
+    const compiled = compileTrack(t);
+    // Override gets fitted into the unit square; with two collinear
+    // points the long axis spans 0 to 1 and the short axis collapses to
+    // the centre of the box.
+    expect(compiled.minimapPoints).toHaveLength(2);
+    expect(compiled.minimapPoints[0]!.x).toBeCloseTo(0, 9);
+    expect(compiled.minimapPoints[0]!.y).toBeCloseTo(0.5, 9);
+    expect(compiled.minimapPoints[1]!.x).toBeCloseTo(1, 9);
+    expect(compiled.minimapPoints[1]!.y).toBeCloseTo(0.5, 9);
+  });
+
   it("produces a deeply-frozen output that cannot be mutated", () => {
     const compiled = compileTrack(track());
     expect(Object.isFrozen(compiled)).toBe(true);
@@ -322,6 +351,7 @@ describe("compileTrack (full-track entry point)", () => {
     expect(Object.isFrozen(compiled.segments[0])).toBe(true);
     expect(Object.isFrozen(compiled.checkpoints)).toBe(true);
     expect(Object.isFrozen(compiled.weatherOptions)).toBe(true);
+    expect(Object.isFrozen(compiled.minimapPoints)).toBe(true);
     expect(() => {
       // @ts-expect-error: writing to a readonly field for the test.
       compiled.segments[0].curve = 999;

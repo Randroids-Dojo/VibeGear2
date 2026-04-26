@@ -6,6 +6,85 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: minimap projection + HUD overlay drawer (split from hud-ui)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) (Race HUD: simplified
+minimap or progress strip; bottom-left wireframe slot),
+[§21](gdd/21-technical-design-for-web-implementation.md) (Suggested module
+structure: `src/road/minimap.ts`),
+[§22](gdd/22-data-schemas.md) (Track data model: minimap points).
+**Branch / PR:** `feat/minimap-module` (stacked on `feat/assets-license`),
+PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/road/minimap.ts` with three pure exports:
+  `projectTrack(segments, options)` integrates per-segment heading into a
+  unit-square footprint with closing-snap to keep loops visually shut;
+  `projectCar(points, segmentIndex, segmentProgress)` linearly
+  interpolates a car's marker along the precomputed point list;
+  `fitToBox(points, box)` uniform-scales any point list into a target
+  rectangle preserving aspect ratio with the short axis centred.
+- Added `src/render/hudMinimap.ts` with `drawMinimap(ctx, points, cars,
+  layout, options)` issuing a single closed stroke path for the track
+  plus one filled circle (or square in colour-blind mode) per car. AI
+  markers paint first so the player draws on top. Context state is
+  restored on return.
+- Added `src/road/__tests__/minimap.test.ts` (17 tests) covering the
+  dot's verifies: 80-segment track returns 80 points within the unit
+  rectangle, single-segment track returns one point, aspect preservation
+  for a 20:1 long-thin track, author-override path, deterministic
+  reruns, off-track car clamping without NaN, and `projectCar`
+  midpoint / wrap / single-point cases.
+- Added `src/render/__tests__/hudMinimap.test.ts` (10 tests) covering
+  drawcall counts (one stroke path, one fill per car), AI-before-player
+  ordering, colour-blind shape swap (square via `fillRect`), background
+  fill, zero-area / empty-input no-ops, and context-state restoration.
+- Extended `src/data/schemas.ts` with `MinimapPointAuthoredSchema` and
+  an optional `Track.minimapPoints` field (length >= 2 required when
+  present). Added three schema tests covering the optional field, the
+  override accept path, and the length-rejection paths.
+- Extended `src/road/types.ts` with `CompiledMinimapPoint` and a
+  required `CompiledTrack.minimapPoints` field. `src/road/trackCompiler.ts`
+  now calls `projectTrack` (honouring `track.minimapPoints` override
+  when present) and stamps the result on the compiled output.
+- Extended `src/game/hudState.ts` with optional `HudMinimapState`
+  carried through `HudStateInput.minimap` and surfaced on `HudState.minimap`
+  so the HUD path stays opt-in for owners that want to render the minimap.
+- Wired both new modules into `src/road/index.ts` and
+  `src/render/index.ts` barrels.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (469 tests; 27 new across the three suites). Existing
+  trackCompiler golden snapshots unaffected because the snapshot
+  projector excludes `minimapPoints`.
+- `npm run build` clean (route sizes unchanged; minimap is opt-in).
+- `npm run test:e2e` passes (title-screen + phase-1 race demo).
+- `grep -rP "[\x{2013}\x{2014}]" src/road/minimap.ts
+  src/road/__tests__/minimap.test.ts src/render/hudMinimap.ts
+  src/render/__tests__/hudMinimap.test.ts` returns nothing.
+
+### Decisions and assumptions
+- `Track.minimapPoints` minimum length is 2 (not 1). A single point has
+  no direction and the polyline drawer skips lone points anyway, so
+  rejecting length-1 inputs at the schema layer prevents silent
+  no-op overrides.
+- Closing snap is implemented as a linear residual distribution across
+  the polyline rather than a global rotation. Cheaper to compute and
+  produces the same end-to-end "loop closes" guarantee for the cases
+  the dot calls out (loops and intentional kinks).
+- Colour-blind mode is wired as a per-call `colorBlindMode` boolean
+  option on `drawMinimap`. The save-game settings field
+  (`accessibility.colorBlindMode`) is not implemented yet; whoever lands
+  the §19 accessibility slice will pipe the save bit into this option.
+- `HudState.minimap` is optional. Existing HUD callers continue to work
+  without minimap data; the §20 polish slice will be the first
+  consumer.
+
+---
+
 ## 2026-04-26: Slice: ASSETS-LICENSE + per-entry asset licence metadata (Q-002)
 
 **GDD sections touched:** [§26](gdd/26-open-source-project-guidance.md) (no

@@ -36,6 +36,7 @@
 
 import type { Track, TrackSegment } from "@/data/schemas";
 import { CURVATURE_SCALE, SEGMENT_LENGTH } from "./constants";
+import { projectTrack } from "./minimap";
 import type {
   CompiledCheckpoint,
   CompiledSegment,
@@ -249,6 +250,14 @@ export function compileTrack(track: Track): CompiledTrack {
     }
   }
 
+  // Minimap polyline. Pre-computed once per track and cached on the
+  // compiled output so the HUD never re-runs heading integration at
+  // draw time. Honours an authored override when present; otherwise the
+  // projector integrates per-segment headings into the unit square.
+  const minimapPoints = projectTrack(segments, {
+    override: track.minimapPoints,
+  }).map((p) => ({ x: p.x, y: p.y, segmentIndex: p.segmentIndex }));
+
   const compiled: CompiledTrack = {
     trackId: track.id,
     totalLengthMeters,
@@ -259,6 +268,7 @@ export function compileTrack(track: Track): CompiledTrack {
     laps: track.laps,
     laneCount: track.laneCount,
     weatherOptions: [...track.weatherOptions],
+    minimapPoints,
     warnings,
   };
 

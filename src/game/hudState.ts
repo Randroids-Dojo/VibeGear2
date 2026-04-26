@@ -53,6 +53,20 @@ export interface HudStateInput {
   cars: readonly RankedCar[];
   /** Display unit. Defaults to `"kph"` per `defaultSave()`. */
   speedUnit: SpeedUnit;
+  /**
+   * Optional minimap snapshot. Owners that want a minimap pass a
+   * pre-projected polyline plus per-car footprint positions; HUD does
+   * no projection itself.
+   */
+  minimap?: HudMinimapState;
+}
+
+/** Optional minimap snapshot derived from the compiled track + car field. */
+export interface HudMinimapState {
+  /** Pre-projected track polyline in normalised footprint space. */
+  points: readonly { x: number; y: number; segmentIndex: number }[];
+  /** Per-car markers in the same normalised footprint space. */
+  cars: readonly { x: number; y: number; isPlayer: boolean }[];
 }
 
 /** What the renderer draws. All values pre-formatted for display. */
@@ -70,6 +84,11 @@ export interface HudState {
   position: number;
   /** Total cars in the field. >= 1; `position <= total`. */
   totalCars: number;
+  /**
+   * Minimap snapshot when the caller supplied one. Optional so the
+   * existing minimal HUD wiring continues to work without minimap data.
+   */
+  minimap?: HudMinimapState;
 }
 
 /** Conversion factors. SI base is m/s. */
@@ -130,7 +149,7 @@ export function deriveHudState(input: HudStateInput): HudState {
   const totalCars = Math.max(1, input.cars.length);
   const position = rankPosition(input.playerId, input.cars);
 
-  return {
+  const result: HudState = {
     speed: speedToDisplayUnit(input.playerSpeedMetersPerSecond, input.speedUnit),
     speedUnit: input.speedUnit,
     lap,
@@ -138,4 +157,8 @@ export function deriveHudState(input: HudStateInput): HudState {
     position,
     totalCars,
   };
+  if (input.minimap !== undefined) {
+    result.minimap = input.minimap;
+  }
+  return result;
 }

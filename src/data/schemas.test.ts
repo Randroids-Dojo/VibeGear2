@@ -42,6 +42,29 @@ describe("TrackSchema", () => {
     const broken = { ...trackExample, weatherOptions: ["acid_rain"] };
     expect(TrackSchema.safeParse(broken).success).toBe(false);
   });
+
+  it("accepts an authored minimapPoints override of length 2 or more", () => {
+    const ok = {
+      ...trackExample,
+      minimapPoints: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+      ],
+    };
+    expect(TrackSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("rejects minimapPoints of length 0 or 1", () => {
+    const empty = { ...trackExample, minimapPoints: [] };
+    expect(TrackSchema.safeParse(empty).success).toBe(false);
+    const single = { ...trackExample, minimapPoints: [{ x: 0, y: 0 }] };
+    expect(TrackSchema.safeParse(single).success).toBe(false);
+  });
+
+  it("accepts a track without minimapPoints (field optional)", () => {
+    const result = TrackSchema.safeParse(trackExample);
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("CarSchema", () => {

@@ -4,5 +4,6 @@
  */
 export * from "./constants";
 export * from "./types";
+export * from "./minimap";
 export * from "./trackCompiler";
 export * from "./segmentProjector";

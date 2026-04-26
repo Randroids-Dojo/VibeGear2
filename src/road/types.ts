@@ -75,6 +75,18 @@ export interface CompiledCheckpoint {
 }
 
 /**
+ * One footprint point for the minimap polyline, normalised into the
+ * `[0, 1]` unit square. Cached on the compiled track so the HUD never
+ * re-runs the per-segment heading integration at draw time. See
+ * `src/road/minimap.ts`.
+ */
+export interface CompiledMinimapPoint {
+  x: number;
+  y: number;
+  segmentIndex: number;
+}
+
+/**
  * Output of `compileTrack`. Frozen at every depth so callers cannot
  * mutate it; see `deepFreeze` in `trackCompiler.ts`.
  *
@@ -91,6 +103,12 @@ export interface CompiledTrack {
   laps: number;
   laneCount: number;
   weatherOptions: readonly WeatherOption[];
+  /**
+   * Minimap polyline, one point per compiled segment, normalised into
+   * the unit square. Honours `Track.minimapPoints` when supplied;
+   * otherwise computed by `projectTrack` from segment headings.
+   */
+  minimapPoints: readonly CompiledMinimapPoint[];
   warnings: readonly string[];
 }
 
