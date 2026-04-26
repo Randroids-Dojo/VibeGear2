@@ -43,6 +43,7 @@ import {
   createInputManager,
   createRaceSession,
   deriveHudState,
+  deriveSplitsState,
   startLoop,
   stepRaceSession,
   totalProgress,
@@ -51,6 +52,7 @@ import {
   type RaceSessionState,
   type RankedCar,
 } from "@/game";
+import { FIXED_STEP_SECONDS } from "@/game/loop";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import {
   CAMERA_DEPTH,
@@ -61,6 +63,7 @@ import {
   type Viewport,
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
 
 const VIEWPORT_WIDTH = 800;
@@ -236,6 +239,19 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
           speedUnit: "kph",
         });
         drawHud(ctx, hud, viewport);
+
+        // §20 splits / ghost-delta widget. Lap-timer derives from `elapsed`
+        // (seconds since the green light), so the widget reads the same
+        // monotonic clock as the rest of the sim. Baseline is the previous
+        // completed lap on this session; first-lap delta stays null until a
+        // baseline lap exists.
+        const splits = deriveSplitsState(
+          session.sectorTimer,
+          Math.round(session.race.elapsed * 1000),
+          session.baselineSplitsMs,
+          FIXED_STEP_SECONDS,
+        );
+        drawSplitsWidget(ctx, splits, viewport);
 
         // React state updates run at most once per render-frame; we copy
         // the small numeric snapshots into hooks so the surrounding HTML

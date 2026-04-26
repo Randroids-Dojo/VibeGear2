@@ -20,13 +20,17 @@ import { defaultSave } from "@/persistence/save";
 import {
   bestSplitsForTrack,
   createSectorState,
+  deriveSplitsState,
   onCheckpointPass,
   sectorDeltaMs,
   shouldWriteBestSplits,
   splitsForLap,
   startNewLap,
+  tickSectorTimer,
   ticksToMs,
 } from "../sectorTimer";
+
+import type { CompiledCheckpoint } from "@/road/types";
 
 const DT = 1 / 60;
 
@@ -236,5 +240,139 @@ describe("determinism", () => {
       return splitsForLap(state, DT);
     };
     expect(replay()).toEqual(replay());
+  });
+});
+
+const COMPILED_CHECKPOINTS: readonly CompiledCheckpoint[] = [
+  { authoredIndex: 0, compiledStart: 0, label: "start" },
+  { authoredIndex: 1, compiledStart: 10, label: "split-a" },
+  { authoredIndex: 2, compiledStart: 20, label: "split-b" },
+];
+const SEG_LEN = 6; // matches `src/road/constants.ts` SEGMENT_LENGTH
+
+describe("tickSectorTimer", () => {
+  it("advances the sector when the player crosses the next checkpoint's z", () => {
+    const initial = createSectorState(COMPILED_CHECKPOINTS);
+    // Player just past checkpoint 1 (z = 10 * 6 = 60 m). Same lap.
+    const next = tickSectorTimer(
+      initial,
+      1,
+      1,
+      61,
+      COMPILED_CHECKPOINTS,
+      SEG_LEN,
+      30,
+    );
+    expect(next.currentSectorIdx).toBe(1);
+    expect(next.sectors[0]!.tickExited).toBe(30);
+    expect(next.sectors[1]!.tickEntered).toBe(30);
+  });
+
+  it("is a no-op while the player has not reached the next checkpoint", () => {
+    const initial = createSectorState(COMPILED_CHECKPOINTS);
+    const next = tickSectorTimer(
+      initial,
+      1,
+      1,
+      59.9,
+      COMPILED_CHECKPOINTS,
+      SEG_LEN,
+      30,
+    );
+    expect(next).toBe(initial);
+  });
+
+  it("handles two checkpoints crossed in a single tick", () => {
+    const initial = createSectorState(COMPILED_CHECKPOINTS);
+    // Past checkpoint 2 (z = 120 m) in one tick.
+    const next = tickSectorTimer(
+      initial,
+      1,
+      1,
+      121,
+      COMPILED_CHECKPOINTS,
+      SEG_LEN,
+      45,
+    );
+    expect(next.currentSectorIdx).toBe(2);
+    expect(next.sectors[0]!.tickExited).toBe(45);
+    expect(next.sectors[1]!.tickEntered).toBe(45);
+    expect(next.sectors[1]!.tickExited).toBe(45);
+    expect(next.sectors[2]!.tickEntered).toBe(45);
+  });
+
+  it("resets the sector chain when the lap rolls", () => {
+    let state = createSectorState(COMPILED_CHECKPOINTS);
+    state = tickSectorTimer(state, 1, 1, 61, COMPILED_CHECKPOINTS, SEG_LEN, 30);
+    // Lap rollover at tick 200, lap-local pos resets near zero.
+    const rolled = tickSectorTimer(
+      state,
+      1,
+      2,
+      0.5,
+      COMPILED_CHECKPOINTS,
+      SEG_LEN,
+      200,
+    );
+    expect(rolled.currentSectorIdx).toBe(0);
+    expect(rolled.sectors[0]!.tickEntered).toBe(200);
+    expect(rolled.sectors[0]!.tickExited).toBeNull();
+  });
+
+  it("is deterministic across two identical replays", () => {
+    const replay = (): unknown => {
+      let state = createSectorState(COMPILED_CHECKPOINTS);
+      // Walk forward one meter per call, advancing through both checkpoints.
+      for (let z = 0; z <= 130; z += 1) {
+        state = tickSectorTimer(
+          state,
+          1,
+          1,
+          z,
+          COMPILED_CHECKPOINTS,
+          SEG_LEN,
+          z,
+        );
+      }
+      return [state.currentSectorIdx, splitsForLap(state, DT)];
+    };
+    expect(replay()).toEqual(replay());
+  });
+});
+
+describe("deriveSplitsState", () => {
+  it("returns lapTimerMs and the current sector label every call", () => {
+    const state = createSectorState(COMPILED_CHECKPOINTS);
+    const view = deriveSplitsState(state, 12_345, null, DT);
+    expect(view.lapTimerMs).toBe(12_345);
+    expect(view.sectorLabel).toBe("start");
+    expect(view.currentSectorIdx).toBe(0);
+    expect(view.sectorDeltaMs).toBeNull();
+  });
+
+  it("returns a null delta on the first lap (no baseline)", () => {
+    let state = createSectorState(COMPILED_CHECKPOINTS);
+    state = onCheckpointPass(state, { label: "split-a" }, 60);
+    const view = deriveSplitsState(state, 1_000, null, DT);
+    // Sector 0 closed at 60 ticks -> 1000 ms, but with no baseline we
+    // cannot show a delta yet.
+    expect(view.sectorDeltaMs).toBeNull();
+    expect(view.currentSectorIdx).toBe(1);
+    expect(view.sectorLabel).toBe("split-a");
+  });
+
+  it("returns a signed delta vs the baseline once the first sector closes", () => {
+    let state = createSectorState(COMPILED_CHECKPOINTS);
+    state = onCheckpointPass(state, { label: "split-a" }, 60); // 1000 ms
+    const baseline = [1200, 2400];
+    const view = deriveSplitsState(state, 1_000, baseline, DT);
+    // 1000 ms current vs 1200 ms baseline -> faster by 200 ms.
+    expect(view.sectorDeltaMs).toBe(-200);
+  });
+
+  it("keeps the delta null while the current sector is still in progress", () => {
+    const state = createSectorState(COMPILED_CHECKPOINTS);
+    const view = deriveSplitsState(state, 500, [1200, 2400], DT);
+    expect(view.sectorDeltaMs).toBeNull();
   });
 });

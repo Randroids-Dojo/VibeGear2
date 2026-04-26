@@ -224,3 +224,80 @@ describe("totalProgress", () => {
     expect(leader).toBeGreaterThan(follower);
   });
 });
+
+describe("stepRaceSession (sector timer)", () => {
+  it("initialises sector state from track checkpoints at session creation", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const session = createRaceSession(config);
+    // test/curve has two checkpoints (start + sector-1).
+    expect(session.sectorTimer.sectors.map((s) => s.label)).toEqual([
+      "start",
+      "sector-1",
+    ]);
+    expect(session.sectorTimer.currentSectorIdx).toBe(0);
+    expect(session.baselineSplitsMs).toBeNull();
+  });
+
+  it("advances the sector timer as the player crosses checkpoints", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    // Snap the player just past the second checkpoint. test/curve checkpoint
+    // sector-1 is at compiled segment index 68 (segmentIndex 2 of authored;
+    // ceil(200/6) = 34 compiled segments per 200 m, so 34 + 34 = 68 -> z = 408 m).
+    session = {
+      ...session,
+      player: { car: { ...session.player.car, z: 410, speed: 60 } },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.sectorTimer.currentSectorIdx).toBe(1);
+    expect(session.sectorTimer.sectors[1]!.tickEntered).toBe(session.tick);
+  });
+
+  it("captures the previous lap as the baseline for the next lap", () => {
+    const track = loadTrack("test/curve");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 3,
+    };
+    let session = createRaceSession(config);
+    // First, cross sector-1 mid-lap so the lap closes with both sectors timed.
+    session = {
+      ...session,
+      player: { car: { ...session.player.car, z: 410, speed: 60 } },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.sectorTimer.currentSectorIdx).toBe(1);
+    expect(session.baselineSplitsMs).toBeNull();
+    // Snap to just before the finish line and step once to roll the lap.
+    session = {
+      ...session,
+      player: {
+        car: {
+          ...session.player.car,
+          z: track.totalLengthMeters - 0.1,
+          speed: 60,
+        },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.race.lap).toBe(2);
+    expect(session.baselineSplitsMs).not.toBeNull();
+    expect(session.baselineSplitsMs?.length).toBe(2);
+    // First sector of the new lap is open with `tickEntered` at the
+    // lap-rollover tick.
+    expect(session.sectorTimer.currentSectorIdx).toBe(0);
+    expect(session.sectorTimer.sectors[0]!.tickEntered).toBe(session.tick);
+  });
+
+  it("keeps the sector timer deterministic under identical inputs", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const a = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    const b = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    expect(a.sectorTimer.currentSectorIdx).toBe(b.sectorTimer.currentSectorIdx);
+    expect(a.sectorTimer.sectors).toEqual(b.sectorTimer.sectors);
+    expect(a.baselineSplitsMs).toEqual(b.baselineSplitsMs);
+  });
+});

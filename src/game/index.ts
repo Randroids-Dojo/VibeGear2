@@ -12,3 +12,4 @@ export * from "./ai";
 export * from "./damageBands";
 export * from "./transmission";
 export * from "./nitro";
+export * from "./sectorTimer";

@@ -30,6 +30,7 @@
  */
 
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
+import { SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";
 
@@ -52,6 +53,12 @@ import {
   DEFAULT_COUNTDOWN_SEC,
   type RaceState,
 } from "./raceState";
+import {
+  createSectorState,
+  splitsForLap,
+  tickSectorTimer,
+  type SectorState,
+} from "./sectorTimer";
 
 export interface RaceSessionPlayer {
   stats: Readonly<CarBaseStats>;
@@ -117,6 +124,21 @@ export interface RaceSessionState {
    * countdown timer reads the same monotonic clock as the rest of the sim.
    */
   tick: number;
+  /**
+   * Per-tick sector timer for the player. Initialised at session creation
+   * from `track.checkpoints`; advanced by `tickSectorTimer` each racing tick
+   * and reset on lap rollover. Drives the §20 ghost-delta widget; pure on
+   * the runtime side so headless tests can replay it.
+   */
+  sectorTimer: SectorState;
+  /**
+   * Splits from the most recently completed lap, in cumulative ms from the
+   * lap start. Used as the §20 widget's baseline when no persisted
+   * `bestSplitsMs` is available. `null` until the player has finished a
+   * full lap with all sectors closed; this is what makes the first-lap
+   * delta read `null` until a baseline exists.
+   */
+  baselineSplitsMs: readonly number[] | null;
 }
 
 /**
@@ -178,7 +200,16 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     bestLapTimeMs: null,
   };
 
-  return { race, player, ai, tick: 0 };
+  const sectorTimer = createSectorState(config.track.checkpoints);
+
+  return {
+    race,
+    player,
+    ai,
+    tick: 0,
+    sectorTimer,
+    baselineSplitsMs: null,
+  };
 }
 
 /**
@@ -243,11 +274,13 @@ export function stepRaceSession(
           state: { ...entry.state },
         })),
         tick: state.tick + 1,
+        sectorTimer: state.sectorTimer,
+        baselineSplitsMs: state.baselineSplitsMs,
       };
     }
-    // Lights out. Flip to racing, zero the tick clock, drop into the racing
-    // branch below by recursing with a reset state. The recursion is bounded
-    // (one extra step) and keeps the racing path single-source.
+    // Lights out. Flip to racing, zero the tick clock, reset the sector
+    // timer so its lap-start tick matches the green light, then drop into
+    // the racing branch below by recursing with the promoted state.
     const promoted: RaceSessionState = {
       race: {
         ...state.race,
@@ -261,6 +294,8 @@ export function stepRaceSession(
         state: { ...entry.state },
       })),
       tick: 0,
+      sectorTimer: createSectorState(config.track.checkpoints),
+      baselineSplitsMs: state.baselineSplitsMs,
     };
     return stepRaceSession(promoted, playerInput, config, dt);
   }
@@ -326,6 +361,31 @@ export function stepRaceSession(
     }
   }
 
+  // Sector timer: advance from the player's lap-local z. Lap-rollover within
+  // `tickSectorTimer` resets the chain at `nextTick` so the lap-2+ first
+  // sector starts at the lap-boundary, not at zero. Capture the previous
+  // lap's splits as the baseline for the §20 widget when the lap rolls.
+  const lapPos =
+    trackLength > 0
+      ? ((nextPlayerCar.z % trackLength) + trackLength) % trackLength
+      : nextPlayerCar.z;
+  let nextBaseline = state.baselineSplitsMs;
+  if (nextLap > state.race.lap) {
+    // Close the final sector of the just-finished lap so its split lands in
+    // `splitsForLap`, then snapshot it as the baseline for the next lap.
+    const closing = onCheckpointPass_close(state.sectorTimer, nextTick);
+    nextBaseline = splitsForLap(closing, dt);
+  }
+  const nextSectorTimer = tickSectorTimer(
+    state.sectorTimer,
+    state.race.lap,
+    nextLap,
+    lapPos,
+    config.track.checkpoints,
+    SEGMENT_LENGTH,
+    nextTick,
+  );
+
   return {
     race: {
       ...state.race,
@@ -338,7 +398,28 @@ export function stepRaceSession(
     player: { car: nextPlayerCar },
     ai: nextAi,
     tick: nextTick,
+    sectorTimer: nextSectorTimer,
+    baselineSplitsMs: nextBaseline,
   };
+}
+
+/**
+ * Close the final sector of the current lap by stamping its `tickExited`
+ * with the lap-rollover tick. Returns a fresh state without altering
+ * `currentSectorIdx` (the tickSectorTimer's `startNewLap` call resets that
+ * for the new lap). Local helper kept here so the lap-baseline capture
+ * stays adjacent to its only caller.
+ */
+function onCheckpointPass_close(
+  state: SectorState,
+  tick: number,
+): SectorState {
+  const sectors = state.sectors.map((s, i) =>
+    i === state.currentSectorIdx && s.tickExited === null
+      ? { ...s, tickExited: tick }
+      : s,
+  );
+  return { sectors, currentSectorIdx: state.currentSectorIdx };
 }
 
 /**
@@ -359,5 +440,7 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
       state: { ...entry.state },
     })),
     tick: state.tick,
+    sectorTimer: state.sectorTimer,
+    baselineSplitsMs: state.baselineSplitsMs,
   };
 }

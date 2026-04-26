@@ -250,3 +250,116 @@ export function shouldWriteBestSplits(
   if (previousBestLapMs === null) return true;
   return newLapMs < previousBestLapMs;
 }
+
+/**
+ * Renderer-agnostic projection of the sector timer used by the §20 splits
+ * widget. Structurally compatible with `SplitsState` from
+ * `src/render/hudSplits.ts`; we keep this shape on the game side so the
+ * runtime never imports back into the renderer.
+ */
+export interface SplitsView {
+  /** Cumulative lap-time in ms since the green light. */
+  lapTimerMs: number;
+  /** Index of the sector currently being driven. */
+  currentSectorIdx: number;
+  /** Sector label (e.g. "split-a"). Drawn below the timer. */
+  sectorLabel: string;
+  /**
+   * Signed delta in ms vs the baseline split. Positive = current is slower
+   * (red); negative = current is faster (green); `null` = no comparable
+   * baseline yet (first run on the track, or no completed sector this lap).
+   */
+  sectorDeltaMs: number | null;
+}
+
+/**
+ * Advance the sector timer by one simulation tick.
+ *
+ * The producer for sector boundaries is the player's monotonically-increasing
+ * world-z. Lap rollover resets the sector chain at `tick`; any checkpoints
+ * crossed during this tick are then consumed in order. Multi-checkpoint
+ * crossings within a single tick (rare with `dt = 1 / 60`, but possible if a
+ * future slice raises dt) collapse to one `onCheckpointPass` call each, all
+ * stamped with the same tick value so the lap timer reads the same
+ * monotonic clock as the rest of the sim.
+ *
+ * Pure: returns a fresh state (or the same reference when nothing changes).
+ *
+ * Parameters:
+ * - `state`: previous sector state.
+ * - `prevLap`, `nextLap`: lap counters from `RaceState.lap` before and after
+ *   this tick. A roll calls `startNewLap` first.
+ * - `nextLapPosMeters`: player's lap-local z, in `[0, trackLengthMeters)`.
+ *   Computed by the caller as `((player.car.z mod L) + L) mod L`.
+ * - `checkpoints`: ordered compiled checkpoints. Index 0 is the start line.
+ * - `segmentLengthMeters`: compiled-segment length used to convert a
+ *   checkpoint's `compiledStart` index to a z position in meters.
+ * - `tick`: current sim tick to stamp on any boundary events.
+ */
+export function tickSectorTimer(
+  state: SectorState,
+  prevLap: number,
+  nextLap: number,
+  nextLapPosMeters: number,
+  checkpoints: readonly CompiledCheckpoint[],
+  segmentLengthMeters: number,
+  tick: number,
+): SectorState {
+  let s = state;
+  if (nextLap > prevLap) {
+    s = startNewLap(s, tick);
+  }
+  if (s.sectors.length <= 1) return s;
+  // Walk forward through any checkpoints whose compiled-z the player has
+  // reached this tick. The loop terminates because `currentSectorIdx`
+  // strictly increases on each successful pass.
+  while (s.currentSectorIdx + 1 < s.sectors.length) {
+    const nextIdx = s.currentSectorIdx + 1;
+    const cp = checkpoints[nextIdx];
+    if (!cp) break;
+    const cpZ = cp.compiledStart * segmentLengthMeters;
+    if (nextLapPosMeters >= cpZ) {
+      s = onCheckpointPass(s, { label: cp.label }, tick);
+    } else {
+      break;
+    }
+  }
+  return s;
+}
+
+/**
+ * Project the sector state plus a baseline into the renderer-facing
+ * `SplitsView` shape. Pure.
+ *
+ * Delta semantics: the most recently completed sector this lap is compared
+ * against the same sector index in `baselineSplitsMs`. While the first
+ * sector of the lap is still in progress and no sector has finished, the
+ * delta is `null` so the widget hides the +/- chip. When `baselineSplitsMs`
+ * is `null` (first time on the track, no recorded best, no previous lap to
+ * compare against) the delta is also `null`. The widget's internal
+ * `Number.isFinite` guard then skips the third drawcall.
+ */
+export function deriveSplitsState(
+  sectorState: SectorState,
+  lapTimerMs: number,
+  baselineSplitsMs: readonly number[] | null,
+  dtSeconds: number,
+): SplitsView {
+  const idx = sectorState.currentSectorIdx;
+  const currentSector = sectorState.sectors[idx];
+  const sectorLabel = currentSector?.label ?? "lap";
+  const splits = splitsForLap(sectorState, dtSeconds);
+  let delta: number | null = null;
+  if (baselineSplitsMs !== null && splits.length > 0) {
+    const lastIdx = splits.length - 1;
+    if (lastIdx < baselineSplitsMs.length) {
+      delta = splits[lastIdx]! - baselineSplitsMs[lastIdx]!;
+    }
+  }
+  return {
+    lapTimerMs,
+    currentSectorIdx: idx,
+    sectorLabel,
+    sectorDeltaMs: delta,
+  };
+}

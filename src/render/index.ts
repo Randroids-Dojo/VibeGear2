@@ -4,6 +4,7 @@
  */
 export * from "./dust";
 export * from "./hudMinimap";
+export * from "./hudSplits";
 export * from "./parallax";
 export * from "./pseudoRoadCanvas";
 export * from "./spriteAtlas";
