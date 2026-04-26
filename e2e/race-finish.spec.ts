@@ -68,6 +68,18 @@ test.describe("race-finish wiring (F-038)", () => {
       );
       // Continue CTA renders so the player can return to the garage.
       await expect(page.getByTestId("results-cta-continue")).toBeVisible();
+
+      // F-034: the natural-finish wiring credits the wallet via
+      // `awardCredits` and stamps the delta on `creditsAwarded`. A
+      // single-lap straight finish at P1 (no AI on this spec, so the
+      // player wins by default) pays the §23 tier-1 base reward times
+      // the §12 1.0 multiplier, plus podium + clean-race bonuses if the
+      // bonus pipeline awards them. Assert the row renders with a non-
+      // zero credit count so a regression that drops the wallet commit
+      // (e.g. the helper omits `creditsAwarded`) fails here.
+      const creditsRow = page.getByTestId("results-credits-awarded");
+      await expect(creditsRow).toBeVisible();
+      await expect(creditsRow).not.toHaveText(/^0 cr$/);
     },
   );
 });

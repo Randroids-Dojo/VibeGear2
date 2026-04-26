@@ -38,7 +38,11 @@ import {
   UNDERDOG_BONUS_RATE_PER_RANK,
   type BuildRaceResultInput,
 } from "../raceResult";
-import { computeRaceReward, DNF_PARTICIPATION_CREDITS } from "../economy";
+import {
+  awardCredits,
+  computeRaceReward,
+  DNF_PARTICIPATION_CREDITS,
+} from "../economy";
 import type { FinalCarRecord, FinalRaceState } from "../raceRules";
 
 const PLAYER_ID = "player";
@@ -604,5 +608,139 @@ describe("buildRaceResult: purity and determinism", () => {
     const a = buildRaceResult(makeInput());
     const b = buildRaceResult(makeInput());
     expect(a).toEqual(b);
+  });
+});
+
+/**
+ * F-034 wallet-commit contract. The race-finish wiring in
+ * `src/app/race/page.tsx` calls `buildRaceResult` then `awardCredits`
+ * with the same numbers the receipt rendered, persists the merged save,
+ * and overwrites `RaceResult.creditsAwarded` with the wallet delta. The
+ * tests below pin that sequence at the boundary the page consumes so a
+ * future caller can copy the contract verbatim.
+ */
+describe("buildRaceResult + awardCredits: F-034 race-finish wiring", () => {
+  it("default builder result carries creditsAwarded === 0", () => {
+    const result = buildRaceResult(makeInput());
+    expect(result.creditsAwarded).toBe(0);
+  });
+
+  it("P1 finish + base 1000 credits + Hard difficulty credits the wallet by the formula result", () => {
+    const baseTrackReward = 1000;
+    const difficulty = "hard";
+    const result = buildRaceResult(
+      makeInput({
+        baseTrackReward,
+        difficulty,
+        playerStartPosition: 1,
+        finalState: makeFinalState({
+          finishingOrder: [
+            {
+              carId: PLAYER_ID,
+              status: "finished",
+              raceTimeMs: 90_000,
+              bestLapMs: 30_000,
+            },
+          ],
+          // Drop fastestLap so the bonus pipeline does not award one.
+          fastestLap: null,
+        }),
+      }),
+    );
+
+    const expectedBase = computeRaceReward({
+      place: 1,
+      status: "finished",
+      baseTrackReward,
+      difficulty,
+    });
+    expect(result.cashBaseEarned).toBe(expectedBase);
+    // P1 with the default fixture still earns the podium + clean-race
+    // bonuses; the receipt total is `cashBaseEarned + sum(bonuses)`.
+    const expectedReceipt =
+      expectedBase + result.bonuses.reduce((acc, b) => acc + b.cashCredits, 0);
+    expect(result.cashEarned).toBe(expectedReceipt);
+
+    // F-034 wallet-commit contract: the page calls `awardCredits` with
+    // the same bonus list the receipt rendered, so the wallet delta and
+    // the receipt total stay in lockstep.
+    const save = defaultSave();
+    const award = awardCredits(save, {
+      placement: 1,
+      status: "finished",
+      baseTrackReward,
+      difficulty,
+      bonuses: result.bonuses,
+    });
+    expect(award.ok).toBe(true);
+    if (!award.ok) return;
+    expect(award.state.garage.credits).toBe(
+      save.garage.credits + expectedReceipt,
+    );
+    expect(award.cashEarned).toBe(expectedReceipt);
+  });
+
+  it("DNF status credits the §12 participation cash and skips bonuses", () => {
+    const baseTrackReward = 1000;
+    const difficulty = "normal";
+    const result = buildRaceResult(
+      makeInput({
+        baseTrackReward,
+        difficulty,
+        finalState: makeFinalState({
+          finishingOrder: [
+            {
+              carId: PLAYER_ID,
+              status: "dnf",
+              raceTimeMs: null,
+              bestLapMs: null,
+            },
+          ],
+          perLapTimes: { [PLAYER_ID]: [] },
+          fastestLap: null,
+        }),
+      }),
+    );
+
+    expect(result.cashBaseEarned).toBe(DNF_PARTICIPATION_CREDITS);
+    expect(result.bonuses).toEqual([]);
+
+    const save = defaultSave();
+    const award = awardCredits(save, {
+      placement: 1,
+      status: "dnf",
+      baseTrackReward,
+      difficulty,
+      bonuses: result.bonuses,
+    });
+    expect(award.ok).toBe(true);
+    if (!award.ok) return;
+    expect(award.state.garage.credits).toBe(
+      save.garage.credits + DNF_PARTICIPATION_CREDITS,
+    );
+    expect(award.cashEarned).toBe(DNF_PARTICIPATION_CREDITS);
+  });
+
+  it("bonuses ride the wallet delta so `creditsAwarded` equals `cashEarned` on the receipt", () => {
+    // P1 finish on the default fixture has podium + fastest-lap +
+    // clean-race bonuses; the wallet must receive the same number the
+    // receipt shows so the player never sees a row mismatch.
+    const result = buildRaceResult(makeInput({ baseTrackReward: 1000 }));
+    expect(result.bonuses.length).toBeGreaterThan(0);
+
+    const save = defaultSave();
+    const award = awardCredits(save, {
+      placement: result.playerPlacement ?? 1,
+      status: "finished",
+      baseTrackReward: 1000,
+      difficulty: "normal",
+      bonuses: result.bonuses,
+    });
+    expect(award.ok).toBe(true);
+    if (!award.ok) return;
+    expect(award.cashEarned).toBe(result.cashEarned);
+    expect(award.state.garage.credits).toBe(
+      save.garage.credits + result.cashEarned,
+    );
   });
 });

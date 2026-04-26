@@ -156,6 +156,20 @@ function ResultsView(props: ResultsViewProps): ReactElement {
             <dd data-testid="results-cash-base" style={ddStyle}>
               {result.cashBaseEarned.toLocaleString("en-US")} cr
             </dd>
+            {/*
+             * F-034: the wallet delta the §12 finish flow actually
+             * credited. Distinct from the receipt rows above so the
+             * player sees the cash that landed in their garage even when
+             * a future non-economy mode (Practice / Time Trial) ships
+             * `creditsAwarded === 0` against a non-zero `cashEarned`.
+             * Falls back to `0` for legacy payloads written before the
+             * field existed (the storage handoff trusts the writer's
+             * shape; old reads simply render "0 cr").
+             */}
+            <dt style={dtStyle}>Credited to wallet</dt>
+            <dd data-testid="results-credits-awarded" style={ddStyle}>
+              {(result.creditsAwarded ?? 0).toLocaleString("en-US")} cr
+            </dd>
           </dl>
 
           <h3 style={subHeading}>Bonuses</h3>

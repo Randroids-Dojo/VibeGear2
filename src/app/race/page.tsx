@@ -77,7 +77,10 @@ import { drawRoad } from "@/render/pseudoRoadCanvas";
 import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
 import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
-import { defaultSave, loadSave } from "@/persistence/save";
+import { defaultSave, loadSave, saveSave } from "@/persistence/save";
+import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
+import type { SaveGame } from "@/data/schemas";
+import type { RaceResult } from "@/game/raceResult";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -175,6 +178,69 @@ function toMinimapCar(
   const progress = continuousIndex - Math.floor(continuousIndex);
   const { x, y } = projectCar(points, segmentIndex, progress);
   return { x, y, isPlayer };
+}
+
+/**
+ * Race-finish wallet commit per F-034. Credits the §12 reward (placement
+ * payout + §5 bonuses) into the persisted save, persists the new save
+ * via `saveSave`, and stamps the actual wallet delta onto a fresh
+ * `RaceResult` clone so the §20 results screen renders the cash the
+ * player just received.
+ *
+ * Pure on its inputs; the only side effect is the `saveSave` call. When
+ * the persisted save was the synthesised default (no profile yet) the
+ * wallet commit still runs so a first-race player walks away with their
+ * earnings; the awarded delta exactly mirrors the placement payout the
+ * receipt shows. DNF cars receive the §12 participation cash, also
+ * mirrored on `creditsAwarded`.
+ *
+ * The retire and natural-finish branches in the loop effect both call
+ * this helper with the same `result` they would otherwise hand straight
+ * to `saveRaceResult`, so the wallet commit + receipt mirror stays a
+ * single owner regardless of how the race ended.
+ */
+function commitRaceCredits(input: {
+  result: RaceResult;
+  save: SaveGame;
+  difficulty: string;
+  baseTrackReward: number;
+}): RaceResult {
+  const { result, save, difficulty, baseTrackReward } = input;
+  const playerRecord = result.finishingOrder.find(
+    (record) => record.carId === result.playerCarId,
+  );
+  if (!playerRecord) {
+    return result;
+  }
+
+  // 1-indexed placement; defensive fallback to a trailing place so the
+  // §12 finish-multiplier table still resolves a non-zero scalar.
+  const placement = result.playerPlacement ?? result.finishingOrder.length;
+
+  const award = awardCredits(save, {
+    placement,
+    status: playerRecord.status,
+    baseTrackReward,
+    difficulty,
+    bonuses: result.bonuses,
+  });
+  if (!award.ok) {
+    // `awardCredits` only fails when the input save is malformed; the
+    // race-finish flow always supplies a freshly loaded or synthesised
+    // save, so this branch is defensive and surfaces as a no-op.
+    return result;
+  }
+
+  // Persist the credited save. A storage failure (quota / privacy mode)
+  // is non-fatal here: the player still sees the receipt, and the next
+  // race-finish will retry from the in-memory delta. The wallet commit
+  // mirrored on `creditsAwarded` stays accurate either way.
+  saveSave(award.state);
+
+  return {
+    ...result,
+    creditsAwarded: award.cashEarned ?? 0,
+  };
 }
 
 export default function RacePage(): ReactElement {
@@ -394,7 +460,18 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
         playerStartPosition: 1,
         recordPBs: false,
       });
-      saveRaceResult(result);
+      // F-034: credit the wallet (DNF cars receive the §12 participation
+      // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
+      // the §20 results screen renders the actual wallet change.
+      const committed = commitRaceCredits({
+        result,
+        save,
+        // §15 default per `SaveGameSettingsSchema`: a v1 save without
+        // a `difficultyPreset` field reads as `'normal'`.
+        difficulty: persistedDifficulty ?? "normal",
+        baseTrackReward: baseRewardForTrackDifficulty(track.compiled.difficulty),
+      });
+      saveRaceResult(committed);
       // Flip the natural-finish guard so the render callback's finish
       // wiring cannot also fire on the next frame (the loop tear-down
       // below stops the rAF, but the latch is the explicit contract).
@@ -544,7 +621,21 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
               playerStartPosition: 1,
               recordPBs: session.player.status === "finished",
             });
-            saveRaceResult(result);
+            // F-034: credit the wallet from the same numbers the
+            // results screen will render. The `commitRaceCredits`
+            // helper persists the merged save and mirrors the
+            // wallet delta onto `RaceResult.creditsAwarded`.
+            const committed = commitRaceCredits({
+              result,
+              save,
+              // §15 default per `SaveGameSettingsSchema`: a v1 save
+              // without a `difficultyPreset` reads as `'normal'`.
+              difficulty: persistedDifficulty ?? "normal",
+              baseTrackReward: baseRewardForTrackDifficulty(
+                track.compiled.difficulty,
+              ),
+            });
+            saveRaceResult(committed);
             // Tear down the loop / input before the route hop so the
             // rAF handle and the keydown listener cannot outlive the
             // page. Mirrors the retire branch tear-down ordering.

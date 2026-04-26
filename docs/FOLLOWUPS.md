@@ -354,21 +354,30 @@ index 1) per `StipendTourContext` in `src/game/catchUp.ts`.
 ## F-034: Wire `awardCredits` into the race-finish flow
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/economy-upgrade` slice landed
-`awardCredits(save, { placement, status, baseTrackReward, difficulty })`
-plus `tourBonus(rewards)` in `src/game/economy.ts` and proved the
-formula with 33 unit tests. The function has no in-app caller yet:
-the post-race results screen owned by
-`VibeGear2-implement-race-results-7b0abfaa` is the natural consumer
-and should call `awardCredits` at the moment the player car crosses
-the final finish line, then merge the new save via `saveSave`. The
-caller also needs to pass `baseTrackReward`; until the track JSON
-schema gains a `baseReward` field, the wiring slice can pin a
-per-tour table in `src/data/championships/baseRewards.ts` (one row
-per tour, matching §23 Race Reward column). Mirrors the
-F-026 / F-032 producer-without-consumer pattern. Distinct from
-F-033 (repair-cost wiring) which is the next economy-side gap.
+**Status:** done (2026-04-26)
+**Notes:** Landed in `feat/wire-award-credits-race-finish`. The
+race-finish wiring at `src/app/race/page.tsx` now calls a new
+`commitRaceCredits` helper from both the natural-finish and the
+retire branches. The helper resolves the §23 base reward via
+`baseRewardForTrackDifficulty(track.compiled.difficulty)` (F-046),
+calls `awardCredits(save, { placement, status, baseTrackReward,
+difficulty, bonuses })` against the persisted save (or
+`defaultSave()` when no profile exists), persists the merged save
+via `saveSave`, and stamps the wallet delta onto a fresh
+`RaceResult.creditsAwarded` clone before handing it to
+`saveRaceResult`. The §20 results screen surfaces the new row
+(`data-testid="results-credits-awarded"`) so the player sees the
+cash that actually landed in their garage, distinct from the
+receipt rows. DNF cars receive the §12 participation cash
+(`DNF_PARTICIPATION_CREDITS`) and the same row reflects it.
+`creditsAwarded` defaults to `0` on the builder so non-economy
+modes (Practice / Time Trial) can ship a legitimate zero without
+calling the helper. Three new unit tests in
+`src/game/__tests__/raceResult.test.ts` pin the P1 + Hard,
+DNF-participation, and bonus-mirror contracts; the
+`results-screen.spec.ts` seed grew a `creditsAwarded` field and
+the `race-finish.spec.ts` natural-finish spec now asserts the
+wallet row renders a non-zero credit count.
 
 ## F-033: Implement `applyRepairCost` once §23 ships `tourTierScale`
 **Created:** 2026-04-26

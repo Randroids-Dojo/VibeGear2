@@ -146,6 +146,17 @@ export interface RecordsUpdatePatch {
  *     §20 results screen renders this on a separate line so the player
  *     sees "Place cash" + bonuses chips that sum to the total.
  *
+ *   - `creditsAwarded`: the actual delta committed to the player's
+ *     wallet by the race-finish wiring. Equals `cashEarned` when the
+ *     mode commits credits (Quick Race, Championship). Set to `0` for
+ *     non-economy modes (Practice, Time Trial) and for the receipt-only
+ *     case where the page does not call `awardCredits`. The §20 results
+ *     screen renders this number so the player sees the wallet change
+ *     they actually received, distinct from the receipt-style breakdown
+ *     of `cashEarned` / `cashBaseEarned` / bonuses. The builder defaults
+ *     it to `0`; the race-finish wiring overwrites it after calling
+ *     `awardCredits` per F-034.
+ *
  *   - `bonuses`: ordered list of awarded bonuses. Empty when none apply.
  *
  *   - `damageTaken`: per-zone delta from pre-race to post-race. The §20
@@ -172,6 +183,7 @@ export interface RaceResult {
   pointsEarned: number;
   cashEarned: number;
   cashBaseEarned: number;
+  creditsAwarded: number;
   bonuses: ReadonlyArray<RaceBonus>;
   damageTaken: DamageDelta;
   fastestLap: FinalRaceState["fastestLap"];
@@ -370,6 +382,11 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     pointsEarned,
     cashEarned,
     cashBaseEarned,
+    // The wiring slice (F-034) overwrites this after calling
+    // `awardCredits` and `saveSave`. Defaulting to `0` keeps the
+    // builder pure and lets non-economy modes (Practice, Time Trial)
+    // skip the wallet commit entirely.
+    creditsAwarded: 0,
     bonuses,
     damageTaken,
     fastestLap: finalState.fastestLap,

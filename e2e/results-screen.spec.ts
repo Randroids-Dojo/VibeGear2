@@ -48,6 +48,10 @@ const SEED_RESULT = {
   // 0.10 = 100, fastest 0.08 = 80, clean 0.05 = 50. Total 1,230.
   cashEarned: 1230,
   cashBaseEarned: 1000,
+  // F-034: wallet delta the race-finish wiring credited. Equals
+  // `cashEarned` for an economy mode (Quick Race / Championship); this
+  // seed exercises the receipt-mirror happy path.
+  creditsAwarded: 1230,
   pointsEarned: 25,
   bonuses: [
     { kind: "podium", label: "Podium finish", cashCredits: 100 },
@@ -94,6 +98,13 @@ test.describe("race results screen", () => {
 
     // 3. Cash earned.
     await expect(page.getByTestId("results-cash")).toContainText("1,230");
+
+    // F-034 wallet-delta row mirrors the cashEarned total for an
+    // economy mode; the §20 results screen renders it on its own row so
+    // the player sees the credit they actually received.
+    await expect(page.getByTestId("results-credits-awarded")).toContainText(
+      "1,230",
+    );
 
     // 4. Bonuses: chips for the three awarded.
     await expect(page.getByTestId("results-bonus-podium")).toBeVisible();
