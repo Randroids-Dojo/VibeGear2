@@ -10,6 +10,34 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-024: Migrate `src/game/` randomness to `createRng` / `splitRng`
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The PRNG slice (`feat(game): seeded deterministic PRNG
+module`, `2fcc7be`) ships `src/game/rng.ts` with `createRng`,
+`splitRng`, `serialiseRng`, `deserialiseRng`, and bans `Math.random`
+inside `src/game/` via an ESLint `no-restricted-syntax` override plus
+the `no-math-random.test.ts` static guard. As of this commit no
+production module in `src/game/` imports the PRNG: comments in
+`damage.ts`, `damageBands.ts`, `raceRules.ts`, `raceCheckpoints.ts`,
+and `sectorTimer.ts` say "no Math.random" because those modules are
+fully deterministic without randomness, and `ghost.ts` is replay
+playback (input-driven, no PRNG draw). The producer is therefore a
+pure module with no consumers yet, in the same shape as F-021/F-022/
+F-023 around the ghost slice. The consumers will appear when the AI
+slice (`VibeGear2-implement-full-ai-fab57b84`, archetype roll +
+rubber-banding noise), the hazard runtime
+(`VibeGear2-implement-hazards-runtime-6085799c`, debris scatter +
+puddle-splash variation), and the weather slice
+(`VibeGear2-implement-weather-38d61fc2`, wind gust schedule) land.
+Each of those slices should call `splitRng(raceRng, "<subsystem>")`
+on the green-light tick so sub-streams stay isolated and the replay
+seed advances reproducibly. Until those slices wire up there is no
+code that exercises `splitRng` end-to-end; the unit tests cover the
+algorithm but not the integration. Track this so the PRNG does not
+sit unused indefinitely.
+
 ## F-023: Time Trial UI wiring for the ghost recorder
 **Created:** 2026-04-26
 **Priority:** nice-to-have
