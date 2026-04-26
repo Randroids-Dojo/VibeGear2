@@ -104,6 +104,14 @@ export interface CompiledTrack {
   laneCount: number;
   weatherOptions: readonly WeatherOption[];
   /**
+   * §23 track difficulty rating in `[1, 5]`. Mirrored from the source
+   * `Track.difficulty` so the race-finish wiring can resolve a per-track
+   * `baseTrackReward` via `baseRewardForTrackDifficulty` without re-reading
+   * the authored JSON. Same value as `Track.difficulty`; copied here to
+   * keep the runtime path single-source from the compiled output.
+   */
+  difficulty: number;
+  /**
    * Minimap polyline, one point per compiled segment, normalised into
    * the unit square. Honours `Track.minimapPoints` when supplied;
    * otherwise computed by `projectTrack` from segment headings.

@@ -102,16 +102,23 @@ wiring. Tracked as F-048.
 ## F-046: Wire `BASE_REWARDS_BY_TRACK_DIFFICULTY` consumers in track JSON
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-26)
 **Notes:** Pinned by the §23 balancing-pass slice in
 `src/game/economy.ts` as a frozen lookup keyed by difficulty rating
-`1..5`. Track JSON files under `src/data/tracks/` do not yet declare a
-per-track `difficulty` rating that consumes the table. The
-championship slice (`VibeGear2-implement-tour-region-d9ca9a4d`) is the
-natural home: each track entry will resolve `baseRewardForTrackDifficulty(track.difficulty)`
-and feed the result into `awardCredits.input.baseTrackReward`. Until
-that lands, the helper is a no-op for the runtime; the constant is
-authoritative for the future wiring slice.
+`1..5`. The bundled track JSON under `src/data/tracks/` already
+declared the per-track `difficulty` field (validated by `TrackSchema`),
+so the wiring slice took a different path than the original plan: the
+consumer is `buildRaceResult` in `src/game/raceResult.ts`, which now
+defaults `baseTrackReward` to
+`baseRewardForTrackDifficulty(track.difficulty)` whenever the caller
+does not supply an explicit override. The race-finish wiring at
+`src/app/race/page.tsx` threads the compiled track's `difficulty` into
+the Track stand-in fed to the builder. The championship slice
+(`VibeGear2-implement-tour-region-d9ca9a4d`) can still pass an explicit
+per-tour table via the existing `baseTrackReward` parameter; the §23
+lookup is the runtime default until that lands. Mirror field
+`difficulty` added to `CompiledTrack` so the page accesses the value
+off the compiled output rather than re-parsing JSON.
 
 ---
 

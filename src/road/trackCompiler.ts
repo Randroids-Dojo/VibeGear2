@@ -268,6 +268,7 @@ export function compileTrack(track: Track): CompiledTrack {
     laps: track.laps,
     laneCount: track.laneCount,
     weatherOptions: [...track.weatherOptions],
+    difficulty: track.difficulty,
     minimapPoints,
     warnings,
   };

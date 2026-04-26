@@ -357,4 +357,11 @@ describe("compileTrack (full-track entry point)", () => {
       compiled.segments[0].curve = 999;
     }).toThrow();
   });
+
+  it("propagates Track.difficulty into CompiledTrack.difficulty", () => {
+    for (const tier of [1, 2, 3, 4, 5] as const) {
+      const compiled = compileTrack(track({ difficulty: tier }));
+      expect(compiled.difficulty).toBe(tier);
+    }
+  });
 });

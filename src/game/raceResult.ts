@@ -49,7 +49,11 @@
 
 import type { SaveGame, Track } from "@/data/schemas";
 
-import { computeRaceReward, DNF_PARTICIPATION_CREDITS } from "./economy";
+import {
+  baseRewardForTrackDifficulty,
+  computeRaceReward,
+  DNF_PARTICIPATION_CREDITS,
+} from "./economy";
 import { computeBonuses, type RaceBonus } from "./raceBonuses";
 import type { FinalCarRecord, FinalRaceState } from "./raceRules";
 
@@ -63,7 +67,13 @@ export const PLACEMENT_POINTS: ReadonlyArray<number> = Object.freeze([
   0, 25, 18, 15, 12, 10, 8, 6, 4,
 ]);
 
-/** Per-track base reward fallback when the caller does not pass one. */
+/**
+ * Per-track base reward fallback when the caller passes neither
+ * `baseTrackReward` nor a `track.difficulty` we can resolve. Equals the
+ * §23 tier-1 reward (`BASE_REWARDS_BY_TRACK_DIFFICULTY[1]`); kept here
+ * as a named constant so call sites that intentionally bypass the §23
+ * lookup (test fixtures, dev pages without a real Track) read sensibly.
+ */
 export const DEFAULT_BASE_TRACK_REWARD = 1000;
 
 // Bonus types and constants are re-exported from `raceBonuses.ts` so
@@ -186,6 +196,12 @@ export interface RaceResult {
  *
  * `track` is the source of `totalLaps` for sanity-checking and the
  * fallback for `baseTrackReward` if the caller does not supply one.
+ * When `baseTrackReward` is omitted, the builder resolves it from
+ * `track.difficulty` via `baseRewardForTrackDifficulty` (§23 reward
+ * formula targets keyed by difficulty rating 1..5). Pass an explicit
+ * `baseTrackReward` to override that mapping (championship slices may
+ * eventually carry a per-tour table that supersedes the per-track
+ * default).
  *
  * `championship` and `tourId` together let the builder compute the
  * `nextRace` card. When either is absent, `nextRace` is `null`.
@@ -260,13 +276,22 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     playerStartPosition,
     damageBefore = ZERO_DAMAGE,
     damageAfter = ZERO_DAMAGE,
-    baseTrackReward = DEFAULT_BASE_TRACK_REWARD,
+    baseTrackReward,
     recordPBs,
     difficulty = save.settings.difficultyPreset ?? "normal",
     championship,
     tourId,
     currentTrackIndex,
   } = input;
+
+  // Resolve the per-track base reward. Caller override wins; otherwise
+  // §23 lookup keyed by `track.difficulty` (`BASE_REWARDS_BY_TRACK_DIFFICULTY`).
+  // The lookup clamps out-of-range ratings, so a malformed Track still
+  // returns a sensible non-zero reward and the race never pays nothing.
+  const resolvedBaseTrackReward =
+    baseTrackReward !== undefined
+      ? baseTrackReward
+      : baseRewardForTrackDifficulty(track.difficulty);
 
   // 1. Find the player record + placement (1-indexed).
   const playerIndex = finalState.finishingOrder.findIndex(
@@ -287,7 +312,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     ? computeRaceReward({
         place: playerPlacement ?? 99,
         status: playerRecord.status,
-        baseTrackReward,
+        baseTrackReward: resolvedBaseTrackReward,
         difficulty,
       })
     : DNF_PARTICIPATION_CREDITS;

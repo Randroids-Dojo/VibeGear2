@@ -6,6 +6,72 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-046 wire `BASE_REWARDS_BY_TRACK_DIFFICULTY` into the race-finish builder
+
+**GDD sections touched:**
+[§23](gdd/23-balancing-tables.md) Reward formula targets keyed by
+track difficulty rating 1..5 (now drives the race-finish cash row).
+[§8](gdd/08-tour-and-region-structure.md) Per-track difficulty as the
+input to the §23 lookup. [§12](gdd/12-upgrade-and-economy-system.md)
+`raceReward = baseTrackReward * finishMultiplier * difficultyMultiplier`
+(the `baseTrackReward` factor now flows from the §23 lookup by default).
+**Branch / PR:** `feat/track-base-reward-by-difficulty` stacked on
+`feat/cpu-difficulty-modifiers`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-f-046-d83eb189`. The §23
+`BASE_REWARDS_BY_TRACK_DIFFICULTY` lookup (already pinned by the
+balancing-pass slice) now has a runtime consumer: `buildRaceResult`
+defaults `baseTrackReward` to
+`baseRewardForTrackDifficulty(track.difficulty)` when the caller does
+not pass an explicit override, and the race-finish wiring at
+`src/app/race/page.tsx` threads the compiled track's difficulty
+through the natural-finish and retire branches. Track JSON already
+carries the per-track `difficulty` field (validated by `TrackSchema`),
+so no content edits were needed for the bundled `test/curve` and
+`test/straight` tracks.
+
+### Done
+- `src/road/types.ts`: extended `CompiledTrack` with a mirrored
+  `difficulty: number` field so the race-finish call site can pull
+  the §23 input directly off the compiled output without re-parsing
+  the source JSON.
+- `src/road/trackCompiler.ts`: propagated `track.difficulty` into the
+  compiled output. Frozen at the same depth as the rest of
+  `CompiledTrack` via the existing `deepFreeze`.
+- `src/game/raceResult.ts`: added a default for `baseTrackReward` that
+  resolves through `baseRewardForTrackDifficulty(track.difficulty)`
+  whenever the caller omits the explicit override. The named constant
+  `DEFAULT_BASE_TRACK_REWARD` (1000) survives as a documented fallback
+  for test fixtures and dev pages without a real Track. Doc comments
+  updated to point at the §23 lookup.
+- `src/app/race/page.tsx`: both the natural-finish render branch and
+  the retire branch now pass `{ id, difficulty }` for the Track stand-in
+  fed into `buildRaceResult`. Comments updated to call out the §23
+  lookup. The minimal cast is preserved so the page does not have to
+  re-parse the bundled JSON for the rest of the Track shape.
+- `src/game/__tests__/raceResult.test.ts`: replaced the prior
+  "matches computeRaceReward" test with a §23-aware version (the
+  fixture's `difficulty: 1` still maps to 1000 by construction so
+  the regression bound is intact). Added three new tests: tier-3
+  derivation, every §23 tier through the default lookup, and
+  caller-supplied `baseTrackReward` overriding the lookup.
+- `src/road/__tests__/trackCompiler.test.ts`: pins
+  `compiled.difficulty === track.difficulty` for every §23 tier
+  (1 through 5) so a future compiler change cannot drop the field.
+- `docs/FOLLOWUPS.md` (update): F-046 marked `done` with the binding
+  site and the consumer module.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 1725+ tests pass (added 5 new in the cash-base block,
+  1 in the compiler suite).
+- `npm run build`: clean.
+- `npm run test:e2e`: 47 specs pass (race-finish wiring exercised
+  end-to-end via the multi-lap and natural-finish specs).
+
+---
+
 ## 2026-04-26: Slice: F-044 wire §23 CPU difficulty modifiers (`CPU_DIFFICULTY_MODIFIERS`)
 
 **GDD sections touched:**

@@ -205,7 +205,10 @@ describe("buildRaceResult: placement and points", () => {
 });
 
 describe("buildRaceResult: cash base", () => {
-  it("matches computeRaceReward for the player's place", () => {
+  it("matches computeRaceReward for the player's place using the §23 tier-1 reward", () => {
+    // Fixture track has `difficulty: 1`, so the §23 lookup resolves to
+    // `BASE_REWARDS_BY_TRACK_DIFFICULTY[1]` which equals
+    // `DEFAULT_BASE_TRACK_REWARD` by construction.
     const result = buildRaceResult(makeInput());
     const expected = computeRaceReward({
       place: 1,
@@ -236,6 +239,58 @@ describe("buildRaceResult: cash base", () => {
       status: "finished",
       baseTrackReward: 1000,
       difficulty: "hard",
+    });
+    expect(result.cashBaseEarned).toBe(expected);
+  });
+
+  it("derives the default baseTrackReward from track.difficulty per §23", () => {
+    // Tier 3 track without an explicit `baseTrackReward`. The builder
+    // should reach into `BASE_REWARDS_BY_TRACK_DIFFICULTY[3] === 1750`
+    // and feed that into `computeRaceReward`.
+    const tier3Track = { ...makeTrack(), difficulty: 3 };
+    const result = buildRaceResult(makeInput({ track: tier3Track }));
+    const expected = computeRaceReward({
+      place: 1,
+      status: "finished",
+      baseTrackReward: 1750,
+      difficulty: "normal",
+    });
+    expect(result.cashBaseEarned).toBe(expected);
+  });
+
+  it("scales every §23 difficulty tier through the default lookup", () => {
+    const tierTable: ReadonlyArray<readonly [1 | 2 | 3 | 4 | 5, number]> = [
+      [1, 1000],
+      [2, 1350],
+      [3, 1750],
+      [4, 2250],
+      [5, 2900],
+    ];
+    for (const [difficulty, base] of tierTable) {
+      const trackForTier = { ...makeTrack(), difficulty };
+      const result = buildRaceResult(makeInput({ track: trackForTier }));
+      const expected = computeRaceReward({
+        place: 1,
+        status: "finished",
+        baseTrackReward: base,
+        difficulty: "normal",
+      });
+      expect(result.cashBaseEarned).toBe(expected);
+    }
+  });
+
+  it("explicit baseTrackReward wins over the track.difficulty lookup", () => {
+    // Tier 5 track but the caller passes a per-tour override; the
+    // override should take precedence.
+    const tier5Track = { ...makeTrack(), difficulty: 5 };
+    const result = buildRaceResult(
+      makeInput({ track: tier5Track, baseTrackReward: 500 }),
+    );
+    const expected = computeRaceReward({
+      place: 1,
+      status: "finished",
+      baseTrackReward: 500,
+      difficulty: "normal",
     });
     expect(result.cashBaseEarned).toBe(expected);
   });

@@ -376,10 +376,16 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
       });
       const save =
         persisted.kind === "loaded" ? persisted.save : defaultSave();
-      // `buildRaceResult` reads only `track.id` from the Track shape;
-      // pass a minimal stand-in cast to `Track` so we do not have to
-      // re-parse the bundled JSON just to satisfy the shape.
-      const trackForResult = { id: track.id } as Track;
+      // `buildRaceResult` reads `track.id` and `track.difficulty` from
+      // the Track shape; pass a minimal stand-in cast to `Track` so we
+      // do not have to re-parse the bundled JSON just to satisfy the
+      // shape. `difficulty` comes from the compiled output (mirrored
+      // from the source Track at compile time) so the §23 reward lookup
+      // resolves a real per-track base reward.
+      const trackForResult = {
+        id: track.id,
+        difficulty: track.compiled.difficulty,
+      } as Track;
       const result = buildRaceResult({
         finalState,
         save,
@@ -520,10 +526,16 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
             });
             const save =
               persisted.kind === "loaded" ? persisted.save : defaultSave();
-            // `buildRaceResult` reads only `track.id` from the Track
-            // shape; the minimal cast avoids re-parsing the bundled
-            // JSON at the natural-finish boundary.
-            const trackForResult = { id: track.id } as Track;
+            // `buildRaceResult` reads `track.id` and `track.difficulty`
+            // from the Track shape; the minimal cast avoids re-parsing
+            // the bundled JSON at the natural-finish boundary.
+            // `difficulty` is mirrored from the source Track on the
+            // compiled output so the §23 reward lookup resolves a real
+            // per-track base reward.
+            const trackForResult = {
+              id: track.id,
+              difficulty: track.compiled.difficulty,
+            } as Track;
             const result = buildRaceResult({
               finalState,
               save,
