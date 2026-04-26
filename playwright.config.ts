@@ -39,9 +39,10 @@ export default defineConfig({
       // Mobile profile for the touch-input spec (closes F-017). Reports
       // `pointer:coarse`, has touch enabled, and emulates the iPhone 13
       // viewport so the overlay layout matches what users see on
-      // device.
+      // device. Keep browserName on Chromium because CI installs only
+      // Chromium browsers for the e2e job.
       name: "mobile-chromium",
-      use: { ...devices["iPhone 13"] },
+      use: { ...devices["iPhone 13"], browserName: "chromium" },
       testMatch: /touch-input\.spec\.ts/,
     },
   ],

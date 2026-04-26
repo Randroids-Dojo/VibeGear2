@@ -6,6 +6,40 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Main CI mobile browser fix
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) "Testing
+approach".
+**Branch / PR:** `main`, post-merge CI hotfix.
+**Status:** Implemented.
+
+### Done
+- `playwright.config.ts`: pinned the `mobile-chromium` project to
+  `browserName: "chromium"` while keeping the iPhone 13 viewport and
+  touch descriptor. GitHub Actions installs only Chromium for e2e, so
+  inheriting the descriptor's WebKit default made the touch-input
+  project fail on the hosted runner with a missing WebKit executable.
+
+### Verified
+- `npx playwright test e2e/touch-input.spec.ts --project=mobile-chromium`
+  green, 4 passed.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+
+### Decisions and assumptions
+- Kept the workflow browser install scoped to Chromium instead of
+  installing WebKit, because the project name and desktop coverage both
+  describe Chromium-only CI coverage.
+
+### Followups created
+None.
+
+### GDD edits
+None. The test strategy remains unchanged.
+
+---
+
 ## 2026-04-26: Slice: Docs accuracy audit after PR #5 fixes
 
 **GDD sections touched:**
