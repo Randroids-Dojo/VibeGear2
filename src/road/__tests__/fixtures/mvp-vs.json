@@ -1,0 +1,30 @@
+{
+  "id": "velvet-coast/harbor-run",
+  "name": "Harbor Run",
+  "tourId": "velvet-coast",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1500,
+  "laps": 3,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "light_rain", "dusk"],
+  "difficulty": 2,
+  "segments": [
+    { "len": 180, "curve": 0, "grade": 0, "roadsideLeft": "palms_sparse", "roadsideRight": "marina_signs", "hazards": [] },
+    { "len": 140, "curve": 0.35, "grade": 0.02, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },
+    { "len": 220, "curve": 0, "grade": 0, "roadsideLeft": "palms_sparse", "roadsideRight": "palms_sparse", "hazards": [] },
+    { "len": 110, "curve": -0.45, "grade": -0.03, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": ["puddle"] },
+    { "len": 80, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 100, "curve": 0.25, "grade": 0.04, "roadsideLeft": "guardrail", "roadsideRight": "marina_signs", "hazards": [] },
+    { "len": 200, "curve": 0, "grade": 0, "roadsideLeft": "palms_sparse", "roadsideRight": "palms_sparse", "hazards": [] },
+    { "len": 130, "curve": -0.3, "grade": -0.02, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 160, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 180, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 3, "label": "sector-1" },
+    { "segmentIndex": 6, "label": "sector-2" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

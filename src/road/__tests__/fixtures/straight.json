@@ -1,0 +1,26 @@
+{
+  "id": "fixture/straight",
+  "name": "Straight",
+  "tourId": "fixture",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 480,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 1,
+  "segments": [
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

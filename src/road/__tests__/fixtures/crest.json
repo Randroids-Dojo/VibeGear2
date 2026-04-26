@@ -1,0 +1,29 @@
+{
+  "id": "fixture/crest",
+  "name": "Crest",
+  "tourId": "fixture",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 600,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 2,
+  "segments": [
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0.05, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0.1, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0.15, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": -0.15, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": -0.1, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": -0.05, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 4, "label": "summit" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

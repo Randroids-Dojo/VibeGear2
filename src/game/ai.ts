@@ -39,7 +39,7 @@
 
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import { CURVATURE_SCALE, ROAD_WIDTH, SEGMENT_LENGTH } from "@/road/constants";
-import type { CompiledTrack } from "@/road/trackCompiler";
+import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
 import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
@@ -188,7 +188,7 @@ export function tickAI(
   aiState: Readonly<AIState>,
   aiCar: Readonly<CarState>,
   _player: Readonly<PlayerView>,
-  track: Readonly<CompiledTrack>,
+  track: Readonly<CompiledSegmentBuffer>,
   race: Readonly<RaceState>,
   stats: Readonly<CarBaseStats>,
   context: Readonly<AITrackContext> = DEFAULT_AI_TRACK_CONTEXT,
@@ -286,9 +286,9 @@ export function tickAI(
  * race lifecycle catches up and ends the session.
  */
 function currentSegment(
-  track: Readonly<CompiledTrack>,
+  track: Readonly<CompiledSegmentBuffer>,
   z: number,
-): CompiledTrack["segments"][number] | undefined {
+): CompiledSegmentBuffer["segments"][number] | undefined {
   const segments = track.segments;
   if (segments.length === 0) return undefined;
   const totalLength = track.totalLength;

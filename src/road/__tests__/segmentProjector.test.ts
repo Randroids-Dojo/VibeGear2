@@ -23,7 +23,10 @@ function flatTrack(count: number, init: Partial<CompiledSegment> = {}): Compiled
       worldZ: i * SEGMENT_LENGTH,
       curve: 0,
       grade: 0,
-      authoredRef: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
       ...init,
     };
   }

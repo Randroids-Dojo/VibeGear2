@@ -1,0 +1,19 @@
+{
+  "id": "test/straight",
+  "name": "Test Straight",
+  "tourId": "test",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1200,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 1,
+  "segments": [
+    { "len": 1200, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

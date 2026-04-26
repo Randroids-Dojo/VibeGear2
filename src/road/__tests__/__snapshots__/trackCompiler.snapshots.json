@@ -1,0 +1,1901 @@
+{
+  "boundary": {
+    "checkpoints": [
+      {
+        "authoredIndex": 0,
+        "compiledStart": 0,
+        "label": "start"
+      },
+      {
+        "authoredIndex": 1,
+        "compiledStart": 36,
+        "label": "sector-1"
+      },
+      {
+        "authoredIndex": 2,
+        "compiledStart": 72,
+        "label": "sector-2"
+      }
+    ],
+    "laneCount": 3,
+    "laps": 1,
+    "segmentsFull": [
+      {
+        "authoredIndex": 0,
+        "curve": 0.01,
+        "grade": 1.7999999999999998,
+        "hazardIds": [],
+        "index": 0,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 0
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.01,
+        "grade": 1.7999999999999998,
+        "hazardIds": [],
+        "index": 1,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 6
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 2,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 12
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 3,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 18
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 4,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 24
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 5,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 30
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 6,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 36
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 7,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 42
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 8,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 48
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 9,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 54
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 10,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 60
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 11,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 66
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 12,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 72
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 13,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 78
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 14,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 84
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 15,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 90
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 16,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 96
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 17,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 102
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 18,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 108
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 19,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 114
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 20,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 120
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 21,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 126
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 22,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 132
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 23,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 138
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 24,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 144
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 25,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 150
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 26,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 156
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 27,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 162
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 28,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 168
+      },
+      {
+        "authoredIndex": 1,
+        "curve": -0.01,
+        "grade": -1.7999999999999998,
+        "hazardIds": [
+          "gravel"
+        ],
+        "index": 29,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 174
+      }
+    ],
+    "segmentsSampled": [
+      {
+        "authoredIndex": 3,
+        "curve": -0.005,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 50,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 300
+      },
+      {
+        "authoredIndex": 4,
+        "curve": 0,
+        "grade": 1.2000000000000002,
+        "hazardIds": [],
+        "index": 75,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 450
+      }
+    ],
+    "spawn": {
+      "gridSlots": 12
+    },
+    "totalCompiledSegments": 92,
+    "totalLengthMeters": 552,
+    "trackId": "fixture/boundary",
+    "warnings": [],
+    "weatherOptions": [
+      "clear",
+      "heavy_rain"
+    ]
+  },
+  "crest": {
+    "checkpoints": [
+      {
+        "authoredIndex": 0,
+        "compiledStart": 0,
+        "label": "start"
+      },
+      {
+        "authoredIndex": 1,
+        "compiledStart": 40,
+        "label": "summit"
+      }
+    ],
+    "laneCount": 3,
+    "laps": 1,
+    "segmentsFull": [
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 0,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 0
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 1,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 6
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 2,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 12
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 3,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 18
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 4,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 24
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 5,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 30
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 6,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 36
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 7,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 42
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 8,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 48
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 9,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 54
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 10,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 60
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 11,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 66
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 12,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 72
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 13,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 78
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 14,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 84
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 15,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 90
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 16,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 96
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 17,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 102
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 18,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 108
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0.30000000000000004,
+        "hazardIds": [],
+        "index": 19,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 114
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 20,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 120
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 21,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 126
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 22,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 132
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 23,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 138
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 24,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 144
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 25,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 150
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 26,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 156
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 27,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 162
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 28,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 168
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0.6000000000000001,
+        "hazardIds": [],
+        "index": 29,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 174
+      }
+    ],
+    "segmentsSampled": [
+      {
+        "authoredIndex": 5,
+        "curve": 0,
+        "grade": -0.8999999999999999,
+        "hazardIds": [],
+        "index": 50,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 300
+      },
+      {
+        "authoredIndex": 7,
+        "curve": 0,
+        "grade": -0.30000000000000004,
+        "hazardIds": [],
+        "index": 75,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 450
+      }
+    ],
+    "spawn": {
+      "gridSlots": 12
+    },
+    "totalCompiledSegments": 100,
+    "totalLengthMeters": 600,
+    "trackId": "fixture/crest",
+    "warnings": [],
+    "weatherOptions": [
+      "clear"
+    ]
+  },
+  "gentle-curve": {
+    "checkpoints": [
+      {
+        "authoredIndex": 0,
+        "compiledStart": 0,
+        "label": "start"
+      },
+      {
+        "authoredIndex": 1,
+        "compiledStart": 60,
+        "label": "sector-1"
+      }
+    ],
+    "laneCount": 3,
+    "laps": 1,
+    "segmentsFull": [
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 0,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 0
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 1,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 6
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 2,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 12
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 3,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 18
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 4,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 24
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 5,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 30
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 6,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 36
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 7,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 42
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 8,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 48
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 9,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 54
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 10,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 60
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 11,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 66
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 12,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 72
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 13,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 78
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 14,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 84
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 15,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 90
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 16,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 96
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 17,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 102
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 18,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 108
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 19,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 114
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 20,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 120
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 21,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 126
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 22,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 132
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 23,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 138
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 24,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 144
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 25,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 150
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 26,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 156
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 27,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 162
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 28,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 168
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 29,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 174
+      }
+    ],
+    "segmentsSampled": [
+      {
+        "authoredIndex": 5,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 50,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 300
+      },
+      {
+        "authoredIndex": 7,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 75,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 450
+      },
+      {
+        "authoredIndex": 10,
+        "curve": 0.002,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 100,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 600
+      }
+    ],
+    "spawn": {
+      "gridSlots": 12
+    },
+    "totalCompiledSegments": 120,
+    "totalLengthMeters": 720,
+    "trackId": "fixture/gentle-curve",
+    "warnings": [],
+    "weatherOptions": [
+      "clear",
+      "light_rain"
+    ]
+  },
+  "mvp-vs": {
+    "checkpoints": [
+      {
+        "authoredIndex": 0,
+        "compiledStart": 0,
+        "label": "start"
+      },
+      {
+        "authoredIndex": 1,
+        "compiledStart": 91,
+        "label": "sector-1"
+      },
+      {
+        "authoredIndex": 2,
+        "compiledStart": 141,
+        "label": "sector-2"
+      }
+    ],
+    "laneCount": 3,
+    "laps": 3,
+    "segmentsFull": [
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 0,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 0
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 1,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 6
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 2,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 12
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 3,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 18
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 4,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 24
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 5,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 30
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 6,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 36
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 7,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 42
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 8,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 48
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 9,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 54
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 10,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 60
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 11,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 66
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 12,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 72
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 13,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 78
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 14,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 84
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 15,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 90
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 16,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 96
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 17,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 102
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 18,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 108
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 19,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 114
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 20,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 120
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 21,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 126
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 22,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 132
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 23,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 138
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 24,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 144
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 25,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 150
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 26,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 156
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 27,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 162
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 28,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 168
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 29,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 174
+      }
+    ],
+    "segmentsSampled": [
+      {
+        "authoredIndex": 1,
+        "curve": 0.0034999999999999996,
+        "grade": 0.12,
+        "hazardIds": [
+          "puddle"
+        ],
+        "index": 50,
+        "roadsideLeftId": "guardrail",
+        "roadsideRightId": "water_wall",
+        "worldZ": 300
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 75,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "palms_sparse",
+        "worldZ": 450
+      },
+      {
+        "authoredIndex": 3,
+        "curve": -0.0045000000000000005,
+        "grade": -0.18,
+        "hazardIds": [
+          "puddle"
+        ],
+        "index": 100,
+        "roadsideLeftId": "water_wall",
+        "roadsideRightId": "guardrail",
+        "worldZ": 600
+      },
+      {
+        "authoredIndex": 5,
+        "curve": 0.0025,
+        "grade": 0.24,
+        "hazardIds": [],
+        "index": 125,
+        "roadsideLeftId": "guardrail",
+        "roadsideRightId": "marina_signs",
+        "worldZ": 750
+      },
+      {
+        "authoredIndex": 6,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 150,
+        "roadsideLeftId": "palms_sparse",
+        "roadsideRightId": "palms_sparse",
+        "worldZ": 900
+      },
+      {
+        "authoredIndex": 7,
+        "curve": -0.003,
+        "grade": -0.12,
+        "hazardIds": [],
+        "index": 175,
+        "roadsideLeftId": "water_wall",
+        "roadsideRightId": "guardrail",
+        "worldZ": 1050
+      },
+      {
+        "authoredIndex": 8,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 200,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 1200
+      },
+      {
+        "authoredIndex": 9,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 225,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 1350
+      },
+      {
+        "authoredIndex": 9,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 250,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 1500
+      }
+    ],
+    "spawn": {
+      "gridSlots": 12
+    },
+    "totalCompiledSegments": 254,
+    "totalLengthMeters": 1524,
+    "trackId": "velvet-coast/harbor-run",
+    "warnings": [],
+    "weatherOptions": [
+      "clear",
+      "light_rain",
+      "dusk"
+    ]
+  },
+  "straight": {
+    "checkpoints": [
+      {
+        "authoredIndex": 0,
+        "compiledStart": 0,
+        "label": "start"
+      }
+    ],
+    "laneCount": 3,
+    "laps": 1,
+    "segmentsFull": [
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 0,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 0
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 1,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 6
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 2,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 12
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 3,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 18
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 4,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 24
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 5,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 30
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 6,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 36
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 7,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 42
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 8,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 48
+      },
+      {
+        "authoredIndex": 0,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 9,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 54
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 10,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 60
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 11,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 66
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 12,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 72
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 13,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 78
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 14,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 84
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 15,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 90
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 16,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 96
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 17,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 102
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 18,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 108
+      },
+      {
+        "authoredIndex": 1,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 19,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 114
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 20,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 120
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 21,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 126
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 22,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 132
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 23,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 138
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 24,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 144
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 25,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 150
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 26,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 156
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 27,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 162
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 28,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 168
+      },
+      {
+        "authoredIndex": 2,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 29,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 174
+      }
+    ],
+    "segmentsSampled": [
+      {
+        "authoredIndex": 5,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 50,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 300
+      },
+      {
+        "authoredIndex": 7,
+        "curve": 0,
+        "grade": 0,
+        "hazardIds": [],
+        "index": 75,
+        "roadsideLeftId": "default",
+        "roadsideRightId": "default",
+        "worldZ": 450
+      }
+    ],
+    "spawn": {
+      "gridSlots": 12
+    },
+    "totalCompiledSegments": 80,
+    "totalLengthMeters": 480,
+    "trackId": "fixture/straight",
+    "warnings": [],
+    "weatherOptions": [
+      "clear"
+    ]
+  }
+}

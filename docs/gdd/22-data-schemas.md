@@ -34,8 +34,7 @@
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" },
-    { "segmentIndex": 18, "label": "split-a" },
-    { "segmentIndex": 41, "label": "sector-2" }
+    { "segmentIndex": 1, "label": "split-a" }
   ],
   "spawn": {
     "gridSlots": 12

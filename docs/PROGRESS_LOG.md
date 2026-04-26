@@ -6,6 +6,79 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Track compiler + golden-master tests (§9, §22)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md), [§22](gdd/22-data-schemas.md)
+**Branch / PR:** `feat/track-compiler-golden`, PR pending
+**Status:** Implemented
+
+### Done
+- Replaced the stubbed `compileTrack` in `src/road/trackCompiler.ts`
+  with the full pipeline pinned by
+  `.dots/archive/VibeGear2-research-track-authoring-ebc66903.md`. The
+  function now returns a `CompiledTrack` with `segments`, `checkpoints`,
+  `warnings`, and full track metadata, recursively frozen via a local
+  `deepFreeze` helper so callers cannot mutate it.
+- Added `class TrackCompileError extends Error` with stable `code` and
+  `details` fields. The compiler throws on no checkpoints, missing or
+  misplaced start checkpoint, out-of-bounds checkpoint segmentIndex, and
+  total compiled segment count below the 4-segment minimum.
+- Added soft lints emitted into `CompiledTrack.warnings`: spawn.gridSlots
+  below 8, weatherOptions missing "clear", lengthMeters drift over 5%
+  from the sum of authored len, duplicate non-start checkpoint labels,
+  and packed hairpin runs (consecutive |curve| > 0.6 with combined len
+  under 80 m).
+- Renamed `CompiledSegment.authoredRef` to `authoredIndex` and added the
+  `roadsideLeftId`, `roadsideRightId`, and `hazardIds` fields per the
+  research spec. `hazardIds` shares the same array reference as the
+  authored segment to avoid per-frame allocation in the renderer.
+- Kept the lower-level `compileSegments(authored)` entry point for the
+  dev pages (`/dev/road`, `/dev/physics`, AI tests) and renamed its
+  return type to `CompiledSegmentBuffer` to disambiguate from the full
+  `CompiledTrack` returned by `compileTrack`.
+- Added a browser-safe `loadTrack(id)` helper in `src/data/index.ts`
+  backed by a static-import barrel `src/data/tracks/index.ts`. Two
+  bundled tracks ship today: `test/straight` and `test/curve`.
+- Added 16 unit tests in `src/road/__tests__/trackCompiler.test.ts`
+  covering the algorithm, the throw cases, the warning cases, and the
+  frozen-output property. Plus 10 lower-level `compileSegments` tests.
+- Added 5 fixture tracks under `src/road/__tests__/fixtures/` (straight,
+  gentle-curve, crest, mvp-vs, boundary) and a golden-master suite
+  `trackCompiler.golden.test.ts` that deep-compares each fixture against
+  a JSON snapshot stored in `__snapshots__/trackCompiler.snapshots.json`.
+  Use `UPDATE_SNAPSHOTS=1 vitest run` to regenerate intentionally.
+- Implemented `snapshotHelpers.ts` with stable JSON serialisation
+  (sorted keys), atomic write-back via tmp + rename, full-prefix of 30
+  segments plus stride-25 sampling beyond, and a clear "rerun with
+  UPDATE_SNAPSHOTS=1" hint on a first-time miss.
+- Updated `src/data/examples/track.example.json` and
+  `docs/gdd/22-data-schemas.md` to use valid authored checkpoint
+  indices (the previous example referenced compiled-segment indices
+  18 and 41, which are out of bounds against the 2 authored segments
+  the example actually shows).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 319 total passing (52 new across the three road suites).
+- `npm run build` clean. New tracks barrel ships in the client bundle.
+
+### Decisions and assumptions
+- Pre-scaled curve and grade kept on `CompiledSegment` (Option A from
+  the dot stress-test) so the existing `segmentProjector` does not
+  regress. Documented the post-scaled invariant on the type.
+- `loadTrack(id)` uses a build-time JSON barrel rather than `node:fs`
+  so it is safe under static export and Edge runtime.
+- `compileSegments` kept as a thin escape hatch for dev pages so they
+  do not need to fabricate fake checkpoints.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: changed the example track's checkpoint
+  segmentIndex values from 18 and 41 to 1, so the example is internally
+  consistent with the authored segments shown.
+
+---
+
 ## 2026-04-26: Slice: Single AI driver, clean_line archetype (§15)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md), [§22](gdd/22-data-schemas.md)

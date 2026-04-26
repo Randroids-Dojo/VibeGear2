@@ -1,0 +1,24 @@
+{
+  "id": "test/curve",
+  "name": "Test Curve",
+  "tourId": "test",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1200,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 1,
+  "segments": [
+    { "len": 200, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 200, "curve": 0.3, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 200, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 200, "curve": -0.3, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 400, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "sector-1" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

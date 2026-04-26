@@ -1,0 +1,26 @@
+{
+  "id": "fixture/boundary",
+  "name": "Boundary",
+  "tourId": "fixture",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 540,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "heavy_rain"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 7, "curve": 1, "grade": 0.3, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 200, "curve": -1, "grade": -0.3, "roadsideLeft": "default", "roadsideRight": "default", "hazards": ["gravel"] },
+    { "len": 7, "curve": 0.5, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 200, "curve": -0.5, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": 0.2, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 60, "curve": 0, "grade": -0.2, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "sector-1" },
+    { "segmentIndex": 4, "label": "sector-2" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

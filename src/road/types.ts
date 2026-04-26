@@ -7,6 +7,8 @@
  * without pulling in either the projector or the canvas drawer.
  */
 
+import type { TrackSpawn, WeatherOption } from "@/data/schemas";
+
 /**
  * Virtual camera that the player car never visibly leaves.
  *
@@ -33,20 +35,63 @@ export interface Viewport {
  *
  * `index` is the position of the segment in the compiled ring buffer.
  * `worldZ` is the cumulative position along travel direction in meters.
- * `curve` is the per-segment dx contribution (already divided by
- * `CURVATURE_SCALE`). `grade` is the per-segment dy contribution
- * (in meters per compiled-segment), already multiplied by `SEGMENT_LENGTH`.
  *
- * `authoredRef` keeps a back-reference to the variable-length authored
+ * `curve` is the per-segment dx contribution, post-scaled by the compiler
+ * to `authoredCurve / CURVATURE_SCALE` so the projector can sum dx
+ * directly without per-strip scale math. `grade` is the per-segment dy
+ * contribution, post-scaled to `authoredGrade * SEGMENT_LENGTH` so the
+ * projector can integrate vertical lift in compiled units.
+ *
+ * `authoredIndex` keeps a back-reference to the variable-length authored
  * segment so the renderer can look up roadside / hazard info at draw time
  * without re-reading the source `Track`.
+ *
+ * `roadsideLeftId`, `roadsideRightId`, and `hazardIds` are the authored
+ * decoration ids for the strip. `hazardIds` is the same array reference
+ * as the source authored segment's `hazards` array (frozen) to avoid
+ * per-segment allocation.
  */
 export interface CompiledSegment {
   index: number;
   worldZ: number;
   curve: number;
   grade: number;
-  authoredRef: number;
+  authoredIndex: number;
+  roadsideLeftId: string;
+  roadsideRightId: string;
+  hazardIds: readonly string[];
+}
+
+/**
+ * One compiled checkpoint, mapping the authored checkpoint to the compiled
+ * segment index where it begins. The race-rules engine reads compiled
+ * checkpoints exclusively; authored checkpoints are an authoring-only
+ * concept.
+ */
+export interface CompiledCheckpoint {
+  authoredIndex: number;
+  compiledStart: number;
+  label: string;
+}
+
+/**
+ * Output of `compileTrack`. Frozen at every depth so callers cannot
+ * mutate it; see `deepFreeze` in `trackCompiler.ts`.
+ *
+ * `warnings` collects non-fatal lints. Hard errors throw
+ * `TrackCompileError` instead.
+ */
+export interface CompiledTrack {
+  trackId: string;
+  totalLengthMeters: number;
+  totalCompiledSegments: number;
+  segments: readonly CompiledSegment[];
+  checkpoints: readonly CompiledCheckpoint[];
+  spawn: TrackSpawn;
+  laps: number;
+  laneCount: number;
+  weatherOptions: readonly WeatherOption[];
+  warnings: readonly string[];
 }
 
 /**

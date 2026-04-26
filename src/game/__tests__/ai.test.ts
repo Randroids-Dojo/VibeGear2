@@ -29,7 +29,7 @@ import {
 } from "@/game/ai";
 import { INITIAL_CAR_STATE, type CarState } from "@/game/physics";
 import { createRaceState, type RaceState } from "@/game/raceState";
-import { compileSegments, type CompiledTrack } from "@/road/trackCompiler";
+import { compileSegments, type CompiledSegmentBuffer } from "@/road/trackCompiler";
 
 // Test fixtures ------------------------------------------------------------
 
@@ -55,7 +55,7 @@ const CLEAN_LINE_DRIVER: AIDriver = Object.freeze({
   nitroUsage: { launchBias: 0.5, straightBias: 0.5, panicBias: 0.1 },
 });
 
-const STRAIGHT_TRACK: CompiledTrack = compileSegments([
+const STRAIGHT_TRACK: CompiledSegmentBuffer = compileSegments([
   {
     len: 1200,
     curve: 0,
@@ -70,7 +70,7 @@ const STRAIGHT_TRACK: CompiledTrack = compileSegments([
  * Mixed track: 600 m straight, 600 m right-handed sweeper, 600 m straight.
  * `curve = 0.5` is a normal cornering value per `TrackSegmentSchema`.
  */
-const SWEEPER_TRACK: CompiledTrack = compileSegments([
+const SWEEPER_TRACK: CompiledSegmentBuffer = compileSegments([
   { len: 600, curve: 0, grade: 0, roadsideLeft: "d", roadsideRight: "d", hazards: [] },
   { len: 600, curve: 0.5, grade: 0, roadsideLeft: "d", roadsideRight: "d", hazards: [] },
   { len: 600, curve: 0, grade: 0, roadsideLeft: "d", roadsideRight: "d", hazards: [] },
