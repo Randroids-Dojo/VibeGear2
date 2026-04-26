@@ -18,10 +18,9 @@ build*; this agreement wins for *how to operate*.
 
 ## 2. Branching and pushing
 
-- Long-running implementation work happens on
-  `claude/gdd-implementation-plan-Z0cpN` and short-lived child branches off
-  `main` named `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or
-  `docs/<slice>`.
+- Implementation work happens on short-lived branches off `main` named
+  `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`. One
+  branch per slice; delete after merge.
 - Never push directly to `main`. Always go through a PR.
 - Every push uses `git push -u origin <branch-name>`. On network failure, retry
   up to 4 times with exponential backoff (2s, 4s, 8s, 16s).
@@ -81,7 +80,7 @@ For every slice, before marking it done:
 - For physics, AI, or numeric systems, write a deterministic test that pins
   the behaviour. Floating-point comparisons use tolerances, not equality.
 - For data-driven content (tracks, cars, tours), validate against the schema
-  defined in `22-data-schemas.md` as part of CI.
+  defined in [`docs/gdd/22-data-schemas.md`](gdd/22-data-schemas.md) as part of CI.
 
 ## 7. Refactoring
 
@@ -108,8 +107,8 @@ The agent **must** stop and ask when:
 The agent **may** proceed with a labelled assumption when:
 
 - The GDD is silent but the choice is local, reversible, and low-stakes.
-- A reasonable default exists in `01-title-and-high-concept.md`'s pillars or
-  the cited research in `03-top-gear-2-research-summary.md`.
+- A reasonable default exists in [`docs/gdd/01-title-and-high-concept.md`](gdd/01-title-and-high-concept.md)'s pillars or
+  the cited research in [`docs/gdd/03-top-gear-2-research-summary.md`](gdd/03-top-gear-2-research-summary.md).
 
 How to ask:
 

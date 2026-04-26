@@ -51,7 +51,7 @@ and `ASSETS-LICENSE` files at repo root.
 **Status:** open
 **Asked in loop:** 2026-04-26
 
-**Question.** `01-title-and-high-concept.md` says: "Reuse VibeRacer patterns:
+**Question.** [`docs/gdd/01-title-and-high-concept.md`](gdd/01-title-and-high-concept.md) says: "Reuse VibeRacer patterns:
 Next.js, React, TypeScript, custom math, Web Audio, local storage, schema
 validation, and automated tests." Should §21 simply codify that exact stack,
 or is anything intended to differ (e.g. SvelteKit, Vite, no React)?

@@ -46,57 +46,57 @@ revisit earlier ones — but each phase has a primary focus.
 
 ### Phase 0 — Foundations and GDD completion
 - Verify all 28 GDD section files exist. Author missing files
-  (`18-sound-and-music-design.md` through `28-appendices-and-research-references.md`)
+  ([`docs/gdd/18-sound-and-music-design.md`](gdd/18-sound-and-music-design.md) through [`docs/gdd/28-appendices-and-research-references.md`](gdd/28-appendices-and-research-references.md))
   by drafting from the parent index and any cross-references, then flagging
   unresolved sections for dev review.
 - Stand up the project skeleton described in
-  `21-technical-design-for-web-implementation.md`: Next.js + TypeScript app,
+  [`docs/gdd/21-technical-design-for-web-implementation.md`](gdd/21-technical-design-for-web-implementation.md): Next.js + TypeScript app,
   lint, type-check, unit-test, end-to-end harness, CI, and a deploy target.
 - Wire `PROGRESS_LOG.md`, `OPEN_QUESTIONS.md`, and `FOLLOWUPS.md` so every
   later loop has a place to write.
-- Define the JSON schemas in `22-data-schemas.md` as TypeScript types and
+- Define the JSON schemas in [`docs/gdd/22-data-schemas.md`](gdd/22-data-schemas.md) as TypeScript types and
   runtime validators.
 
 ### Phase 1 — Vertical slice (drivable road)
 - Pseudo-3D road renderer (Canvas2D) with one straight + one curve track.
-- Player car with arcade physics from `10-driving-model-and-physics.md`
+- Player car with arcade physics from [`docs/gdd/10-driving-model-and-physics.md`](gdd/10-driving-model-and-physics.md)
   (acceleration, top speed, steering, basic collision feedback).
 - Single AI car using the simplest opponent profile from
-  `15-cpu-opponents-and-ai.md`.
+  [`docs/gdd/15-cpu-opponents-and-ai.md`](gdd/15-cpu-opponents-and-ai.md).
 - HUD with speed, lap, and position only.
 - Goal: a 30-second drive feels like the design pillars in
-  `01-title-and-high-concept.md`.
+  [`docs/gdd/01-title-and-high-concept.md`](gdd/01-title-and-high-concept.md).
 
 ### Phase 2 — Race rules and economy
-- Full race rules from `07-race-rules-and-structure.md` (countdown, laps,
+- Full race rules from [`docs/gdd/07-race-rules-and-structure.md`](gdd/07-race-rules-and-structure.md) (countdown, laps,
   placement, DNF rules).
-- Damage model from `13-damage-repairs-and-risk.md`.
+- Damage model from [`docs/gdd/13-damage-repairs-and-risk.md`](gdd/13-damage-repairs-and-risk.md).
 - Credits, repairs, and the upgrade categories from
-  `12-upgrade-and-economy-system.md`.
-- Garage flow from `05-core-gameplay-loop.md`.
-- Save / load from `21-technical-design-for-web-implementation.md` (local
+  [`docs/gdd/12-upgrade-and-economy-system.md`](gdd/12-upgrade-and-economy-system.md).
+- Garage flow from [`docs/gdd/05-core-gameplay-loop.md`](gdd/05-core-gameplay-loop.md).
+- Save / load from [`docs/gdd/21-technical-design-for-web-implementation.md`](gdd/21-technical-design-for-web-implementation.md) (local
   storage MVP).
 
 ### Phase 3 — World, tours, and content
-- Region and tour structure from `08-world-and-progression-design.md`.
-- Track authoring pipeline using the schema in `22-data-schemas.md`.
-- The track set required by `24-content-plan.md` for MVP.
-- Car set and stats from `11-cars-and-stats.md`.
-- Balancing pass against `23-balancing-tables.md`.
+- Region and tour structure from [`docs/gdd/08-world-and-progression-design.md`](gdd/08-world-and-progression-design.md).
+- Track authoring pipeline using the schema in [`docs/gdd/22-data-schemas.md`](gdd/22-data-schemas.md).
+- The track set required by [`docs/gdd/24-content-plan.md`](gdd/24-content-plan.md) for MVP.
+- Car set and stats from [`docs/gdd/11-cars-and-stats.md`](gdd/11-cars-and-stats.md).
+- Balancing pass against [`docs/gdd/23-balancing-tables.md`](gdd/23-balancing-tables.md).
 
 ### Phase 4 — Atmosphere and feel
-- Weather and environmental systems (`14-weather-and-environmental-systems.md`).
-- Sound and music (`18-sound-and-music-design.md`).
-- Visual polish from `16-rendering-and-visual-design.md` and `17-art-direction.md`.
-- HUD/UX polish from `20-hud-and-ui-ux.md`.
+- Weather and environmental systems ([`docs/gdd/14-weather-and-environmental-systems.md`](gdd/14-weather-and-environmental-systems.md)).
+- Sound and music ([`docs/gdd/18-sound-and-music-design.md`](gdd/18-sound-and-music-design.md)).
+- Visual polish from [`docs/gdd/16-rendering-and-visual-design.md`](gdd/16-rendering-and-visual-design.md) and [`docs/gdd/17-art-direction.md`](gdd/17-art-direction.md).
+- HUD/UX polish from [`docs/gdd/20-hud-and-ui-ux.md`](gdd/20-hud-and-ui-ux.md).
 
 ### Phase 5 — Modes, modding, and stretch
-- Time trial, daily challenge, and any additional modes in `06-game-modes.md`.
-- Track editor and mod loading per `26-open-source-project-guidance.md`.
+- Time trial, daily challenge, and any additional modes in [`docs/gdd/06-game-modes.md`](gdd/06-game-modes.md).
+- Track editor and mod loading per [`docs/gdd/26-open-source-project-guidance.md`](gdd/26-open-source-project-guidance.md).
 - Optional ghost racing / leaderboard hooks.
 
 ### Phase 6 — Hardening and release
-- Risks/mitigations sweep from `27-risks-and-mitigations.md`.
+- Risks/mitigations sweep from [`docs/gdd/27-risks-and-mitigations.md`](gdd/27-risks-and-mitigations.md).
 - Cross-browser, performance, and accessibility verification.
 - Versioned release, changelog, and tagged deploy.
 
@@ -134,7 +134,8 @@ typically 1–3 days of agent work, never more than what fits in a single PR.
 │                                                         │
 ├─ document ──────────────────────────────────────────────┤
 │  append a PROGRESS_LOG.md entry (template in §6)        │
-│  move resolved items out of OPEN_QUESTIONS.md           │
+│  mark resolved OPEN_QUESTIONS.md items answered or      │
+│  obsolete (do not delete; history is preserved)         │
 │  add any new followups to FOLLOWUPS.md                  │
 │  if implementation forced a GDD change, edit the GDD    │
 │  in the same PR and call it out in the log              │
@@ -148,7 +149,7 @@ typically 1–3 days of agent work, never more than what fits in a single PR.
 
 The loop terminates only when:
 1. Every GDD section is marked `Implemented` in `PROGRESS_LOG.md`, **and**
-2. `FOLLOWUPS.md` contains no `must-fix-before-release` items, **and**
+2. `FOLLOWUPS.md` contains no `blocks-release` items, **and**
 3. A tagged release has deployed cleanly and a smoke test of the deployed game
    passes.
 
