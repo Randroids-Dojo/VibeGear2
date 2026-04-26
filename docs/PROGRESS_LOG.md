@@ -6,6 +6,73 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: championship content registry (world-tour-standard)
+
+**GDD sections touched:** [§22](gdd/22-data-schemas.md) (Championship JSON
+schema), [§24](gdd/24-content-plan.md) (Suggested region and track list,
+Full v1.0 content totals).
+**Branch / PR:** `feat/championship-content` (stacked on
+`feat/sector-splits`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Authored `src/data/championships/world-tour-standard.json`: the canonical
+  championship file with 8 tours of 4 tracks each, 32 tracks total, ids
+  drawn verbatim from §24 "Suggested region and track list" and slugified
+  (lowercased, hyphenated, slash-prefixed by tour). `requiredStanding`
+  pinned monotonic non-increasing per the dot: 4, 4, 3, 3, 2, 2, 1, 1.
+  `difficultyPreset` set to `normal` per §28-difficulty plumbing.
+- Added `src/data/championships/index.ts`: static-import barrel exposing
+  `CHAMPIONSHIPS`, `CHAMPIONSHIPS_BY_ID`, and a `getChampionship(id)`
+  loader that mirrors the `loadTrack` shape (throws on unknown id or
+  schema-validation failure for fail-fast loads). Top-of-file comment
+  documents the MVP placeholder track ids since JSON cannot carry them.
+- Re-exported `CHAMPIONSHIPS`, `CHAMPIONSHIPS_BY_ID`, and
+  `getChampionship` from `src/data/index.ts` so callers import via the
+  data barrel.
+- Added `src/data/__tests__/championship-content.test.ts` (13 tests):
+  schema-validation per championship, catalogue invariants, structural
+  pins (8 tours, 4 tracks per tour, 32 total, unique ids, nested-id
+  prefix), monotonic `requiredStanding`, and a phase-guarded cross-ref
+  block. Default permissive mode passes during the MVP content window;
+  set `STRICT_CHAMPIONSHIP_TRACKS=1` to enforce full resolution once the
+  32-track set lands.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (570 tests, 13 new in `championship-content.test.ts`).
+- `npm run build` clean. No route-size delta (championship JSON is data
+  only, not yet imported by any page module).
+- `npm run test:e2e` passes (15 specs, no new e2e specs since the
+  championship is data-layer only and not yet wired into the title or
+  garage flows).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Track ids are slash-nested under their tour id (e.g.
+  `velvet-coast/harbor-run`) per the §22 schema example and the existing
+  `test/straight`, `test/curve` precedent.
+- `requiredStanding` cadence (4, 4, 3, 3, 2, 2, 1, 1) is taken verbatim
+  from the dot. The §23-balancing slice may revise once the difficulty
+  curve is play-tested.
+- The cross-reference test defaults to permissive (no env var needed) so
+  CI stays green during MVP. The dot's original
+  `ALLOW_UNRESOLVED_CHAMPIONSHIP_TRACKS=1` shape was inverted to
+  `STRICT_CHAMPIONSHIP_TRACKS=1` so the green-by-default path is the
+  current MVP state, not a configured-CI state. The flag and permissive
+  branch both go away once §24 ships in full.
+- `getChampionship` throws on unknown id; the symmetric pattern in
+  `loadTrack` returns the parsed object on success and throws otherwise.
+  `CHAMPIONSHIPS_BY_ID` is exposed for callers (UI selectors) that
+  prefer a `Map`-style lookup without the throw.
+
+### Followups created
+- None. The championship-content slice is structurally complete; track
+  files are owned by sibling MVP-track and full-content slices.
+
+---
+
 ## 2026-04-26: Slice: sector splits + ghost delta HUD widget
 
 **GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) (Race HUD list:

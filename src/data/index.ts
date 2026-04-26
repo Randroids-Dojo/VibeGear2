@@ -11,6 +11,11 @@ export {
   getCar,
 } from "./cars";
 export { TRACK_IDS, TRACK_RAW } from "./tracks";
+export {
+  CHAMPIONSHIPS,
+  CHAMPIONSHIPS_BY_ID,
+  getChampionship,
+} from "./championships";
 
 import { compileTrack } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";
