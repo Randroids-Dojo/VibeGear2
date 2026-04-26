@@ -6,6 +6,124 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Asset preload + loading screen (§21)
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md), [§20](gdd/20-hud-and-ui-ux.md)
+**Branch / PR:** `feat/asset-preload`, PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/asset/preload.ts` with the pure loader
+  `preloadAll(manifest, options) -> Promise<{ assets, failures }>`.
+  Resolves entries in parallel, never rejects, preserves manifest order
+  in the output map and failure list, drops aborted entries silently
+  (they neither resolve nor surface as failures), and validates that
+  the fetcher's returned `kind` matches the entry's declared `kind`.
+  Progress is reported through an injected `onProgress` callback after
+  every settled entry so the loading screen does not have to derive
+  its own progress.
+- Distinguished critical vs non-critical assets via the `critical`
+  flag on each entry plus the `hasCriticalFailure(result)` helper.
+  Critical failures block the gate and surface a retry; non-critical
+  failures degrade silently with a screen-reader-friendly warning
+  count.
+- Added a `createBrowserFetcher(deps)` factory that wraps `fetch`,
+  `Image`, and an injected `AudioContext.decodeAudioData` for the
+  runtime path. Dependencies are injectable so the unit tests never
+  reach for the DOM and so a future Node-side build (e.g. golden
+  manifest tests) can use a memory transport.
+- Added `src/asset/manifest.ts` with `manifestForTrack({ track,
+  weather, playerCarId, aiCarIds, resolver })`. Order is stable: track
+  JSON first, then player car sprite, then AI car sprites (deduped
+  against the player), then unique roadside atlases in segment order,
+  then weather audio for the selected variant. Track JSON and player
+  sprite are critical; everything else is non-critical so a missing
+  roadside atlas does not block the race.
+- Added `src/components/loading/loadingState.ts` as the pure state
+  machine for the loading screen. Phases are `idle`, `loading`,
+  `failed-critical`, and `ready`; the fold function `applyProgress`
+  is idempotent and never mutates the input snapshot. Helpers
+  `formatLoadingText` and `progressFraction` produce the screen-reader
+  text and bar fraction.
+- Added `src/components/loading/LoadingScreen.tsx`: presentational
+  view with a `role="status"` live region, `role="progressbar"` track
+  with the live percentage, a `data-phase` attribute for Playwright
+  assertions, and a retry button only when a critical failure has
+  surfaced. `reducedMotion` disables the bar's CSS transition without
+  affecting the input flow.
+- Added `src/components/loading/LoadingGate.tsx`: controller that wires
+  `preloadAll` into the screen. Cancellation runs through an
+  `AbortController` that aborts on unmount or manifest-id change.
+  Empty manifests skip the gate entirely. A retry handler bumps an
+  internal attempt counter so the gate re-runs the preload after a
+  critical failure.
+- Added `src/app/race/page.tsx` so the gate is wired end to end. The
+  route currently mounts a placeholder "Race ready" card instead of
+  the full canvas because the §10 / §15 / §20 race scene has not been
+  composed into a single mounted page yet; the canvas swap happens in
+  the future race-route slice. `/race` builds and prerenders.
+- Added 36 new unit tests across three files:
+  `src/asset/__tests__/preload.test.ts` (11 cases covering empty
+  manifest, happy-path 3 image / 2 audio / 1 json, manifest-order
+  preservation when entries resolve out of order, partial failure,
+  kind mismatch, progress events, abort with no console noise, and
+  AbortError name handling), `src/asset/__tests__/manifest.test.ts`
+  (8 cases covering ordering, critical flagging, dedupe, weather
+  audio selection, manifest id stability, default and injected
+  resolvers), and
+  `src/components/loading/__tests__/loadingState.test.ts` (17 cases
+  covering startLoading, every phase transition, idempotency,
+  immutability, every formatLoadingText branch, and progressFraction
+  edge cases).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 269/269 (36 new across the three new test files
+  plus 233 prior).
+- `npm run build` succeeds; `/race` is one of the prerendered routes
+  (3.52 kB).
+- `grep -P '[\x{2013}\x{2014}]'` across the new files returns nothing
+  (no em-dashes, no en-dashes).
+- Manual visual verification of the loading screen and gate defers to
+  Playwright once F-002 lands the harness; the dot's e2e spec is
+  filed as F-018.
+
+### Decisions and assumptions
+- The race route ships a placeholder body because the full §10 / §15
+  / §20 race scene has not been composed into a single mounted page
+  yet; the gate is the contribution of this slice. The placeholder
+  preserves the gate's contract (children receive the decoded asset
+  map) so the canvas swap is a leaf change in a future slice.
+- `manifestForTrack` does not enforce dedupe across `aiCarIds`
+  beyond skipping the player id. Repeated AI ids are the caller's
+  responsibility; the manifest test documents this rather than
+  silently deduping (a noisy contract is easier to debug than a
+  silent one).
+- Aborted entries are dropped from `failures` rather than surfaced as
+  cancellation failures. This matches the dot's spec ("subsequent
+  calls do not log to console") and keeps Playwright assertions about
+  the failure list stable across cancelled vs completed runs.
+- The default resolver returns URLs under `/assets/...` even though
+  no asset pipeline ships those files yet. Until the pipeline lands,
+  every preload attempt against a default resolver will fail, but
+  most failures are non-critical so the gate still surfaces a "Race
+  ready" body. The next asset-pipeline slice will add the files.
+- Critical-vs-non-critical split is documented in the manifest module's
+  JSDoc per the dot's verify checklist; it is also enforced in code by
+  the `critical: true` markers on the track JSON and player sprite
+  entries.
+
+### Followups created
+- F-018: Playwright e2e spec for the loading screen / preload gate
+  (deferred until F-002 lands the harness).
+
+### GDD edits
+- None. Implementation conforms to §21 (Renderer + Audio preload) and
+  §20 (loading-screen accessibility text + reducedMotion handling).
+
+---
+
 ## 2026-04-26: Slice: Touch / mobile input source (§19, closes F-013)
 
 **GDD sections touched:** [§19](gdd/19-controls-and-input.md)

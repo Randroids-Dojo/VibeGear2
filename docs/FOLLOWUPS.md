@@ -10,6 +10,23 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-018: Playwright e2e spec for the loading screen / preload gate
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The asset preload slice unit-tested the pure loader (parallel
+resolve, partial failures, abort cancellation, kind-mismatch guard, progress
+events) and the loading-screen state machine (idle / loading /
+failed-critical / ready transitions, formatted text, progress fraction).
+The dot also asked for a Playwright spec (`e2e/loading-screen.spec.ts`)
+that simulates a slow network with `route.fulfill(..., delay)` and
+asserts the progress text advances from "Loading 0 of N" to "Loaded N of
+N" before `[data-testid=race-ready]` mounts. Deferred because the
+project still has no Playwright runner configured (F-002 tracks that
+harness slice). When the harness lands, navigate to `/race`, slow each
+manifest URL with a 200 ms delay, assert the bar progresses, and assert
+the ready card mounts on completion.
+
 ## F-017: Playwright e2e specs for touch / mobile input
 **Created:** 2026-04-26
 **Priority:** nice-to-have
