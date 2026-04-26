@@ -6,14 +6,15 @@ import styles from "./page.module.css";
 /**
  * Title screen.
  *
- * Renders the three top-level main menu items per GDD §5 and §20:
- * Start Race -> `/race`, Garage -> `/garage/cars`, Options ->
- * `/options`. The Options entry was a disabled placeholder
+ * Renders the top-level main menu items per GDD §5 and §20:
+ * Start Race -> `/race`, Time Trial -> `/time-trial`, Garage ->
+ * `/garage/cars`, Options -> `/options`. The Options entry was a disabled placeholder
  * (`menu-options-pending`) until the `/options` scaffold landed in
  * `VibeGear2-implement-options-screen-a9379c4a`. Its replacement keeps
  * the original `menu-options` test id that the e2e suite asserts on.
  *
- * Keyboard order is Start Race -> Garage -> Options (DOM order).
+ * Keyboard order is Start Race -> Time Trial -> Garage -> Options
+ * (DOM order).
  *
  * The footer carries two pieces of metadata. The pre-existing
  * `build-status` line tracks the design phase (kept verbatim so the
@@ -32,6 +33,7 @@ interface MenuItem {
 
 const MENU: ReadonlyArray<MenuItem> = [
   { label: "Start Race", href: "/race", testId: "menu-start-race" },
+  { label: "Time Trial", href: "/time-trial", testId: "menu-time-trial" },
   { label: "Garage", href: "/garage/cars", testId: "menu-garage" },
   { label: "Options", href: "/options", testId: "menu-options" },
 ];

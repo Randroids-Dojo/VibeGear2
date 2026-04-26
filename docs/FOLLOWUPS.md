@@ -834,7 +834,7 @@ F-021 / F-022 producer-then-consumer split around the ghost slice).
 ## F-022: Render the ghost car in `pseudoRoadCanvas.ts`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** in-progress (drawer side landed in `feat/f-022-ghost-car-render`)
+**Status:** done (2026-04-26, `feat/f-022-time-trial-ghost-consumer`)
 **Notes:** The ghost slice produces a `Player` whose `readNext(tick)`
 returns the input the recorded driver pressed on each tick. The
 consumer drives a second physics step from those inputs (same
@@ -935,6 +935,18 @@ into the renderer for the live player car (currently the live car is
 also a placeholder; both upgrades land together). Until then the
 `fill` override on the prop lets the consumer pin a per-car tint without
 touching the renderer.
+
+**Resolution:** Closed by `feat/f-022-time-trial-ghost-consumer`.
+The race shell now supports `?mode=timeTrial`, and `/time-trial`
+redirects into that mode. Time Trial sessions create a
+`createGhostDriver` from `save.ghosts[track.id]`, advance the driver
+once per simulation tick, and pass the resulting `ghostCar` overlay to
+`drawRoad`. The same mode wires `createTimeTrialRecorder` to the
+post-step race-session tick stream and persists a faster PB through
+`applyTimeTrialResult` + `saveSave` when the recorder finalises.
+Time Trial finishes skip economy credit commits so the ghost write is
+not overwritten by a stale race-reward save. The title screen now
+links to `/time-trial`.
 
 ## F-021: SaveGameSchema integration for ghost replays + v3 migration
 **Created:** 2026-04-26
