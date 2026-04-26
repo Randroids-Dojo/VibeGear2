@@ -1,0 +1,41 @@
+[
+  {
+    "id": "iron-borough-fabricators",
+    "sponsorName": "Iron Borough Fabricators",
+    "description": "Hit at least 70 m/s during the race.",
+    "kind": "top_speed_at_least",
+    "value": 70,
+    "cashCredits": 200
+  },
+  {
+    "id": "velvet-coast-co-op",
+    "sponsorName": "Velvet Coast Co-op",
+    "description": "Finish in the top 3.",
+    "kind": "finish_at_or_above",
+    "value": 3,
+    "cashCredits": 250
+  },
+  {
+    "id": "cleanline-insurance",
+    "sponsorName": "Cleanline Insurance",
+    "description": "Finish the race without taking any contact damage.",
+    "kind": "clean_race",
+    "cashCredits": 175
+  },
+  {
+    "id": "ember-steppe-purists",
+    "sponsorName": "Ember Steppe Purists",
+    "description": "Finish without firing nitro once.",
+    "kind": "no_nitro",
+    "cashCredits": 225
+  },
+  {
+    "id": "stormline-tires",
+    "sponsorName": "Stormline Tires",
+    "description": "Place top 3 in rain or heavy rain.",
+    "kind": "weather_finish_top_n",
+    "value": 3,
+    "weather": ["rain", "heavy_rain"],
+    "cashCredits": 300
+  }
+]

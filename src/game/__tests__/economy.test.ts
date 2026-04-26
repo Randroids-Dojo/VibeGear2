@@ -243,6 +243,63 @@ describe("awardCredits", () => {
     expect(a.cashEarned).toBe(b.cashEarned);
     expect(a.state).toEqual(b.state);
   });
+
+  it("sums every supplied §5 bonus into the wallet delta", () => {
+    const before = freshSave();
+    const result = awardCredits(before, {
+      placement: 1,
+      status: "finished",
+      baseTrackReward: 1000,
+      difficulty: "normal",
+      bonuses: [
+        { kind: "podium", label: "Podium finish", cashCredits: 250 },
+        { kind: "fastestLap", label: "Fastest lap", cashCredits: 200 },
+      ],
+    });
+    assertOk(result);
+    // Base 1000 (1st place * 1.0 * normal 1.0) + 250 + 200.
+    expect(result.cashEarned).toBe(1450);
+    expect(result.cashBaseEarned).toBe(1000);
+    expect(result.bonuses?.length).toBe(2);
+    expect(result.state.garage.credits).toBe(before.garage.credits + 1450);
+  });
+
+  it("DNF input ignores any supplied bonuses (participation only)", () => {
+    const before = freshSave();
+    const result = awardCredits(before, {
+      placement: 1,
+      status: "dnf",
+      baseTrackReward: 5000,
+      difficulty: "extreme",
+      bonuses: [
+        { kind: "podium", label: "Podium finish", cashCredits: 250 },
+      ],
+    });
+    assertOk(result);
+    expect(result.cashEarned).toBe(DNF_PARTICIPATION_CREDITS);
+    expect(result.bonuses).toEqual([]);
+  });
+
+  it("missing bonuses argument is equivalent to an empty list (back-compat)", () => {
+    const before = freshSave();
+    const a = awardCredits(before, {
+      placement: 3,
+      status: "finished",
+      baseTrackReward: 1500,
+      difficulty: "normal",
+    });
+    const b = awardCredits(before, {
+      placement: 3,
+      status: "finished",
+      baseTrackReward: 1500,
+      difficulty: "normal",
+      bonuses: [],
+    });
+    assertOk(a);
+    assertOk(b);
+    expect(a.state).toEqual(b.state);
+    expect(a.cashEarned).toBe(b.cashEarned);
+  });
 });
 
 describe("tourBonus", () => {

@@ -326,6 +326,67 @@ export const AtlasMetaSchema = z.object({
 });
 export type AtlasMeta = z.infer<typeof AtlasMetaSchema>;
 
+// Sponsor objective ---------------------------------------------------------
+
+/**
+ * Sponsor objective predicate kinds. Each kind names a deterministic test
+ * the §5 sponsor-objective bonus runs against the final RaceState. Adding a
+ * new kind is a schema change; the runtime evaluator
+ * (`src/game/raceBonuses.ts` `evaluateSponsorObjective`) must learn it in
+ * the same slice or the predicate is treated as failed.
+ *
+ * Pinned set:
+ *
+ * - `top_speed_at_least`: the player car's race-best top speed (m/s) is at
+ *   or above `value`. Reads from the per-car race summary the §7 race
+ *   session emits.
+ * - `finish_at_or_above`: the player's finishing placement is at or above
+ *   (numerically <=) `value`. `value: 3` means top-3 finish.
+ * - `clean_race`: the player took no contact damage (per the §13 carHit /
+ *   wallHit / offRoadObject events). Same predicate as the clean-race
+ *   bonus; sponsors can stack on it.
+ * - `no_nitro`: the player never fired a nitro burst. Reads the per-car
+ *   nitro-fired flag the §7 session emits.
+ * - `weather_finish_top_n`: the player finished in the top `value` while
+ *   the active weather was one of `weather`. Lets a sponsor objective
+ *   say "place top 3 in rain" without baking weather into the kind.
+ */
+export const SponsorObjectiveKindSchema = z.enum([
+  "top_speed_at_least",
+  "finish_at_or_above",
+  "clean_race",
+  "no_nitro",
+  "weather_finish_top_n",
+]);
+export type SponsorObjectiveKind = z.infer<typeof SponsorObjectiveKindSchema>;
+
+/**
+ * One sponsor entry. The objective predicate is a discriminated union on
+ * `kind`; the optional `value` and `weather` fields are read by the
+ * evaluator only when the kind requires them. The schema deliberately
+ * keeps both optional so a `clean_race` entry does not have to ship a
+ * placeholder value.
+ *
+ * `cashCredits` is the flat reward in credits paid on objective success.
+ * The §5 sponsor bonus does not scale with the per-track base reward
+ * because sponsors are a flat per-race contract; balancing pass owns
+ * the absolute values.
+ *
+ * `weather` is a list of `WeatherOption` entries; the predicate matches
+ * if the active weather at race finish is in the list. Required for the
+ * `weather_finish_top_n` kind, ignored for all others.
+ */
+export const SponsorObjectiveSchema = z.object({
+  id: slug,
+  sponsorName: z.string().min(1),
+  description: z.string().min(1),
+  kind: SponsorObjectiveKindSchema,
+  value: z.number().optional(),
+  weather: z.array(WeatherOptionSchema).optional(),
+  cashCredits: nonNegInt,
+});
+export type SponsorObjective = z.infer<typeof SponsorObjectiveSchema>;
+
 // Save-game -----------------------------------------------------------------
 
 export const SpeedUnitSchema = z.enum(["kph", "mph"]);

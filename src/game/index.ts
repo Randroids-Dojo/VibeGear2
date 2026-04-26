@@ -18,4 +18,10 @@ export * from "./sectorTimer";
 export * from "./rng";
 export * from "./ghost";
 export * from "./assists";
+// `raceBonuses` is the owner of the §5 bonus pipeline; `raceResult` is
+// the §20 results-screen builder that consumes it. The two re-export the
+// same `RaceBonus` / `RaceBonusKind` and the four bonus constants, so
+// only `raceResult` is barrel-exported here to avoid duplicate-export
+// ambiguity. Direct importers can still reach `raceBonuses` via
+// `@/game/raceBonuses` for the tour-completion / sponsor surfaces.
 export * from "./raceResult";

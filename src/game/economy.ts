@@ -42,6 +42,7 @@ import {
 import { CARS_BY_ID } from "@/data/cars";
 import { UPGRADES_BY_ID } from "@/data/upgrades";
 
+import { sumBonusCredits, type RaceBonus } from "./raceBonuses";
 import type { FinalCarRecord } from "./raceRules";
 
 /**
@@ -103,7 +104,7 @@ export type EconomyFailure =
   | { code: "car_not_owned"; carId: string };
 
 export type EconomyResult<S = SaveGame> =
-  | { ok: true; state: S; cashEarned?: number }
+  | { ok: true; state: S; cashEarned?: number; cashBaseEarned?: number; bonuses?: ReadonlyArray<RaceBonus> }
   | { ok: false; failure: EconomyFailure };
 
 // Credit awards ------------------------------------------------------------
@@ -138,6 +139,16 @@ export interface AwardCreditsInput {
   difficulty: string;
   /** Optional override for the participation cash on DNF (defaults to `DNF_PARTICIPATION_CREDITS`). */
   dnfParticipation?: number;
+  /**
+   * §5 bonus list to credit on top of the placement payout. Each entry's
+   * `cashCredits` is summed and added to the wallet delta. Defaults to
+   * an empty list so existing callers that have not yet wired the bonus
+   * pipeline (`raceBonuses.ts`) keep their previous behaviour. DNF cars
+   * still receive the participation cash but no bonuses; the per-bonus
+   * predicate in `computeBonuses` filters DNF before this layer sees
+   * the list, so callers do not need to pre-filter.
+   */
+  bonuses?: ReadonlyArray<RaceBonus>;
 }
 
 /**
@@ -160,13 +171,24 @@ export interface AwardCreditsInput {
  * 9-12" floor.
  */
 export function awardCredits(save: SaveGame, input: AwardCreditsInput): EconomyResult {
-  const cashEarned = computeRaceReward({
+  const cashBaseEarned = computeRaceReward({
     place: input.placement,
     status: input.status,
     baseTrackReward: input.baseTrackReward,
     difficulty: input.difficulty,
     dnfParticipation: input.dnfParticipation,
   });
+
+  // Bonuses do not accumulate for DNF cars: a DNF car receives the flat
+  // participation cash and nothing else. The §5 bonus pipeline already
+  // filters DNF inside `computeBonuses`, so any list reaching this layer
+  // for a DNF car would be empty in practice; the explicit check keeps
+  // the contract tight even if a caller bypasses the pipeline.
+  const bonuses: ReadonlyArray<RaceBonus> =
+    input.status === "dnf" ? [] : (input.bonuses ?? []);
+  const bonusCash = sumBonusCredits(bonuses);
+
+  const cashEarned = cashBaseEarned + bonusCash;
 
   const next: SaveGame = {
     ...save,
@@ -176,7 +198,7 @@ export function awardCredits(save: SaveGame, input: AwardCreditsInput): EconomyR
     },
   };
 
-  return { ok: true, state: next, cashEarned };
+  return { ok: true, state: next, cashEarned, cashBaseEarned, bonuses };
 }
 
 /**

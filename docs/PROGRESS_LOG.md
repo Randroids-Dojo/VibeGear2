@@ -6,6 +6,138 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §5 race reward bonuses (raceBonuses.ts owner module + sponsors)
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) Rewards (podium, fastest lap, clean
+race, underdog, tour completion, sponsor objective),
+[§12](gdd/12-upgrade-and-economy-system.md) Currency rewards (tour
+bonus rate),
+[§22](gdd/22-data-schemas.md) Sponsor objective schema (new).
+**Branch / PR:** `feat/race-bonuses` stacked on
+`feat/pause-menu-actions`, PR pending.
+**Status:** Implemented. The §5 bonus pipeline now lives in
+`src/game/raceBonuses.ts` (the owner module the dot specifies). The
+existing `raceResult.ts` builder delegates to it and continues to
+re-export the four legacy bonus constants and the `RaceBonus` /
+`RaceBonusKind` types so the §20 chip pipeline (`BonusChip.tsx`,
+results e2e) stays numerically and structurally stable. Two new
+bonus surfaces ship: `tourCompletionBonus` (§12 0.15 of summed race
+rewards) and `sponsorBonus` + `evaluateSponsorObjective` (the §5
+sponsor objective layer). A new `src/data/sponsors.json` catalogue
+plus `SponsorObjectiveSchema` give the evaluator a content source.
+`economy.awardCredits` now accepts an optional `bonuses` array and
+sums each `cashCredits` into the wallet delta. 1578 unit tests + 40
+Playwright tests green.
+
+### Done
+- `src/game/raceBonuses.ts` (new): owner module for the §5 bonus
+  pipeline.
+  - `computeBonuses(input)`: pure per-race bonus list (podium,
+    fastestLap, cleanRace, underdog) with the legacy fixed-credit
+    placeholders (`PODIUM_BONUS_CREDITS = 250`, etc.). DNF cars
+    receive no bonuses; the chip order is stable
+    (`podium / fastestLap / cleanRace / underdog`).
+  - `tourCompletionBonus(input)`: §12 0.15 of summed per-race
+    rewards on a passed tour. Returns `null` on a failed tour, on
+    an empty rewards list, on all-zero rewards. Negative entries
+    are clamped before summing.
+  - `sponsorBonus(input)` + `evaluateSponsorObjective(input)`:
+    sponsor predicate evaluator covering every kind in
+    `SponsorObjectiveKindSchema` (`top_speed_at_least`,
+    `finish_at_or_above`, `clean_race`, `no_nitro`,
+    `weather_finish_top_n`). Silent failure on missed predicate,
+    on missing sponsor, on DNF, and on missing telemetry (the
+    no_nitro predicate fails closed when the runtime has no
+    nitro telemetry yet).
+  - `sumBonusCredits(bonuses)` and `buildBonusReceipt(bonuses)`
+    so callers (the §20 results screen and the
+    `economy.awardCredits` wallet delta) stay in lockstep on the
+    total. The §5 receipt boundary mirrors the iter-19
+    stress-test §4 contract: one source for both the chip strip
+    and the wallet write.
+- `src/game/__tests__/raceBonuses.test.ts` (new): 38 cases.
+  Per-bonus predicates (podium boundaries, fastest-lap player
+  vs AI, clean-race epsilon, underdog with grid edge cases),
+  DNF policy, chip order, sumBonusCredits clamp behaviour,
+  tourCompletionBonus rate / failure / clamp paths, sponsor
+  bonus per-kind cells (pass + fail + null-telemetry), purity
+  on frozen inputs, determinism across repeated calls.
+- `src/data/schemas.ts` (update): added
+  `SponsorObjectiveKindSchema` and `SponsorObjectiveSchema`.
+  Five predicate kinds are pinned today; adding a new kind is a
+  schema change that requires the evaluator in
+  `raceBonuses.ts` to learn it in the same slice.
+- `src/data/sponsors.json` (new): MVP sponsor catalogue. Five
+  entries cover one of each predicate kind so the §20 results
+  screen has a non-empty bonus chip whenever a race meets a
+  sponsor predicate. Balancing pass owns the final roster and
+  credit values.
+- `src/data/sponsors.ts` (new): registry mirroring the cars /
+  championships pattern. `SPONSOR_OBJECTIVES`,
+  `SPONSOR_OBJECTIVES_BY_ID`, `getSponsorObjective(id)`. The
+  loader fails fast on schema validation failure at module
+  initialisation so a malformed JSON entry trips at boot, not
+  in the middle of a race.
+- `src/data/__tests__/sponsors-content.test.ts` (new): 18
+  cases. Catalogue invariants (non-empty, unique ids, lookup
+  round-trip) plus per-entry validation (schema parse,
+  evaluator runs without throwing, non-negative payout).
+- `src/data/index.ts` (update): re-exports the sponsor
+  registry so callers can import from `@/data` directly.
+- `src/game/economy.ts` (update): `AwardCreditsInput` now
+  accepts an optional `bonuses: ReadonlyArray<RaceBonus>` field.
+  `awardCredits` sums each bonus's `cashCredits` into the
+  wallet delta and surfaces both `cashBaseEarned` and the
+  `bonuses` array on the `EconomyResult` success branch so the
+  §20 results screen and the wallet write remain consistent.
+  DNF cars ignore any supplied bonuses (participation cash
+  only). Missing `bonuses` is back-compat: equivalent to an
+  empty list.
+- `src/game/__tests__/economy.test.ts` (update): three new
+  cases for the bonus path. Sums every supplied bonus into the
+  wallet delta, DNF ignores bonuses, missing `bonuses` is
+  equivalent to an empty list.
+- `src/game/raceResult.ts` (update): the inline
+  `buildBonuses` helper plus the four `*_BONUS_CREDITS`
+  constants and the `RaceBonus` / `RaceBonusKind` types now
+  delegate to / re-export from `raceBonuses.ts`. The §20
+  results-screen builder calls `computeBonuses` once and folds
+  the result into `cashEarned` exactly as before; the chip
+  pipeline (`BonusChip.tsx`) sees the same shape it always
+  has.
+- `src/game/index.ts` (update): comment block notes that
+  `raceBonuses` is the owner of the bonus pipeline; only
+  `raceResult` is barrel-exported here to avoid the duplicate
+  `RaceBonus` / `*_BONUS_CREDITS` re-export ambiguity.
+  Tour-completion / sponsor surfaces import from
+  `@/game/raceBonuses` directly.
+
+### GDD edits
+- None. The §5 bonus list and the §12 tour-bonus rate already
+  cover the surface that landed; the §22 schema gains
+  `SponsorObjective` as an additive entry.
+
+### Followups
+- `tourCompletionBonus` has no in-app caller yet: the
+  tour-clear surface owned by
+  `VibeGear2-implement-tour-region-d9ca9a4d` is the natural
+  consumer. The wiring should call `tourCompletionBonus`
+  alongside `tourBonus` (see F-037 for the easyModeBonus
+  parallel) at tour-clear time and credit the combined amount
+  via `awardCredits`. Filed as F-039.
+- `sponsorBonus` likewise has no in-app caller: the per-tour
+  sponsor selection (which sponsor is active for which race)
+  is owned by the championship / tour slice. Filed as F-040.
+- The dot's spec stress-test pinned multiplier-based bonus
+  rates (0.10 / 0.05 / 0.02 of base for podium tiers, 0.08 /
+  0.05 / 0.10-per-grid for the others). The current slice
+  preserves the legacy fixed-credit placeholders so the §20
+  chip rendering and the existing tests stay numerically
+  stable; the balancing-pass dot (`balancing-pass-71a57fd5`)
+  will swap the constants for the multiplier-based values
+  without rewriting call sites. Noted on F-041.
+
 ## 2026-04-26: Slice: §20 pause-menu actions (restart, retire, exit-to-title)
 
 **GDD sections touched:**

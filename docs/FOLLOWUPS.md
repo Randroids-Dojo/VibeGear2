@@ -10,6 +10,71 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-041: Swap fixed-credit bonus placeholders for multiplier-based rates per dot pin
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/race-bonuses` slice preserved the legacy
+fixed-credit placeholders for the four per-race bonuses
+(`PODIUM_BONUS_CREDITS = 250`, `FASTEST_LAP_BONUS_CREDITS = 200`,
+`CLEAN_RACE_BONUS_CREDITS = 150`, `UNDERDOG_BONUS_CREDITS = 200`) so
+the §20 chip rendering, `BonusChip.tsx`, the `raceResult` builder
+tests, and the `e2e/results-screen.spec.ts` fixture stayed
+numerically stable. The dot
+`VibeGear2-implement-race-reward-3eb9b609` spec stress-test pinned
+multiplier-of-base values instead (podium 0.10 / 0.05 / 0.02 of
+base, fastest 0.08, clean 0.05, underdog 0.10 per grid-rank
+improvement). Swap is mechanical: change the constants in
+`src/game/raceBonuses.ts` to compute against the per-race
+`baseTrackReward`, update the four `expect(... cashCredits).toBe(...)`
+cases in `src/game/__tests__/raceBonuses.test.ts` and the matching
+cells in `src/game/__tests__/raceResult.test.ts`, and refresh the
+hardcoded `cashCredits` numbers in `e2e/results-screen.spec.ts`.
+Owner: `balancing-pass-71a57fd5`.
+
+---
+
+## F-040: Wire `sponsorBonus` into the race-finish flow with a per-race sponsor picker
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/race-bonuses` slice landed
+`sponsorBonus(input)` and `evaluateSponsorObjective(input)` in
+`src/game/raceBonuses.ts` plus a five-entry MVP catalogue at
+`src/data/sponsors.json` (and the `SponsorObjective` schema in
+`src/data/schemas.ts`). The function has no in-app caller yet: the
+race-finish wiring would need to (1) pick which sponsor is active
+for the race (per-tour roster owned by the championship slice
+`tour-region-d9ca9a4d` or a dedicated sponsor-selection module),
+(2) build the `SponsorEvaluationContext` from the live
+`RaceState` (player top speed, nitro-fired flag, weather at
+finish), (3) call `sponsorBonus`, and (4) append the resulting
+`RaceBonus` (when non-null) to the `bonuses` list passed into
+`awardCredits` and surfaced on `RaceResult.bonuses`. Mirrors the
+F-026 / F-032 / F-034 / F-035 / F-036 / F-037 / F-039
+producer-without-consumer pattern.
+
+---
+
+## F-039: Wire `tourCompletionBonus` into the tour-clear payout
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/race-bonuses` slice landed
+`tourCompletionBonus({ raceRewards, tourPassed })` in
+`src/game/raceBonuses.ts` returning a `RaceBonus` of kind
+`tourComplete` (or `null` on a failed tour / empty rewards). The
+function has no in-app caller yet: the tour-clear surface owned
+by `VibeGear2-implement-tour-region-d9ca9a4d` is the natural
+consumer. At tour-clear, the wiring should call
+`tourCompletionBonus(...)` alongside the existing `tourBonus(...)`
+helper (see F-037 for the easyModeBonus parallel) and credit the
+combined amount via `awardCredits` (or a new `creditFlat(save,
+amount)` helper if that path lands first). Mirrors the F-037
+producer-without-consumer pattern.
+
+---
+
 ## F-038: Wire `buildRaceResult` into the race-finish flow + push to `/race/results`
 **Created:** 2026-04-26
 **Priority:** blocks-release

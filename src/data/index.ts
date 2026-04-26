@@ -21,6 +21,11 @@ export {
   AI_DRIVERS_BY_ID,
   getAIDriver,
 } from "./ai";
+export {
+  SPONSOR_OBJECTIVES,
+  SPONSOR_OBJECTIVES_BY_ID,
+  getSponsorObjective,
+} from "./sponsors";
 
 import { compileTrack } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";

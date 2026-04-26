@@ -50,6 +50,7 @@
 import type { SaveGame, Track } from "@/data/schemas";
 
 import { computeRaceReward, DNF_PARTICIPATION_CREDITS } from "./economy";
+import { computeBonuses, type RaceBonus } from "./raceBonuses";
 import type { FinalCarRecord, FinalRaceState } from "./raceRules";
 
 /**
@@ -65,47 +66,17 @@ export const PLACEMENT_POINTS: ReadonlyArray<number> = Object.freeze([
 /** Per-track base reward fallback when the caller does not pass one. */
 export const DEFAULT_BASE_TRACK_REWARD = 1000;
 
-/** Cash bonus for finishing on the podium (1st, 2nd, or 3rd). */
-export const PODIUM_BONUS_CREDITS = 250;
-
-/** Cash bonus for setting the race's fastest lap. */
-export const FASTEST_LAP_BONUS_CREDITS = 200;
-
-/**
- * Cash bonus for finishing without taking damage (per-zone scalar all
- * zero). The §13 design pillar "damage is strategic, not fiddly" rewards
- * a clean race; the bonus is intentionally smaller than podium so it
- * stacks rather than dominates.
- */
-export const CLEAN_RACE_BONUS_CREDITS = 150;
-
-/**
- * Cash bonus for an "underdog finish": placing above the player's
- * pre-race grid position. The grid position is supplied by the caller
- * (the race session knows it from the §7 grid-rule). Bonus paid once
- * per race regardless of how many positions gained.
- */
-export const UNDERDOG_BONUS_CREDITS = 200;
-
-/**
- * Bonus identifier carried on every `RaceBonus` entry. The §20 results
- * screen renders these as chips. New bonuses extend this enum; the
- * results screen renders unknown bonus ids with their `label` field as
- * a fallback.
- */
-export type RaceBonusKind =
-  | "podium"
-  | "fastestLap"
-  | "cleanRace"
-  | "underdog";
-
-export interface RaceBonus {
-  kind: RaceBonusKind;
-  /** Human-readable label for the chip. English; no L10N in MVP per §20. */
-  label: string;
-  /** Cash awarded for this bonus, in credits. Always non-negative. */
-  cashCredits: number;
-}
+// Bonus types and constants are re-exported from `raceBonuses.ts` so
+// existing callers (`BonusChip`, e2e specs, results-builder tests) keep
+// importing from `raceResult.ts` while the bonus pipeline lives in its
+// own module.
+export {
+  CLEAN_RACE_BONUS_CREDITS,
+  FASTEST_LAP_BONUS_CREDITS,
+  PODIUM_BONUS_CREDITS,
+  UNDERDOG_BONUS_CREDITS,
+} from "./raceBonuses";
+export type { RaceBonus, RaceBonusKind } from "./raceBonuses";
 
 /**
  * Per-zone damage delta surfaced on the results screen. Each scalar is
@@ -321,15 +292,13 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
       })
     : DNF_PARTICIPATION_CREDITS;
 
-  // 4. Bonuses.
-  const bonuses = buildBonuses({
-    playerRecord,
-    playerPlacement,
+  // 4. Bonuses (delegated to the `raceBonuses.ts` owner module).
+  const bonuses = computeBonuses({
+    finalState,
+    playerCarId,
     playerStartPosition,
-    fastestLapCarId: finalState.fastestLap?.carId ?? null,
     damageBefore,
     damageAfter,
-    playerCarId,
   });
 
   // 5. Sum.
@@ -387,90 +356,6 @@ function computePoints(
   if (placement >= PLACEMENT_POINTS.length) return 0;
   return PLACEMENT_POINTS[placement] ?? 0;
 }
-
-interface BuildBonusesInput {
-  playerRecord: FinalCarRecord | null;
-  playerPlacement: number | null;
-  playerStartPosition: number | null;
-  fastestLapCarId: string | null;
-  damageBefore: Readonly<DamageDelta>;
-  damageAfter: Readonly<DamageDelta>;
-  playerCarId: string;
-}
-
-function buildBonuses(input: BuildBonusesInput): ReadonlyArray<RaceBonus> {
-  const bonuses: RaceBonus[] = [];
-  const finished = input.playerRecord?.status === "finished";
-
-  // Podium: top 3 finishers only.
-  if (
-    finished &&
-    input.playerPlacement !== null &&
-    input.playerPlacement >= 1 &&
-    input.playerPlacement <= 3
-  ) {
-    bonuses.push({
-      kind: "podium",
-      label: "Podium finish",
-      cashCredits: PODIUM_BONUS_CREDITS,
-    });
-  }
-
-  // Fastest lap: player car set the field's fastest lap.
-  if (finished && input.fastestLapCarId === input.playerCarId) {
-    bonuses.push({
-      kind: "fastestLap",
-      label: "Fastest lap",
-      cashCredits: FASTEST_LAP_BONUS_CREDITS,
-    });
-  }
-
-  // Clean race: no damage delta in any zone (epsilon-tight; a fully
-  // pristine post-race compares against a fully pristine pre-race).
-  if (
-    finished &&
-    isClean(input.damageBefore, input.damageAfter)
-  ) {
-    bonuses.push({
-      kind: "cleanRace",
-      label: "Clean race",
-      cashCredits: CLEAN_RACE_BONUS_CREDITS,
-    });
-  }
-
-  // Underdog: improved on grid position. Requires a valid start
-  // position (Practice / Time Trial pass null).
-  if (
-    finished &&
-    input.playerPlacement !== null &&
-    input.playerStartPosition !== null &&
-    input.playerStartPosition > 0 &&
-    input.playerPlacement < input.playerStartPosition
-  ) {
-    bonuses.push({
-      kind: "underdog",
-      label: "Underdog finish",
-      cashCredits: UNDERDOG_BONUS_CREDITS,
-    });
-  }
-
-  return bonuses;
-}
-
-function isClean(
-  before: Readonly<DamageDelta>,
-  after: Readonly<DamageDelta>,
-): boolean {
-  // Tight equality; any positive delta breaks the bonus. The §13 design
-  // intent ("rubs and brushes do count") favours strict accounting.
-  return (
-    after.engine <= before.engine + EPSILON &&
-    after.tires <= before.tires + EPSILON &&
-    after.body <= before.body + EPSILON
-  );
-}
-
-const EPSILON = 1e-6;
 
 function clamp01(value: number): number {
   if (!Number.isFinite(value) || value <= 0) return 0;
