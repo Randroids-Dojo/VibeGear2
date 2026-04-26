@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, ReactElement } from "react";
 
+import { AccessibilityPane } from "@/components/options/AccessibilityPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
 
 import styles from "./page.module.css";
@@ -81,9 +82,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   {
     key: "accessibility",
     label: "Accessibility",
-    headline: "Accessibility assists coming soon",
-    body: "Auto-accelerate, brake assist, steering smoothing, hold or toggle nitro, reduced-input, and visual-only weather all live here.",
-    dotId: "VibeGear2-implement-accessibility-9063e12c",
+    pane: () => <AccessibilityPane />,
   },
   {
     key: "difficulty",

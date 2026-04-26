@@ -194,6 +194,43 @@ describe("deriveHudState speed handling", () => {
   });
 });
 
+describe("deriveHudState assist badge", () => {
+  it("omits the badge when the caller passes no assistBadge", () => {
+    const state = deriveHudState(input());
+    expect(state.assistBadge).toBeUndefined();
+  });
+
+  it("omits the badge when the assistBadge says inactive", () => {
+    const state = deriveHudState(
+      input({
+        assistBadge: {
+          active: false,
+          count: 0,
+          primary: null,
+          active_labels: [],
+        },
+      }),
+    );
+    expect(state.assistBadge).toBeUndefined();
+  });
+
+  it("passes the badge through when at least one assist is active", () => {
+    const state = deriveHudState(
+      input({
+        assistBadge: {
+          active: true,
+          count: 2,
+          primary: "auto-accelerate",
+          active_labels: ["auto-accelerate", "brake-assist"],
+        },
+      }),
+    );
+    expect(state.assistBadge?.active).toBe(true);
+    expect(state.assistBadge?.primary).toBe("auto-accelerate");
+    expect(state.assistBadge?.count).toBe(2);
+  });
+});
+
 describe("deriveHudState purity", () => {
   it("does not mutate the input cars array or any car object", () => {
     const cars: RankedCar[] = [

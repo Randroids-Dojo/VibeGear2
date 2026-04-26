@@ -23,6 +23,7 @@
  */
 
 import type { SpeedUnit } from "@/data/schemas";
+import type { AssistBadge } from "./assists";
 import type { RaceState } from "./raceState";
 
 /** Forward-distance pair used to rank cars on the track. */
@@ -59,6 +60,16 @@ export interface HudStateInput {
    * no projection itself.
    */
   minimap?: HudMinimapState;
+  /**
+   * Optional accessibility-assist badge snapshot. When the assist
+   * pipeline (`src/game/assists.ts`) reports any active assist, the
+   * caller passes its `badge` field through here; the HUD layer
+   * surfaces a single corner pip per the §20 "small badge when any
+   * assist is active" requirement. Omitted entirely when no assists
+   * are active so existing HUD wiring unaffected by the §19 slice
+   * stays untouched.
+   */
+  assistBadge?: AssistBadge;
 }
 
 /** Optional minimap snapshot derived from the compiled track + car field. */
@@ -103,6 +114,13 @@ export interface HudState {
    * comparable best yet (first run on the track, or partial sector).
    */
   sectorDeltaMs?: number | null;
+  /**
+   * Optional accessibility-assist badge mirror per §20. Surfaced only
+   * when at least one §19 assist is active for the current tick;
+   * absent otherwise so the existing HUD wiring (which never set this
+   * field) keeps its existing snapshot shape.
+   */
+  assistBadge?: AssistBadge;
 }
 
 /** Conversion factors. SI base is m/s. */
@@ -173,6 +191,13 @@ export function deriveHudState(input: HudStateInput): HudState {
   };
   if (input.minimap !== undefined) {
     result.minimap = input.minimap;
+  }
+  // Only surface the assist badge when at least one assist is active.
+  // The §20 requirement is "show a small badge when any assist is
+  // active"; an empty badge would render an invisible pip and confuse
+  // the rendering layer.
+  if (input.assistBadge !== undefined && input.assistBadge.active) {
+    result.assistBadge = input.assistBadge;
   }
   return result;
 }

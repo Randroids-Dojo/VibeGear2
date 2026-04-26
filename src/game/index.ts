@@ -15,3 +15,4 @@ export * from "./nitro";
 export * from "./sectorTimer";
 export * from "./rng";
 export * from "./ghost";
+export * from "./assists";

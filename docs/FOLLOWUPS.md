@@ -10,6 +10,47 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-027: HUD assist badge renderer
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/accessibility-assists` slice ships
+`HudState.assistBadge` as an optional snapshot field plus
+`ASSIST_BADGE_LABELS` (`Auto accel`, `Brake assist`, `Steer smooth`,
+`Toggle nitro`, `Reduced input`, `Visual weather`). The HUD renderer
+does not yet consume it; the data plane is complete and the §20
+"small badge when any assist is active" requirement reduces to "draw
+a corner pip showing the primary label, with a count if more than one
+assist is active". Lives with the rest of the §20 HUD polish slice.
+Mirrors F-022 (ghost car renderer) and F-021 (ghost recorder save
+slot) in the producer-without-consumer pattern.
+
+## F-026: Wire `applyAssists` into the race session input pipeline
+**Created:** 2026-04-26
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The `feat/accessibility-assists` slice ships
+`src/game/assists.ts` as a producer module: `applyAssists`,
+`AssistContext`, `AssistMemory`, the six per-assist transforms, and
+the badge derivation. The producer is complete and unit-tested (37
+tests, all paths). The consumer wiring lives in
+`raceSession.stepRaceSession`: read the player's
+`SaveGameSettings.assists`, build an `AssistContext`
+(`{ speedMps, surface, weather, upcomingCurvature, dt }`), thread the
+per-session `AssistMemory` (initialise via `INITIAL_ASSIST_MEMORY` on
+green-light, advance each tick), and replace the call site that today
+forwards `playerInput` with the rewritten `applyAssists(...).input`.
+The `applyAssists(...).weatherVisualReductionActive` flag wires into
+the future weather grip multiplier; the `assistBadge` field surfaces
+through the existing `HudState.assistBadge` passthrough. Two
+prerequisites: the track-segment projector must expose an
+"upcoming curvature in the next N meters" lookup for brake-assist
+(probably trivial; segments already carry `curve`), and the weather
+state machine must respect the visual-reduction flag when computing
+its grip scalar. Track this so the toggles in the new
+`/options/accessibility` pane move from "persisted" to "actually
+applied".
+
 ## F-024: Migrate `src/game/` randomness to `createRng` / `splitRng`
 **Created:** 2026-04-26
 **Priority:** nice-to-have

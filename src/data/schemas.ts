@@ -331,12 +331,63 @@ export type AtlasMeta = z.infer<typeof AtlasMetaSchema>;
 export const SpeedUnitSchema = z.enum(["kph", "mph"]);
 export type SpeedUnit = z.infer<typeof SpeedUnitSchema>;
 
+/**
+ * §19 'Accessibility controls' bundle. The original v1 trio
+ * (`steeringAssist`, `autoNitro`, `weatherVisualReduction`) keeps its
+ * required shape so existing saves and the example fixture continue to
+ * load unchanged. The remaining §19 assists land as optional fields with
+ * a documented default (treated as `false` when absent) so adding the
+ * new flags is a purely additive migration.
+ *
+ * Field semantics:
+ * - `steeringAssist`: legacy compound flag retained for backward compat.
+ *   Currently ignored by the runtime in favour of the finer-grained
+ *   `steeringSmoothing` knob below; kept on the schema so a v1 save
+ *   that toggled it still validates.
+ * - `autoNitro`: when true the AI fires nitro on the player's behalf at
+ *   straight-line opportunities. Wired by the nitro-assist follow-up
+ *   slice; the assists pure module surfaces the flag for future
+ *   consumers without yet acting on it.
+ * - `weatherVisualReduction`: visual-only weather mode. When true, the
+ *   physics layer ignores weather grip penalties; the renderer keeps
+ *   drawing rain / snow at reduced intensity.
+ * - `autoAccelerate`: throttle is held at 1 unless the player is
+ *   actively braking. Brake input always wins.
+ * - `brakeAssist`: scales brake input upward when held during a known
+ *   high-speed corner approach. Off by default.
+ * - `steeringSmoothing`: applies a low-pass filter to the steer axis to
+ *   damp twitchy keyboard inputs. Off by default; on for the
+ *   reduced-mobility preset.
+ * - `nitroToggleMode`: when true, a single tap on the nitro key toggles
+ *   nitro on / off rather than the default hold-to-burn semantics.
+ * - `reducedSimultaneousInput`: when true, only one of the steer / accel
+ *   / brake / nitro / handbrake actions is honoured per tick, picked by
+ *   a stable priority ladder. Helps single-switch users.
+ */
+const ASSIST_FIELD_KEYS = [
+  "steeringAssist",
+  "autoNitro",
+  "weatherVisualReduction",
+  "autoAccelerate",
+  "brakeAssist",
+  "steeringSmoothing",
+  "nitroToggleMode",
+  "reducedSimultaneousInput",
+] as const;
+
 export const AssistSettingsSchema = z.object({
   steeringAssist: z.boolean(),
   autoNitro: z.boolean(),
   weatherVisualReduction: z.boolean(),
+  autoAccelerate: z.boolean().optional(),
+  brakeAssist: z.boolean().optional(),
+  steeringSmoothing: z.boolean().optional(),
+  nitroToggleMode: z.boolean().optional(),
+  reducedSimultaneousInput: z.boolean().optional(),
 });
 export type AssistSettings = z.infer<typeof AssistSettingsSchema>;
+export type AssistFieldKey = (typeof ASSIST_FIELD_KEYS)[number];
+export const ASSIST_FIELDS: ReadonlyArray<AssistFieldKey> = ASSIST_FIELD_KEYS;
 
 /**
  * Player-facing difficulty preset, picked in the /options Difficulty pane

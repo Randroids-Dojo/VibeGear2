@@ -6,6 +6,167 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: accessibility assists pure module + /options Accessibility pane
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) (Accessibility controls bundle),
+[§20](gdd/20-hud-and-ui-ux.md) (HUD assist badge surface), and
+[§22](gdd/22-data-schemas.md) (`SaveGameSettings.assists` schema).
+Phase 4 task per [`docs/IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+The dot (`VibeGear2-implement-accessibility-9063e12c`) ships the six
+§19 assists as a pure transform module plus the matching options pane.
+**Branch / PR:** `feat/accessibility-assists` (stacked on
+`feat/ghost-replay-recorder`), PR pending.
+**Status:** Implemented (pure module + UI pane + persistence + HUD
+badge surface). Race-session wiring of `applyAssists` into the per-tick
+input pipeline deferred to a follow-up so this slice stays focused on
+the contract and the player-facing toggles.
+
+### Done
+- Authored `src/game/assists.ts` exporting `applyAssists`, the six
+  per-assist transforms (`applyAutoAccelerate`, `applyBrakeAssist`,
+  `applySteeringSmoothing`, `applyToggleNitro`,
+  `applyReducedSimultaneousInput`, plus the visual-only weather flag
+  surface), `AssistContext`, `AssistMemory`,
+  `INITIAL_ASSIST_MEMORY`, `AssistsApplied`, `AssistBadge`,
+  `ASSIST_BADGE_LABELS`, and the tunable constants
+  `STEERING_SMOOTHING_TAU_SECONDS`, `BRAKE_ASSIST_BOOST`,
+  `BRAKE_ASSIST_MIN_SPEED_MPS`, `BRAKE_ASSIST_MIN_CURVATURE`. The
+  module is pure: same `(input, assists, ctx, memory)` tuple always
+  returns the same `(input, memory, badge, weatherVisualReductionActive)`
+  snapshot. No `Math.random`, no time source, no globals.
+- Composition order pinned in code: auto-accelerate, then brake assist,
+  then steering smoothing, then toggle nitro, then reduced-simultaneous-
+  input, then visual-weather flag. Reduced-input runs last so its
+  priority ladder evaluates the post-assist input shape (the dot's
+  edge case wanted "auto-accelerate's throttle yields to a held
+  brake"; this ordering keeps that property).
+- Steering smoothing implements an exponential low-pass with the
+  configured tau. The tunable `STEERING_SMOOTHING_TAU_SECONDS = 0.08`
+  matches the dot's edge-case target (snap halfway in 80 ms). A small
+  residual snap to zero keeps the idempotency contract exact rather
+  than asymptotic.
+- Toggle nitro is rising-edge triggered; holding the key does not flip
+  the latch. The pure helper threads its memory back through
+  `AssistMemory.nitroToggleActive` and `AssistMemory.nitroLastPressed`
+  so the caller does not have to reach into private state.
+- Reduced-simultaneous-input picks a stable winner each tick from the
+  priority ladder steer-left, steer-right, brake, throttle, nitro,
+  handbrake. Pause and shift inputs always pass through; the §19
+  intent is "one game action at a time", not "drop the safety
+  controls".
+- Extended `AssistSettingsSchema` (`src/data/schemas.ts`) with the
+  five new optional fields (`autoAccelerate`, `brakeAssist`,
+  `steeringSmoothing`, `nitroToggleMode`, `reducedSimultaneousInput`)
+  alongside the existing `weatherVisualReduction`. Optional so v1
+  saves that pre-date the slice still validate. Exported
+  `ASSIST_FIELDS` and `AssistFieldKey` so the UI pane and the future
+  race-session wiring share a single source of truth for the field
+  names.
+- Updated `defaultSave()` to set every assist to `false`. Out-of-the-
+  box experience matches the §15 baseline; the accessibility pane is
+  the opt-in surface.
+- Authored `src/components/options/accessibilityPaneState.ts` with
+  the §19 catalogue (`ASSISTS`), pane copy
+  (`PANE_HEADLINE`, `PANE_SUBTITLE`),
+  `applyAssistToggle`, `readAssists`, `isAssistActive`, and
+  `VISIBLE_ASSIST_KEYS`. The legacy `steeringAssist` and `autoNitro`
+  fields stay on the schema for backward compat but are excluded from
+  the visible row list (the dot's wording was "the full set is six";
+  the legacy trio is not those six).
+- Authored `src/components/options/AccessibilityPane.tsx` as the thin
+  React shell, mirroring the `DifficultyPane.tsx` pattern: hydrate
+  after mount via `loadSave()`, commit each toggle through
+  `saveSave()`, surface a status line on save failure. Stable per-row
+  `data-testid="accessibility-row-<key>"` and per-toggle
+  `data-testid="accessibility-toggle-<key>"` for the e2e suite.
+- Wired the pane into `src/app/options/page.tsx` by replacing the
+  Accessibility tab's "coming soon" placeholder with the real
+  `<AccessibilityPane />` mount.
+- Extended `HudState` (and `HudStateInput`) with an optional
+  `assistBadge` field. `deriveHudState` only surfaces the badge when
+  the caller's badge says `active === true`, so existing HUD wiring
+  paths that never set the field stay untouched. Three new
+  `hudState.test.ts` cases cover the present / inactive / absent
+  branches of the passthrough.
+- Authored `src/game/__tests__/assists.test.ts` (37 tests) covering
+  every per-assist on / off path, the brake-assist gate ladder, the
+  steering smoothing convergence and snap-to-zero, the toggle nitro
+  rising-edge / hold / re-tap sequence, the reduced-input priority
+  ladder, the visual-only weather flag passthrough, the badge
+  composition determinism, the idempotency contract
+  (`applyAssists(applyAssists(x).input)` converges to its own
+  output), and the input / memory non-mutation guarantees.
+- Authored `src/components/options/__tests__/accessibilityPaneState.test.ts`
+  (16 tests) covering the §19 catalogue order, the no-em-dash copy
+  rule, the `readAssists` v1 backfill, the `applyAssistToggle`
+  applied / noop branches, and the rest-of-save preservation
+  property. Authored
+  `src/components/options/__tests__/AccessibilityPane.test.tsx` (2
+  tests) covering the SSR loading marker plus the no-em-dash render
+  guard, mirroring `DifficultyPane.test.tsx`.
+- Authored `e2e/options-accessibility.spec.ts` (3 tests) covering
+  default-off rendering of all six toggles, persistence across reload
+  for `autoAccelerate`, and independence of multiple toggles.
+- Re-exported the assists module from `src/game/index.ts` so consumers
+  (`@/game`) get a one-line import path, matching the `rng`, `nitro`,
+  `ghost`, and other module patterns.
+
+### Decisions
+- **Visual-only weather is a flag, not an input rewrite.** The §19
+  assist says "physics ignores weather grip penalties; visuals still
+  render rain/snow". An input-stream rewrite cannot satisfy that
+  contract; it has to be a per-tick flag the physics layer reads.
+  `applyAssists` now returns `weatherVisualReductionActive: boolean`
+  so the future weather-physics integration can branch on a single
+  pre-computed bit without re-reading the settings struct.
+- **Steering smoothing memory tracks even when the assist is off.**
+  Toggling the assist on mid-race must not snap to a stale cached
+  value. The pipeline syncs `smoothedSteer` to the unfiltered steer
+  whenever the assist is off, so the first frame after enabling it
+  feels seamless. Same idea for the toggle-nitro latch (decays to
+  `false` when the assist is off).
+- **Brake assist never invents brake out of nothing.** The §19
+  wording is "brake assist", which presupposes a player who is
+  already trying to brake. Auto-braking on a corner approach without
+  the player touching the brake would feel like the car was being
+  yanked from them; that belongs in a future "auto-pilot" assist
+  category, not §19.
+- **Race-session wiring deferred to a follow-up.** Plumbing
+  `applyAssists` into `raceSession.stepRaceSession` is a separate
+  concern that intersects with the partially-implemented brake-assist
+  curvature lookup (which needs the track-segment projection slice).
+  Filed as F-024 below; the pure module and the player-facing UI ship
+  this slice so the assists are testable end-to-end on the data plane
+  before the runtime plane catches up.
+
+### GDD edits
+- None. The §19 'Accessibility controls' list is implemented as
+  written.
+
+### Open questions
+- None new. Q-NNN entries from prior slices unchanged.
+
+### Followups
+- F-026 (`blocks-release`): wire `applyAssists` into
+  `raceSession.stepRaceSession` so the toggles in the new pane
+  actually affect the runtime input stream. Requires the track
+  segment projection slice (for brake-assist's upcoming curvature
+  lookup) and the weather state machine (for visual-only weather to
+  bypass the future weather grip multiplier).
+- F-027 (`nice-to-have`): add a HUD assist badge renderer that
+  consumes the new `HudState.assistBadge` field. The data plane is
+  ready; only the canvas / DOM draw step is missing. Lives with the
+  rest of the §20 HUD polish slice.
+
+### Followup-loop hand-off
+- `feat/accessibility-assists` stacks on `feat/ghost-replay-recorder`.
+  The next slice can stack on this branch; verification ladder green
+  (`npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
+  `npm run test:e2e` all pass).
+
+---
+
 ## 2026-04-26: Slice: ghost replay recorder + player module (ghost.ts, delta-encoded inputs, version stamps)
 
 **GDD sections touched:**

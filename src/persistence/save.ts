@@ -80,9 +80,17 @@ export function defaultSave(): SaveGame {
     settings: {
       displaySpeedUnit: "kph",
       assists: {
+        // §19 Accessibility controls. All assists default off so the
+        // out-of-the-box experience matches the GDD baseline; the
+        // accessibility pane is the opt-in surface.
         steeringAssist: false,
         autoNitro: false,
         weatherVisualReduction: false,
+        autoAccelerate: false,
+        brakeAssist: false,
+        steeringSmoothing: false,
+        nitroToggleMode: false,
+        reducedSimultaneousInput: false,
       },
       // GDD §15 'Normal' is the baseline tier and the §28 default.
       difficultyPreset: "normal",
