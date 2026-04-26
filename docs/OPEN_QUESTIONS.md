@@ -9,6 +9,56 @@ they are part of the design history.
 
 ---
 
+## Q-010: `tourTierScale` table for the §12 repair-cost formula
+
+**GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Repair
+costs" (`repairCost = damagePercent * carRepairFactor * tourTierScale`),
+[§23](gdd/23-balancing-tables.md) "Balancing tables" (no `tourTierScale`
+column today).
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** §12 names a `tourTierScale` factor in the repair-cost
+formula but §23 does not pin a tour-by-tour value table. F-033 (`Implement
+applyRepairCost once §23 ships tourTierScale`) is blocked until this
+column exists. The iter-19 stress-test on
+`VibeGear2-implement-economy-upgrade-ff73b279` proposed a placeholder
+table (`1.00, 1.15, 1.30, 1.50, 1.75, 2.05, 2.40, 2.80` for tours 1..8)
+but flagged that the implementer must NOT freeze it without dev sign-off.
+Which table should §23 pin?
+
+- **(a) Adopt the iter-19 placeholder.** `[1.00, 1.15, 1.30, 1.50, 1.75,
+  2.05, 2.40, 2.80]` for tours 1..8. Smooth geometric-ish ramp ending
+  near 2.8x in the late tours. Matches the dot proposal verbatim;
+  callers can land immediately.
+- **(b) Linear ramp.** `1.0 + 0.2 * (tier - 1)` -> `[1.0, 1.2, 1.4, 1.6,
+  1.8, 2.0, 2.2, 2.4]`. Easier to memorize and unit-test; flatter late
+  curve so endgame repair bites less. Requires balancing-pass to
+  confirm the credits-per-race economy still pressures the player to
+  upgrade armor.
+- **(c) Steeper late curve.** `[1.00, 1.20, 1.50, 1.85, 2.30, 2.85, 3.55,
+  4.40]` (~1.25x growth per tier). Matches the §12 prize-pool multiplier
+  cadence so repair eats a stable fraction of winnings instead of
+  shrinking late-game. Bigger pain spike if the player skips armor
+  upgrades.
+- **(d) Defer.** Land `applyRepairCost` against a single constant scale
+  of `1.0` for all tiers and revisit when §23 gets a pass. Safe but
+  silently ignores §12's intent; risks the same "pure module, no
+  consumers" pattern noted in earlier iterations once F-033 lands.
+
+**Recommended default.** (a). The iter-19 table is the closest thing to
+a designed proposal already in the loop; freezing it lets F-033 and
+F-036 (the `cappedRepairCost` consumer) both unblock with one sign-off.
+If a balancing pass later prefers (b) or (c), the table is one §23 edit
+plus one constant swap in `economy.ts`.
+
+**Blocking?** Yes for F-033 (`applyRepairCost`) and transitively F-036
+(`cappedRepairCost` consumer wiring). No for the §20 results-screen
+"Repair" button surface, which can render with the eventual function
+once it lands.
+
+---
+
 ## Q-009: Cross-tab save protocol: leader-tab election or last-write-wins?
 
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)

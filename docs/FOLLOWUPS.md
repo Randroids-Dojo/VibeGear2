@@ -390,8 +390,8 @@ tourTierScale` that has no §23 column today. The iter-19 stress-test
 on `VibeGear2-implement-economy-upgrade-ff73b279` proposed a
 placeholder table (1.0, 1.15, 1.30, 1.50, 1.75, 2.05, 2.40, 2.80 for
 tours 1..8) but flagged that the implementer must NOT freeze it
-without dev sign-off. File `Q-NNN` in `docs/OPEN_QUESTIONS.md` first
-asking the dev to confirm or replace the table; once answered, add
+without dev sign-off. Q-010 (filed iter-81) asks the dev to confirm or
+replace the table; once answered, add
 `applyRepairCost(save, { carId, zoneRepairs, tourTier })` to
 `src/game/economy.ts` reading per-zone damage from the in-flight
 `DamageState`, computing the credit cost via `repairCostFor` from
