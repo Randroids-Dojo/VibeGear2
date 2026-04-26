@@ -36,25 +36,32 @@
  *
  * Bonus catalogue pinned by §5 ("Bonuses layer on top for: Podium,
  * Fastest lap, Clean race, Underdog finish, Tour completion, Sponsor
- * objective"). This slice ships the four bonuses the results screen
- * can compute from a single race (podium, fastest lap, clean race,
- * underdog). Tour-completion and sponsor bonuses are layered by other
- * surfaces (`tour-region-d9ca9a4d` and the post-MVP sponsor system) and
- * are intentionally out of scope here.
+ * objective"). This slice ships the four per-race bonuses the results
+ * screen always computes (podium, fastest lap, clean race, underdog)
+ * plus the §5 sponsor objective bonus when the caller supplies an
+ * active sponsor and a `SponsorEvaluationContext`. The tour-completion
+ * bonus is still layered by the tour-clear surface
+ * (`tour-region-d9ca9a4d`) because it needs the cross-race rewards sum
+ * which the per-race builder does not own.
  *
  * Bonus values are pinned placeholders. §23 has no bonus column; the
  * balancing pass (`balancing-pass-71a57fd5`) will swap the constants
  * without rewriting call sites.
  */
 
-import type { SaveGame, Track } from "@/data/schemas";
+import type { SaveGame, SponsorObjective, Track } from "@/data/schemas";
 
 import {
   baseRewardForTrackDifficulty,
   computeRaceReward,
   DNF_PARTICIPATION_CREDITS,
 } from "./economy";
-import { computeBonuses, type RaceBonus } from "./raceBonuses";
+import {
+  computeBonuses,
+  sponsorBonus,
+  type RaceBonus,
+  type SponsorEvaluationContext,
+} from "./raceBonuses";
 import type { FinalCarRecord, FinalRaceState } from "./raceRules";
 
 /**
@@ -87,7 +94,11 @@ export {
   PODIUM_BONUS_RATES,
   UNDERDOG_BONUS_RATE_PER_RANK,
 } from "./raceBonuses";
-export type { RaceBonus, RaceBonusKind } from "./raceBonuses";
+export type {
+  RaceBonus,
+  RaceBonusKind,
+  SponsorEvaluationContext,
+} from "./raceBonuses";
 
 /**
  * Per-zone damage delta surfaced on the results screen. Each scalar is
@@ -242,6 +253,22 @@ export interface BuildRaceResultInput {
   tourId?: string;
   /** 0-indexed position of `track.id` inside the tour's tracks list. */
   currentTrackIndex?: number;
+  /**
+   * Active sponsor for the race, or `null` when no sponsor is active
+   * (Practice / Time Trial / Quick Race / a tour without a roster). The
+   * tour-region surface owns picking the active sponsor via
+   * `pickSponsorForTourRace`; callers without a tour context pass
+   * `null` so no sponsor bonus is appended.
+   */
+  sponsor?: SponsorObjective | null;
+  /**
+   * Telemetry the sponsor predicate evaluator reads. Required whenever
+   * `sponsor` is non-null; ignored otherwise. The race-finish wiring
+   * builds this from the live `RaceState` plus the per-race nitro / top-
+   * speed telemetry. Callers without telemetry pass `null` and the
+   * sponsor predicate fails closed (no bonus credited).
+   */
+  sponsorContext?: SponsorEvaluationContext | null;
 }
 
 const ZERO_DAMAGE: DamageDelta = Object.freeze({ engine: 0, tires: 0, body: 0 });
@@ -295,6 +322,8 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     championship,
     tourId,
     currentTrackIndex,
+    sponsor = null,
+    sponsorContext = null,
   } = input;
 
   // Resolve the per-track base reward. Caller override wins; otherwise
@@ -335,7 +364,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
   //    formula above and every per-race bonus rate, so the chip values
   //    on the §20 results screen stay in lockstep with the wallet
   //    credit derived from `awardCredits`.
-  const bonuses = computeBonuses({
+  const baseBonuses = computeBonuses({
     finalState,
     playerCarId,
     playerStartPosition,
@@ -343,6 +372,31 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     damageBefore,
     damageAfter,
   });
+
+  // 4b. Sponsor objective bonus (F-040). When the caller supplies an
+  //     active sponsor and a `SponsorEvaluationContext`, evaluate the
+  //     predicate and append the resulting `RaceBonus` to the chip
+  //     strip. A null sponsor (no tour roster, Practice / Time Trial)
+  //     skips the call so the chip list is identical to the per-race
+  //     four-chip baseline. A failed predicate is silent (no chip,
+  //     no negative credit) per `sponsorBonus`'s documented contract.
+  //     Sponsors are appended after the per-race bonuses so the §20
+  //     chip strip orders them at the end of the row, matching the
+  //     "podium / fastestLap / cleanRace / underdog / sponsor" pin
+  //     in the chip selector tests.
+  const sponsorAward =
+    sponsor !== null && sponsorContext !== null
+      ? sponsorBonus({
+          finalState,
+          playerCarId,
+          damageBefore,
+          damageAfter,
+          context: sponsorContext,
+          sponsor,
+        })
+      : null;
+  const bonuses: ReadonlyArray<RaceBonus> =
+    sponsorAward === null ? baseBonuses : [...baseBonuses, sponsorAward];
 
   // 5. Sum.
   const bonusCash = bonuses.reduce((acc, b) => acc + b.cashCredits, 0);
@@ -465,4 +519,60 @@ function computeRecordsPatch(input: RecordsPatchInput): RecordsUpdatePatch | nul
   }
 
   return { trackId: input.trackId, bestLapMs: best };
+}
+
+/**
+ * Subset of `ChampionshipTour` the sponsor picker reads. Kept narrow so
+ * the helper can be called without importing the full schema; the
+ * tour-region surface and any future tour-aware caller pass a frozen
+ * slice (or the full tour object) interchangeably.
+ */
+export interface SponsorPickerTour {
+  /**
+   * Per-tour sponsor roster keyed by `SponsorObjective.id`. Optional /
+   * empty arrays surface as "no sponsor active" so a tour without a
+   * roster never appends a sponsor chip.
+   */
+  sponsors?: ReadonlyArray<string>;
+}
+
+/**
+ * Pick the active sponsor for a single race inside a tour.
+ *
+ * F-040 wires the sponsor objective bonus through `buildRaceResult`; the
+ * caller is the tour-region surface (`tour-region-d9ca9a4d`) which owns
+ * the per-race index inside the live tour. This helper resolves which
+ * sponsor id is active for a given race, looks it up via the
+ * caller-supplied `lookup` function (the registry adapter), and returns
+ * the matching `SponsorObjective` or `null`.
+ *
+ * Rotation contract: `sponsors[raceIndex % sponsors.length]`. The
+ * modulo lets a tour with fewer sponsors than races wrap, while still
+ * keeping the same race-index always pinned to the same sponsor across
+ * runs (deterministic). Negative or non-integer indices clamp to `0`
+ * (defensive; the tour-clear surface always supplies a valid index).
+ *
+ * Empty rosters return `null`. An unresolved sponsor id (renamed in the
+ * registry, hand-edited save) silently surfaces as `null` so a content
+ * mismatch cannot crash the race-finish flow.
+ *
+ * Pure: no `Math.random`, no `Date.now`, no globals. Same input always
+ * returns the same output.
+ */
+export function pickSponsorForTourRace(input: {
+  tour: SponsorPickerTour;
+  raceIndex: number;
+  lookup: (id: string) => SponsorObjective | undefined;
+}): SponsorObjective | null {
+  const roster = input.tour.sponsors;
+  if (!roster || roster.length === 0) return null;
+
+  const safeIndex =
+    Number.isFinite(input.raceIndex) && input.raceIndex >= 0
+      ? Math.floor(input.raceIndex)
+      : 0;
+  const id = roster[safeIndex % roster.length];
+  if (id === undefined) return null;
+
+  return input.lookup(id) ?? null;
 }

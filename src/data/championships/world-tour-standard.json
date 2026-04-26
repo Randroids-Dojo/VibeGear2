@@ -11,6 +11,10 @@
         "velvet-coast/sunpier-loop",
         "velvet-coast/cliffline-arc",
         "velvet-coast/lighthouse-fall"
+      ],
+      "sponsors": [
+        "velvet-coast-co-op",
+        "cleanline-insurance"
       ]
     },
     {
@@ -21,6 +25,10 @@
         "iron-borough/rivet-tunnel",
         "iron-borough/foundry-mile",
         "iron-borough/outer-exchange"
+      ],
+      "sponsors": [
+        "iron-borough-fabricators",
+        "cleanline-insurance"
       ]
     },
     {
@@ -31,6 +39,10 @@
         "ember-steppe/mesa-coil",
         "ember-steppe/dustbreak-causeway",
         "ember-steppe/cinder-gate"
+      ],
+      "sponsors": [
+        "ember-steppe-purists",
+        "iron-borough-fabricators"
       ]
     },
     {
@@ -41,6 +53,10 @@
         "breakwater-isles/storm-span",
         "breakwater-isles/gull-point",
         "breakwater-isles/sealight-shelf"
+      ],
+      "sponsors": [
+        "stormline-tires",
+        "velvet-coast-co-op"
       ]
     },
     {
@@ -51,6 +67,10 @@
         "glass-ridge/frostrelay",
         "glass-ridge/hollow-crest",
         "glass-ridge/summit-echo"
+      ],
+      "sponsors": [
+        "stormline-tires",
+        "cleanline-insurance"
       ]
     },
     {
@@ -61,6 +81,10 @@
         "neon-meridian/prism-cut",
         "neon-meridian/skyline-drain",
         "neon-meridian/afterglow-run"
+      ],
+      "sponsors": [
+        "iron-borough-fabricators",
+        "ember-steppe-purists"
       ]
     },
     {
@@ -71,6 +95,10 @@
         "moss-frontier/millstream",
         "moss-frontier/wetroot-drive",
         "moss-frontier/mistbarrow"
+      ],
+      "sponsors": [
+        "cleanline-insurance",
+        "velvet-coast-co-op"
       ]
     },
     {
@@ -81,6 +109,12 @@
         "crown-circuit/victory-causeway",
         "crown-circuit/grand-meridian",
         "crown-circuit/final-horizon"
+      ],
+      "sponsors": [
+        "velvet-coast-co-op",
+        "iron-borough-fabricators",
+        "ember-steppe-purists",
+        "stormline-tires"
       ]
     }
   ]

@@ -28,6 +28,7 @@ import {
   getChampionship,
 } from "@/data/championships";
 import { ChampionshipSchema } from "@/data/schemas";
+import { SPONSOR_OBJECTIVES_BY_ID } from "@/data/sponsors";
 import { TRACK_RAW } from "@/data/tracks";
 
 const WORLD_TOUR_ID = "world-tour-standard";
@@ -147,4 +148,23 @@ describe("world-tour-standard track id cross-references", () => {
       expect(allTrackIds.length).toBe(32);
     });
   }
+});
+
+describe("world-tour-standard sponsor roster cross-references", () => {
+  const wt = getChampionship(WORLD_TOUR_ID);
+
+  it("declares a non-empty sponsor roster on every tour per F-040", () => {
+    for (const tour of wt.tours) {
+      expect(tour.sponsors).toBeDefined();
+      expect((tour.sponsors ?? []).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("resolves every referenced sponsor id in SPONSOR_OBJECTIVES_BY_ID", () => {
+    for (const tour of wt.tours) {
+      for (const sponsorId of tour.sponsors ?? []) {
+        expect(SPONSOR_OBJECTIVES_BY_ID.has(sponsorId)).toBe(true);
+      }
+    }
+  });
 });

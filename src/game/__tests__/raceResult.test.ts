@@ -26,7 +26,7 @@
 import { describe, expect, it } from "vitest";
 
 import { defaultSave } from "@/persistence/save";
-import type { Track } from "@/data/schemas";
+import type { SponsorObjective, Track } from "@/data/schemas";
 
 import {
   buildRaceResult,
@@ -36,7 +36,9 @@ import {
   PLACEMENT_POINTS,
   PODIUM_BONUS_RATES,
   UNDERDOG_BONUS_RATE_PER_RANK,
+  pickSponsorForTourRace,
   type BuildRaceResultInput,
+  type SponsorEvaluationContext,
 } from "../raceResult";
 import {
   awardCredits,
@@ -742,5 +744,225 @@ describe("buildRaceResult + awardCredits: F-034 race-finish wiring", () => {
     expect(award.state.garage.credits).toBe(
       save.garage.credits + result.cashEarned,
     );
+  });
+});
+
+/**
+ * F-040 sponsor objective wiring. The race-finish flow inside the
+ * tour-region surface picks an active sponsor via
+ * `pickSponsorForTourRace`, builds a `SponsorEvaluationContext` from the
+ * live RaceState, and threads both into `buildRaceResult`. The tests
+ * below pin that contract:
+ *
+ *   - A met objective appends a `sponsor`-kind chip with the sponsor's
+ *     `cashCredits` value; the receipt total includes it.
+ *   - A missed objective is silent (no chip, no negative credit).
+ *   - A null sponsor (no roster, Practice / Time Trial) leaves the chip
+ *     list at the per-race four-chip baseline.
+ *   - The tour roster picker rotates deterministically across races and
+ *     wraps when the race count exceeds the roster size.
+ */
+describe("buildRaceResult: F-040 sponsor objective wiring", () => {
+  function makeSponsor(
+    overrides: Partial<SponsorObjective> = {},
+  ): SponsorObjective {
+    return {
+      id: "test-sponsor",
+      sponsorName: "Test Sponsor",
+      description: "Finish in the top 3.",
+      kind: "finish_at_or_above",
+      value: 3,
+      cashCredits: 250,
+      ...overrides,
+    };
+  }
+
+  function makeContext(
+    overrides: Partial<SponsorEvaluationContext> = {},
+  ): SponsorEvaluationContext {
+    return {
+      playerTopSpeed: 65,
+      playerNitroFired: false,
+      weatherAtFinish: "clear",
+      ...overrides,
+    };
+  }
+
+  it("appends a sponsor chip when the objective is met", () => {
+    const sponsor = makeSponsor();
+    const result = buildRaceResult(
+      makeInput({
+        sponsor,
+        sponsorContext: makeContext(),
+      }),
+    );
+    const chip = result.bonuses.find((b) => b.kind === "sponsor");
+    expect(chip).toBeDefined();
+    expect(chip?.cashCredits).toBe(sponsor.cashCredits);
+    expect(chip?.label).toBe(sponsor.sponsorName);
+  });
+
+  it("appends no sponsor chip when the objective is missed", () => {
+    const sponsor = makeSponsor({
+      kind: "top_speed_at_least",
+      value: 999,
+    });
+    const result = buildRaceResult(
+      makeInput({
+        sponsor,
+        sponsorContext: makeContext({ playerTopSpeed: 50 }),
+      }),
+    );
+    expect(result.bonuses.find((b) => b.kind === "sponsor")).toBeUndefined();
+  });
+
+  it("appends no sponsor chip when sponsor is null (no tour roster)", () => {
+    const result = buildRaceResult(
+      makeInput({ sponsor: null, sponsorContext: makeContext() }),
+    );
+    expect(result.bonuses.find((b) => b.kind === "sponsor")).toBeUndefined();
+  });
+
+  it("appends no sponsor chip when sponsor is omitted entirely", () => {
+    const result = buildRaceResult(makeInput());
+    expect(result.bonuses.find((b) => b.kind === "sponsor")).toBeUndefined();
+  });
+
+  it("appends no sponsor chip when sponsorContext is null", () => {
+    const result = buildRaceResult(
+      makeInput({ sponsor: makeSponsor(), sponsorContext: null }),
+    );
+    expect(result.bonuses.find((b) => b.kind === "sponsor")).toBeUndefined();
+  });
+
+  it("rolls the sponsor cashCredits into cashEarned receipt total", () => {
+    const sponsor = makeSponsor({ cashCredits: 250 });
+    const without = buildRaceResult(makeInput());
+    const withSponsor = buildRaceResult(
+      makeInput({ sponsor, sponsorContext: makeContext() }),
+    );
+    expect(withSponsor.cashEarned).toBe(without.cashEarned + sponsor.cashCredits);
+  });
+
+  it("orders sponsor after the per-race bonuses on the chip strip", () => {
+    const sponsor = makeSponsor();
+    const result = buildRaceResult(
+      makeInput({
+        sponsor,
+        sponsorContext: makeContext(),
+        playerStartPosition: 7,
+      }),
+    );
+    // Per the §20 chip-selector pin: per-race bonuses come first
+    // (podium / fastestLap / cleanRace / underdog), sponsor last.
+    const kinds = result.bonuses.map((b) => b.kind);
+    expect(kinds[kinds.length - 1]).toBe("sponsor");
+  });
+
+  it("DNF player skips the sponsor bonus", () => {
+    const sponsor = makeSponsor({ kind: "clean_race" });
+    const result = buildRaceResult(
+      makeInput({
+        sponsor,
+        sponsorContext: makeContext(),
+        finalState: makeFinalState({
+          finishingOrder: [
+            {
+              carId: RIVAL_ID,
+              status: "finished",
+              raceTimeMs: 90_000,
+              bestLapMs: 30_000,
+            },
+            {
+              carId: PLAYER_ID,
+              status: "dnf",
+              raceTimeMs: null,
+              bestLapMs: null,
+            },
+          ],
+          perLapTimes: { [PLAYER_ID]: [], [RIVAL_ID]: [30_000, 30_000, 30_000] },
+          fastestLap: { carId: RIVAL_ID, lapMs: 30_000, lapNumber: 1 },
+        }),
+      }),
+    );
+    expect(result.bonuses.find((b) => b.kind === "sponsor")).toBeUndefined();
+  });
+});
+
+describe("pickSponsorForTourRace: deterministic rotation", () => {
+  const sponsorA: SponsorObjective = {
+    id: "sponsor-a",
+    sponsorName: "A",
+    description: "test A",
+    kind: "clean_race",
+    cashCredits: 100,
+  };
+  const sponsorB: SponsorObjective = {
+    id: "sponsor-b",
+    sponsorName: "B",
+    description: "test B",
+    kind: "clean_race",
+    cashCredits: 200,
+  };
+  const registry: ReadonlyMap<string, SponsorObjective> = new Map([
+    [sponsorA.id, sponsorA],
+    [sponsorB.id, sponsorB],
+  ]);
+  const lookup = (id: string): SponsorObjective | undefined => registry.get(id);
+
+  it("returns null when the tour has no sponsors field", () => {
+    expect(pickSponsorForTourRace({ tour: {}, raceIndex: 0, lookup })).toBe(
+      null,
+    );
+  });
+
+  it("returns null on an empty roster", () => {
+    expect(
+      pickSponsorForTourRace({ tour: { sponsors: [] }, raceIndex: 0, lookup }),
+    ).toBe(null);
+  });
+
+  it("rotates through the roster by raceIndex (no wrap)", () => {
+    const tour = { sponsors: [sponsorA.id, sponsorB.id] };
+    expect(
+      pickSponsorForTourRace({ tour, raceIndex: 0, lookup })?.id,
+    ).toBe(sponsorA.id);
+    expect(
+      pickSponsorForTourRace({ tour, raceIndex: 1, lookup })?.id,
+    ).toBe(sponsorB.id);
+  });
+
+  it("wraps when raceIndex exceeds roster length", () => {
+    const tour = { sponsors: [sponsorA.id, sponsorB.id] };
+    // Tour with 2 sponsors and a 4-race index should wrap:
+    // race 0 -> A, race 1 -> B, race 2 -> A, race 3 -> B.
+    expect(
+      pickSponsorForTourRace({ tour, raceIndex: 2, lookup })?.id,
+    ).toBe(sponsorA.id);
+    expect(
+      pickSponsorForTourRace({ tour, raceIndex: 3, lookup })?.id,
+    ).toBe(sponsorB.id);
+  });
+
+  it("returns null on an unresolved sponsor id (silently)", () => {
+    const tour = { sponsors: ["does-not-exist"] };
+    expect(pickSponsorForTourRace({ tour, raceIndex: 0, lookup })).toBe(null);
+  });
+
+  it("clamps negative or non-integer indices to zero", () => {
+    const tour = { sponsors: [sponsorA.id, sponsorB.id] };
+    expect(
+      pickSponsorForTourRace({ tour, raceIndex: -1, lookup })?.id,
+    ).toBe(sponsorA.id);
+    expect(
+      pickSponsorForTourRace({ tour, raceIndex: Number.NaN, lookup })?.id,
+    ).toBe(sponsorA.id);
+  });
+
+  it("two calls with the same input return the same sponsor (determinism)", () => {
+    const tour = { sponsors: [sponsorA.id, sponsorB.id] };
+    const a = pickSponsorForTourRace({ tour, raceIndex: 1, lookup });
+    const b = pickSponsorForTourRace({ tour, raceIndex: 1, lookup });
+    expect(a).toEqual(b);
   });
 });

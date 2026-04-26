@@ -230,6 +230,19 @@ export const ChampionshipTourSchema = z.object({
   id: slug,
   requiredStanding: positiveInt,
   tracks: z.array(slug).min(1),
+  /**
+   * Optional per-tour sponsor roster keyed by `SponsorObjective.id`. The
+   * §5 sponsor bonus picks one sponsor per race in deterministic order
+   * (track index modulo roster length); `pickSponsorForTourRace` in
+   * `src/game/raceResult.ts` owns the rotation. Optional so v1 tours
+   * written before this field was added still validate; the loader treats
+   * `undefined` as `[]` (no sponsor active).
+   *
+   * Each id must resolve via `getSponsorObjective`; an unresolved id
+   * silently surfaces as no sponsor for that race rather than throwing,
+   * so a content rename does not crash the race-finish flow.
+   */
+  sponsors: z.array(slug).optional(),
 });
 export type ChampionshipTour = z.infer<typeof ChampionshipTourSchema>;
 

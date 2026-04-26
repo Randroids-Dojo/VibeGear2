@@ -214,22 +214,49 @@ clean=50, and underdog=100 per grid rank improved (covered by the new
 ## F-040: Wire `sponsorBonus` into the race-finish flow with a per-race sponsor picker
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-26, `feat/sponsor-bonus-wiring`)
 **Notes:** The `feat/race-bonuses` slice landed
 `sponsorBonus(input)` and `evaluateSponsorObjective(input)` in
 `src/game/raceBonuses.ts` plus a five-entry MVP catalogue at
 `src/data/sponsors.json` (and the `SponsorObjective` schema in
-`src/data/schemas.ts`). The function has no in-app caller yet: the
-race-finish wiring would need to (1) pick which sponsor is active
-for the race (per-tour roster owned by the championship slice
-`tour-region-d9ca9a4d` or a dedicated sponsor-selection module),
-(2) build the `SponsorEvaluationContext` from the live
-`RaceState` (player top speed, nitro-fired flag, weather at
-finish), (3) call `sponsorBonus`, and (4) append the resulting
-`RaceBonus` (when non-null) to the `bonuses` list passed into
-`awardCredits` and surfaced on `RaceResult.bonuses`. Mirrors the
-F-026 / F-032 / F-034 / F-035 / F-036 / F-037 / F-039
-producer-without-consumer pattern.
+`src/data/schemas.ts`). The wiring slice
+(`feat/sponsor-bonus-wiring`) made `buildRaceResult` the
+consumer:
+
+1. `ChampionshipTourSchema` now carries an optional
+   `sponsors: string[]` roster keyed by `SponsorObjective.id`.
+   Every tour in `world-tour-standard.json` declares a
+   non-empty roster (option (a) per the dot description); a new
+   `championship-content` cross-reference test asserts every
+   roster id resolves via `SPONSOR_OBJECTIVES_BY_ID`.
+2. `BuildRaceResultInput` gained optional `sponsor:
+   SponsorObjective | null` and `sponsorContext:
+   SponsorEvaluationContext | null` fields. When both are
+   non-null, `buildRaceResult` calls `sponsorBonus(...)` and
+   appends the resulting chip to `result.bonuses` after the
+   per-race four-chip baseline (`podium / fastestLap /
+   cleanRace / underdog / sponsor` order). The chip's
+   `cashCredits` rolls into `cashEarned` so the §20 receipt and
+   the wallet stay in lockstep.
+3. `pickSponsorForTourRace({ tour, raceIndex, lookup })` lives
+   in `src/game/raceResult.ts` and rotates through the roster
+   by `raceIndex % roster.length`. Empty rosters / unresolved
+   ids surface as `null` so a content rename never crashes the
+   race-finish flow. The picker is the natural call site for
+   the tour-region surface (`tour-region-d9ca9a4d`) once the
+   per-race index becomes available; the §20 page wiring at
+   `src/app/race/page.tsx` does not yet have championship
+   context, so it continues to pass no sponsor (the chip strip
+   stays at the four-chip baseline outside a tour).
+
+The race-page integration follow-up: thread the active
+championship + tour + raceIndex through the page once the
+tour-region surface lands, build a `SponsorEvaluationContext`
+from the live `RaceState` (player top speed, nitro-fired flag,
+weather at finish; none are tracked on `RaceState` yet), and
+pass both into `buildRaceResult`. Tracked alongside
+`tour-region-d9ca9a4d`; the producer side of this dot is now
+complete.
 
 ---
 
