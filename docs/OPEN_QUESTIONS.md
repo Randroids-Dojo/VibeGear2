@@ -9,6 +9,52 @@ they are part of the design history.
 
 ---
 
+## Q-008: Tire modifiers for §23-uncovered weathers (`light_rain`, `dusk`, `night`)
+
+**GDD reference:** [§23](gdd/23-balancing-tables.md) "Weather modifiers",
+[§14](gdd/14-weather-and-environmental-systems.md) "Weather types",
+[§22](gdd/22-data-schemas.md) "Weather option enum"
+**Status:** open
+**Asked in loop:** 2026-04-26
+
+**Question.** `WeatherOption` (the `TrackSchema`-validated enum in
+`src/data/schemas.ts`) declares eight values: `clear`, `light_rain`,
+`rain`, `heavy_rain`, `fog`, `snow`, `dusk`, `night`. §23 "Weather
+modifiers" only specifies five of them (Clear, Rain, Heavy rain, Snow,
+Fog). When a track JSON authors `weatherOptions: ["light_rain"]` and a
+runtime physics consumer asks `getWeatherTireModifier("light_rain")`,
+what should the lookup return? The current binding returns
+`undefined` and forces the call site to decide; the parent dot
+`VibeGear2-implement-weather-38d61fc2` will need to pick one of:
+
+- **(a) Pin to identity.** Return `{ dryTireMod: 0, wetTireMod: 0 }`
+  for every uncovered weather. Cheapest, but silently ignores any
+  authoring intent (a `night` track should arguably reduce reaction
+  time rather than pretend it is grip-neutral).
+- **(b) Alias to the nearest §23 row.** `light_rain` -> `rain`,
+  `dusk` -> `clear`, `night` -> `clear` (or `fog` for the visibility
+  bias). Requires picking the alias map up-front.
+- **(c) Reject in the schema.** Drop `light_rain`, `dusk`, `night`
+  from `WeatherOptionSchema` until §23 pins them. Breaks the
+  existing track JSON fixtures that already author them.
+- **(d) Extend §23 to cover all eight.** GDD edit; the parent
+  weather dot owns this decision.
+
+**Recommended default.** Option (a) for the wiring slice in the
+parent dot, paired with a §14 doc note that the three uncovered
+weathers are "visibility variants" rather than "grip variants" and a
+follow-up content lint that warns when a track lists an uncovered
+weather without also listing a §23 row to fall back to. Option (d)
+is the right long-term answer; option (a) ships the parent dot
+without blocking on a GDD edit.
+
+**Blocking?** No. The tire-modifier table itself ships today with
+the §23-row subset; no runtime consumer reads the lookup yet. The
+parent weather dot picks a resolution before its physics integration
+lands.
+
+---
+
 ## Q-007: Practice mode weather preview surface
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up

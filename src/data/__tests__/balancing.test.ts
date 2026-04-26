@@ -16,11 +16,13 @@
  *     in `src/game/economy.ts`.
  *  3. Damage formula targets (§23) -> `HIT_MAGNITUDE_RANGES` and
  *     `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` in `src/game/damage.ts`.
- *  4. Weather modifiers (§23) -> deferred. The weather-state-machine
- *     module (`VibeGear2-implement-weather-38d61fc2`) has not landed; the
- *     consumer table will live there. Tracked as F-043; this test pins
- *     the §23 column so the wiring slice can copy it verbatim once the
- *     module is in place.
+ *  4. Weather modifiers (§23) -> `WEATHER_TIRE_MODIFIERS` in
+ *     `src/game/weather.ts`. The §23 row gives a dry/wet tire offset
+ *     per weather (Clear, Rain, Heavy rain, Snow, Fog). The wiring
+ *     consumer (physics integration that adds the offset to a car's
+ *     `baseStats.gripDry / gripWet`) has not landed yet; the table
+ *     here is the binding the wiring slice reads. Owned by the parent
+ *     dot `VibeGear2-implement-weather-38d61fc2`.
  *  5. CPU difficulty modifiers (§23) -> `CPU_DIFFICULTY_MODIFIERS`
  *     in `src/game/aiDifficulty.ts`. The §23 column gives
  *     pace / recovery / mistake scalars per `Easy / Normal / Hard /
@@ -49,6 +51,11 @@ import {
   NITRO_WHILE_SEVERELY_DAMAGED_BONUS,
 } from "@/game/damage";
 import { CPU_DIFFICULTY_MODIFIERS } from "@/game/aiDifficulty";
+import {
+  WEATHER_TIRE_MODIFIERS,
+  WEATHER_TIRE_MODIFIER_KEYS,
+  type WeatherTireModifierKey,
+} from "@/game/weather";
 import type { PlayerDifficultyPreset } from "@/data/schemas";
 
 const TOL = 1e-9;
@@ -196,45 +203,69 @@ describe("§23 Damage formula targets", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Weather modifiers (§23): deferred to F-043
+// 4. Weather modifiers (§23)
 // ---------------------------------------------------------------------------
 
 /**
- * §23 "Weather modifiers" pinned here for the wiring slice to copy
- * verbatim once `src/game/weather.ts` lands. No assertion runs today;
- * the table is referenced by F-043.
+ * §23 "Weather modifiers" verbatim. Pin against
+ * `WEATHER_TIRE_MODIFIERS` from `src/game/weather.ts`. Keyed by the
+ * §23 schema-name subset so the cross-check is a direct lookup.
+ *
+ * The §23 row labels ("Clear", "Rain", "Heavy rain", "Snow", "Fog")
+ * map onto the `WeatherOption` schema enum values (`clear`, `rain`,
+ * `heavy_rain`, `snow`, `fog`). The other three `WeatherOption`
+ * values (`light_rain`, `dusk`, `night`) are not part of §23 and are
+ * deliberately not pinned here. See Q-008.
  */
-const WEATHER_MODIFIERS: ReadonlyArray<{
-  weather: string;
-  dryTireMod: number;
-  wetTireMod: number;
-}> = [
-  { weather: "Clear", dryTireMod: 0.08, wetTireMod: 0 },
-  { weather: "Rain", dryTireMod: -0.12, wetTireMod: 0.1 },
-  { weather: "Heavy rain", dryTireMod: -0.2, wetTireMod: 0.16 },
-  { weather: "Snow", dryTireMod: -0.18, wetTireMod: 0.14 },
-  { weather: "Fog", dryTireMod: 0, wetTireMod: 0 },
-];
+const WEATHER_MODIFIER_TARGETS: Readonly<
+  Record<WeatherTireModifierKey, { dryTireMod: number; wetTireMod: number }>
+> = {
+  clear: { dryTireMod: 0.08, wetTireMod: 0 },
+  rain: { dryTireMod: -0.12, wetTireMod: 0.1 },
+  heavy_rain: { dryTireMod: -0.2, wetTireMod: 0.16 },
+  snow: { dryTireMod: -0.18, wetTireMod: 0.14 },
+  fog: { dryTireMod: 0, wetTireMod: 0 },
+};
 
-describe("§23 Weather modifiers (pinned for F-043)", () => {
-  it("table shape matches the §23 row count", () => {
-    expect(WEATHER_MODIFIERS.length).toBe(5);
+describe("§23 Weather modifiers", () => {
+  it.each(
+    WEATHER_TIRE_MODIFIER_KEYS.map(
+      (key) => [key, WEATHER_MODIFIER_TARGETS[key]] as const,
+    ),
+  )("%s row matches the §23 table", (key, expected) => {
+    const row = WEATHER_TIRE_MODIFIERS[key];
+    expect(row.dryTireMod).toBeCloseTo(expected.dryTireMod, 9);
+    expect(row.wetTireMod).toBeCloseTo(expected.wetTireMod, 9);
   });
 
-  it("modifiers are within the documented sane range", () => {
-    for (const row of WEATHER_MODIFIERS) {
-      expect(row.dryTireMod).toBeGreaterThanOrEqual(-1);
-      expect(row.dryTireMod).toBeLessThanOrEqual(1);
-      expect(row.wetTireMod).toBeGreaterThanOrEqual(-1);
-      expect(row.wetTireMod).toBeLessThanOrEqual(1);
-    }
+  it("dryTireMod walks Clear -> Rain -> Heavy rain monotonically down", () => {
+    expect(WEATHER_TIRE_MODIFIERS.clear.dryTireMod).toBeGreaterThanOrEqual(
+      WEATHER_TIRE_MODIFIERS.rain.dryTireMod - TOL,
+    );
+    expect(WEATHER_TIRE_MODIFIERS.rain.dryTireMod).toBeGreaterThanOrEqual(
+      WEATHER_TIRE_MODIFIERS.heavy_rain.dryTireMod - TOL,
+    );
+  });
+
+  it("wetTireMod walks Clear -> Rain -> Heavy rain monotonically up", () => {
+    expect(WEATHER_TIRE_MODIFIERS.clear.wetTireMod).toBeLessThanOrEqual(
+      WEATHER_TIRE_MODIFIERS.rain.wetTireMod + TOL,
+    );
+    expect(WEATHER_TIRE_MODIFIERS.rain.wetTireMod).toBeLessThanOrEqual(
+      WEATHER_TIRE_MODIFIERS.heavy_rain.wetTireMod + TOL,
+    );
   });
 
   it("Fog is grip-neutral on both tire types per §23", () => {
-    const fog = WEATHER_MODIFIERS.find((r) => r.weather === "Fog");
-    expect(fog).toBeDefined();
-    expect(fog?.dryTireMod ?? Number.NaN).toBeCloseTo(0, 9);
-    expect(fog?.wetTireMod ?? Number.NaN).toBeCloseTo(0, 9);
+    expect(WEATHER_TIRE_MODIFIERS.fog.dryTireMod).toBeCloseTo(0, 9);
+    expect(WEATHER_TIRE_MODIFIERS.fog.wetTireMod).toBeCloseTo(0, 9);
+  });
+
+  it("WEATHER_TIRE_MODIFIERS is frozen so a stray write cannot drift §23", () => {
+    expect(Object.isFrozen(WEATHER_TIRE_MODIFIERS)).toBe(true);
+    for (const key of WEATHER_TIRE_MODIFIER_KEYS) {
+      expect(Object.isFrozen(WEATHER_TIRE_MODIFIERS[key])).toBe(true);
+    }
   });
 });
 

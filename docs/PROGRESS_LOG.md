@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-043 pin §23 weather modifiers into `src/game/weather.ts`
+
+**GDD sections touched:**
+[§23](gdd/23-balancing-tables.md) Weather modifiers (the placeholder
+table in the balancing test now imports and asserts the constant).
+[§14](gdd/14-weather-and-environmental-systems.md) Weather types
+(documents the §23-row subset and the visibility-not-grip semantics
+of the Fog row). [§22](gdd/22-data-schemas.md) `WeatherOption` enum
+(the lookup is keyed by a typed subset; the three uncovered values
+are filed as Q-008).
+**Branch / PR:** `feat/weather-tire-modifiers` stacked on
+`feat/cpu-tier-pace-scalar-in-tickai`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-f-043-591438a1`. The §23 "Weather modifiers"
+table now has a single binding-site: `src/game/weather.ts` exposes
+`WEATHER_TIRE_MODIFIERS`, keyed by the `WeatherTireModifierKey`
+schema subset (Clear, Rain, Heavy rain, Snow, Fog), with
+`getWeatherTireModifier` and `isWeatherTireModifierKey` helpers.
+The balancing test in `src/data/__tests__/balancing.test.ts` imports
+the constant and asserts every cell rather than re-pinning literals,
+so a §23 retune has exactly one place to edit. The runtime consumers
+(apply the additive offset on top of `baseStats.gripDry / gripWet`
+inside `physics.step`, surface the row in the §14 pre-race UI grip
+rating pill) are owned by the parent weather dot
+`VibeGear2-implement-weather-38d61fc2`.
+
+### Done
+- `src/game/weather.ts` (new): frozen `WEATHER_TIRE_MODIFIERS` keyed
+  by the §23 row subset of `WeatherOption` with the literal values
+  (Clear +0.08 / 0, Rain -0.12 / +0.10, Heavy rain -0.20 / +0.16,
+  Snow -0.18 / +0.14, Fog 0 / 0); helpers
+  `isWeatherTireModifierKey`, `getWeatherTireModifier`; iteration
+  order `WEATHER_TIRE_MODIFIER_KEYS`.
+- `src/game/__tests__/weather.test.ts` (new): 24 cases pinning every
+  cell, freeze semantics, identity-comparison guarantee for the
+  return reference, the type guard's narrow, the
+  `undefined`-on-uncovered-weather contract, and the §23 row
+  monotonicity (dry grip falls Clear -> Rain -> Heavy rain, wet grip
+  rises across the same axis, Fog grip-neutral).
+- `src/data/__tests__/balancing.test.ts` (update): replaced the
+  `// deferred to F-043` block with an import-and-cross-check
+  against `WEATHER_TIRE_MODIFIERS`. Now imports the new constant and
+  iterates `WEATHER_TIRE_MODIFIER_KEYS` for the per-cell assertion;
+  retains the freeze-semantics guard and the Fog grip-neutral pin.
+- `docs/FOLLOWUPS.md`: F-043 marked `done` with the binding site and
+  the consumer module.
+- `docs/OPEN_QUESTIONS.md`: filed Q-008 for the three §23-uncovered
+  `WeatherOption` values (`light_rain`, `dusk`, `night`) so the
+  parent weather dot inherits the decision.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: all suites pass with the 24 new weather cases plus the
+  rewritten balancing block (5 per-cell pins + monotonicity +
+  freeze).
+- `npm run build`: clean.
+- `npm run test:e2e`: 47 specs pass. No runtime consumer of the new
+  module yet; the e2e suite exercises only the existing race-finish
+  and HUD paths, neither of which touches weather grip.
+
+### GDD edits
+- None. The §23 numbers landed verbatim from the existing
+  balancing-pass slice; no §14 narrative was changed.
+
+### Followups
+- F-043 closed. Q-008 opened for the three §23-uncovered
+  `WeatherOption` values; the parent weather dot inherits the
+  decision before its physics integration lands.
+
+---
+
 ## 2026-04-26: Slice: F-046 wire `BASE_REWARDS_BY_TRACK_DIFFICULTY` into the race-finish builder
 
 **GDD sections touched:**

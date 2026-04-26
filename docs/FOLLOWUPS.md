@@ -133,16 +133,24 @@ off the compiled output rather than re-parsing JSON.
 ## F-043: Pin §23 weather modifiers into `weather.ts`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** §23 "Weather modifiers" gives a per-weather dry / wet tire
-modifier table (Clear, Rain, Heavy rain, Snow, Fog). The consumer
-module (`src/game/weather.ts`) has not landed yet
-(`VibeGear2-implement-weather-38d61fc2`). Once it does, copy the
-table verbatim from `src/data/__tests__/balancing.test.ts` (the §23
-balancing-pass slice pinned the values there) into a frozen
-`WEATHER_TIRE_MODIFIERS` lookup keyed by `WeatherOption`, and replace
-the placeholder block in the balancing test with an import-and-assert
-cross-check against the new constant.
+**Status:** done (2026-04-26)
+**Notes:** Landed in `feat/weather-tire-modifiers`. `src/game/weather.ts`
+exposes `WEATHER_TIRE_MODIFIERS` (frozen `Record<WeatherTireModifierKey,
+WeatherTireModifier>`), `WEATHER_TIRE_MODIFIER_KEYS` (frozen iteration
+order), `isWeatherTireModifierKey` (type guard onto the §23-row subset
+of `WeatherOption`), and `getWeatherTireModifier` (lookup that returns
+`undefined` for the three §23-uncovered weathers). The balancing test
+in `src/data/__tests__/balancing.test.ts` now imports the constant and
+asserts every cell rather than re-pinning literals, so a §23 retune
+has exactly one place to edit. The §23 row labels (Clear, Rain, Heavy
+rain, Snow, Fog) cover five of the eight `WeatherOption` values; the
+treatment of `light_rain`, `dusk`, and `night` is filed as Q-008 for
+the parent dot to resolve when the runtime consumer lands.
+
+The runtime consumers (apply the additive offset on top of
+`baseStats.gripDry / gripWet` inside `physics.step`, surface the row
+in the §14 pre-race UI grip-rating pill) are owned by the parent
+weather dot `VibeGear2-implement-weather-38d61fc2`.
 
 ---
 
