@@ -8,11 +8,12 @@ import { expect, test } from "@playwright/test";
  * underlying fixed-step loop, so the speedometer value should not
  * advance while the menu is open.
  *
- * The Retire-race button is wired through `<PauseOverlay />` props but
- * the race route does not yet supply an `onRetire` callback (the
- * results screen lives in a later slice). We assert the button is
- * present and disabled in that case so the spec catches a regression
- * when retirement lands later without needing a churn-only update.
+ * Restart, Retire, and Exit-to-Title are wired through
+ * `usePauseActions` per dot
+ * `VibeGear2-implement-restart-retire-888c712b`; the dedicated
+ * pause-actions spec covers the full flows. This spec only checks
+ * presence + visibility of every menu entry as a layout regression
+ * guard.
  */
 
 test.describe("pause overlay", () => {
@@ -79,7 +80,7 @@ test.describe("pause overlay", () => {
     await expect(page.getByTestId("pause-overlay")).toHaveCount(0);
   });
 
-  test("Retire entry is present (disabled until the results route lands)", async ({
+  test("Restart, Retire, and Exit entries are present and enabled", async ({
     page,
   }) => {
     await page.goto("/race");
@@ -90,12 +91,14 @@ test.describe("pause overlay", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("pause-overlay")).toBeVisible();
 
-    const retire = page.getByTestId("pause-retire");
-    await expect(retire).toBeVisible();
-    // The race route does not pass an `onRetire` handler yet, so the
-    // button is disabled per `<PauseOverlay />`'s contract. When the
-    // results screen lands the parent will pass the handler and this
-    // assertion will flip to `toBeEnabled`.
-    await expect(retire).toBeDisabled();
+    // The dot ships the restart / retire / exit-to-title wiring; all
+    // three buttons should now be visible and clickable. Settings and
+    // leaderboard remain disabled here because the page does not pass
+    // their handlers yet (their target routes land in later slices).
+    await expect(page.getByTestId("pause-restart")).toBeEnabled();
+    await expect(page.getByTestId("pause-retire")).toBeEnabled();
+    await expect(page.getByTestId("pause-exit")).toBeEnabled();
+    await expect(page.getByTestId("pause-settings")).toBeDisabled();
+    await expect(page.getByTestId("pause-leaderboard")).toBeDisabled();
   });
 });

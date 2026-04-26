@@ -173,8 +173,15 @@ export interface DnfSample {
  * Reason a car was flipped to DNF this tick, or `null` if the car is
  * still racing. The string is rendered verbatim by the §20 results-screen
  * widget; pinning the literal here keeps the HUD copy consistent.
+ *
+ * `retired` is the user-initiated DNF: the player chose Retire from the
+ * §20 pause menu. The `tickDnfTimers` reducer never produces this value;
+ * it is set by the pure session helper `retireRaceSession` instead so
+ * the §7 DNF cell on the results screen can distinguish "ran out of
+ * track" from "gave up". Pinned per the dot
+ * `VibeGear2-implement-restart-retire-888c712b`.
  */
-export type DnfReason = "off-track" | "no-progress" | null;
+export type DnfReason = "off-track" | "no-progress" | "retired" | null;
 
 export interface DnfTickResult {
   timers: DnfTimers;

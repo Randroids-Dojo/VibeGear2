@@ -33,17 +33,24 @@ import {
   type CSSProperties,
   type ReactElement,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { PauseOverlay } from "@/components/pause/PauseOverlay";
+import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
+import { saveRaceResult } from "@/components/results/raceResultStorage";
 import { TRACK_IDS, loadTrack } from "@/data";
+import type { Track } from "@/data/schemas";
 import {
+  buildFinalCarInputsFromSession,
+  buildFinalRaceState,
+  buildRaceResult,
   createInputManager,
   createRaceSession,
   deriveHudState,
   deriveSplitsState,
+  retireRaceSession,
   startLoop,
   stepRaceSession,
   totalProgress,
@@ -184,9 +191,17 @@ interface RaceCanvasProps {
 }
 
 function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
   const sessionRef = useRef<RaceSessionState | null>(null);
+  // Imperative pause-menu effects, populated inside the loop effect
+  // below so the hook layer can stay decoupled from the loop / session
+  // / config refs. The hook reads these getters once per click; mid-
+  // race ref swaps are not expected (the page is mounted once per race).
+  const restartFnRef = useRef<(() => void) | null>(null);
+  const retireFnRef = useRef<(() => void) | null>(null);
+  const exitFnRef = useRef<(() => void) | null>(null);
 
   const [phase, setPhase] = useState<"countdown" | "racing" | "finished">(
     "countdown",
@@ -202,9 +217,27 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
 
   const pause = usePauseToggle({ loop: () => handleRef.current });
 
-  const onResume = useCallback(() => {
-    pause.closeMenu();
-  }, [pause]);
+  // §20 pause-menu actions. Each impl is a thin wrapper around the
+  // matching ref so the hook always sees stable callbacks; the refs
+  // are populated once the loop effect runs. Restart and retire are
+  // disabled (`null`) once the race has finished; the §20 results
+  // screen owns the post-finish rematch / continue flow instead.
+  const onRestartImpl = useCallback(() => {
+    restartFnRef.current?.();
+  }, []);
+  const onRetireImpl = useCallback(() => {
+    retireFnRef.current?.();
+  }, []);
+  const onExitToTitleImpl = useCallback(() => {
+    exitFnRef.current?.();
+  }, []);
+
+  const pauseActions = usePauseActions({
+    closeMenu: pause.closeMenu,
+    onRestartImpl: phase === "finished" ? null : onRestartImpl,
+    onRetireImpl: phase === "finished" ? null : onRetireImpl,
+    onExitToTitleImpl,
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -253,6 +286,81 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
     const totalLength = track.compiled.totalLengthMeters;
 
     const inputManager = createInputManager({});
+
+    // Wire the §20 pause-menu imperative actions. Each callback closes
+    // over the local `config`, the persisted save, the input manager,
+    // and the live loop / session refs so the hook layer can stay
+    // decoupled from the page internals. Restart rebuilds the session
+    // from the same config (countdown re-runs from scratch) and
+    // resumes the loop. Retire flips the player to DNF and writes the
+    // §20 results payload to the session-storage handoff before the
+    // route hop. Exit-to-Title disposes the loop before navigating so
+    // a torn-down rAF / audio handle cannot leak across the route hop.
+    restartFnRef.current = (): void => {
+      const handle = handleRef.current;
+      if (!handle) return;
+      sessionRef.current = createRaceSession(config);
+      // Match the post-effect render snapshot to the fresh session so
+      // the dl below re-renders the countdown immediately rather than
+      // showing the racing phase momentarily until the next render
+      // tick fires.
+      setPhase("countdown");
+      setCountdownSecondsLeft(Math.ceil(config.countdownSec ?? 3));
+      setResultMs(null);
+      setHudSnapshot({
+        speed: 0,
+        lap: 1,
+        totalLaps: track.compiled.laps,
+        position: 1,
+      });
+      handle.resume();
+    };
+
+    retireFnRef.current = (): void => {
+      const session = sessionRef.current;
+      if (!session) return;
+      const retired = retireRaceSession(session);
+      sessionRef.current = retired;
+      // Build the §20 results payload from the post-retire session
+      // shape and write it to the session-storage handoff so the
+      // results route renders the DNF row. Mirrors the natural-finish
+      // wiring path from the §20 dot.
+      const finalState = buildFinalRaceState({
+        trackId: track.id,
+        totalLaps: retired.race.totalLaps,
+        cars: buildFinalCarInputsFromSession(retired),
+      });
+      const save =
+        persisted.kind === "loaded" ? persisted.save : defaultSave();
+      // `buildRaceResult` reads only `track.id` from the Track shape;
+      // pass a minimal stand-in cast to `Track` so we do not have to
+      // re-parse the bundled JSON just to satisfy the shape.
+      const trackForResult = { id: track.id } as Track;
+      const result = buildRaceResult({
+        finalState,
+        save,
+        track: trackForResult,
+        playerCarId: PLAYER_ID,
+        playerStartPosition: 1,
+        recordPBs: false,
+      });
+      saveRaceResult(result);
+      // Tear down the loop / input before the route hop so the rAF
+      // handle and the keydown listener cannot outlive the page.
+      handleRef.current?.stop();
+      handleRef.current = null;
+      sessionRef.current = null;
+      inputManager.dispose();
+      router.push("/race/results");
+    };
+
+    exitFnRef.current = (): void => {
+      handleRef.current?.stop();
+      handleRef.current = null;
+      sessionRef.current = null;
+      inputManager.dispose();
+      router.push("/");
+    };
 
     handleRef.current = startLoop({
       simulate: (dt) => {
@@ -363,7 +471,7 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
       sessionRef.current = null;
       inputManager.dispose();
     };
-  }, [track]);
+  }, [track, router]);
 
   return (
     <main data-testid="race-canvas" data-track={track.id} style={shellStyle}>
@@ -409,7 +517,7 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
           Race finished. Total time: {(resultMs / 1000).toFixed(2)} s
         </div>
       ) : null}
-      <PauseOverlay open={pause.open} onResume={onResume} />
+      <PauseOverlay open={pause.open} {...pauseActions} />
     </main>
   );
 }

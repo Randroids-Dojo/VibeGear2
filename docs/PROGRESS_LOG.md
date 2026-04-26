@@ -6,6 +6,103 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §20 pause-menu actions (restart, retire, exit-to-title)
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) DNF semantics + retire path,
+[§20](gdd/20-hud-and-ui-ux.md) Pause menu (Resume, Restart race, Retire
+race, Settings, Leaderboard, Exit to title).
+**Branch / PR:** stacked on `feat/race-results-screen`, PR pending.
+**Status:** Implemented. The §20 pause-menu Restart, Retire, and
+Exit-to-Title controls are now wired through to the live race session,
+the loop handle, and the router. Restart rebuilds the session in place
+so the countdown re-runs from 3; Retire flips the player to a new
+`"retired"` DNF reason, builds a `RaceResult` from the post-retire
+session shape, and routes to `/race/results`; Exit-to-Title disposes
+the loop and routes to `/`. 1516 unit tests + 40 Playwright tests
+green.
+
+### Done
+- `src/game/raceRules.ts` (update): extended `DnfReason` with the
+  user-initiated `"retired"` literal so the §7 DNF cell on the
+  results screen can distinguish "ran out of track" from "gave up".
+  Comment explains that `tickDnfTimers` never produces this value;
+  it is set by the new pure helper `retireRaceSession` instead.
+- `src/game/raceSessionActions.ts` (new): two pure helpers and a
+  pinned constant.
+  - `retireRaceSession(state)` returns a fresh `RaceSessionState`
+    with the player flipped to `status: "dnf"`,
+    `dnfReason: "retired"`, `finishedAtMs: null`, and the race
+    phase forced to `"finished"`. AI cars are returned untouched
+    (per §7 the multi-car finish gate would freeze them in turn);
+    every nested record gets a fresh reference so the immutable
+    contract holds.
+  - `buildFinalCarInputsFromSession(state)` projects the live
+    session shape onto the §7 `FinalCarInput[]` shape the results
+    screen consumes. Coerces still-racing cars to `"dnf"` so the
+    natural-finish builder produces a deterministic finishing order
+    after a mid-race retire.
+  - `DNF_REASON_RETIRED` constant re-exported for callers that need
+    the literal without reaching into raceRules.
+- `src/game/__tests__/raceSessionActions.test.ts` (new): 9 cases.
+  Retire flips player to dnf with the retired reason and the phase
+  to finished. Retire preserves existing lap times. Retire never
+  mutates the input (deep-equal before / after JSON snapshot).
+  Retire is a no-op on an already-finished session. Retire returns
+  fresh nested references. Retire leaves still-racing AI cars
+  alone. `buildFinalCarInputsFromSession` includes one entry per
+  car keyed by canonical id, coerces still-racing cars to dnf,
+  preserves the player's lap times and finished-at value.
+- `src/components/pause/usePauseActions.ts` (new): hook that wraps
+  the four `<PauseOverlay />` action props (`onResume`, `onRestart`,
+  `onRetire`, `onExitToTitle`) through a single `closeMenu` plus
+  three imperative-effect callbacks. Each wrapper closes the menu
+  before invoking the downstream effect. `null` impls map to
+  `undefined` props so `<PauseOverlay />`'s self-disable contract
+  handles the rendering.
+- `src/components/pause/__tests__/usePauseActions.test.tsx` (new):
+  6 cases. onResume only closes the menu. Each handler closes the
+  menu then invokes its impl in order (`mock.invocationCallOrder`
+  comparison). null impls return undefined props. Omitted impl
+  props behave the same as null.
+- `src/app/race/page.tsx` (update): wired `usePauseActions` into
+  the race shell. Three imperative refs (`restartFnRef`,
+  `retireFnRef`, `exitFnRef`) are populated inside the loop effect
+  so the hook layer stays decoupled from the loop / session /
+  config refs. Restart re-creates the session from the same config
+  and resets the React render snapshot to the countdown values.
+  Retire builds a `RaceResult` via
+  `buildFinalRaceState` + `buildRaceResult`, writes it via
+  `saveRaceResult`, tears down the loop / input, and routes to
+  `/race/results`. Exit-to-Title tears down then routes to `/`.
+  Restart and Retire are gated to `null` once the race phase is
+  `"finished"` so the post-finish overlay's Rematch / Continue CTAs
+  are the only remaining actions.
+- `src/game/index.ts` (update): re-exported `./raceSessionActions`
+  and `./raceRules` so the `/race` page can import the helpers
+  through the existing barrel.
+- `e2e/pause-actions.spec.ts` (new): three Playwright cases.
+  Restart sends the race back to the countdown phase. Retire flips
+  to the results screen with the player row carrying
+  `data-status="dnf"` and "DNF" in the position column. Exit-to-
+  title routes back to the home page.
+- `e2e/pause-overlay.spec.ts` (update): the
+  "Retire entry is disabled" assertion is replaced with
+  "Restart, Retire, and Exit are visible and enabled" so the
+  layout regression guard tracks the new contract. Settings and
+  Leaderboard remain `disabled` because the page does not pass
+  their handlers yet.
+
+### GDD edits
+- None. The dot only adds wiring; the §20 pause-menu list and the
+  §7 DNF semantics already cover the surface that was wired.
+
+### Followups
+- F-029 stays open: the dot's e2e covers Restart and Retire, but
+  the natural-finish race-finish spec from F-029 (multi-lap race vs
+  AI, assert results overlay) is owned by the dedicated dot
+  `VibeGear2-implement-e2e-race-4a750bfc` and is not in scope here.
+
 ## 2026-04-26: Slice: §20 race results screen (buildRaceResult, /race/results page, components)
 
 **GDD sections touched:**

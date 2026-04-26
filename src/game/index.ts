@@ -4,6 +4,8 @@
  */
 export * from "./raceState";
 export * from "./raceSession";
+export * from "./raceSessionActions";
+export * from "./raceRules";
 export * from "./loop";
 export * from "./input";
 export * from "./physics";
