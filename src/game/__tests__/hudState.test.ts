@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   deriveHudState,
+  formatLapTime,
   rankPosition,
   speedToDisplayUnit,
   type HudStateInput,
@@ -228,6 +229,87 @@ describe("deriveHudState assist badge", () => {
     expect(state.assistBadge?.active).toBe(true);
     expect(state.assistBadge?.primary).toBe("auto-accelerate");
     expect(state.assistBadge?.count).toBe(2);
+  });
+});
+
+describe("formatLapTime", () => {
+  it("renders zero as 00:00.000", () => {
+    expect(formatLapTime(0)).toBe("00:00.000");
+  });
+
+  it("formats a sub-minute lap with two-digit seconds and three-digit ms", () => {
+    expect(formatLapTime(73499)).toBe("01:13.499");
+  });
+
+  it("renders exactly one second as 00:01.000", () => {
+    expect(formatLapTime(1000)).toBe("00:01.000");
+  });
+
+  it("renders an hour without rolling over the minute place", () => {
+    // §20 lap times never approach an hour; the formatter keeps counting
+    // so a stuck timer still reads honestly.
+    expect(formatLapTime(3_600_000)).toBe("60:00.000");
+  });
+
+  it("collapses negative input to 00:00.000", () => {
+    // Negative durations have no physical meaning for a lap timer.
+    expect(formatLapTime(-5)).toBe("00:00.000");
+    expect(formatLapTime(-1_000)).toBe("00:00.000");
+  });
+
+  it("collapses non-finite input to the placeholder string", () => {
+    expect(formatLapTime(Number.NaN)).toBe("--:--.---");
+    expect(formatLapTime(Number.POSITIVE_INFINITY)).toBe("--:--.---");
+    expect(formatLapTime(Number.NEGATIVE_INFINITY)).toBe("--:--.---");
+  });
+
+  it("truncates fractional milliseconds rather than rounding up", () => {
+    // The HUD must never show a timer ahead of the sim-reported elapsed.
+    expect(formatLapTime(999.9)).toBe("00:00.999");
+    expect(formatLapTime(1500.7)).toBe("00:01.500");
+  });
+
+  it("is pure: same input always produces the same output", () => {
+    const first = formatLapTime(45_678);
+    for (let n = 0; n < 100; n++) {
+      expect(formatLapTime(45_678)).toBe(first);
+    }
+  });
+});
+
+describe("deriveHudState lap-timer fields", () => {
+  it("omits both fields when the caller passes neither", () => {
+    const state = deriveHudState(input());
+    expect(state.currentLapElapsedMs).toBeUndefined();
+    expect(state.bestLapMs).toBeUndefined();
+  });
+
+  it("surfaces currentLapElapsedMs when the caller supplies it", () => {
+    const state = deriveHudState(input({ currentLapElapsedMs: 12_345 }));
+    expect(state.currentLapElapsedMs).toBe(12_345);
+    expect(state.bestLapMs).toBeUndefined();
+  });
+
+  it("surfaces bestLapMs when the caller supplies it", () => {
+    const state = deriveHudState(input({ bestLapMs: 65_432 }));
+    expect(state.bestLapMs).toBe(65_432);
+    expect(state.currentLapElapsedMs).toBeUndefined();
+  });
+
+  it("preserves an explicit null bestLapMs so the renderer can suppress the BEST row", () => {
+    const state = deriveHudState(
+      input({ currentLapElapsedMs: 1_000, bestLapMs: null }),
+    );
+    expect(state.bestLapMs).toBeNull();
+    expect(state.currentLapElapsedMs).toBe(1_000);
+  });
+
+  it("round-trips both fields together when both are supplied", () => {
+    const state = deriveHudState(
+      input({ currentLapElapsedMs: 4_321, bestLapMs: 9_999 }),
+    );
+    expect(state.currentLapElapsedMs).toBe(4_321);
+    expect(state.bestLapMs).toBe(9_999);
   });
 });
 

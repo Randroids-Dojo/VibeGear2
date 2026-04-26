@@ -313,3 +313,117 @@ describe("drawHud assist badge", () => {
     expect(runOnce()).toEqual(runOnce());
   });
 });
+
+describe("drawHud lap-timer widget", () => {
+  it("draws no extra fillText rows when neither timer field is supplied", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(ctx, BASE_HUD, VIEWPORT);
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    // Legacy minimal HUD: lap, position, speed, unit = four shadowed
+    // texts = eight fillText calls. The TIME and BEST rows must add
+    // nothing when the matching fields are absent.
+    expect(fillTexts).toHaveLength(8);
+    const labels = fillTexts.map((c) => c.text);
+    expect(labels.some((t) => t.startsWith("TIME"))).toBe(false);
+    expect(labels.some((t) => t.startsWith("BEST"))).toBe(false);
+  });
+
+  it("draws the TIME row at the documented offset when currentLapElapsedMs is supplied", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      { ...BASE_HUD, currentLapElapsedMs: 12_345 },
+      VIEWPORT,
+    );
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    // Legacy 8 + TIME row (shadow + text) = 10.
+    expect(fillTexts).toHaveLength(10);
+    const timerCalls = fillTexts.filter((c) => c.text.startsWith("TIME"));
+    expect(timerCalls).toHaveLength(2);
+    expect(timerCalls[0]!.text).toBe("TIME 00:12.345");
+    // Padding (16) + LAP_TIMER_TOP_OFFSET (44) = 60. Shadow underlay is
+    // offset by +1 px; the canonical text sits at exactly 60.
+    const textCall = timerCalls.find((c) => c.fillStyle === "#ffffff");
+    expect(textCall?.x).toBe(16);
+    expect(textCall?.y).toBe(16 + 44);
+  });
+
+  it("draws the BEST row at the documented offset when bestLapMs is supplied", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      { ...BASE_HUD, bestLapMs: 65_432 },
+      VIEWPORT,
+    );
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    expect(fillTexts).toHaveLength(10);
+    const bestCalls = fillTexts.filter((c) => c.text.startsWith("BEST"));
+    expect(bestCalls).toHaveLength(2);
+    expect(bestCalls[0]!.text).toBe("BEST 01:05.432");
+    const textCall = bestCalls.find((c) => c.fillStyle === "#cfd6e4");
+    expect(textCall?.x).toBe(16);
+    expect(textCall?.y).toBe(16 + 64);
+  });
+
+  it("draws both rows together when both fields are supplied", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      { ...BASE_HUD, currentLapElapsedMs: 1_000, bestLapMs: 2_000 },
+      VIEWPORT,
+    );
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    // Legacy 8 + TIME 2 + BEST 2 = 12.
+    expect(fillTexts).toHaveLength(12);
+    expect(fillTexts.some((c) => c.text === "TIME 00:01.000")).toBe(true);
+    expect(fillTexts.some((c) => c.text === "BEST 00:02.000")).toBe(true);
+  });
+
+  it("suppresses the BEST row when bestLapMs is explicitly null", () => {
+    // The "no PB yet" state passes null so the timer still draws but
+    // the BEST row stays hidden.
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      { ...BASE_HUD, currentLapElapsedMs: 7_500, bestLapMs: null },
+      VIEWPORT,
+    );
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    expect(fillTexts).toHaveLength(10);
+    expect(fillTexts.some((c) => c.text.startsWith("TIME"))).toBe(true);
+    expect(fillTexts.some((c) => c.text.startsWith("BEST"))).toBe(false);
+  });
+
+  it("renders non-finite currentLapElapsedMs as the placeholder string", () => {
+    // The renderer still draws the row so layout stays stable; the
+    // formatter is what supplies the dashes.
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      { ...BASE_HUD, currentLapElapsedMs: Number.NaN },
+      VIEWPORT,
+    );
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    expect(fillTexts.some((c) => c.text === "TIME --:--.---")).toBe(true);
+  });
+
+  it("draws the timer rows above the assist badge so they do not overlap", () => {
+    // The badge sits at y = padding + 64 in the top-right corner; the
+    // timer rows sit on the left at y = padding + 44 / + 64. Ensure the
+    // badge keeps its anchor when the timer rows are present so the
+    // top-right corner is unaffected.
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        currentLapElapsedMs: 4_321,
+        bestLapMs: 9_999,
+        assistBadge: badge("auto-accelerate"),
+      },
+      VIEWPORT,
+    );
+    const fillRect = calls.find((c) => c.type === "fillRect");
+    expect(fillRect?.y).toBe(16 + 64);
+  });
+});

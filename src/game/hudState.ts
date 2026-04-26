@@ -70,6 +70,22 @@ export interface HudStateInput {
    * stays untouched.
    */
   assistBadge?: AssistBadge;
+  /**
+   * Optional current-lap elapsed time in milliseconds. Surfaced by
+   * the §20 polish slice; absent for pre-polish callers so the
+   * existing minimal HUD wiring continues to type-check. Negative
+   * and non-finite values are tolerated by the formatter (see
+   * `formatLapTime`); the renderer still draws the row so layout is
+   * stable across sub-second pre-countdown ticks.
+   */
+  currentLapElapsedMs?: number;
+  /**
+   * Optional best lap time in milliseconds. Sourced from the save
+   * record on race start; surfaced by the §20 polish slice. Pass
+   * `null` or omit when no best is available so the HUD knows to
+   * skip the BEST row entirely.
+   */
+  bestLapMs?: number | null;
 }
 
 /** Optional minimap snapshot derived from the compiled track + car field. */
@@ -105,8 +121,19 @@ export interface HudState {
    * completed any lap, or when the §20 best-lap widget is not wired by the
    * caller. The §20 polish slice owns the canonical wiring; downstream
    * consumers must treat `undefined` as "no best yet".
+   *
+   * `null` is also accepted on input (e.g. when the save record exists but
+   * has no best yet). The HUD-state derivation collapses both `null` and
+   * `undefined` to "no row drawn" via the renderer's per-field guard.
    */
   bestLapMs?: number | null;
+  /**
+   * Optional current-lap elapsed time in milliseconds, mirrored from
+   * `HudStateInput`. The renderer draws the timer row only when this
+   * field is present so the existing minimal HUD layout is preserved
+   * for callers that do not yet wire the §20 polish data.
+   */
+  currentLapElapsedMs?: number;
   /**
    * Signed sector delta in milliseconds for the current sector, vs the
    * best-known split for that sector on this track. Positive = current is
@@ -126,6 +153,38 @@ export interface HudState {
 /** Conversion factors. SI base is m/s. */
 const KPH_PER_MPS = 3.6;
 const MPH_PER_MPS = 2.2369362920544025;
+
+/**
+ * Format a lap time in milliseconds as `MM:SS.mmm` for the §20 lap-timer
+ * widget.
+ *
+ * Contract:
+ * - Non-finite input (NaN, Infinity) collapses to `"--:--.---"` so the HUD
+ *   can render a "no time" placeholder without the caller branching.
+ * - Negative input collapses to `"00:00.000"`. Negative durations have no
+ *   physical meaning for a lap timer; the HUD must never paint a sign.
+ * - Inputs that overflow the 99-minute mark keep counting (e.g. 60 min
+ *   renders as `"60:00.000"`); §20 lap times never approach an hour but
+ *   the formatter does not rollover so a stuck timer reads honestly.
+ *
+ * Pure: same input always produces the same output. No locale awareness;
+ * the §20 monospace stack is ASCII-only.
+ */
+export function formatLapTime(ms: number): string {
+  if (!Number.isFinite(ms)) return "--:--.---";
+  const clamped = ms < 0 ? 0 : ms;
+  // Round down so the displayed timer never jumps ahead of the
+  // sim-reported elapsed; sub-millisecond precision is not part of the
+  // HUD contract. Math.trunc keeps the ms count integer-safe.
+  const totalMs = Math.trunc(clamped);
+  const minutes = Math.trunc(totalMs / 60_000);
+  const seconds = Math.trunc((totalMs % 60_000) / 1_000);
+  const millis = totalMs % 1_000;
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+  const mmm = String(millis).padStart(3, "0");
+  return `${mm}:${ss}.${mmm}`;
+}
 
 /** Convert m/s into the requested display unit. */
 export function speedToDisplayUnit(metersPerSecond: number, unit: SpeedUnit): number {
@@ -198,6 +257,17 @@ export function deriveHudState(input: HudStateInput): HudState {
   // the rendering layer.
   if (input.assistBadge !== undefined && input.assistBadge.active) {
     result.assistBadge = input.assistBadge;
+  }
+  // Surface lap-timer fields only when the caller supplied them so the
+  // existing minimal HUD layout (no timer row) keeps its existing
+  // snapshot shape. The renderer guards on `!= null`, so passing
+  // `bestLapMs: null` here suppresses the BEST row while keeping the
+  // current-lap timer visible (covers the "no PB yet" state).
+  if (input.currentLapElapsedMs !== undefined) {
+    result.currentLapElapsedMs = input.currentLapElapsedMs;
+  }
+  if (input.bestLapMs !== undefined) {
+    result.bestLapMs = input.bestLapMs;
   }
   return result;
 }

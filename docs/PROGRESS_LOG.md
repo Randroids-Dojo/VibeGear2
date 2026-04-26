@@ -6,6 +6,70 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §20 HUD lap-timer + best-lap widget
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) (Race HUD layout: current-lap timer and
+BEST lap rows beneath the existing LAP / POS labels in the top-left
+corner).
+**Branch / PR:** `feat/hud-lap-timer` (stacked on
+`feat/race-rules-time-limit`), PR pending.
+**Status:** Implemented (formatter + state extension + per-field guard
+in renderer + 18 new tests; verify chain green). Sub-slice of HUD parent
+`VibeGear2-implement-hud-ui-6c1b130d`; child dot
+`VibeGear2-implement-hud-lap-33fd24ba` closed.
+
+### Done
+- `src/game/hudState.ts` adds the pure `formatLapTime(ms)` helper
+  (`MM:SS.mmm` for valid input, `--:--.---` for non-finite,
+  `00:00.000` for negative). Truncates fractional ms so the HUD never
+  reads ahead of the sim.
+- Same module extends `HudStateInput` and `HudState` with optional
+  `currentLapElapsedMs` and `bestLapMs` fields. Existing minimal-HUD
+  callers stay unchanged because both fields are optional and the
+  derivation only mirrors them when supplied.
+- `src/render/uiRenderer.ts` draws the TIME row at
+  `y = padding + 44` (text colour) and the BEST row at
+  `y = padding + 64` (muted colour) only when the matching field is
+  present. The assist-badge anchor at `y = padding + 64` on the
+  right-hand side is unaffected because the rows live on the left.
+- `src/game/__tests__/hudState.test.ts` adds 18 cases covering the
+  formatter (zero, sub-second, multi-minute, negative, NaN / Infinity
+  collapse, truncation, purity) and the new derivation fields
+  (omission, surfacing, explicit `null` for "no PB yet").
+- `src/render/__tests__/uiRenderer.test.ts` adds 7 cases covering the
+  per-field guard (no extra rows when omitted, TIME-only, BEST-only,
+  both rows, explicit null suppresses BEST, non-finite renders the
+  placeholder, badge anchor unaffected by timer rows).
+
+### Verified
+- `npm run lint`, `npm run typecheck`, `npm test` (1178 passing),
+  `npm run build`, `npm run test:e2e` (31 passing).
+- No em-dashes or en-dashes in any added or edited file.
+
+### Decisions and assumptions
+- Layout: TIME row uses the `text` colour (matching the LAP row); BEST
+  row uses `textMuted` (matching the POS row) so the eye reads the
+  pair as "current vs reference". Pinned in
+  `LAP_TIMER_TOP_OFFSET = 44` and `BEST_LAP_TOP_OFFSET = 64` constants.
+- `bestLapMs: null` (vs `undefined`) is honoured as an explicit "no PB
+  yet" signal so callers can paint the timer while suppressing BEST
+  without having to delete the field. This matches the §20 "no record"
+  placeholder pattern.
+- Truncation (not rounding) on the millisecond field so the HUD reads
+  honest: a 999.9 ms elapsed renders `"00:00.999"`, never
+  `"00:01.000"`.
+
+### Followups created
+- None. Sibling sub-slices (damage indicator, weather indicator, full
+  pause action set, settings persistence) remain on the parent HUD dot
+  and the iter-30 researcher note attached to it.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: §7 race rules hard time limit wired into raceSession
 
 **GDD sections touched:**

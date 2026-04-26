@@ -12,19 +12,24 @@
  * derivation can run headless without canvas mocking.
  *
  * Layout matches §20 "UX wireframe descriptions / Race HUD layout":
- * - Top-left: lap and position
+ * - Top-left: lap, position, current-lap timer (TIME row, polish slice),
+ *   and BEST lap (polish slice) under that.
  * - Bottom-right: speed and unit
  * - Top-right (below the splits widget): accessibility-assist badge,
  *   only when `HudState.assistBadge.active` is true. The badge sits at
  *   `y = padding + 64` so it never overlaps the splits widget's three
  *   text rows (timer 20 px, label 12 px, delta 16 px, plus padding).
  *
+ * The TIME and BEST rows draw only when the matching `HudState` field
+ * is supplied (per-field guard); the legacy minimal-HUD callers that
+ * never set them keep their current layout untouched.
+ *
  * Other §20 corners (bottom-left damage, weather icon, etc) are
  * intentionally empty in this slice.
  */
 
 import { ASSIST_BADGE_LABELS, type AssistBadge } from "@/game/assists";
-import type { HudState } from "@/game/hudState";
+import { formatLapTime, type HudState } from "@/game/hudState";
 import type { Viewport } from "@/road/types";
 
 export interface HudColors {
@@ -77,6 +82,19 @@ const DEFAULT_FONT_FAMILY =
  * delta 16 px = ~60 px; the badge sits below at y = padding + 64.
  */
 const ASSIST_BADGE_TOP_OFFSET = 64;
+/**
+ * Vertical offset (from the top of the viewport, before the configured
+ * padding) for the §20 current-lap timer row, drawn under the POS line.
+ * LAP row sits at y = padding (16 px tall), POS row at y = padding + 22
+ * (14 px tall). The timer follows at y = padding + 44.
+ */
+const LAP_TIMER_TOP_OFFSET = 44;
+/**
+ * Vertical offset for the §20 BEST lap row, drawn beneath the current
+ * timer in the muted text colour. Timer row is 14 px tall; BEST row at
+ * y = padding + 64 lines up directly under it.
+ */
+const BEST_LAP_TOP_OFFSET = 64;
 /** Badge pill horizontal padding around the label text. */
 const ASSIST_BADGE_PADDING_X = 8;
 /** Badge pill vertical padding around the label text. */
@@ -148,6 +166,34 @@ export function drawHud(
     colors.shadow,
     colors.textMuted,
   );
+
+  // §20 lap-timer widget. Drawer is a no-op when neither field is
+  // supplied so the existing minimal HUD layout is preserved for
+  // callers that have not yet wired the §20 polish data.
+  if (state.currentLapElapsedMs != null) {
+    ctx.font = `600 14px ${fontFamily}`;
+    const timerLabel = `TIME ${formatLapTime(state.currentLapElapsedMs)}`;
+    drawShadowedText(
+      ctx,
+      timerLabel,
+      padding,
+      padding + LAP_TIMER_TOP_OFFSET,
+      colors.shadow,
+      colors.text,
+    );
+  }
+  if (state.bestLapMs != null) {
+    ctx.font = `600 12px ${fontFamily}`;
+    const bestLabel = `BEST ${formatLapTime(state.bestLapMs)}`;
+    drawShadowedText(
+      ctx,
+      bestLabel,
+      padding,
+      padding + BEST_LAP_TOP_OFFSET,
+      colors.shadow,
+      colors.textMuted,
+    );
+  }
 
   // Bottom-right: large speed value with a small unit label below.
   ctx.font = `700 36px ${fontFamily}`;
