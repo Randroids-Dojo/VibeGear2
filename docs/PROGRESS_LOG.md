@@ -6,6 +6,79 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Recover Playwright e2e harness + title-screen smoke
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/playwright-smoke-recovery` (off `feat/track-compiler-golden`), PR pending
+**Status:** Implemented (recovery)
+
+### Done
+- Re-applied the Playwright harness that was originally shipped on
+  `feat/playwright-smoke` (commit 693043a) but never made it onto any
+  later feature branch. Dot
+  `VibeGear2-implement-add-playwright-64eb2a44` re-opened
+  `VibeGear2-implement-add-playwright-c2ccf4f9` after the iteration 17
+  audit found no Playwright artefacts on `main` or any in-flight feature
+  branch.
+- Recovery option chosen: option 2 from the dot's recovery path
+  (re-implement on the latest feature branch). Option 1 was attempted
+  first via `git cherry-pick 693043a` but produced two unmergeable
+  conflicts in `docs/PROGRESS_LOG.md` because every later iteration
+  prepended a new top entry. The file contents from 693043a
+  (`playwright.config.ts`, `e2e/title-screen.spec.ts`) were copied
+  verbatim via `git show 693043a:<path>` so future bisects still find
+  one canonical shape.
+- Added `@playwright/test` ^1.48.0 as a devDependency and installed via
+  `npm install`.
+- Restored `playwright.config.ts`: chromium project, runs against
+  `http://127.0.0.1:3100` (configurable via `PLAYWRIGHT_PORT`), boots
+  the Next.js production build via `npm run build && npm run start`,
+  retains HTML reports + traces + screenshots on failure, GitHub
+  reporter under CI.
+- Restored `e2e/title-screen.spec.ts`: a single smoke test that loads
+  `/`, asserts `data-testid="game-title"` reads "VibeGear2", asserts
+  the document title matches, asserts the three menu buttons (Start
+  Race, Garage, Options) are visible and disabled, and asserts the
+  build-status footer contains "Phase 0".
+- Restored npm scripts `test:e2e`, `test:e2e:ui`, and `verify:full`
+  (`verify` + `test:e2e`).
+- Restored the `vitest.config.ts` exclude pattern from `tests/e2e/**` to
+  `e2e/**` so the Playwright spec is not picked up by Vitest.
+- Restored the README local-dev block documenting
+  `npx playwright install chromium`, `npm run test:e2e`, and
+  `npm run verify:full`.
+
+### Verified
+- `npm install` succeeds.
+- `npx playwright install chromium` succeeds.
+- `npm run lint`, `npm run typecheck`, `npm test` all pass.
+- `npm run test:e2e` builds and starts the production server, runs the
+  smoke spec, and passes (1 passed).
+- `npm run build` clean.
+- `grep -P` for U+2013 and U+2014 across new files returns nothing.
+
+### Decisions and assumptions
+- Branched off `feat/track-compiler-golden` (the head of the current
+  13-deep stack) rather than re-cutting `feat/playwright-smoke` against
+  `main`, because every other in-flight slice already targets the
+  stack's tip and rebasing the whole stack onto a second base branch
+  would multiply the merge work.
+- Chose to re-apply rather than cherry-pick because the cherry-pick
+  conflicted twice in `PROGRESS_LOG.md` (every later iteration prepends
+  a top entry) and the source artefacts are tiny.
+- Did not bring forward F-016 / F-017 / F-018 specs in this slice. They
+  remain open per the dot's "Out of scope" section; their dots can now
+  be picked up because the harness exists.
+
+### Followups created
+- None new. F-002 advanced: only the GitHub Actions CI sub-slice
+  remains, still blocked by F-003 / Q-003.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Track compiler + golden-master tests (§9, §22)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md), [§22](gdd/22-data-schemas.md)
