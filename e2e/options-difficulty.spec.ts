@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
  * `src/components/options/__tests__/difficultyPaneState.test.ts`.
  */
 
-const SAVE_KEY = "vibegear2:save:v2";
+const SAVE_KEY = "vibegear2:save:v3";
 
 test.describe("options difficulty pane", () => {
   test.beforeEach(async ({ page }) => {

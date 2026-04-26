@@ -8,7 +8,8 @@
  * v1 was the initial schema. v2 expanded `SaveGameSettings` with audio,
  * accessibility, and key-bindings bundles per
  * `docs/gdd/22-data-schemas.md` and the
- * `implement-savegamesettings-b948015a` dot.
+ * `implement-savegamesettings-b948015a` dot. v3 adds the §6 Time Trial
+ * PB ghost-replay slot (`ghosts: {}`) per the F-021 follow-up dot.
  *
  * docs/WORKING_AGREEMENT.md §11 requires dev confirmation before dropping
  * or renaming persisted save fields. New migrations must be additive or
@@ -16,14 +17,16 @@
  */
 
 import { migrateV1ToV2 } from "./v1ToV2";
+import { migrateV2ToV3 } from "./v2ToV3";
 
-export const CURRENT_SAVE_VERSION = 2 as const;
+export const CURRENT_SAVE_VERSION = 3 as const;
 
 export type Migration = (input: unknown) => unknown;
 
 export const migrations: Record<number, Migration> = {
   // Each entry maps from-version to a function that returns the from+1 shape.
   1: migrateV1ToV2,
+  2: migrateV2ToV3,
 };
 
 /**

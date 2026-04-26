@@ -13,7 +13,7 @@ import { expect, test } from "@playwright/test";
  * localStorage round-trip.
  */
 
-const SAVE_KEY = "vibegear2:save:v2";
+const SAVE_KEY = "vibegear2:save:v3";
 
 test.describe("options profile pane", () => {
   test.beforeEach(async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe("options profile pane", () => {
       version: number;
       profileName: string;
     };
-    expect(contents.version).toBe(2);
+    expect(contents.version).toBe(3);
     expect(contents.profileName).toBe("Player");
   });
 

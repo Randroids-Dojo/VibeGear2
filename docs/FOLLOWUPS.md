@@ -710,23 +710,30 @@ do this slice after that one.
 ## F-021: SaveGameSchema integration for ghost replays + v2 migration
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The ghost slice produces a JSON-clean `Replay` shape but
-does not wire it into the §22 save schema. The save integration:
-add `ghosts: z.record(slug, GhostReplaySchema).optional()` to
-`SaveGameSchema` in `src/data/schemas.ts` (where `GhostReplaySchema`
-mirrors the `Replay` type), bump `CURRENT_SAVE_VERSION` to 2,
-register a v1 to v2 migration that adds the empty `ghosts: {}` slot,
-and add a "best-ghost" comparison helper (replace stored ghost iff
-`newReplay.finalTimeMs < currentReplay.finalTimeMs`; tied times keep
-the older ghost to avoid churn) per the dot stress-test item 8. The
-cross-tab broadcast slice (`VibeGear2-implement-cross-tab-fa8cb14c`)
-may also need updating to handle replay deltas in storage events.
-Storage budget concern: a 600-tick (10 s) lap deltas to ~1 KB JSON;
-a 5-minute Time Trial PB ghost is on the order of 30 KB. If the
-on-wire size becomes a problem, switch to base64-packed
-`Uint8Array` deltas in a `REPLAY_FORMAT_VERSION` 2 bump (additive;
-old replays migrate forward).
+**Status:** done (2026-04-26, `feat/ghost-replay-schema`)
+**Notes:** Closed by `feat/ghost-replay-schema`. `GhostReplaySchema`
+and `GhostReplayDeltaSchema` are now exported from
+`src/data/schemas.ts`, and `SaveGameSchema` carries an optional
+`ghosts: z.record(slug, GhostReplaySchema).optional()` slot that
+mirrors the runtime `Replay` shape in `src/game/ghost.ts`. The save
+schema bumped from v2 to v3 (the v1 to v2 migration had already
+shipped); the new `migrateV2ToV3` step in
+`src/persistence/migrations/v2ToV3.ts` is purely additive and seeds
+an empty `ghosts: {}` while preserving any pre-existing bundle a
+hand-edited save might carry. `defaultSave()` now returns the slot
+seeded as `{}` so a fresh save and a migrated save are byte-identical
+at this field. The PB selector landed as `bestGhostFor(current,
+candidate)` in `src/game/ghost.ts`: it returns the strictly faster
+replay and keeps the older ghost on a tie so the cross-tab storage
+event does not churn on a neutral-result re-run. The cross-tab
+broadcast slice already routes foreign-tab payloads through
+`safeMigrate`, so the v2 to v3 migration runs there too without an
+additional change. Storage budget concern (a 600-tick (10 s) lap
+deltas to ~1 KB JSON; a 5-minute Time Trial PB ghost is on the
+order of 30 KB) is unchanged; if the on-wire size becomes a problem,
+switch to base64-packed `Uint8Array` deltas in a
+`REPLAY_FORMAT_VERSION` 2 bump (additive; old replays migrate
+forward).
 
 ## F-020: `scripts/content-lint.ts` to enforce the LEGAL_SAFETY denylist
 **Created:** 2026-04-26

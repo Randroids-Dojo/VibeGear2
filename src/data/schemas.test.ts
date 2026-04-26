@@ -10,6 +10,8 @@ import {
   AIDriverSchema,
   CarSchema,
   ChampionshipSchema,
+  GhostReplayDeltaSchema,
+  GhostReplaySchema,
   SaveGameSchema,
   TrackSchema,
   UpgradeSchema,
@@ -252,5 +254,135 @@ describe("SaveGameSchema", () => {
       },
     };
     expect(SaveGameSchema.safeParse(broken).success).toBe(false);
+  });
+
+  it("accepts a save without a ghosts slot (backwards-compatible default)", () => {
+    const { ghosts: _omit, ...withoutGhosts } = saveGameExample as typeof saveGameExample & {
+      ghosts?: unknown;
+    };
+    expect(SaveGameSchema.safeParse(withoutGhosts).success).toBe(true);
+  });
+
+  it("accepts a save with a populated ghosts entry", () => {
+    const withGhost = {
+      ...saveGameExample,
+      ghosts: {
+        "velvet-coast/harbor-run": {
+          formatVersion: 1,
+          physicsVersion: 1,
+          fixedStepMs: 16.6667,
+          trackId: "velvet-coast/harbor-run",
+          trackVersion: 1,
+          carId: "sparrow-gt",
+          seed: 0,
+          totalTicks: 600,
+          finalTimeMs: 10000,
+          truncated: false,
+          deltas: [
+            { tick: 0, mask: 1, values: [0.5] },
+            { tick: 60, mask: 2, values: [1] },
+          ],
+        },
+      },
+    };
+    expect(SaveGameSchema.safeParse(withGhost).success).toBe(true);
+  });
+
+  it("rejects a ghosts entry whose finalTimeMs is negative", () => {
+    const broken = {
+      ...saveGameExample,
+      ghosts: {
+        "velvet-coast/harbor-run": {
+          formatVersion: 1,
+          physicsVersion: 1,
+          fixedStepMs: 16.6667,
+          trackId: "velvet-coast/harbor-run",
+          trackVersion: 1,
+          carId: "sparrow-gt",
+          seed: 0,
+          totalTicks: 0,
+          finalTimeMs: -1,
+          truncated: false,
+          deltas: [],
+        },
+      },
+    };
+    expect(SaveGameSchema.safeParse(broken).success).toBe(false);
+  });
+});
+
+describe("GhostReplayDeltaSchema", () => {
+  it("accepts a typical numeric-and-boolean delta", () => {
+    expect(
+      GhostReplayDeltaSchema.safeParse({
+        tick: 7,
+        mask: 0b00000011,
+        values: [0.42, true],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects mask 0 (no-change deltas are never persisted)", () => {
+    expect(
+      GhostReplayDeltaSchema.safeParse({ tick: 1, mask: 0, values: [] }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a mask larger than 8 bits", () => {
+    expect(
+      GhostReplayDeltaSchema.safeParse({ tick: 1, mask: 0x100, values: [] })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects a negative tick", () => {
+    expect(
+      GhostReplayDeltaSchema.safeParse({ tick: -1, mask: 1, values: [0] })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("GhostReplaySchema", () => {
+  const happy = {
+    formatVersion: 1,
+    physicsVersion: 1,
+    fixedStepMs: 16.6667,
+    trackId: "velvet-coast/harbor-run",
+    trackVersion: 1,
+    carId: "sparrow-gt",
+    seed: 0,
+    totalTicks: 0,
+    finalTimeMs: 0,
+    truncated: false,
+    deltas: [],
+  };
+
+  it("accepts an empty-deltas replay (driver held neutral the whole way)", () => {
+    expect(GhostReplaySchema.safeParse(happy).success).toBe(true);
+  });
+
+  it("rejects a non-positive formatVersion", () => {
+    expect(
+      GhostReplaySchema.safeParse({ ...happy, formatVersion: 0 }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a non-positive fixedStepMs", () => {
+    expect(
+      GhostReplaySchema.safeParse({ ...happy, fixedStepMs: 0 }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an invalid trackId slug", () => {
+    expect(
+      GhostReplaySchema.safeParse({ ...happy, trackId: "Bad Slug!" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a negative totalTicks", () => {
+    expect(
+      GhostReplaySchema.safeParse({ ...happy, totalTicks: -1 }).success,
+    ).toBe(false);
   });
 });

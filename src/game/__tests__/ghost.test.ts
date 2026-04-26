@@ -36,6 +36,7 @@ import {
   RECORDER_HARD_CAP_TICKS,
   RECORDER_SOFT_CAP_TICKS,
   REPLAY_FORMAT_VERSION,
+  bestGhostFor,
   createPlayer,
   createRecorder,
   type Replay,
@@ -476,5 +477,65 @@ describe("INPUT_FIELDS", () => {
 
   it("does not exceed the 8-bit mask", () => {
     expect(INPUT_FIELDS.length).toBeLessThanOrEqual(8);
+  });
+});
+
+// PB selection -----------------------------------------------------------
+
+describe("bestGhostFor", () => {
+  function fixed(finalTimeMs: number): Replay {
+    // A skeletal replay: only `finalTimeMs` matters for PB selection.
+    return {
+      formatVersion: REPLAY_FORMAT_VERSION,
+      physicsVersion: PHYSICS_VERSION,
+      fixedStepMs: FIXED_STEP_MS,
+      trackId: "test-track",
+      trackVersion: 1,
+      carId: "sparrow-gt",
+      seed: 0xdeadbeef,
+      totalTicks: Math.max(1, Math.round(finalTimeMs / FIXED_STEP_MS)),
+      finalTimeMs,
+      truncated: false,
+      deltas: [],
+    };
+  }
+
+  it("returns the candidate when no current ghost exists", () => {
+    const candidate = fixed(1000);
+    expect(bestGhostFor(null, candidate)).toBe(candidate);
+    expect(bestGhostFor(undefined, candidate)).toBe(candidate);
+  });
+
+  it("returns the current ghost when the candidate is null or undefined", () => {
+    const current = fixed(1000);
+    expect(bestGhostFor(current, null)).toBe(current);
+    expect(bestGhostFor(current, undefined)).toBe(current);
+  });
+
+  it("returns null when both inputs are missing", () => {
+    expect(bestGhostFor(null, null)).toBe(null);
+    expect(bestGhostFor(undefined, undefined)).toBe(null);
+  });
+
+  it("replaces the current ghost with a strictly faster candidate", () => {
+    const current = fixed(1000);
+    const candidate = fixed(900);
+    expect(bestGhostFor(current, candidate)).toBe(candidate);
+  });
+
+  it("keeps the current ghost when the candidate is slower", () => {
+    const current = fixed(1000);
+    const candidate = fixed(1100);
+    expect(bestGhostFor(current, candidate)).toBe(current);
+  });
+
+  it("keeps the older (current) ghost on a tie to avoid storage churn", () => {
+    // Per the F-021 dot stress-test item 8: equal times keep the older
+    // ghost so a player who runs the same exact lap on repeated attempts
+    // does not churn the save (and the cross-tab storage event) on every
+    // neutral-result attempt.
+    const current = fixed(1000);
+    const candidate = fixed(1000);
+    expect(bestGhostFor(current, candidate)).toBe(current);
   });
 });

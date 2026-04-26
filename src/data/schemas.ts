@@ -640,6 +640,62 @@ export const SaveGameRecordSchema = z.object({
 });
 export type SaveGameRecord = z.infer<typeof SaveGameRecordSchema>;
 
+// Ghost replay -------------------------------------------------------------
+
+/**
+ * One per-tick input delta inside a ghost replay. Mirrors the runtime
+ * `ReplayDelta` shape in `src/game/ghost.ts`; the schema lives here so
+ * the persistence layer owns the on-disk validator without dragging the
+ * game module into the schemas import surface.
+ *
+ * Fields:
+ * - `tick`: u32 tick index since the recording started. Strictly increases
+ *   across the deltas array; the recorder never emits a no-change tick.
+ * - `mask`: u8 bitmask. Bit `i` set means `INPUT_FIELDS[i]` is in the
+ *   `values` array. Mask `0` is rejected because a zero mask means
+ *   "nothing changed", which the recorder filters out before write.
+ * - `values`: parallel array, one entry per set bit in `mask`, in the bit
+ *   order the recorder pinned. Numbers for numeric fields, booleans for
+ *   boolean fields. Loose `z.union` is intentional: schemas.ts cannot
+ *   reach into the runtime `Input` type without a cycle.
+ */
+export const GhostReplayDeltaSchema = z.object({
+  tick: nonNegInt,
+  mask: z.number().int().min(1).max(0xff),
+  values: z.array(z.union([z.number(), z.boolean()])),
+});
+export type GhostReplayDelta = z.infer<typeof GhostReplayDeltaSchema>;
+
+/**
+ * Persisted ghost replay payload. The shape mirrors the runtime `Replay`
+ * in `src/game/ghost.ts` so a `Replay` value drops directly into the
+ * save without an adapter layer.
+ *
+ * The map key in `SaveGameSchema.ghosts` is the track slug (the same id
+ * used in `records`); this schema is the per-track entry. A future
+ * "multiple ghosts per track" expansion would change the map value to an
+ * array; today the §6 Time Trial loop only stores one PB per track.
+ *
+ * Field stamps (`formatVersion`, `physicsVersion`, `fixedStepMs`) are
+ * load-bearing for replay determinism: the runtime `createPlayer`
+ * rejects a replay whose stamps do not match the runtime, so a stale
+ * ghost is silently dropped rather than rendered incorrectly.
+ */
+export const GhostReplaySchema = z.object({
+  formatVersion: positiveInt,
+  physicsVersion: positiveInt,
+  fixedStepMs: positiveNumber,
+  trackId: slug,
+  trackVersion: positiveInt,
+  carId: slug,
+  seed: nonNegInt,
+  totalTicks: nonNegInt,
+  finalTimeMs: z.number().nonnegative(),
+  truncated: z.boolean(),
+  deltas: z.array(GhostReplayDeltaSchema),
+});
+export type GhostReplay = z.infer<typeof GhostReplaySchema>;
+
 export const SaveGameSchema = z.object({
   version: positiveInt,
   profileName: z.string().min(1),
@@ -658,5 +714,18 @@ export const SaveGameSchema = z.object({
    * "Cross-tab consistency".
    */
   writeCounter: z.number().int().nonnegative().optional(),
+  /**
+   * §6 Time Trial PB ghost replays, keyed by track slug. Each entry is
+   * the player's current best replay for that track; the §6 Time Trial
+   * UI compares a finished run against the stored entry via
+   * `bestGhostFor` in `src/game/ghost.ts` and replaces only when the new
+   * run is strictly faster. Optional so v1 / v2 saves written before
+   * this field was added still validate; the v2 to v3 migrator seeds an
+   * empty `{}` so loaders can `save.ghosts ?? {}` without re-checking
+   * the version field. The track id key uses the same `slug` shape as
+   * `records` so a missing-track ghost cannot diverge from a missing
+   * record. Per `docs/gdd/22-data-schemas.md`.
+   */
+  ghosts: z.record(slug, GhostReplaySchema).optional(),
 });
 export type SaveGame = z.infer<typeof SaveGameSchema>;

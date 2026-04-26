@@ -551,3 +551,41 @@ function popcount8(mask: number): number {
   }
   return count;
 }
+
+// PB selection -----------------------------------------------------------
+
+/**
+ * Pick which of two replays to keep as the §6 Time Trial PB ghost for
+ * one track. Pure function: takes the currently stored replay (may be
+ * `null` / `undefined` when no PB exists yet) and a freshly recorded
+ * candidate, and returns whichever should sit in the save.
+ *
+ * Selection rule (per the F-021 dot stress-test item 8):
+ *
+ *   - When no current ghost exists, the candidate becomes the PB.
+ *   - When a current ghost exists, the candidate replaces it iff the
+ *     candidate's `finalTimeMs` is *strictly* less. Equal times keep
+ *     the older ghost so a player who runs the same exact lap on
+ *     repeated attempts does not churn the save (and the cross-tab
+ *     storage event) on every neutral-result attempt.
+ *   - When the candidate is `null` / `undefined`, the current ghost is
+ *     kept verbatim. This lets the call site funnel "did the run
+ *     finish at all?" through the same selector without an extra guard.
+ *
+ * The function never mutates either input. The returned reference is
+ * either the current ghost or the candidate (one of the input objects)
+ * so a `===` identity check on the caller side reveals whether the
+ * candidate won.
+ */
+export function bestGhostFor(
+  current: Replay | null | undefined,
+  candidate: Replay | null | undefined,
+): Replay | null {
+  if (!candidate) {
+    return current ?? null;
+  }
+  if (!current) {
+    return candidate;
+  }
+  return candidate.finalTimeMs < current.finalTimeMs ? candidate : current;
+}
