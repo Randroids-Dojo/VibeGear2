@@ -29,7 +29,11 @@
  * are owned by the §7 race-rules slice; this slice ships only the happy path.
  */
 
-import type { AIDriver, CarBaseStats } from "@/data/schemas";
+import type {
+  AIDriver,
+  CarBaseStats,
+  UpgradeCategory,
+} from "@/data/schemas";
 import { SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";
@@ -42,6 +46,12 @@ import {
   type AITrackContext,
 } from "./ai";
 import { type Input } from "./input";
+import {
+  createNitroForCar,
+  getNitroAccelMultiplier,
+  tickNitro,
+  type NitroState,
+} from "./nitro";
 import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
@@ -60,9 +70,19 @@ import {
   type SectorState,
 } from "./sectorTimer";
 
+/** Per-car upgrade table the session pulls upgrade tiers from. */
+export type CarUpgradeTiers = Partial<Record<UpgradeCategory, number>>;
+
 export interface RaceSessionPlayer {
   stats: Readonly<CarBaseStats>;
   initial?: Partial<CarState>;
+  /**
+   * Installed upgrade tiers for the player's car. Read at session creation
+   * to seed per-car race state (currently the §10 nitro charge count via
+   * `createNitroForCar`). Defaults to no upgrades (all tier 0) so existing
+   * callers keep their stock-car behaviour.
+   */
+  upgrades?: Readonly<CarUpgradeTiers> | null;
 }
 
 export interface RaceSessionAI {
@@ -76,6 +96,14 @@ export interface RaceSessionAI {
    * archetypes do not need a config-shape change.
    */
   seed?: number;
+  /**
+   * Installed upgrade tiers for this AI's car. Read at session creation to
+   * seed per-car race state (currently the §10 nitro charge count). The
+   * clean_line AI never fires nitro in the current slice, but the state is
+   * still seeded uniformly with the player so future archetypes can drain
+   * charges without a config-shape change. Defaults to no upgrades.
+   */
+  upgrades?: Readonly<CarUpgradeTiers> | null;
 }
 
 export interface RaceSessionConfig {
@@ -105,17 +133,32 @@ export interface RaceSessionConfig {
 }
 
 /**
- * Per-AI mutable view, paired with the AI controller's logical state and
- * the kinematic state the physics step consumes.
+ * Per-AI mutable view, paired with the AI controller's logical state, the
+ * kinematic state the physics step consumes, and the §10 nitro reducer's
+ * per-car snapshot. `lastNitroPressed` mirrors the prior tick's input so
+ * `tickNitro` can detect a rising edge (a fresh tap vs a held press).
  */
 export interface RaceSessionAICar {
   car: CarState;
   state: AIState;
+  nitro: NitroState;
+  lastNitroPressed: boolean;
+}
+
+/**
+ * Per-player runtime snapshot. `nitro` carries the §10 nitro reducer's
+ * state; `lastNitroPressed` mirrors the prior tick's input so `tickNitro`
+ * can detect a fresh tap vs a held press across ticks.
+ */
+export interface RaceSessionPlayerCar {
+  car: CarState;
+  nitro: NitroState;
+  lastNitroPressed: boolean;
 }
 
 export interface RaceSessionState {
   race: RaceState;
-  player: { car: CarState };
+  player: RaceSessionPlayerCar;
   ai: ReadonlyArray<RaceSessionAICar>;
   /**
    * Frame counter. Increments once per simulation step. Resets to 0 the
@@ -172,8 +215,10 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     );
   }
 
-  const player: { car: CarState } = {
+  const player: RaceSessionPlayerCar = {
     car: { ...INITIAL_CAR_STATE, ...(config.player.initial ?? {}) },
+    nitro: createNitroForCar(config.player.stats, config.player.upgrades ?? null),
+    lastNitroPressed: false,
   };
 
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
@@ -187,6 +232,8 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
         ...(entry.initial ?? {}),
       },
       state: { ...INITIAL_AI_STATE, seed },
+      nitro: createNitroForCar(entry.stats, entry.upgrades ?? null),
+      lastNitroPressed: false,
     };
   });
 
@@ -268,10 +315,16 @@ export function stepRaceSession(
           phase: "countdown",
           countdownRemainingSec: remaining,
         },
-        player: { car: { ...state.player.car } },
+        player: {
+          car: { ...state.player.car },
+          nitro: { ...state.player.nitro },
+          lastNitroPressed: state.player.lastNitroPressed,
+        },
         ai: state.ai.map((entry) => ({
           car: { ...entry.car },
           state: { ...entry.state },
+          nitro: { ...entry.nitro },
+          lastNitroPressed: entry.lastNitroPressed,
         })),
         tick: state.tick + 1,
         sectorTimer: state.sectorTimer,
@@ -288,10 +341,16 @@ export function stepRaceSession(
         countdownRemainingSec: 0,
         elapsed: 0,
       },
-      player: { car: { ...state.player.car } },
+      player: {
+        car: { ...state.player.car },
+        nitro: { ...state.player.nitro },
+        lastNitroPressed: state.player.lastNitroPressed,
+      },
       ai: state.ai.map((entry) => ({
         car: { ...entry.car },
         state: { ...entry.state },
+        nitro: { ...entry.nitro },
+        lastNitroPressed: entry.lastNitroPressed,
       })),
       tick: 0,
       sectorTimer: createSectorState(config.track.checkpoints),
@@ -304,6 +363,27 @@ export function stepRaceSession(
   const buffer = bufferView(config.track);
   const trackLength = config.track.totalLengthMeters;
   const playerStats = config.player.stats;
+  const playerUpgradeTier = config.player.upgrades?.nitro;
+
+  // §10 nitro: advance the reducer for the player using their nitro
+  // input, then feed `getNitroAccelMultiplier` into the physics step's
+  // `accelMultiplier` slot so an active charge scales acceleration.
+  const playerNitroResult = tickNitro(
+    state.player.nitro,
+    {
+      nitroPressed: playerInput.nitro,
+      wasPressed: state.player.lastNitroPressed,
+      upgradeTier: playerUpgradeTier,
+    },
+    dt,
+  );
+  const playerNitroMultiplier = getNitroAccelMultiplier(
+    playerNitroResult.state,
+    {
+      upgradeTier: playerUpgradeTier,
+      carNitroEfficiency: playerStats.nitroEfficiency,
+    },
+  );
 
   const nextPlayerCar = step(
     state.player.car,
@@ -311,11 +391,19 @@ export function stepRaceSession(
     playerStats,
     trackContext,
     dt,
+    { accelMultiplier: playerNitroMultiplier },
   );
 
   const nextAi: RaceSessionAICar[] = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
-    if (!aiConfig) return { car: { ...entry.car }, state: { ...entry.state } };
+    if (!aiConfig) {
+      return {
+        car: { ...entry.car },
+        state: { ...entry.state },
+        nitro: { ...entry.nitro },
+        lastNitroPressed: entry.lastNitroPressed,
+      };
+    }
     const tick = tickAI(
       aiConfig.driver,
       entry.state,
@@ -327,8 +415,37 @@ export function stepRaceSession(
       aiContext,
       dt,
     );
-    const nextCar = step(entry.car, tick.input, aiConfig.stats, trackContext, dt);
-    return { car: nextCar, state: tick.nextAiState };
+    const aiUpgradeTier = aiConfig.upgrades?.nitro;
+    const aiNitroResult = tickNitro(
+      entry.nitro,
+      {
+        nitroPressed: tick.input.nitro,
+        wasPressed: entry.lastNitroPressed,
+        upgradeTier: aiUpgradeTier,
+      },
+      dt,
+    );
+    const aiNitroMultiplier = getNitroAccelMultiplier(
+      aiNitroResult.state,
+      {
+        upgradeTier: aiUpgradeTier,
+        carNitroEfficiency: aiConfig.stats.nitroEfficiency,
+      },
+    );
+    const nextCar = step(
+      entry.car,
+      tick.input,
+      aiConfig.stats,
+      trackContext,
+      dt,
+      { accelMultiplier: aiNitroMultiplier },
+    );
+    return {
+      car: nextCar,
+      state: tick.nextAiState,
+      nitro: aiNitroResult.state,
+      lastNitroPressed: tick.input.nitro,
+    };
   });
 
   const nextElapsed = state.race.elapsed + dt;
@@ -395,7 +512,11 @@ export function stepRaceSession(
       lastLapTimeMs,
       bestLapTimeMs,
     },
-    player: { car: nextPlayerCar },
+    player: {
+      car: nextPlayerCar,
+      nitro: playerNitroResult.state,
+      lastNitroPressed: playerInput.nitro,
+    },
     ai: nextAi,
     tick: nextTick,
     sectorTimer: nextSectorTimer,
@@ -434,10 +555,16 @@ export function totalProgress(carZ: number, lap: number, trackLengthMeters: numb
 function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState {
   return {
     race: { ...state.race },
-    player: { car: { ...state.player.car } },
+    player: {
+      car: { ...state.player.car },
+      nitro: { ...state.player.nitro },
+      lastNitroPressed: state.player.lastNitroPressed,
+    },
     ai: state.ai.map((entry) => ({
       car: { ...entry.car },
       state: { ...entry.state },
+      nitro: { ...entry.nitro },
+      lastNitroPressed: entry.lastNitroPressed,
     })),
     tick: state.tick,
     sectorTimer: state.sectorTimer,

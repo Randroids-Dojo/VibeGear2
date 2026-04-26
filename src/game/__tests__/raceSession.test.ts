@@ -181,7 +181,10 @@ describe("stepRaceSession (lap completion)", () => {
     // Snap the player just before the finish line so a single tick crosses.
     session = {
       ...session,
-      player: { car: { ...session.player.car, z: track.totalLengthMeters - 0.1, speed: 60 } },
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: track.totalLengthMeters - 0.1, speed: 60 },
+      },
     };
     session = stepRaceSession(session, fullThrottle(), config, DT);
     expect(session.race.lap).toBe(2);
@@ -202,7 +205,10 @@ describe("stepRaceSession (lap completion)", () => {
     let session = createRaceSession(config);
     session = {
       ...session,
-      player: { car: { ...session.player.car, z: track.totalLengthMeters - 0.1, speed: 60 } },
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: track.totalLengthMeters - 0.1, speed: 60 },
+      },
     };
     session = stepRaceSession(session, fullThrottle(), config, DT);
     expect(session.race.phase).toBe("finished");
@@ -246,7 +252,10 @@ describe("stepRaceSession (sector timer)", () => {
     // ceil(200/6) = 34 compiled segments per 200 m, so 34 + 34 = 68 -> z = 408 m).
     session = {
       ...session,
-      player: { car: { ...session.player.car, z: 410, speed: 60 } },
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: 410, speed: 60 },
+      },
     };
     session = stepRaceSession(session, fullThrottle(), config, DT);
     expect(session.sectorTimer.currentSectorIdx).toBe(1);
@@ -266,7 +275,10 @@ describe("stepRaceSession (sector timer)", () => {
     // First, cross sector-1 mid-lap so the lap closes with both sectors timed.
     session = {
       ...session,
-      player: { car: { ...session.player.car, z: 410, speed: 60 } },
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: 410, speed: 60 },
+      },
     };
     session = stepRaceSession(session, fullThrottle(), config, DT);
     expect(session.sectorTimer.currentSectorIdx).toBe(1);
@@ -275,6 +287,7 @@ describe("stepRaceSession (sector timer)", () => {
     session = {
       ...session,
       player: {
+        ...session.player,
         car: {
           ...session.player.car,
           z: track.totalLengthMeters - 0.1,
@@ -299,5 +312,100 @@ describe("stepRaceSession (sector timer)", () => {
     expect(a.sectorTimer.currentSectorIdx).toBe(b.sectorTimer.currentSectorIdx);
     expect(a.sectorTimer.sectors).toEqual(b.sectorTimer.sectors);
     expect(a.baselineSplitsMs).toEqual(b.baselineSplitsMs);
+  });
+});
+
+describe("stepRaceSession (nitro)", () => {
+  function nitroTap(): Input {
+    return { ...NEUTRAL_INPUT, throttle: 1, nitro: true };
+  }
+
+  it("seeds nitro state on every car at race start (player and AI)", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const session = createRaceSession(config);
+    expect(session.player.nitro.charges).toBe(3);
+    expect(session.player.nitro.activeRemainingSec).toBe(0);
+    expect(session.player.lastNitroPressed).toBe(false);
+    expect(session.ai).toHaveLength(1);
+    expect(session.ai[0]?.nitro.charges).toBe(3);
+    expect(session.ai[0]?.nitro.activeRemainingSec).toBe(0);
+    expect(session.ai[0]?.lastNitroPressed).toBe(false);
+  });
+
+  it("honours the player's nitro upgrade tier when seeding charges", () => {
+    // Extreme tier (4) grants +1 charge, so the player starts with 4.
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, upgrades: { nitro: 4 } },
+    });
+    const session = createRaceSession(config);
+    expect(session.player.nitro.charges).toBe(4);
+  });
+
+  it("drains a charge on a fresh nitro tap and starts a burn", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    // First tick with nitro held -> rising edge, one charge consumed.
+    session = stepRaceSession(session, nitroTap(), config, DT);
+    expect(session.player.nitro.charges).toBe(2);
+    expect(session.player.nitro.activeRemainingSec).toBeGreaterThan(0);
+    expect(session.player.lastNitroPressed).toBe(true);
+  });
+
+  it("does not double-spend charges when nitro is held across ticks", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    // Tap once, then keep holding for several ticks. Only the first tick
+    // is a rising edge; subsequent ticks must not consume more charges.
+    session = stepRaceSession(session, nitroTap(), config, DT);
+    expect(session.player.nitro.charges).toBe(2);
+    session = stepRaceSession(session, nitroTap(), config, DT);
+    session = stepRaceSession(session, nitroTap(), config, DT);
+    expect(session.player.nitro.charges).toBe(2);
+  });
+
+  it("releases the held flag so a re-tap consumes the next charge", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = stepRaceSession(session, nitroTap(), config, DT);
+    expect(session.player.nitro.charges).toBe(2);
+    // Release: lastNitroPressed becomes false so the next held press is
+    // again a rising edge.
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.lastNitroPressed).toBe(false);
+    // Wait for the active burn to expire so the next tap is allowed to
+    // start a new charge (no stacking while a burn is active).
+    for (let i = 0; i < 120; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+      if (session.player.nitro.activeRemainingSec <= 0) break;
+    }
+    expect(session.player.nitro.activeRemainingSec).toBe(0);
+    session = stepRaceSession(session, nitroTap(), config, DT);
+    expect(session.player.nitro.charges).toBe(1);
+  });
+
+  it("keeps a full race tick deterministic with nitro inputs", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const a = rollForward(createRaceSession(config), nitroTap(), config, 600);
+    const b = rollForward(createRaceSession(config), nitroTap(), config, 600);
+    expect(a.player.car.z).toBe(b.player.car.z);
+    expect(a.player.car.speed).toBe(b.player.car.speed);
+    expect(a.player.nitro.charges).toBe(b.player.nitro.charges);
+    expect(a.player.nitro.activeRemainingSec).toBe(b.player.nitro.activeRemainingSec);
+    expect(a.tick).toBe(b.tick);
+  });
+
+  it("makes the player faster while a nitro charge is burning", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    // Two parallel sessions: one taps nitro on tick 1, the other does not.
+    const baseline = rollForward(createRaceSession(config), fullThrottle(), config, 30);
+    let boosted = createRaceSession(config);
+    boosted = stepRaceSession(boosted, nitroTap(), config, DT);
+    // Continue holding so the burn keeps running for the rest of the window.
+    for (let i = 0; i < 29; i += 1) {
+      boosted = stepRaceSession(boosted, nitroTap(), config, DT);
+    }
+    expect(boosted.player.car.speed).toBeGreaterThan(baseline.player.car.speed);
+    expect(boosted.player.car.z).toBeGreaterThan(baseline.player.car.z);
   });
 });
