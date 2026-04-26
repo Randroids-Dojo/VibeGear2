@@ -6,6 +6,136 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §20 race results screen (buildRaceResult, /race/results page, components)
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) "Qualification and advancement"
++ "Finish rewards", [§20](gdd/20-hud-and-ui-ux.md) Results screen,
+[§5](gdd/05-core-gameplay-loop.md) inter-race loop (results sits between
+race and garage).
+**Branch / PR:** stacked on `feat/economy-catch-up`, PR pending.
+**Status:** Implemented (`src/game/raceResult.ts` ships
+`buildRaceResult`, `RaceResult`, `RaceBonus`, `DamageDelta`,
+`NextRaceCard`, `RecordsUpdatePatch` plus the four pinned bonus
+constants and the F1-style `PLACEMENT_POINTS` ladder. Pure on
+`FinalRaceState` + `SaveGame` + `Track`. New `/race/results` page
+reads from the session-storage handoff and renders the seven §20
+fields plus Continue / Rematch CTAs. 33 builder tests + 3 Playwright
+tests green; full verify chain green.).
+
+### Done
+- `src/game/raceResult.ts` (new): pure builder
+  `buildRaceResult(input)` returns the §20 `RaceResult` shape.
+  Computes points (top-8 ladder), cash (per-place via
+  `computeRaceReward`), four bonuses (podium, fastest lap, clean
+  race, underdog), per-zone damage delta clamped to `[0,1]`, the
+  next-race card from championship + tour, and an optional
+  `recordsUpdated` patch. DNF cars get participation cash and zero
+  points. The receipt-style split (compute vs commit) means
+  Practice / Quick Race can render the screen and skip the
+  `awardCredits` call. Exports `PLACEMENT_POINTS`,
+  `PODIUM_BONUS_CREDITS = 250`, `FASTEST_LAP_BONUS_CREDITS = 200`,
+  `CLEAN_RACE_BONUS_CREDITS = 150`, `UNDERDOG_BONUS_CREDITS = 200`,
+  `DEFAULT_BASE_TRACK_REWARD = 1000`. Re-exported from
+  `src/game/index.ts`.
+- `src/game/__tests__/raceResult.test.ts` (new): 33 cases covering
+  every cell on the dot's verify list. Placement (every top-8 cell,
+  outside-top-8 zero, missing player). Cash base (matches
+  `computeRaceReward`, honours `baseTrackReward` and `difficulty`
+  override). Bonuses cell-by-cell (podium 1/2/3 vs 4 boundary,
+  fastest-lap player vs other car, clean race no-delta vs any
+  damage, underdog improved vs equal vs no-grid). DNF path (zero
+  points, participation cash, no bonuses). Damage delta (clamp,
+  negative, NaN). Next race (no championship, mid-tour, fallback
+  index lookup, final race, missing tour). Records patch (PB beats
+  prior, ties do not write, no prior, recordPBs=false, no laps).
+  Purity (frozen inputs) and determinism.
+- `src/components/results/raceResultStorage.ts` (new):
+  session-storage handoff shim with `saveRaceResult`,
+  `loadRaceResult`, `clearRaceResult` and a versioned key. Pure
+  read / write surface; no React.
+- `src/components/results/FinishingOrderTable.tsx` (new): one row
+  per car with player highlight, MM:SS.mmm formatting, "DNF" label
+  in the position column for retired cars.
+- `src/components/results/BonusChip.tsx` (new): pill render of a
+  single bonus; kind exposed via data attribute for Playwright.
+- `src/components/results/DamageBar.tsx` (new): per-zone bars with
+  `role="progressbar"` + accessible labels, colour-coded (ok /
+  warn / danger).
+- `src/app/race/results/page.tsx` (new): client component reads
+  the handoff on mount and renders banner + standings + rewards
+  panels + Continue / Rematch CTAs. Soft-warning fallback for
+  direct nav with no result. Default focus on Continue.
+- `e2e/results-screen.spec.ts` (new): three Playwright tests.
+  Seven-fields render assertion (finishing order, points, cash,
+  bonuses, damage, fastest lap, next race), Continue routes to
+  `/garage/cars`, direct nav fallback path.
+
+### Verified
+- `npm run lint` green (no warnings).
+- `npm run typecheck` green.
+- `npm test` green: 1501 tests pass (33 new raceResult cases on
+  top of the prior 1468).
+- `npm run build` green: new route `/race/results` is 4.11 kB / 110
+  kB First Load JS.
+- `npm run test:e2e` green: 37 tests pass (3 new results-screen
+  cases on top of the prior 34).
+- Em-dash sweep: `grep -rPn "[\x{2013}\x{2014}]"` over the new
+  files returns nothing.
+
+### Decisions and assumptions
+- **Points table is F1-style placeholder.** §7 says "top 8 score
+  points" but no GDD section pins the ladder. Used
+  `[25, 18, 15, 12, 10, 8, 6, 4]`. The balancing-pass slice
+  (`balancing-pass-71a57fd5`) can swap `PLACEMENT_POINTS` without
+  rewriting call sites.
+- **Bonus constants are pinned placeholders.** §5 names the
+  bonuses (podium, fastest lap, clean race, underdog) but no
+  numbers. Picked 250 / 200 / 150 / 200 so the four can stack
+  without dominating the per-place cash. Balancing pass owns the
+  final values.
+- **Tour completion + sponsor bonuses out of scope.** §5 lists six
+  bonuses; this slice ships the four that fit the per-race
+  results screen. Tour-completion bonus is owned by
+  `tour-region-d9ca9a4d` (it sums race rewards from the whole
+  tour); sponsor objectives are post-MVP.
+- **Session-storage handoff (vs URL param).** Result payload has
+  nested arrays (finishingOrder, bonuses, perLapTimes) that exceed
+  URL length budget at 12 cars. Session storage carries the full
+  payload and clears on tab close, matching §20 ephemerality.
+  Versioned key for future shape changes.
+- **Page does not write to save.** Builder returns
+  `recordsUpdated` as a patch; the page component (or the race
+  finish wiring slice) is responsible for merging and calling
+  `saveSave`. Mirrors the iter-19 stress-test §5 compute / commit
+  split: Practice / Quick Race / Time Trial each decide whether
+  to apply the patch and call `awardCredits`.
+- **Placement formatter for English ordinals only.** §20 lists no
+  L10N requirement in MVP; `formatPosition` in the page returns
+  "1st", "2nd", "3rd", "11th"...
+- **Next-race card lap target placeholder.** Builder returns
+  `laps: 3` (the §7 "Standard circuit" target) when no Track
+  lookup is supplied. The page that calls `buildRaceResult` can
+  override by resolving the next Track JSON before rendering.
+
+### Followups created
+- F-NNN: Wire the race-finish path (`src/app/race/page.tsx`) to
+  call `buildRaceResult` + `saveRaceResult` and route to
+  `/race/results` when `phase === "finished"`. Currently
+  the race route just renders an inline "Race finished" overlay;
+  the wiring lands in a dedicated dot once the race-finish
+  callback hook is in place.
+- F-NNN: Replace the F1-style points placeholder with the GDD-pinned
+  table once the balancing pass slice lands the column.
+- F-NNN: Replace the four pinned bonus constants once the balancing
+  pass slice lands the §23 bonus column.
+
+### GDD edits
+- None. §7 and §20 already enumerate the surfaces; this slice
+  pins placeholder constants without changing the GDD.
+
+---
+
 ## 2026-04-26: Slice: §12 catch-up mechanisms (stipend, repair cap, easy-mode bonus, weather preview)
 
 **GDD sections touched:**
