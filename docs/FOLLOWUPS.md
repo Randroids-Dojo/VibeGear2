@@ -486,23 +486,42 @@ post-race results surface owned by
 ## F-031: Source map workspace paths leak in Next.js framework chunks
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/build-version-stamping` slice enabled
-`productionBrowserSourceMaps: true` in `next.config.mjs` so the future
-opt-in error reporter can map minified frames back to source. The
-verify step `grep -E '/Users/|/home/' .next/static/chunks/*.js.map`
-flags two framework maps (`main-app-*.js.map`, `main-*.js.map`) whose
-sources reference `/Users/<dev>/.../node_modules/next/dist/...` paths.
-These leaks are inside Next.js framework code, not our own source, so
-the privacy impact is minimal: the paths only reveal that the build
-ran from a workspace whose absolute prefix matches the dev's
-filesystem layout, and our own chunks (where stack traces would point
-in any real bug) carry the expected webpack:// prefixes. Revisit when
-the opt-in error reporter slice lands and decide whether to scrub the
-absolute prefix during the source-map upload step rather than at
-build time. Workaround: the deploy host (Vercel / Cloudflare Pages)
-only serves `.map` files on explicit request, so the maps stay a
-build-only artefact in normal browsing.
+**Status:** done (2026-04-26, `feat/scrub-source-maps`)
+**Notes:** Closed by `feat/scrub-source-maps`. F-031 fix path (a)
+landed: `scripts/scrub-source-maps.ts` walks
+`.next/static/chunks/**/*.js.map`, parses each map as JSON, and
+rewrites every entry of `sources` and `sourcesContent` to replace the
+absolute workspace prefix (`process.cwd()` at scrub time) with the
+stable sentinel `vibegear2://`. The script writes back only when the
+scrubbed contents differ so file mtimes stay stable for unchanged
+maps; a second run is a no-op.
+
+Wired into `package.json` as a `postbuild` hook
+(`vite-node --script scripts/scrub-source-maps.ts`) so every
+`npm run build` automatically scrubs the framework maps before the
+artefact leaves the developer machine or the CI worker. The CLI
+prints a one-line summary
+(`scrub-source-maps: scrubbed=N unchanged=M skipped=K bytesDelta=D`)
+and exits non-zero if any file fails to read / parse / write or if
+`.next/static/chunks` is missing (i.e. someone invoked the postbuild
+without a prior build).
+
+Coverage: 26 unit cases in `scripts/__tests__/scrub-source-maps.test.ts`
+covering the pure rewriters (`scrubWorkspaceFromString`,
+`scrubSourceMapJson`), file-level scrub (`scrubSourceMapFile`),
+directory walk (`walkFiles`, `scrubChunksDir`), CLI summary
+(`summariseResults`), idempotence on the second pass, defensive
+handling of malformed JSON / missing files / non-array `sources`,
+plus a read-only smoke against the live `.next/static/chunks` that
+asserts no map carries `process.cwd()` after the postbuild ran.
+
+Verified the original repro: the verify-step grep
+`grep -E '/Users/|/home/' .next/static/chunks/*.js.map` now returns no
+hits across all 32 generated maps (including
+`main-app-*.js.map` and `main-*.js.map` which were the original
+flagged framework maps). The `webpack://_N_E/` prefixes inside our
+own chunks are preserved because the workspace-prefix scrub is a
+strict literal replace, not a path rewrite.
 
 ## F-030: Provision Vercel KV and swap LEADERBOARD_BACKEND in production
 **Created:** 2026-04-26

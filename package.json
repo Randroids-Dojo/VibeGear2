@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "vite-node --script scripts/scrub-source-maps.ts",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

@@ -6,6 +6,84 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-031 scrub workspace paths from Next.js source maps
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) Production
+artefact hygiene (no narrative edits; this slice ships the post-build
+scrub already implied by the F-031 followup in `docs/FOLLOWUPS.md`).
+**Branch / PR:** `feat/scrub-source-maps`, PR pending.
+**Status:** Implemented. Closes `VibeGear2-implement-f-031-52a91681`
+and F-031 in `docs/FOLLOWUPS.md`. The verify-step grep
+`grep -E '/Users/|/home/' .next/static/chunks/*.js.map` now returns
+zero hits across all 32 generated maps after `npm run build`.
+
+### Done
+- `scripts/scrub-source-maps.ts`: post-build scrubber that walks
+  `.next/static/chunks/**/*.js.map`, parses each map as JSON, and
+  rewrites every entry of `sources` and `sourcesContent` by replacing
+  the absolute workspace prefix (`process.cwd()` at scrub time) with
+  the stable sentinel `vibegear2://`. Pure helpers
+  (`scrubWorkspaceFromString`, `scrubSourceMapJson`, `scrubChunksDir`,
+  `summariseResults`) exported so the test suite can drive every
+  branch without writing files. Defensive against malformed JSON,
+  missing files, and non-array `sources` / `sourcesContent` shapes;
+  writes back only when the scrubbed contents differ so unchanged
+  maps keep stable mtimes; idempotent on a second run.
+- `scripts/__tests__/scrub-source-maps.test.ts`: 26 unit cases
+  covering pure rewriters, file-level scrub, idempotence, directory
+  walk (including hidden-dir skip and non-`.js.map` skip), CLI
+  summary roll-up, and a read-only smoke against the live
+  `.next/static/chunks` that asserts no map carries `process.cwd()`
+  on disk after the postbuild ran.
+- `package.json`: new `postbuild` script
+  (`vite-node --script scripts/scrub-source-maps.ts`) so every
+  `npm run build` automatically scrubs the framework maps before the
+  artefact leaves the developer machine or the CI worker.
+- `docs/FOLLOWUPS.md`: F-031 status flipped from `open` to
+  `done (2026-04-26, feat/scrub-source-maps)` with the wiring
+  rationale and verification notes.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green; the new 26 scrub-source-maps cases pass alongside
+  the existing suites.
+- `npm run build` clean; the postbuild scrub runs automatically and
+  prints the summary line.
+- `npm run test:e2e` green.
+- Manual: `grep -E '/Users/|/home/' .next/static/chunks/*.js.map`
+  returns zero hits after the build.
+
+### Decisions and assumptions
+- Adopted F-031 fix path (a) (post-build script that rewrites map
+  files in place) over (b) (webpack `devtoolModuleFilenameTemplate`
+  override) and (c) (defer to the error-reporter upload step).
+  Rationale: (b) does not reliably reach the framework chunks
+  (`main-app-*.js.map`, `main-*.js.map`) where the original leak
+  lives; (c) leaves a fingerprintable artefact on disk indefinitely.
+  (a) ships the scrub at the artefact boundary so every shipped map
+  is clean regardless of how the deploy host serves it.
+- Chose the sentinel `vibegear2://` over a bare relative prefix so
+  the rewrite is unambiguous in a stack trace and a future error
+  reporter can resolve it back to a repo-relative path with one
+  string replace.
+- Limited the scan to `.next/static/chunks` (not `.next/server`)
+  because server-side maps never reach the client; the followup
+  privacy concern was specifically the browser-facing maps.
+- Kept the scrub a literal string replace instead of a regex so
+  per-character escaping is unnecessary and the implementation stays
+  trivially auditable.
+
+### Followups created
+- None. The fix is self-contained; the future opt-in error reporter
+  slice can rely on the sentinel without further changes here.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Q-010 pin §23 `tourTierScale` table
 
 **GDD sections touched:** [§12](gdd/12-upgrade-and-economy-system.md)
