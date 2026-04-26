@@ -10,6 +10,18 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-004 — Playwright save/load round-trip via the garage UI
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/localstorage-save` slice unit-tested the persistence
+module against an in-memory Storage shim (15 cases, all paths). The dot spec
+also asked for a Playwright reload-survives-save test, but the save module
+has no UI bindings yet (no garage screen, no options screen), so there is
+nothing meaningful to drive in a browser. Land this once the Phase 2 garage
+flow exists: navigate to the garage, mutate a value (e.g. swap car or buy an
+upgrade), reload, assert the value persisted.
+
 ## F-003 — Auto-deploy pipeline from `main`
 **Created:** 2026-04-26
 **Priority:** blocks-release

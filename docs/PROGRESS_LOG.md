@@ -6,6 +6,81 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Versioned localStorage save/load (§21 Save system)
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md), [§22](gdd/22-data-schemas.md)
+**Branch / PR:** `feat/localstorage-save` (off `feat/data-schemas`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/persistence/save.ts` with `loadSave`, `saveSave`, `defaultSave`,
+  and supporting types. Storage key `vibegear2:save:v<major>` is namespaced
+  by the current schema major; corrupted or schema-invalid payloads get
+  preserved under a `:backup` key for forensic recovery before the loader
+  falls back to the default save.
+- Added `src/persistence/migrations/index.ts` with `CURRENT_SAVE_VERSION = 1`
+  and an empty migrations registry. The `migrate(input)` helper walks the
+  registry from the input's declared version up to the current major,
+  refuses to downgrade future-major saves, and validates the version field.
+- Added `src/persistence/index.ts` barrel.
+- Added `src/persistence/save.test.ts` (15 cases) covering: storage key
+  shape, default save round-trip through the SaveGame schema, loadSave
+  paths (no storage, missing key, valid load, corrupted JSON, schema
+  invalid, getItem throws, future-major save), saveSave paths (success,
+  invalid input refused, no storage, quota-exceeded, generic setItem
+  error), and a save-then-load round-trip.
+- Added `src/persistence/migrations/migrations.test.ts` (4 cases) covering
+  identity v1 case, non-object input, invalid version field, and refusal
+  to downgrade.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test` passes 45/45 (3 race state + 23 schemas + 15 save + 4
+  migrations).
+- `npm run build` succeeds.
+- `grep` for U+2014 and U+2013 across new files returns nothing.
+
+### Decisions and assumptions
+- Every failure mode is non-fatal. The dot spec says "fall back to default
+  save (no persistence) with warning" for unavailable storage, "log and
+  use default save, do not crash" for corrupted JSON, and to preserve raw
+  under a backup key on schema validation failure. Implemented exactly
+  that. Quota-exceeded is surfaced as a typed error so the UI can decide
+  whether to retry, prompt the player, or shrink the save.
+- Quota detection cross-checks `error.name`
+  (`QuotaExceededError`, `NS_ERROR_DOM_QUOTA_REACHED`) and the legacy
+  numeric `code` (22, 1014). Covers Chrome, Safari, and old Firefox.
+- `defaultSave()` ships with credits 0, the starter `sparrow-gt` already
+  owned and active, and a zeroed upgrade row for that car. Phase 2 garage
+  flow will replace this with a "create profile" wizard, but the data
+  needs to validate today so that loadSave can return a usable SaveGame
+  on first run.
+- The `SaveIO` interface lets every public function accept an optional
+  `storage` and `logger`, defaulting to globalThis.localStorage and
+  console.warn. This keeps the module testable without jsdom (the unit
+  tests use a hand-rolled in-memory Storage shim) and lets future SSR
+  paths inject `null`.
+- `migrate` validates that the input is a plain object with a positive
+  integer version. v1 takes the identity path; v2+ migrations are
+  registered as `migrations[fromVersion]` returning the next-version
+  shape. Skipping a step is a thrown error, not a silent identity, so
+  forgotten migrations fail loudly.
+- Did not add the Playwright reload-survives-save test the dot spec
+  mentions. The save module has no UI bindings yet (no garage screen, no
+  options screen), so there is nothing meaningful to drive in a browser.
+  Filed as a followup to revisit when the garage flow lands.
+
+### Followups created
+- F-004 Add a Playwright e2e test that drives the garage UI to mutate a
+  save and asserts persistence across reload. Open until the Phase 2
+  garage flow exists; tracked in `docs/FOLLOWUPS.md`.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Data schemas as Zod validators and TS types (§22)
 
 **GDD sections touched:** [§22](gdd/22-data-schemas.md)
