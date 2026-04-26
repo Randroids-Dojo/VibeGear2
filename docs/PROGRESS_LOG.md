@@ -6,6 +6,116 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-038 wire natural race-finish into `/race/results`
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) Inter-race loop (race -> results
+-> garage),
+[§20](gdd/20-hud-and-ui-ux.md) Results screen reachability.
+**Branch / PR:** `feat/race-finish-wiring` stacked on
+`feat/race-bonuses`, PR pending.
+**Status:** Implemented. The natural-finish branch in
+`src/app/race/page.tsx` now builds a `RaceResult`, writes the
+session-storage handoff, tears down the loop / input manager, and
+pushes the router to `/race/results` exactly once per finish. A
+per-mount `routedRef` latch guards against the per-frame re-fire
+risk inside the render callback and re-arms on the pause-menu
+Restart so a second race after a restart still routes when it
+finishes. The retire branch (commit `8756804`) flips the same
+latch before its own `router.push` so a retire-then-finish race
+never double-routes. PB recording is gated on
+`session.player.status === "finished"` so a §7 hard-time-limit
+DNF on the natural-finish path mirrors the retire branch's
+`recordPBs: false` contract. F-038 is closed.
+
+### Done
+- `src/app/race/page.tsx` (update): natural-finish wiring inside
+  the `startLoop({ render })` callback. Builds the §20 payload
+  via `buildFinalRaceState({ trackId, totalLaps, cars })` +
+  `buildFinalCarInputsFromSession(session)` + `buildRaceResult`,
+  writes the handoff via `saveRaceResult`, then disposes the
+  loop and the input manager before `router.push("/race/results")`.
+  - New `routedRef = useRef<boolean>(false)` guards against the
+    per-frame re-fire risk; reset to `false` on the loop-effect
+    setup and inside the restart callback so a re-armed race
+    still routes once on its own finish.
+  - The retire branch now flips `routedRef.current = true`
+    before its own `router.push` so a finish-tick on the next
+    frame cannot double-route.
+  - `recordPBs` derives from `session.player.status === "finished"`
+    so the natural-finish PB-eligible path records and a
+    natural-finish DNF (the §7 hard-time-limit branch) skips the
+    records patch.
+  - Reuses the same `trackForResult = { id: track.id } as Track`
+    minimal cast the retire branch uses; the bundled track JSON
+    does not need to be re-parsed for the results boundary.
+- `e2e/race-finish.spec.ts` (new): drives a single-lap race on
+  `?track=test/straight` with `ArrowUp` held, asserts the route
+  hops to `/race/results`, and asserts the player row renders
+  with `data-status="finished"` plus the Continue CTA. The
+  spec sets a 60 s test timeout to absorb CI jitter (a Sparrow
+  GT lap on the 1,200 m straight finishes in ~23 s of sim time
+  including the 3 s countdown).
+- `docs/FOLLOWUPS.md` (update): F-038 flipped from `open` to
+  `done`. Resolution note records the retire-path commit
+  (`8756804`) plus this slice as the natural-finish wiring;
+  Practice / Quick Race / Time Trial reuse is deferred to the
+  §6 mode dots.
+
+### Verified
+- `npm run lint && npm run typecheck && npm run test && npm run build`
+  green; `npm run test:e2e` covers the new
+  `race-finish.spec.ts` plus the existing
+  `pause-actions.spec.ts` retire-path spec.
+- The render callback's natural-finish branch is idempotent: the
+  `routedRef` latch ensures `saveRaceResult` and `router.push`
+  fire at most once per session even though the render tick fires
+  every frame.
+- Restart re-arms the latch (the restart callback resets
+  `routedRef.current = false` after creating the fresh session)
+  so a second race after a restart still routes on its own
+  finish. The pause-actions e2e spec exercises restart already;
+  this slice does not regress it.
+
+### Decisions and assumptions
+- **Latch placement.** The §20 dot's verify list spelled the
+  natural-finish guard as a `useRef<boolean>(false)` flipped on
+  first finish. The implementation follows that pattern verbatim
+  rather than introducing a global `phase` state machine, which
+  would have complicated the existing per-frame snapshot copy
+  for the HUD `dl`.
+- **PB gate.** The dot pinned `recordPBs: true` for the natural
+  finish but called out that a §7 hard-time-limit DNF should
+  mirror the retire branch's `recordPBs: false`. The
+  implementation reads `session.player.status` (which the §7
+  rule flips to `"dnf"` when the time limit fires), so both
+  branches converge on the same record-patch policy without a
+  separate code path.
+- **Retire latch.** The retire callback flips the latch *after*
+  `saveRaceResult` and *before* `router.push` so the natural-
+  finish branch's check on the next render frame fails closed.
+  This is belt-and-braces: the loop tear-down already stops the
+  rAF, but the explicit latch documents the contract.
+- **Test track.** The e2e spec uses `?track=test/straight` (1
+  lap, 1,200 m) rather than the default `test/curve` so the
+  natural-finish boundary fires inside a single Playwright test
+  budget without needing a §22 lap-skip cheat. The
+  `race-demo.spec.ts` header already documented this approach
+  as the planned shorter-run path.
+
+### Followups created
+- None new. F-038 is closed by this slice. Practice / Quick
+  Race / Time Trial reuse of the same wiring is owned by the
+  §6 mode dots (`VibeGear2-implement-practice-quick-ad3ba399`,
+  `VibeGear2-implement-time-trial-5d65280a`).
+
+### GDD edits
+- None. This slice is pure wiring of an existing surface; the
+  GDD already documents the inter-race loop and the results
+  screen.
+
+---
+
 ## 2026-04-26: Slice: §5 race reward bonuses (raceBonuses.ts owner module + sponsors)
 
 **GDD sections touched:**

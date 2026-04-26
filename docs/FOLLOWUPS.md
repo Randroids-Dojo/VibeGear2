@@ -78,7 +78,7 @@ producer-without-consumer pattern.
 ## F-038: Wire `buildRaceResult` into the race-finish flow + push to `/race/results`
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
+**Status:** done
 **Notes:** The `feat/race-results-screen` slice (commit `e1129b7`)
 landed the pure builder `buildRaceResult(state, save, track)` in
 `src/game/raceResult.ts` (33 unit tests) and the standalone
@@ -95,6 +95,22 @@ contract. Mirrors the F-026 / F-032 / F-034 / F-035 / F-036 / F-037
 producer-without-consumer pattern. Promoted to `blocks-release`
 because the results screen is on the GDD §5 inter-race path; the
 race loop cannot complete without it.
+
+**Resolution (2026-04-26, `feat/race-finish-wiring`):** Retire-path
+wiring landed in commit `8756804` (`feat/pause-actions`). The
+natural-finish branch is now wired in
+`src/app/race/page.tsx`: the render callback's `phase ===
+"finished"` arm builds the `RaceResult` via
+`buildFinalRaceState` + `buildRaceResult`, calls
+`saveRaceResult`, tears down the loop / input manager, and
+pushes the router to `/race/results`. A `routedRef` latch
+guards against per-frame re-fires and re-arms on restart. PB
+recording is gated on `session.player.status === "finished"`
+so a §7 hard-time-limit DNF skips the records patch. New e2e
+spec `e2e/race-finish.spec.ts` drives a single-lap race on
+`test/straight` and asserts the route hop and the player row.
+Practice / Quick Race / Time Trial reuse will land alongside
+the §6 mode wiring (separate dots own those surfaces).
 
 ---
 

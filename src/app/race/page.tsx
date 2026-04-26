@@ -202,6 +202,13 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
   const restartFnRef = useRef<(() => void) | null>(null);
   const retireFnRef = useRef<(() => void) | null>(null);
   const exitFnRef = useRef<(() => void) | null>(null);
+  // Per-mount guard for the natural finish wiring. The render callback
+  // fires every frame, so without this latch a `phase === "finished"`
+  // tick would call `saveRaceResult` and `router.push` on every frame
+  // until the unmount tear-down ran. The latch is reset to `false`
+  // whenever a fresh session is created (mount or restart) so a second
+  // race after a restart still triggers the natural-finish route once.
+  const routedRef = useRef<boolean>(false);
 
   const [phase, setPhase] = useState<"countdown" | "racing" | "finished">(
     "countdown",
@@ -266,6 +273,10 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
     };
 
     sessionRef.current = createRaceSession(config);
+    // Re-arm the natural-finish guard on every fresh mount. The
+    // restart callback below also flips it back so a second race
+    // after a restart still routes once when it finishes.
+    routedRef.current = false;
 
     const camera: Camera = {
       x: 0,
@@ -300,6 +311,10 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
       const handle = handleRef.current;
       if (!handle) return;
       sessionRef.current = createRaceSession(config);
+      // Re-arm the natural-finish guard so the restarted race can
+      // route on its own finish. Must precede `handle.resume()` so the
+      // first render tick after resume sees the fresh `false` latch.
+      routedRef.current = false;
       // Match the post-effect render snapshot to the fresh session so
       // the dl below re-renders the countdown immediately rather than
       // showing the racing phase momentarily until the next render
@@ -345,6 +360,10 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
         recordPBs: false,
       });
       saveRaceResult(result);
+      // Flip the natural-finish guard so the render callback's finish
+      // wiring cannot also fire on the next frame (the loop tear-down
+      // below stops the rAF, but the latch is the explicit contract).
+      routedRef.current = true;
       // Tear down the loop / input before the route hop so the rAF
       // handle and the keydown listener cannot outlive the page.
       handleRef.current?.stop();
@@ -455,6 +474,45 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
           setCountdownSecondsLeft(Math.ceil(session.race.countdownRemainingSec));
         } else if (session.race.phase === "finished") {
           setResultMs(Math.round(session.race.elapsed * 1000));
+          // Natural finish wiring per F-038. The render callback fires
+          // every frame, so guard with `routedRef` to ensure
+          // `saveRaceResult` and `router.push` each fire exactly once
+          // per finish. The retire branch above flips the same latch
+          // so a retire-then-natural-finish race never double-routes.
+          // PB recording is true only when the player crossed the line
+          // naturally; a §7 hard-time-limit DNF skips the records
+          // patch (mirrors the retire branch's `recordPBs: false`).
+          if (!routedRef.current) {
+            routedRef.current = true;
+            const finalState = buildFinalRaceState({
+              trackId: track.id,
+              totalLaps: session.race.totalLaps,
+              cars: buildFinalCarInputsFromSession(session),
+            });
+            const save =
+              persisted.kind === "loaded" ? persisted.save : defaultSave();
+            // `buildRaceResult` reads only `track.id` from the Track
+            // shape; the minimal cast avoids re-parsing the bundled
+            // JSON at the natural-finish boundary.
+            const trackForResult = { id: track.id } as Track;
+            const result = buildRaceResult({
+              finalState,
+              save,
+              track: trackForResult,
+              playerCarId: PLAYER_ID,
+              playerStartPosition: 1,
+              recordPBs: session.player.status === "finished",
+            });
+            saveRaceResult(result);
+            // Tear down the loop / input before the route hop so the
+            // rAF handle and the keydown listener cannot outlive the
+            // page. Mirrors the retire branch tear-down ordering.
+            handleRef.current?.stop();
+            handleRef.current = null;
+            sessionRef.current = null;
+            inputManager.dispose();
+            router.push("/race/results");
+          }
         }
         setHudSnapshot({
           speed: hud.speed,
