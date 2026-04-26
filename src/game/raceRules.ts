@@ -180,8 +180,21 @@ export interface DnfSample {
  * the §7 DNF cell on the results screen can distinguish "ran out of
  * track" from "gave up". Pinned per the dot
  * `VibeGear2-implement-restart-retire-888c712b`.
+ *
+ * `wrecked` is the §13 catastrophic-damage DNF: the per-car
+ * `DamageState.total` crossed `WRECK_THRESHOLD` (0.95) so the §13
+ * "limp mode or retire" decision flips the car out of the race. The
+ * `tickDnfTimers` reducer never produces this value; it is set by the
+ * race-session damage-wiring reducer in `stepRaceSession` after
+ * `applyHit` / `applyOffRoadDamage` returns a state for which
+ * `isWrecked` reads true. Pinned per F-047.
  */
-export type DnfReason = "off-track" | "no-progress" | "retired" | null;
+export type DnfReason =
+  | "off-track"
+  | "no-progress"
+  | "retired"
+  | "wrecked"
+  | null;
 
 export interface DnfTickResult {
   timers: DnfTimers;

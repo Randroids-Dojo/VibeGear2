@@ -50,20 +50,47 @@ also consume their respective scalars at their consumer sites.
 ## F-047: Thread per-car `DamageState` through `raceSession` and feed `applyHit`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (`feat/race-session-damage-state`)
 **Notes:** `applyHit` (and `applyOffRoadDamage`) now accept the
 `assistScalars` and `nitroActiveOnDamagedCar` knobs but `raceSession`
-does not yet own a per-car `DamageState`. Add a `damage: DamageState`
-field to `RaceSessionPlayerCar` / `RaceSessionAICar`, initialise it
-to `PRISTINE_DAMAGE_STATE` in `createRaceSession`, and call
-`applyHit(state.damage, hit, assistScalars, nitroOnDamagedCar)` from
-the per-tick collision / wall handler with
-`nitroOnDamagedCar = state.nitro.activeRemainingSec > 0 &&
-(getDamageBand(state.damage.total * 100) === "severe" ||
- getDamageBand(state.damage.total * 100) === "catastrophic")`.
-The off-road branch already exists in `damage.ts`; route the
-per-tick `applyOffRoadDamage` call through the same field. The §13
-`isWrecked` gate then feeds `RaceCarStatus = "dnf"`.
+did not yet own a per-car `DamageState`. The wiring slice
+(`feat/race-session-damage-state`) added a `damage: DamageState`
+field to `RaceSessionPlayerCar` / `RaceSessionAICar`, initialised it
+to `PRISTINE_DAMAGE_STATE` in `createRaceSession`, and added a
+per-tick damage pass that:
+
+1. Calls `applyOffRoadDamage(damage, speed, dt, assistScalars)` for
+   each still-racing car whose post-step position is off the
+   drivable surface (`isOffRoad(x, roadHalfWidth) && speed > 0`).
+2. Runs an ordered-pair (`i < j`) collision scan over the post-step
+   field. Two cars are in contact when `|dz| < CAR_LENGTH_M (4)` and
+   `|dx| < CAR_WIDTH_M (1.8)`. On a hit both cars receive a
+   `carHit` event (`baseMagnitude = midpoint(6, 12)`,
+   `speedFactor = avg(speedA, speedB) / 60`).
+3. For each event, sets `nitroOnDamagedCar = nitro.activeRemainingSec > 0
+   && (getDamageBand(state.damage.total * 100) === "severe" ||
+   "catastrophic")` so the §23 `NITRO_WHILE_SEVERELY_DAMAGED_BONUS`
+   stacks when the player burns nitro on a wreck-band car.
+4. Calls `isWrecked(damage)` after each per-car update; a true
+   reading flips the car to `status: "dnf"` with a new
+   `dnfReason: "wrecked"` (added to the `DnfReason` union in
+   `raceRules.ts`). The wreck flip beats the lap-completion branch on
+   the same tick so a car that wrecks while crossing the line cannot
+   also pick up a finish.
+
+`raceSession` resolves the player's `AssistScalars` once per tick
+(matching the existing F-042 pattern); AI cars take the identity
+scalars (the §28 narrative pins the preset as a player-facing knob).
+Tests cover: pristine fields at session start, pristine after a clean
+single-lap run, off-road body damage growth, frozen physics on wreck,
+collision damages both cars, lateral separation suppresses contact,
+non-racing cars do not deposit fresh hits, the nitro+severe bonus
+strictly increases the post-hit total, and 600-tick determinism with
+the wiring active. F-019 (parent followup for §13 race-session
+damage integration) collapses into this slice for the §13 expectations
+the wiring covers; the remaining hazard-damage emitter (per-tick
+puddle / cone / debris hits) is filed as an out-of-scope dependency
+on the hazards-runtime dot.
 
 ---
 
@@ -721,23 +748,35 @@ unit-test the denylist matcher with positive and negative cases.
 ## F-019: Race session integration of the §13 damage model
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** in-progress
 **Notes:** The `feat/damage-model` slice ships `src/game/damage.ts` as a
 pure module: `applyHit`, `applyOffRoadDamage`, `performanceMultiplier`,
 `isWrecked`, `repairCostFor`, `totalRepairCost` and the constants
 surface (`PERFORMANCE_FLOOR`, `TOTAL_DAMAGE_WEIGHTS`, `WRECK_THRESHOLD`,
 `OFF_ROAD_DAMAGE_PER_M`, `REPAIR_BASE_COST_CREDITS`, etc). The producer
-is complete and unit-tested (42 tests, all paths). The consumer wiring
-is deferred to the next slice that wires multi-car collision detection
-into the race session: per-car `DamageState` lives on
-`RaceSessionAICar` and on `player`, the physics call site multiplies
-`stats.topSpeed` and `stats.accel` by `performanceMultiplier("engine",
-state.zones.engine)` and grip by `performanceMultiplier("tires",
-state.zones.tires)`, the off-road branch calls `applyOffRoadDamage`
-each tick `isOffRoad(x)`, and `isWrecked` flips the player to `dnf` in
-the §7 race-rules slice. Until then the module is a producer waiting
-for a consumer, mirroring the `feat/drafting-slipstream` deferral
-pattern.
+is complete and unit-tested (42 tests, all paths). F-047
+(`feat/race-session-damage-state`) wired the per-car `DamageState`
+into `raceSession`: every car in the field carries a `damage` field
+that accumulates off-road persistent damage, takes per-pair `carHit`
+events on the §13 contact box, applies the §23 nitro+severe bonus,
+and flips the car to `dnf` with reason `wrecked` once `isWrecked`
+trips. The remaining open work for F-019 is two consumer call sites
+that the F-047 slice deliberately did not bundle:
+
+- The physics step does not yet read `performanceMultiplier`. The
+  §13 narrative ("engine damage reduces top speed", "tire damage
+  reduces grip") wants `step()` to multiply `stats.topSpeed` and
+  `stats.accel` by `performanceMultiplier("engine", damage.zones.engine)`
+  and grip by `performanceMultiplier("tires", damage.zones.tires)`.
+  This is a follow-up wiring slice on `physics.ts` once a damaged
+  car's expected feel is pinned.
+- The hazard-runtime damage emitter (per-tick puddle / cone / debris
+  hits feeding `applyHit` with the matching `HitKind`) is owned by
+  the hazards-runtime dot
+  (`VibeGear2-implement-hazards-runtime-6085799c`); F-047 did not
+  bundle it because the hazards module does not yet exist.
+
+Close F-019 once both consumer paths land.
 
 ## F-018: Playwright e2e spec for the loading screen / preload gate
 **Created:** 2026-04-26

@@ -61,6 +61,17 @@ import {
   type AssistSettingsRuntime,
 } from "./assists";
 import {
+  applyHit,
+  applyOffRoadDamage,
+  HIT_MAGNITUDE_RANGES,
+  isWrecked,
+  PRISTINE_DAMAGE_STATE,
+  type DamageState,
+  type HitEvent,
+  type HitKind,
+} from "./damage";
+import { getDamageBand } from "./damageBands";
+import {
   resolvePresetScalars,
   type AssistScalars,
 } from "./difficultyPresets";
@@ -294,6 +305,16 @@ export interface RaceSessionAICar {
    * its podium deterministically.
    */
   finishedAtMs: number | null;
+  /**
+   * §13 per-car damage accumulator. Initialised to
+   * `PRISTINE_DAMAGE_STATE` at session creation; advanced each racing
+   * tick by `applyOffRoadDamage` (when off-road) and by `applyHit` on
+   * vehicle-on-vehicle contact. A car that crosses
+   * `WRECK_THRESHOLD` flips to `status: "dnf"` with `dnfReason:
+   * "wrecked"` and freezes its physics from that tick onward, mirroring
+   * the §7 off-track / no-progress paths. Pinned per F-047.
+   */
+  damage: DamageState;
 }
 
 /**
@@ -386,6 +407,15 @@ export interface RaceSessionPlayerCar {
    * state builder's per-car `raceTimeMs` field.
    */
   finishedAtMs: number | null;
+  /**
+   * §13 per-car damage accumulator. See `RaceSessionAICar.damage` for
+   * the semantics; the player path mirrors the AI path so the §13
+   * model treats every car uniformly. A wrecked player flips to
+   * `status: "dnf"` with `dnfReason: "wrecked"` and freezes; the
+   * race-phase finish gate then collapses to `"finished"` once every
+   * car has stopped (existing all-stopped branch). Pinned per F-047.
+   */
+  damage: DamageState;
 }
 
 /**
@@ -464,6 +494,78 @@ export const AI_GRID_OFFSET_BEHIND_PLAYER_M = 5;
 export const AI_GRID_SPACING_M = 5;
 
 /**
+ * §13 vehicle-on-vehicle collision geometry. Pinned per F-047 as the
+ * simplest deterministic gate: two cars are considered to be in contact
+ * this tick when their longitudinal gap is below `CAR_LENGTH_M` and
+ * their lateral offset is below `CAR_WIDTH_M`. Numbers approximate a
+ * compact race car (about 4 m long, 1.8 m wide) so a follower closing
+ * inside one car-length on the same lane registers as a hit. The full
+ * §13 narrative ("hit detection occurs when bounding boxes overlap")
+ * does not pin numeric dimensions; these are placeholder values that
+ * a balancing pass can revise without touching call sites.
+ */
+export const CAR_LENGTH_M = 4;
+export const CAR_WIDTH_M = 1.8;
+
+/**
+ * Reference top speed (m/s) used to normalise the §13 `speedFactor`
+ * input to `applyHit`. Picked to match the `STARTER_STATS.topSpeed`
+ * value the test harness uses (~61 m/s); a same-tier collision at the
+ * starter top speed therefore reads `speedFactor ~= 1.0` and a pair of
+ * crawling cars reads `speedFactor ~= 0`. Not pulled from any car's
+ * `CarBaseStats.topSpeed` so the field-wide damage scale stays
+ * deterministic when cars of mixed tiers race side-by-side.
+ */
+export const COLLISION_REFERENCE_TOP_SPEED_M_PER_S = 60;
+
+/**
+ * §13 deterministic `baseMagnitude` for a car-on-car contact event.
+ * Picked as the midpoint of the §23 `HIT_MAGNITUDE_RANGES.carHit`
+ * band (`6..12`) so the wiring is reproducible without consuming the
+ * seeded RNG. The `splitRng(raceRng, "collision")` pick is filed as
+ * F-024 / future damage-RNG work; once that lands the constant
+ * collapses to a default and the per-event roll picks from the
+ * `[min, max]` band instead. Keeping a single canonical magnitude
+ * here means the existing damage / band tests do not have to grow a
+ * mock RNG to cover the wiring.
+ */
+export const COLLISION_CAR_HIT_BASE_MAGNITUDE =
+  (HIT_MAGNITUDE_RANGES.carHit.min + HIT_MAGNITUDE_RANGES.carHit.max) / 2;
+
+/**
+ * True iff the two car snapshots are within the §13 contact box
+ * (`|dz| < CAR_LENGTH_M && |dx| < CAR_WIDTH_M`). Pure: no allocation,
+ * no globals. Symmetric in its arguments so the per-tick pair scan
+ * only needs to evaluate the ordered pair once.
+ */
+export function carsInContact(a: Readonly<CarState>, b: Readonly<CarState>): boolean {
+  return (
+    Math.abs(a.z - b.z) < CAR_LENGTH_M && Math.abs(a.x - b.x) < CAR_WIDTH_M
+  );
+}
+
+/**
+ * Build a single car-on-car `HitEvent` for the §13 contact between two
+ * cars. The §23 magnitude is the pinned `COLLISION_CAR_HIT_BASE_MAGNITUDE`
+ * midpoint; `speedFactor` is the average of the two cars' speeds
+ * normalised by `COLLISION_REFERENCE_TOP_SPEED_M_PER_S` and clamped to
+ * `[0, 1]` inside `applyHit`. The same event applies to both cars in
+ * the pair (a head-on bump damages both bumpers); per-car nitro and
+ * difficulty scalars are layered on at the `applyHit` call site.
+ */
+export function buildCarHitEvent(
+  a: Readonly<CarState>,
+  b: Readonly<CarState>,
+): HitEvent {
+  const avgSpeed = (a.speed + b.speed) / 2;
+  return {
+    kind: "carHit" satisfies HitKind,
+    baseMagnitude: COLLISION_CAR_HIT_BASE_MAGNITUDE,
+    speedFactor: avgSpeed / COLLISION_REFERENCE_TOP_SPEED_M_PER_S,
+  };
+}
+
+/**
  * Build a fresh session. Does not allocate any references that escape the
  * function (the `ai` array is constructed locally, not the one passed in,
  * so callers cannot mutate the session by mutating their input).
@@ -503,6 +605,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     dnfReason: null,
     lapTimes: [],
     finishedAtMs: null,
+    damage: PRISTINE_DAMAGE_STATE,
   };
 
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
@@ -530,6 +633,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
       lap: 1,
       lapTimes: [],
       finishedAtMs: null,
+      damage: PRISTINE_DAMAGE_STATE,
     };
   });
 
@@ -1086,6 +1190,123 @@ export function stepRaceSession(
       lap: entry.lap,
       lapTimes: entry.lapTimes.slice(),
       finishedAtMs: entry.finishedAtMs,
+      damage: entry.damage,
+    };
+  });
+
+  // §13 damage wiring (F-047). Each still-racing car accumulates
+  // off-road persistent damage when its post-step position is off the
+  // drivable surface, then takes a `carHit` event for every other
+  // still-racing car within the §13 contact box (`carsInContact`). The
+  // §23 `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` flag is set when the car
+  // has an active nitro burn AND the pre-hit damage band is `severe`
+  // or `catastrophic`. Per-event scalars use `playerAssistScalars` for
+  // the player and the identity (omitted) for AI cars, mirroring the
+  // §28 / §15 split (the player-facing preset tunes only the player).
+  // A car whose damage crosses `WRECK_THRESHOLD` flips to
+  // `status: "dnf"` with `dnfReason: "wrecked"`; the existing all-stopped
+  // race-phase finish gate then collapses to `"finished"` once every
+  // car has stopped.
+  const roadHalfWidthForDamage = trackContext.roadHalfWidth;
+  // Build the per-car snapshot of (id, carState, racing) so the
+  // collision pass can iterate ordered pairs without re-deriving the
+  // racing predicate per pair. The ordered-pair iteration (i < j)
+  // makes the carHit application symmetric: both cars in a contact
+  // pair receive one event per pair per tick.
+  type DamageEntry = {
+    id: string;
+    car: Readonly<CarState>;
+    nitroActive: boolean;
+    racing: boolean;
+    isPlayer: boolean;
+  };
+  const damageEntries: DamageEntry[] = [
+    {
+      id: PLAYER_CAR_ID,
+      car: nextPlayerCar,
+      nitroActive: playerNitroResult.state.activeRemainingSec > 0,
+      racing: playerIsRacing,
+      isPlayer: true,
+    },
+    ...nextAi.map((entry, index) => ({
+      id: aiCarId(index),
+      car: entry.car,
+      nitroActive: entry.nitro.activeRemainingSec > 0,
+      racing: entry.status === "racing",
+      isPlayer: false,
+    })),
+  ];
+  // Per-id list of `carHit` events to apply this tick. The pair scan
+  // populates both sides of every contact pair so the §13 carHit
+  // distribution applies symmetrically.
+  const hitsByCarId = new Map<string, HitEvent[]>();
+  for (let i = 0; i < damageEntries.length; i += 1) {
+    const a = damageEntries[i]!;
+    if (!a.racing) continue;
+    for (let j = i + 1; j < damageEntries.length; j += 1) {
+      const b = damageEntries[j]!;
+      if (!b.racing) continue;
+      if (!carsInContact(a.car, b.car)) continue;
+      const event = buildCarHitEvent(a.car, b.car);
+      const aHits = hitsByCarId.get(a.id) ?? [];
+      aHits.push(event);
+      hitsByCarId.set(a.id, aHits);
+      const bHits = hitsByCarId.get(b.id) ?? [];
+      bHits.push(event);
+      hitsByCarId.set(b.id, bHits);
+    }
+  }
+  // Helper: advance one car's damage by the off-road drip + the
+  // accumulated `carHit` events. Returns the post-update damage and
+  // whether the car wrecked this tick (so the caller can flip status).
+  function advanceDamage(
+    prior: Readonly<DamageState>,
+    car: Readonly<CarState>,
+    racing: boolean,
+    nitroActive: boolean,
+    hits: ReadonlyArray<HitEvent>,
+    scalars: Readonly<AssistScalars> | undefined,
+  ): { damage: DamageState; wrecked: boolean } {
+    if (!racing) return { damage: prior, wrecked: false };
+    let next: DamageState = prior;
+    if (isOffRoad(car.x, roadHalfWidthForDamage) && car.speed > 0) {
+      next = applyOffRoadDamage(next, car.speed, dt, scalars);
+    }
+    for (const hit of hits) {
+      const band = getDamageBand(next.total * 100);
+      const nitroOnSevere =
+        nitroActive && (band === "severe" || band === "catastrophic");
+      next = applyHit(next, hit, scalars, nitroOnSevere);
+    }
+    return { damage: next, wrecked: isWrecked(next) };
+  }
+
+  const playerDamageResult = advanceDamage(
+    state.player.damage,
+    nextPlayerCar,
+    playerIsRacing,
+    playerNitroResult.state.activeRemainingSec > 0,
+    hitsByCarId.get(PLAYER_CAR_ID) ?? [],
+    playerAssistScalars,
+  );
+  const aiAfterDamage: RaceSessionAICar[] = nextAi.map((entry, index) => {
+    const id = aiCarId(index);
+    const result = advanceDamage(
+      entry.damage,
+      entry.car,
+      entry.status === "racing",
+      entry.nitro.activeRemainingSec > 0,
+      hitsByCarId.get(id) ?? [],
+      undefined,
+    );
+    if (result.damage === entry.damage && !result.wrecked) {
+      return entry;
+    }
+    return {
+      ...entry,
+      damage: result.damage,
+      status: result.wrecked ? "dnf" : entry.status,
+      dnfReason: result.wrecked ? "wrecked" : entry.dnfReason,
     };
   });
 
@@ -1099,10 +1320,20 @@ export function stepRaceSession(
   let bestLapTimeMs = state.race.bestLapTimeMs;
   let nextPhase: RaceState["phase"] = state.race.phase;
   let nextPlayerLapTimes: ReadonlyArray<number> = state.player.lapTimes;
-  let nextPlayerStatus: RaceCarStatus = state.player.status;
+  // Apply the §13 wreck flip before the lap-completion check so a car
+  // that wrecked this tick cannot also pick up a finish (would-be lap
+  // crossings on the wrecked tick are ignored, mirroring the §7 DNF
+  // gate semantics in `tickDnfTimers`).
+  let nextPlayerStatus: RaceCarStatus = playerDamageResult.wrecked
+    ? "dnf"
+    : state.player.status;
   let nextPlayerFinishedAtMs: number | null = state.player.finishedAtMs;
+  // The wrecked-this-tick flag is what gates the lap-completion branch
+  // below: a wrecked player cannot also finish on the same tick.
+  const playerWreckedThisTick =
+    playerDamageResult.wrecked && state.player.status === "racing";
 
-  if (playerIsRacing && trackLength > 0) {
+  if (playerIsRacing && !playerWreckedThisTick && trackLength > 0) {
     const lapsCompleted = Math.floor(nextPlayerCar.z / trackLength);
     const intendedLap = lapsCompleted + 1;
     if (intendedLap > state.race.lap) {
@@ -1140,7 +1371,7 @@ export function stepRaceSession(
   // crosses the final start/finish line on this tick flips to
   // `"finished"`; downstream ticks freeze its physics (the `nextAi`
   // map above already gates on `entry.status !== "racing"`).
-  const aiAfterLap: RaceSessionAICar[] = nextAi.map((entry) => {
+  const aiAfterLap: RaceSessionAICar[] = aiAfterDamage.map((entry) => {
     if (entry.status !== "racing" || trackLength <= 0) return entry;
     const aiLapsCompleted = Math.floor(entry.car.z / trackLength);
     const aiIntendedLap = aiLapsCompleted + 1;
@@ -1182,7 +1413,14 @@ export function stepRaceSession(
     ? playerDnfResult.timers
     : { ...state.player.dnfTimers };
   let nextPlayerDnfReason: DnfReason = state.player.dnfReason;
-  if (playerDnfResult?.dnf) {
+  // §13 wreck wins over the §7 windows: a player that wrecked this
+  // tick records the `wrecked` reason regardless of whether the
+  // off-track / no-progress timer would have tripped on the same tick.
+  // (`tickDnfTimers` is gated on `nextPlayerStatus === "racing"` above
+  // so it doesn't even run on the wrecked tick.)
+  if (playerWreckedThisTick) {
+    nextPlayerDnfReason = "wrecked";
+  } else if (playerDnfResult?.dnf) {
     nextPlayerStatus = "dnf";
     nextPlayerDnfReason = playerDnfResult.reason;
   }
@@ -1292,6 +1530,7 @@ export function stepRaceSession(
       dnfReason: nextPlayerDnfReason,
       lapTimes: nextPlayerLapTimes,
       finishedAtMs: nextPlayerFinishedAtMs,
+      damage: playerDamageResult.damage,
     },
     ai: aiAfterDnf,
     tick: nextTick,
@@ -1359,6 +1598,7 @@ function clonePlayerCar(
     dnfReason: player.dnfReason,
     lapTimes: player.lapTimes.slice(),
     finishedAtMs: player.finishedAtMs,
+    damage: player.damage,
   };
 }
 
@@ -1377,5 +1617,6 @@ function cloneAiCar(entry: Readonly<RaceSessionAICar>): RaceSessionAICar {
     lap: entry.lap,
     lapTimes: entry.lapTimes.slice(),
     finishedAtMs: entry.finishedAtMs,
+    damage: entry.damage,
   };
 }

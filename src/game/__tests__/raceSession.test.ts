@@ -17,8 +17,14 @@ import { describe, expect, it } from "vitest";
 import { loadTrack } from "@/data";
 import {
   AI_GRID_OFFSET_BEHIND_PLAYER_M,
+  CAR_LENGTH_M,
+  CAR_WIDTH_M,
+  COLLISION_CAR_HIT_BASE_MAGNITUDE,
+  COLLISION_REFERENCE_TOP_SPEED_M_PER_S,
   PLAYER_CAR_ID,
   aiCarId,
+  buildCarHitEvent,
+  carsInContact,
   createRaceSession,
   draftPairKey,
   stepRaceSession,
@@ -26,6 +32,12 @@ import {
   type RaceSessionConfig,
   type RaceSessionState,
 } from "@/game/raceSession";
+import {
+  applyHit,
+  createDamageState,
+  PRISTINE_DAMAGE_STATE,
+  WRECK_THRESHOLD,
+} from "@/game/damage";
 import {
   DRAFT_ENGAGE_MS,
   DRAFT_MAX_ACCEL_MULTIPLIER,
@@ -1578,5 +1590,310 @@ describe("stepRaceSession (§28 difficulty preset wiring, F-042)", () => {
     }
     expect(easy.ai[0]?.car.x).toBeCloseTo(hard.ai[0]?.car.x ?? Number.NaN, 6);
     expect(easy.ai[0]?.car.z).toBeCloseTo(hard.ai[0]?.car.z ?? Number.NaN, 6);
+  });
+});
+
+describe("stepRaceSession (§13 damage wiring, F-047)", () => {
+  it("seeds every car with PRISTINE_DAMAGE_STATE at session creation", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const session = createRaceSession(config);
+    expect(session.player.damage).toBe(PRISTINE_DAMAGE_STATE);
+    expect(session.ai[0]?.damage).toBe(PRISTINE_DAMAGE_STATE);
+  });
+
+  it("leaves damage at PRISTINE when the player races a clean lap with no contact", () => {
+    // Single-lap straight track, no AI: a full-throttle clean run never
+    // touches the grass and never makes contact, so the §13 damage path
+    // never fires.
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 1,
+    };
+    let session = createRaceSession(config);
+    for (let i = 0; i < 600; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+      if (session.race.phase === "finished") break;
+    }
+    expect(session.player.damage).toEqual(PRISTINE_DAMAGE_STATE);
+  });
+
+  it("accumulates body damage when the player drives off-road at speed", () => {
+    // Snap the player off-road with non-zero speed; one tick of the
+    // off-road accumulator must add a strictly positive body increment.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 100, speed: 40, surface: "grass" },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.damage.zones.body).toBeGreaterThan(0);
+    expect(session.player.damage.total).toBeGreaterThan(0);
+    // The off-road accum-seconds counter advanced by one tick.
+    expect(session.player.damage.offRoadAccumSeconds).toBeCloseTo(DT, 6);
+  });
+
+  it("does not accumulate off-road damage for a stopped player on grass", () => {
+    // Speed === 0: the off-road branch's `speed > 0` guard collapses
+    // the call to a no-op.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 100, speed: 0, surface: "grass" },
+      },
+    };
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.player.damage.zones.body).toBe(0);
+    expect(session.player.damage.offRoadAccumSeconds).toBe(0);
+  });
+
+  it("flips the player to dnf with reason 'wrecked' when damage crosses the threshold", () => {
+    // Pre-load the player's damage to one event below WRECK_THRESHOLD,
+    // then snap the player off-road at speed so the next tick's
+    // off-road accumulator pushes them past the cap.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    const nearWreck = createDamageState({
+      engine: 0.95,
+      tires: 0.95,
+      body: 0.95,
+    });
+    expect(nearWreck.total).toBeGreaterThan(WRECK_THRESHOLD - 0.01);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 100, speed: 40, surface: "grass" },
+        damage: nearWreck,
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.status).toBe("dnf");
+    expect(session.player.dnfReason).toBe("wrecked");
+  });
+
+  it("freezes a wrecked player's physics on subsequent ticks", () => {
+    // Once the wreck flip lands, the existing non-racing physics gate
+    // freezes the car snapshot the same way the §7 off-track / no-
+    // progress paths already do.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    const nearWreck = createDamageState({
+      engine: 0.95,
+      tires: 0.95,
+      body: 0.95,
+    });
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 100, speed: 40, surface: "grass" },
+        damage: nearWreck,
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.status).toBe("dnf");
+    const frozenZ = session.player.car.z;
+    const frozenSpeed = session.player.car.speed;
+    for (let i = 0; i < 30; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    expect(session.player.car.z).toBe(frozenZ);
+    expect(session.player.car.speed).toBe(frozenSpeed);
+  });
+
+  it("flips an AI to dnf with reason 'wrecked' when its damage crosses the threshold", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    const nearWreck = createDamageState({
+      engine: 0.95,
+      tires: 0.95,
+      body: 0.95,
+    });
+    session = {
+      ...session,
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 100, speed: 40, surface: "grass" },
+        damage: nearWreck,
+      })),
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.ai[0]?.status).toBe("dnf");
+    expect(session.ai[0]?.dnfReason).toBe("wrecked");
+    const frozenZ = session.ai[0]?.car.z;
+    for (let i = 0; i < 30; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    expect(session.ai[0]?.car.z).toBe(frozenZ);
+  });
+
+  it("registers a car-on-car collision when two cars overlap and damages both", () => {
+    // Snap the AI right next to the player so `carsInContact` flags the
+    // pair and both cars take a `carHit` this tick.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, z: 100, speed: 40 },
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 101, speed: 40 },
+      })),
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.damage.total).toBeGreaterThan(0);
+    expect(session.ai[0]?.damage.total ?? 0).toBeGreaterThan(0);
+  });
+
+  it("does not register a collision when cars are laterally separated past CAR_WIDTH_M", () => {
+    // Snap the player to one side of the road and the AI to the other
+    // so the lateral gap (~4 m) sits comfortably outside the §13
+    // contact box (`CAR_WIDTH_M = 1.8 m`). Both cars stay inside the
+    // drivable surface (`ROAD_WIDTH = 4.5 m` half-width) so neither
+    // picks up off-road damage either.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: -2, z: 100, speed: 40 },
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 2, z: 101, speed: 40 },
+      })),
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.damage.total).toBe(0);
+    expect(session.ai[0]?.damage.total ?? 0).toBe(0);
+  });
+
+  it("does not damage a car for being in contact with a non-racing car", () => {
+    // A wrecked / DNF'd AI sitting next to the player must not deposit
+    // a fresh carHit event each tick (otherwise the player would slowly
+    // grind into damage from an inert obstacle).
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, z: 100, speed: 40 },
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 101, speed: 0 },
+        status: "dnf",
+        dnfReason: "off-track",
+      })),
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.damage.total).toBe(0);
+  });
+
+  it("applies the §23 nitro+severe bonus when a damaged player is hit during a nitro burn", () => {
+    // Build two near-mirror sessions: one with nitro burning + a severe
+    // pre-hit band, one without nitro. Both take an identical carHit
+    // this tick. The nitro variant must accumulate strictly more
+    // total damage (the +15% NITRO_WHILE_SEVERELY_DAMAGED_BONUS).
+    const buildSession = (nitroActive: boolean): RaceSessionState => {
+      const config = buildConfig({ countdownSec: 0 });
+      let s = createRaceSession(config);
+      const severe = createDamageState({
+        engine: 0.85,
+        tires: 0.7,
+        body: 0.85,
+      });
+      s = {
+        ...s,
+        player: {
+          ...s.player,
+          car: { ...s.player.car, x: 0, z: 100, speed: 40 },
+          damage: severe,
+          nitro: nitroActive
+            ? { ...s.player.nitro, activeRemainingSec: 1 }
+            : s.player.nitro,
+        },
+        ai: s.ai.map((entry) => ({
+          ...entry,
+          car: { ...entry.car, x: 0, z: 101, speed: 40 },
+        })),
+      };
+      return s;
+    };
+    let withNitro = buildSession(true);
+    let withoutNitro = buildSession(false);
+    const config = buildConfig({ countdownSec: 0 });
+    // Use NEUTRAL_INPUT so the player's nitro reducer does not consume
+    // a fresh tap on the burning state (held nitro without a rising
+    // edge does not start a new burn). The test only needs the
+    // burning-now flag to flow into the damage path.
+    withNitro = stepRaceSession(withNitro, NEUTRAL_INPUT, config, DT);
+    withoutNitro = stepRaceSession(withoutNitro, NEUTRAL_INPUT, config, DT);
+    expect(withNitro.player.damage.total).toBeGreaterThan(
+      withoutNitro.player.damage.total,
+    );
+  });
+
+  it("is deterministic across runs with damage wiring active", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const a = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    const b = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    expect(a.player.damage).toEqual(b.player.damage);
+    expect(a.ai[0]?.damage).toEqual(b.ai[0]?.damage);
+  });
+});
+
+describe("collision geometry helpers", () => {
+  it("carsInContact is true for two cars within the §13 contact box", () => {
+    const a = { x: 0, z: 100 } as never;
+    const b = { x: CAR_WIDTH_M / 2, z: 100 + CAR_LENGTH_M / 2 } as never;
+    expect(carsInContact(a, b)).toBe(true);
+  });
+
+  it("carsInContact is false past CAR_LENGTH_M longitudinally", () => {
+    const a = { x: 0, z: 100 } as never;
+    const b = { x: 0, z: 100 + CAR_LENGTH_M } as never;
+    expect(carsInContact(a, b)).toBe(false);
+  });
+
+  it("carsInContact is false past CAR_WIDTH_M laterally", () => {
+    const a = { x: 0, z: 100 } as never;
+    const b = { x: CAR_WIDTH_M, z: 100 } as never;
+    expect(carsInContact(a, b)).toBe(false);
+  });
+
+  it("buildCarHitEvent uses the §23 carHit midpoint and the average speed", () => {
+    const a = { x: 0, z: 100, speed: 40 } as never;
+    const b = { x: 0, z: 101, speed: 60 } as never;
+    const hit = buildCarHitEvent(a, b);
+    expect(hit.kind).toBe("carHit");
+    expect(hit.baseMagnitude).toBe(COLLISION_CAR_HIT_BASE_MAGNITUDE);
+    expect(hit.speedFactor).toBeCloseTo(50 / COLLISION_REFERENCE_TOP_SPEED_M_PER_S, 6);
+  });
+
+  it("buildCarHitEvent feeds applyHit a non-zero increment at typical race speeds", () => {
+    // Sanity-check the wiring: feeding a single buildCarHitEvent through
+    // applyHit on a pristine state must move the damage total
+    // strictly above zero.
+    const a = { x: 0, z: 100, speed: 40 } as never;
+    const b = { x: 0, z: 101, speed: 40 } as never;
+    const next = applyHit(PRISTINE_DAMAGE_STATE, buildCarHitEvent(a, b));
+    expect(next.total).toBeGreaterThan(0);
   });
 });
