@@ -14,11 +14,16 @@
  * Layout matches §20 "UX wireframe descriptions / Race HUD layout":
  * - Top-left: lap and position
  * - Bottom-right: speed and unit
+ * - Top-right (below the splits widget): accessibility-assist badge,
+ *   only when `HudState.assistBadge.active` is true. The badge sits at
+ *   `y = padding + 64` so it never overlaps the splits widget's three
+ *   text rows (timer 20 px, label 12 px, delta 16 px, plus padding).
  *
- * Other §20 corners (top-center lap timer, bottom-left damage, etc) are
+ * Other §20 corners (bottom-left damage, weather icon, etc) are
  * intentionally empty in this slice.
  */
 
+import { ASSIST_BADGE_LABELS, type AssistBadge } from "@/game/assists";
 import type { HudState } from "@/game/hudState";
 import type { Viewport } from "@/road/types";
 
@@ -29,6 +34,13 @@ export interface HudColors {
   textMuted: string;
   /** Drop-shadow underlay so the HUD reads on grass and sky alike. */
   shadow: string;
+  /**
+   * Accessibility-assist badge pill background. Tinted accent so the
+   * badge reads as a status indicator rather than a regular label.
+   */
+  assistBadgeFill: string;
+  /** Text colour drawn on top of the assist-badge pill. */
+  assistBadgeText: string;
 }
 
 export interface DrawHudOptions {
@@ -50,11 +62,29 @@ const DEFAULT_COLORS: HudColors = {
   text: "#ffffff",
   textMuted: "#cfd6e4",
   shadow: "rgba(0, 0, 0, 0.65)",
+  assistBadgeFill: "rgba(80, 130, 220, 0.85)",
+  assistBadgeText: "#ffffff",
 };
 
 const DEFAULT_PADDING = 16;
 const DEFAULT_FONT_FAMILY =
   '"SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace';
+
+/**
+ * Vertical offset (from the top of the viewport, before the configured
+ * padding) where the assist badge sits. The splits widget consumes the
+ * rows above: timer 20 px + 6 px gap + sector label 12 px + 6 px gap +
+ * delta 16 px = ~60 px; the badge sits below at y = padding + 64.
+ */
+const ASSIST_BADGE_TOP_OFFSET = 64;
+/** Badge pill horizontal padding around the label text. */
+const ASSIST_BADGE_PADDING_X = 8;
+/** Badge pill vertical padding around the label text. */
+const ASSIST_BADGE_PADDING_Y = 4;
+/** Badge pill height in CSS pixels. Sized for a 12 px font with breathing room. */
+const ASSIST_BADGE_HEIGHT = 20;
+/** Badge label font size. Matches the splits sector label so the corner reads cohesive. */
+const ASSIST_BADGE_FONT_SIZE = 12;
 
 /**
  * Draw a string with a one-pixel drop shadow underlay so it reads over
@@ -139,8 +169,74 @@ export function drawHud(
     colors.textMuted,
   );
 
+  // Top-right (below the splits widget): accessibility-assist badge.
+  // Drawer is a no-op when the badge is missing or inactive so the §19
+  // assists-off case never paints a phantom pill.
+  if (state.assistBadge !== undefined && state.assistBadge.active) {
+    drawAssistBadge(ctx, state.assistBadge, viewport, padding, fontFamily, colors);
+  }
+
   ctx.fillStyle = prevFill;
   ctx.font = prevFont;
   ctx.textAlign = prevAlign;
   ctx.textBaseline = prevBaseline;
+}
+
+/**
+ * Format the assist-badge label. When more than one assist is active,
+ * the label gets an `xN` suffix with a plain ASCII multiplication sign
+ * so the §20 monospace stack renders it without falling back to a
+ * Unicode glyph. The badge always shows the badge's `primary` label;
+ * the count tells the player there are more.
+ */
+export function formatAssistBadgeLabel(badge: AssistBadge): string {
+  if (badge.primary === null) return "";
+  const base = ASSIST_BADGE_LABELS[badge.primary];
+  return badge.count > 1 ? `${base} x${badge.count}` : base;
+}
+
+/**
+ * Draw the assist-badge pill in the top-right corner, below the splits
+ * widget. Caller has already restored / saved the context state, so the
+ * pill draw is local: it does not save / restore on its own.
+ */
+function drawAssistBadge(
+  ctx: CanvasRenderingContext2D,
+  badge: AssistBadge,
+  viewport: Viewport,
+  padding: number,
+  fontFamily: string,
+  colors: HudColors,
+): void {
+  const label = formatAssistBadgeLabel(badge);
+  if (label === "") return;
+  // Measure first so the pill background is sized to the label. The
+  // recording-mock canvas in tests stubs measureText to return a
+  // synthetic width per character; production canvases return a
+  // real TextMetrics. Both code paths converge on the same layout.
+  ctx.font = `600 ${ASSIST_BADGE_FONT_SIZE}px ${fontFamily}`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  const metrics = ctx.measureText(label);
+  const labelWidth = Math.max(0, metrics.width);
+  const pillWidth = labelWidth + ASSIST_BADGE_PADDING_X * 2;
+  const pillHeight = ASSIST_BADGE_HEIGHT;
+  const pillRight = viewport.width - padding;
+  const pillTop = padding + ASSIST_BADGE_TOP_OFFSET;
+  const pillLeft = pillRight - pillWidth;
+
+  ctx.fillStyle = colors.assistBadgeFill;
+  ctx.fillRect(pillLeft, pillTop, pillWidth, pillHeight);
+
+  // Label text: anchored right with a small horizontal inset so the
+  // glyph never kisses the pill's right edge. Vertical inset keeps the
+  // 12 px baseline visually centred inside the 20 px pill.
+  drawShadowedText(
+    ctx,
+    label,
+    pillRight - ASSIST_BADGE_PADDING_X,
+    pillTop + ASSIST_BADGE_PADDING_Y,
+    colors.shadow,
+    colors.assistBadgeText,
+  );
 }

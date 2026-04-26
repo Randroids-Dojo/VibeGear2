@@ -6,6 +6,99 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-027 HUD accessibility-assist badge renderer
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) (the "small badge when any assist is
+active" requirement now has a renderer; the §19 accessibility surface
+finally reads end-to-end from save toggle to canvas pixel).
+**Branch / PR:** `feat/hud-assist-badge` (stacked on
+`feat/wire-applyassists-into-race-session`), PR pending.
+**Status:** Implemented (renderer wiring + 14 new tests + F-027 closed;
+verify chain green).
+
+### Done
+- `src/render/uiRenderer.ts` now consumes `HudState.assistBadge`. When
+  the badge is active, `drawHud` paints a tinted pill at
+  `(viewport.width - padding, padding + 64)` (below the splits
+  widget's three rows) plus a shadowed label drawn via the existing
+  `drawShadowedText` pattern. The pill width is sized to the label via
+  `ctx.measureText` so single-word and multi-assist labels both fit.
+- `formatAssistBadgeLabel(badge)` is a new exported helper that maps
+  the badge's `primary` slug through `ASSIST_BADGE_LABELS` and appends
+  a plain ASCII `xN` suffix when `badge.count > 1`. The ASCII `x`
+  (rather than U+00D7 multiplication sign) keeps the §20 monospace
+  stack happy and avoids the Unicode minefield called out in
+  AGENTS.md RULE 1.
+- `HudColors` gained `assistBadgeFill` (default
+  `rgba(80, 130, 220, 0.85)`) and `assistBadgeText` (default
+  `#ffffff`) so theme overrides keep the badge palette tunable.
+  Existing callers that pass partial colour blocks still type-check
+  because the renderer's `colors` defaults populate the new keys.
+- `src/render/__tests__/uiRenderer.test.ts` (new): 14 tests covering
+  the badge-omitted (zero `fillRect` calls), badge-inactive (zero
+  `fillRect` calls), single-assist (one pill + shadowed label),
+  multi-assist (label suffix `Brake assist x3`), top-right anchor at
+  `padding + 64`, default colour, override colour, context-state
+  restoration (`fillStyle` / `font` / `textAlign` / `textBaseline`
+  unchanged after the call), determinism, label mapping for every
+  `AssistBadgeLabel` slug, and the no-Unicode-multiplication-sign
+  guard. Uses the same recording-mock-canvas pattern as
+  `hudSplits.test.ts`, extended to capture `fillRect` calls.
+- `docs/FOLLOWUPS.md`: F-027 marked `done` with a resolution note
+  pointing at this branch and naming the new test counts.
+- Verify chain green: `npm run lint`, `npm run typecheck`, `npm test`,
+  `npm run build`, and `npm run test:e2e` all pass.
+
+### Why
+- The §19 accessibility assists became fully runtime-consumed in
+  iter-46 (F-026), but the §20 surface still had no visible signal
+  that an assist was active. Without a HUD pip the player can toggle
+  brake-assist or auto-accelerate and never see confirmation that the
+  assist is doing anything; the toggle UI in `/options/accessibility`
+  is the only feedback. F-027 closes that gap with the smallest
+  possible renderer change: one pill + one label, gated on
+  `badge.active`.
+- Choosing `padding + 64` for the badge anchor keeps the splits widget
+  unchanged (it consumes timer 20 px + 6 px + sector 12 px + 6 px +
+  delta 16 px = 60 px) and leaves a visible 4 px gutter between the
+  splits delta and the badge pill so the corner reads as two distinct
+  widgets rather than one stacked block.
+- The `xN` count suffix (rather than rendering all active labels as a
+  list or rotating between them) matches the §20 spec verbatim
+  ("small badge when any assist is active") and keeps the badge a
+  single short string the player can glance at without parsing.
+  Players who want the full list can open `/options/accessibility`.
+- Adding `assistBadgeFill` / `assistBadgeText` to `HudColors` (rather
+  than hard-coding the badge palette inside `drawAssistBadge`) keeps
+  the badge themable for the F-NNN palette-driven HUD slice when it
+  lands, mirroring how `deltaFaster` / `deltaSlower` on
+  `SplitsColors` already let the splits widget retheme.
+
+### Skip
+- Per-label colour coding. The badge uses a single tinted accent
+  regardless of which assist is active. The §20 spec does not call
+  for per-assist colour; if a future palette slice wants
+  `auto-accelerate` green and `brake-assist` blue, the renderer's
+  `drawAssistBadge` is the single hook to extend, but neither the GDD
+  nor the F-027 followup name an asks for it.
+- Mid-race assist toggling. The runtime samples assists once at
+  session creation per iter-46 (F-026 resolution); the badge pip
+  reflects the session's assist set, not a live-toggled view. Mid-race
+  toggling is documented as out of scope for both slices.
+- Damage / weather icons / nitro meter. Those §20 widgets ship in
+  their own slices (the parent `implement-hud-ui-6c1b130d` dot tracks
+  what is left). This slice only closes F-027.
+
+### Followups
+- None. F-027 is the last open producer-without-consumer entry from
+  the §19 assists landing chain. The remaining §20 polish work
+  (damage indicator, weather indicator, results screen styling, HUD
+  reflow on resize, pause action set) lives under
+  `implement-hud-ui-6c1b130d`.
+
+---
+
 ## 2026-04-26: Slice: F-026 wire applyAssists into the race-session input pipeline
 
 **GDD sections touched:**

@@ -13,7 +13,7 @@ or `obsolete` so the trail is preserved.
 ## F-027: HUD assist badge renderer
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** The `feat/accessibility-assists` slice ships
 `HudState.assistBadge` as an optional snapshot field plus
 `ASSIST_BADGE_LABELS` (`Auto accel`, `Brake assist`, `Steer smooth`,
@@ -24,6 +24,18 @@ a corner pip showing the primary label, with a count if more than one
 assist is active". Lives with the rest of the §20 HUD polish slice.
 Mirrors F-022 (ghost car renderer) and F-021 (ghost recorder save
 slot) in the producer-without-consumer pattern.
+
+**Resolution:** Closed by `feat/hud-assist-badge`. `drawHud` now reads
+`HudState.assistBadge` and, when `active`, paints a tinted pill plus a
+shadowed label below the splits widget at `(viewport.width - padding,
+padding + 64)`. The label uses `ASSIST_BADGE_LABELS[primary]` for the
+single-assist case and appends a plain ASCII `xN` suffix when
+`badge.count > 1` so the §20 monospace stack renders the count without
+falling back to a Unicode glyph. New `assistBadgeFill` /
+`assistBadgeText` fields on `HudColors` keep the palette overridable.
+14 new render tests cover the omitted / inactive / single / multi /
+override / determinism / state-restoration paths plus a
+`formatAssistBadgeLabel` direct test for the count-suffix rule.
 
 ## F-026: Wire `applyAssists` into the race session input pipeline
 **Created:** 2026-04-26
