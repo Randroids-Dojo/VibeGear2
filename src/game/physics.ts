@@ -24,10 +24,15 @@
  *
  * MVP scope: this slice covers acceleration, top-speed clamp, brake,
  * lane-relative steering, and off-road slowdown. Collisions, traction
- * loss, drifting, jumps, drafting, nitro, weather, and damage are all
- * tracked as later slices per `docs/IMPLEMENTATION_PLAN.md`. The state
- * shape is intentionally minimal so those slices can extend it
- * additively without a breaking rewrite.
+ * loss, drifting, jumps, nitro, weather, and damage are all tracked as
+ * later slices per `docs/IMPLEMENTATION_PLAN.md`. The state shape is
+ * intentionally minimal so those slices can extend it additively
+ * without a breaking rewrite.
+ *
+ * Drafting bonus: the optional `draftBonus` field on `StepOptions` is a
+ * multiplicative scalar applied to the throttle-driven acceleration only.
+ * Computed by the pure helpers in `./drafting.ts`. Defaults to 1.0
+ * (no bonus) so existing callers keep their behaviour.
  */
 
 import type { CarBaseStats } from "@/data/schemas";
@@ -155,6 +160,25 @@ export const DEFAULT_TRACK_CONTEXT: Readonly<TrackContext> = Object.freeze({
 });
 
 /**
+ * Optional per-tick modifiers to the physics step. Kept separate from
+ * `TrackContext` because these vary per-tick (drafting), per-driver
+ * (future damage band), or per-input frame, while `TrackContext` is
+ * fixed for the duration of a race.
+ *
+ * `draftBonus` is a multiplicative scalar applied to the throttle-driven
+ * acceleration. The pure helpers in `./drafting.ts` compute the value;
+ * passing `1` (or omitting the field entirely) means "no bonus". The
+ * field is clamped to a sane band (`[1, 1.5]`) inside `step()` so a buggy
+ * caller cannot turn a draft bonus into a top-speed override.
+ */
+export interface StepOptions {
+  draftBonus?: number;
+}
+
+/** Conservative upper bound on the draft bonus inside the step. */
+export const DRAFT_BONUS_MAX = 1.5;
+
+/**
  * Advance the car state by `dt` seconds. Pure: no mutation of the input
  * `state`; a fresh object is returned even when nothing changes. Callers
  * should treat the result as the canonical next state.
@@ -177,6 +201,7 @@ export function step(
   stats: Readonly<CarBaseStats>,
   context: Readonly<TrackContext>,
   dt: number,
+  options: Readonly<StepOptions> = {},
 ): CarState {
   if (!Number.isFinite(dt) || dt <= 0) {
     return {
@@ -193,9 +218,10 @@ export function step(
   let nextSpeed = state.speed;
   const throttle = clamp(input.throttle, 0, 1);
   const brake = clamp(input.brake, 0, 1);
+  const draftBonus = clamp(options.draftBonus ?? 1, 1, DRAFT_BONUS_MAX);
 
   if (throttle > 0) {
-    nextSpeed += stats.accel * throttle * dt;
+    nextSpeed += stats.accel * throttle * draftBonus * dt;
   }
   if (brake > 0) {
     // Brake decelerates toward zero. Never inverts velocity.

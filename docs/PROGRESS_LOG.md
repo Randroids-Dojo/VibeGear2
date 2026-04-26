@@ -6,6 +6,85 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: drafting / slipstream per §10
+
+**GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md)
+("Drafting" subsection).
+**Branch / PR:** `feat/drafting-slipstream` (stacked on
+`feat/ai-driver-content`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/drafting.ts`: pure helpers `computeWakeOffset(leader,
+  follower)` and `tickDraftWindow(state, wake, inputs, dt)` that produce
+  an additive accel multiplier. Exposed pinned constants
+  (`DRAFT_MIN_SPEED_M_PER_S = 30`, `DRAFT_ENGAGE_MS = 600`,
+  `DRAFT_RAMP_MS = 400`, `DRAFT_MAX_ACCEL_MULTIPLIER = 1.05`,
+  `DRAFT_LATERAL_TOLERANCE_M = 0.8`, `DRAFT_LATERAL_BREAK_M = 1.5`,
+  `DRAFT_LONGITUDINAL_GAP_M = 25`) so the verify dot, future tuning
+  passes, and a HUD widget can all read the same numbers.
+- Updated `src/game/physics.ts` `step()` to accept an optional
+  `StepOptions` argument with a `draftBonus` field. The bonus is a
+  multiplicative scalar applied to throttle-driven acceleration only,
+  clamped to `[1, DRAFT_BONUS_MAX = 1.5]` so a buggy caller cannot turn
+  the bonus into a top-speed override. Default behaviour is unchanged
+  (parameter is optional, defaults to `1`).
+- Added `src/game/__tests__/drafting.test.ts` (33 tests): the dot's
+  five verify items, plus geometric edge cases (lateral tolerance vs
+  break threshold, in-front vs behind, longitudinal gap inclusivity),
+  break conditions (geometric, brake, speed-threshold), ramp linearity
+  (`multiplierForEngagedMs` half-ramp pinned), dt edge cases (zero,
+  negative, NaN), purity (no input mutation), determinism (1000
+  identical runs produce deep-equal output), intermittent-wake
+  resilience, and a small physics integration block confirming the
+  step honours `draftBonus` end-to-end.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (708 tests, 33 new in `drafting.test.ts`).
+- `npm run build` clean. No route-size delta (drafting is a game-logic
+  module not yet wired into any page module).
+- `npm run test:e2e` passes (15 specs, no new e2e specs since drafting
+  is pure game logic and not yet wired into the race scene).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Speed threshold pinned to 30 m/s (about 108 km/h). §10 says "activate
+  only above a speed threshold" without naming the value; 30 m/s keeps
+  drafting a high-speed straight-line tactic rather than a low-speed
+  crutch out of corners. Future tuning slice may adjust without editing
+  call sites.
+- Engagement model is a 0.6 s threshold (per §10) followed by a 0.4 s
+  linear ramp to a 5 percent accel multiplier. The ramp avoids a
+  discrete snap that would feel like an event rather than a steady
+  bonus.
+- `computeWakeOffset` is intentionally stateless; the `ageMs: 0` field
+  in its return shape is a literal-typed placeholder so the dot's
+  verify item ("returns `{ inWake: true, ageMs: 0 }`") reads as a
+  shape-stable check. Real time accumulation lives in
+  `DraftWindowState.engagedMs` and is advanced by `tickDraftWindow`.
+- Lateral geometry uses two thresholds: `DRAFT_LATERAL_TOLERANCE_M`
+  (0.8 m, the "small side step still counts as in wake" radius) and
+  `DRAFT_LATERAL_BREAK_M` (1.5 m, the verify item's hard break
+  threshold). Both are exported. The current implementation only uses
+  the break threshold for the binary `inWake` check; the tolerance
+  constant is staged for a later slice that may apply a tapered bonus
+  near the edge of the cone.
+- Physics accepts the bonus as an optional `options.draftBonus` field
+  rather than a positional parameter so future modifiers (nitro,
+  damage band, weather grip) can layer in additively without growing
+  the call signature.
+
+### Followups created
+- None. The wiring slice (race scene chooses a leader, calls
+  `computeWakeOffset` and `tickDraftWindow` per tick, threads the
+  resulting multiplier into `physics.step()`) belongs to whichever
+  upcoming slice introduces the multi-car race state. Until then this
+  module is a producer waiting for a consumer.
+
+---
+
 ## 2026-04-26: Slice: AI driver content registry (20 profiles)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md) (CPU
