@@ -10,6 +10,25 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-014: Key remapping UI and persistence
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** `createInputManager` already accepts a `bindings` override and
+the §22 SaveSchema reserves a slot for control profiles, but there is no
+UI to edit or persist them. Build a settings screen that shows each action,
+prompts for a key, validates against conflicts, and writes back to the
+save file. §19 lists this as a first-class feature on desktop.
+
+## F-013: Touch and mobile input
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** §19 explicitly defers touch to future work and the keyboard +
+gamepad slice did not implement it. When this lands, model it as another
+source feeding into `mergeInputs` so the existing keyboard / pad path is
+unchanged.
+
 ## F-004 — Playwright save/load round-trip via the garage UI
 **Created:** 2026-04-26
 **Priority:** nice-to-have

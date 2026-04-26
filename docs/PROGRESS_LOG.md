@@ -6,6 +6,94 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Keyboard + gamepad input layer (§19)
+
+**GDD sections touched:** [§19](gdd/19-controls-and-input.md), [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/keyboard-gamepad-input` (off `main`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/input.ts` exposing the canonical `Input` shape
+  (`steer`, `throttle`, `brake`, `nitro`, `handbrake`, `pause`, `shiftUp`,
+  `shiftDown`), `NEUTRAL_INPUT`, `DEFAULT_KEY_BINDINGS` (matching §19's
+  keyboard + gamepad tables), pure helpers `inputFromActions`,
+  `inputFromGamepad`, `mergeInputs`, `applyDeadzone`, plus the stateful
+  `createInputManager(opts)` that subscribes to keyboard + Gamepad API
+  sources and exposes `sample()`, `dispose()`, and `hasGamepad()`.
+- The manager samples once per fixed sim step (sim calls `sample()`
+  inside the simulate callback). Browser events only mutate the held
+  set; the snapshot is built at sample time. This satisfies the §21
+  determinism requirement for the upcoming replay/ghost system.
+- Implemented the §19 cancellation rule for opposite directions (Left +
+  Right held resolves to steer = 0). Brake + Accelerate held resolves
+  to throttle = 0, brake = 1 since stop is the safer ambiguous default.
+- Window blur clears all held keys so a tab-out cannot leave the player
+  with stuck throttle / steer when focus returns. Gamepad disconnect is
+  silent: the manager polls on each sample and falls back to keyboard
+  with no crash.
+- Re-exported the input surface from `src/game/index.ts`.
+- Added `src/app/dev/input/page.tsx` showing live sampled values,
+  driven by the same `startLoop` cadence the real race uses. Useful for
+  visually verifying held keys, the cancellation rule, and pad input.
+- Added `src/game/__tests__/input.test.ts` (27 cases): pure-helper
+  contracts, deadzone math, cancellation rule, blur clears state,
+  gamepad-source-throws survives, dispose unhooks all listeners,
+  custom bindings, and headless null-keyTarget mode.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 132/132 (27 new + 105 existing).
+- `npm run build` succeeds; `/dev/input` ships as a static route at
+  2.61 kB.
+- `grep -P '[\x{2013}\x{2014}]'` across the four touched files returns
+  nothing (no em-dashes, no en-dashes).
+- Manual visual verification at `/dev/input` deferred to a human run of
+  `npm run dev` since the agent environment cannot drive a real
+  browser. The unit tests cover the keyboard-event mapping and
+  cancellation rule end-to-end via injected `KeyTarget`, so the
+  remaining manual check is "does Gamepad API actually populate".
+
+### Decisions and assumptions
+- The `Input` shape includes `handbrake`, `shiftUp`, and `shiftDown`
+  alongside the dot's listed fields. §19 enumerates handbrake and
+  manual shifts under both keyboard and pad layouts, so leaving them
+  out would force a breaking change once those slices land. The
+  default state for the new fields is `false`, so consumers that only
+  read `steer/throttle/brake/nitro/pause` are unaffected.
+- Keyboard tokens are matched against both `KeyboardEvent.code` and
+  `KeyboardEvent.key`. `code` is the layout-independent identifier
+  (e.g. `KeyW`) and is preferred for letters; `key` is needed for
+  Escape, ArrowUp, etc. The default binding map lists both styles per
+  action and the lookup accepts either, which keeps the API friendly to
+  test fixtures while staying layout-independent in production.
+- Brake-wins on simultaneous accelerate + brake. The dot's edge-case
+  list does not specify the resolution; safer to stop than to keep
+  throttle. Documented in `inputFromActions`.
+- Stick deadzone defaults to 0.15 (most racing games), trigger
+  deadzone to 0.05. §19 calls out steering smoothing as an
+  accessibility feature; it is intentionally not modelled here. A
+  future settings slice can plumb both deadzones through
+  `InputManagerOptions`.
+- Touch / mobile is out of scope per the dot; F-013 captures the
+  followup so the desktop slice does not silently absorb that
+  workload.
+- The dev page samples inside `simulate`, not `render`, so the
+  displayed values are exactly what the sim sees. React state pushes
+  are throttled to ~30 Hz to keep the page off the fixed-step hot path.
+
+### Followups created
+- F-013 (`nice-to-have`): touch and mobile input. §19 explicitly defers
+  this; tracked so it does not get lost.
+- F-014 (`nice-to-have`): user-facing key remapping UI + persistence.
+  The schema for control profiles already has a slot in `SaveSchema`
+  but the UI to edit and persist them is its own slice.
+
+### GDD edits
+- None. The shape and bindings match §19 and §21 as written.
+
+---
+
 ## 2026-04-26: Slice: Car set + stats (§11) and garage car selector
 
 **GDD sections touched:** [§11](gdd/11-cars-and-stats.md), [§22](gdd/22-data-schemas.md), [§23](gdd/23-balancing-tables.md)

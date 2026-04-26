@@ -4,3 +4,4 @@
  */
 export * from "./raceState";
 export * from "./loop";
+export * from "./input";
