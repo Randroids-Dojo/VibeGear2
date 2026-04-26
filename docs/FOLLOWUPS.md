@@ -34,52 +34,62 @@ pattern.
 ## F-018: Playwright e2e spec for the loading screen / preload gate
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** The asset preload slice unit-tested the pure loader (parallel
 resolve, partial failures, abort cancellation, kind-mismatch guard, progress
 events) and the loading-screen state machine (idle / loading /
 failed-critical / ready transitions, formatted text, progress fraction).
 The dot also asked for a Playwright spec (`e2e/loading-screen.spec.ts`)
-that simulates a slow network with `route.fulfill(..., delay)` and
-asserts the progress text advances from "Loading 0 of N" to "Loaded N of
-N" before `[data-testid=race-ready]` mounts. Deferred because the
-project still has no Playwright runner configured (F-002 tracks that
-harness slice). When the harness lands, navigate to `/race`, slow each
-manifest URL with a 200 ms delay, assert the bar progresses, and assert
-the ready card mounts on completion.
+that simulates a slow network and asserts the progress text advances
+through partial-success states before the ready card mounts. Closed
+2026-04-26 by `feat/deferred-playwright-e2e`: the dev page
+`/dev/loading?delay=<ms>&fail=<0|1>` mounts `<LoadingGate />` against a
+synthetic in-page fetcher that delays each entry's resolution by the
+configured value. The new spec `e2e/loading-screen.spec.ts` drives the
+happy path (text advances from "Loading 0 of 4" to "Loaded 4 of 4",
+ready card mounts, screen unmounts) and the failure path (forced
+critical failure surfaces the Retry button). The `/race` route does
+not yet mount `<LoadingGate />` because the production manifest is not
+wired; that wiring is owned by the visual-polish slice and is tracked
+under the broader HUD / asset slice rather than re-opened here.
 
 ## F-017: Playwright e2e specs for touch / mobile input
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** The touch / mobile slice unit-tested the pure projector,
 the stateful manager (cancellation, blur, multi-touch, dispose), the
 `mergeWithTouch` precedence rule, and the `createInputManager`
-integration (38 cases). The dot also asked for a Playwright spec
-(`e2e/touch-input.spec.ts`) on emulated `device: 'iPhone 13'` that
-taps accelerator and drags the steer stick; that spec is deferred
-because the project still has no Playwright runner configured (F-002
-tracks the harness slice). Land this once the harness exists: emulate
-mobile, navigate to `/dev/road` (or the race route once it lands),
-tap accelerator and assert speed > 0, drag the stick right and assert
-the lateral camera position changes; then tap pause and assert the
-overlay opens.
+integration (38 cases). Closed 2026-04-26 by
+`feat/deferred-playwright-e2e`: the new dev page `/dev/touch` mounts
+`<TouchControls forceVisible />` over a surface div wired to
+`createInputManager({ touchTarget })`, and the spec
+`e2e/touch-input.spec.ts` runs against a new `mobile-chromium`
+Playwright project (iPhone 13 emulation). The spec asserts that
+holding the GAS / BRK / pause-corner zones flips the corresponding
+`Input` field and that dragging the steering stick to the right
+drives `steer` past 0.5. The race route does not yet mount touch
+itself; wiring `touchTarget` into `<RaceCanvas>` is owned by the
+broader HUD / accessibility slice and is not re-opened here.
 
 ## F-016: Playwright e2e specs for pause overlay and error boundary
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** The pause overlay + error boundary slice unit-tested the
 loop pause semantics, the key binding resolution, and the error report
-formatter (16 cases, every path). The dot also listed two Playwright
-specs (`e2e/pause-overlay.spec.ts`, `e2e/error-boundary.spec.ts`) that
-were deferred because the project has no Playwright runner configured
-yet (F-002 still tracks the harness slice). Once the harness lands,
-add: (a) start a race, press Escape, assert overlay visible and
-speedometer unchanged after 500 ms; press Escape again, assert race
-resumes; press Retire while paused, assert results screen. (b) inject
-a thrown render error via a hidden `?test_error=1` route guard, assert
-the fallback renders, click Reload, assert the page reloads.
+formatter (16 cases, every path). Closed 2026-04-26 by
+`feat/deferred-playwright-e2e`: the new spec
+`e2e/pause-overlay.spec.ts` drives `/race`, asserts that Escape opens
+the overlay and the speedometer is stable across a 500 ms gap, that a
+second Escape resumes the race, that the Resume button dismisses the
+overlay, and that the Retire entry is present (currently disabled
+because `<RaceCanvas>` does not pass `onRetire` until the results
+route lands). The new spec `e2e/error-boundary.spec.ts` drives a new
+dev page `/dev/throw` whose render body throws synchronously; the spec
+asserts the fallback renders with role=alert, the message text
+matches, the Reload button reloads the page, and the Copy button does
+not crash (clipboard permissions granted in setup).
 
 ## F-015: Persistent off-road damage at high speed
 **Created:** 2026-04-26

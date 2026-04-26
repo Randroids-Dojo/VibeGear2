@@ -30,6 +30,19 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      // The mobile-chromium project owns the touch-input spec; exclude
+      // it from desktop runs so a desktop pointer profile does not try
+      // to drive the on-screen overlay.
+      testIgnore: /touch-input\.spec\.ts/,
+    },
+    {
+      // Mobile profile for the touch-input spec (closes F-017). Reports
+      // `pointer:coarse`, has touch enabled, and emulates the iPhone 13
+      // viewport so the overlay layout matches what users see on
+      // device.
+      name: "mobile-chromium",
+      use: { ...devices["iPhone 13"] },
+      testMatch: /touch-input\.spec\.ts/,
     },
   ],
   webServer: {

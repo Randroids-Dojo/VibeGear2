@@ -6,6 +6,112 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: deferred Playwright e2e specs (F-016, F-017, F-018)
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) (touch overlay verification),
+[§20](gdd/20-hud-and-ui-ux.md) (pause overlay, error fallback,
+loading screen affordances),
+[§21](gdd/21-technical-design-for-web-implementation.md) (Testing
+approach: Playwright spec coverage for the Phase 1 vertical slice).
+**Branch / PR:** `feat/deferred-playwright-e2e` (stacked on
+`feat/nitro-system`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added three dev-only routes that give the e2e suite deterministic
+  surfaces to drive without dragging in production wiring that other
+  slices still own:
+  - `src/app/dev/throw/page.tsx`: client component that throws a
+    fixed message synchronously in render so the root
+    `<ErrorBoundary>` catches and renders its fallback. The throw
+    happens in render so `getDerivedStateFromError` runs, not in an
+    effect (where the boundary cannot see it).
+  - `src/app/dev/touch/page.tsx`: mounts `<TouchControls forceVisible />`
+    over a surface div wired to
+    `createInputManager({ touchTarget })`. Surfaces the latest sampled
+    `Input` (steer, throttle, brake, nitro, pause) as
+    `data-testid="touch-metric-*"` for the spec to read.
+  - `src/app/dev/loading/page.tsx`: mounts `<LoadingGate>` against a
+    synthetic in-page fetcher whose per-entry resolution delay is
+    controlled by `?delay=<ms>` (default 200) and whose forced
+    critical-failure path is opt-in via `?fail=1`. Children render a
+    `data-testid="loading-dev-ready"` card on success.
+- Added the four deferred specs:
+  - `e2e/pause-overlay.spec.ts`: Escape opens the overlay, the
+    speedometer is stable across a 500 ms gap (proving
+    `LoopHandle.pause()` fires on the same edge), Escape and the
+    Resume button each dismiss it, and the Retire entry is present
+    but disabled (the race route does not pass `onRetire` until the
+    results screen lands).
+  - `e2e/error-boundary.spec.ts`: the fallback renders with
+    `role="alert"`, the inline message matches the forced throw, the
+    Reload button reloads the page (and the boundary catches the
+    second throw on the reloaded route), and the Copy button does not
+    crash with clipboard permissions granted.
+  - `e2e/touch-input.spec.ts`: runs against a new `mobile-chromium`
+    Playwright project (iPhone 13 emulation). Holds the GAS, BRK, and
+    pause-corner zones with synthetic `PointerEvent`s and asserts the
+    matching metric flips. Drags the steering stick past the
+    `stickMaxRadius` and asserts `steer > 0.5`.
+  - `e2e/loading-screen.spec.ts`: drives `/dev/loading?delay=300`,
+    asserts the screen is visible with `data-phase="loading"` and
+    text matching `Loading \d+ of 4`, then waits for `Loaded 4 of 4`
+    and the ready card. The failure variant
+    (`?delay=80&fail=1`) asserts `data-phase="failed-critical"` and
+    that the Retry button mounts.
+- Updated `playwright.config.ts` to add the `mobile-chromium` project
+  (iPhone 13 emulation, scoped to `touch-input.spec.ts`) and to
+  exclude that spec from the default chromium project so the desktop
+  pointer profile does not try to drive the on-screen overlay.
+- Marked F-016, F-017, F-018 `done` in `docs/FOLLOWUPS.md` with
+  closing notes pointing at this branch.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (no new unit suites; touched code is e2e + dev
+  pages; existing suites still pass).
+- `npm run build` clean.
+- `npm run test:e2e` green locally on both projects (chromium and
+  mobile-chromium), including the four new specs and the existing
+  title / options / race-demo coverage.
+
+### Decisions and assumptions
+- The race route (`/race`) does not yet wire `touchTarget` into
+  `createInputManager`. Driving the touch spec against the race route
+  would require either modifying the race wiring (out of scope for
+  this dot) or adopting a `forceTouch` query-string side channel
+  (rejected on the same grounds the dot rejects `?test_error=1`).
+  The dev page is a clean fixture: it mounts the same source +
+  overlay pair the race route will mount once that wiring lands, and
+  the spec asserts the underlying input shape directly so it is
+  immune to the future wiring change.
+- The race route also does not yet wire `<LoadingGate>`. The race
+  page comment already references `F-018` for that wiring (see
+  `src/app/race/page.tsx`). The dev page lets the spec exercise the
+  full state machine (loading, ready, failed-critical, retry) end to
+  end without coupling it to the production manifest's currently
+  empty asset pipeline.
+- The error-boundary `Copy error` button reads `navigator.clipboard`
+  which Playwright fronts with a permission prompt. The spec grants
+  the read/write clipboard permissions before the click so the
+  promise resolves cleanly; the button gracefully no-ops when the
+  permission is denied (per `ErrorBoundary.tsx`'s `onCopy` guard).
+- The pause overlay's Retire button is asserted as `disabled` rather
+  than testing the retire flow, because no retire callback is wired
+  in the race route yet. When the results screen lands the spec will
+  flip the assertion to `toBeEnabled()` and follow the click through
+  to the results route.
+
+### Followups created
+- None. F-016, F-017, F-018 closed by this slice.
+
+### GDD edits
+- None. The slice closes deferred test coverage; no design changes.
+
+---
+
 ## 2026-04-26: Slice: nitro / boost system per §10 §12 §19
 
 **GDD sections touched:**
