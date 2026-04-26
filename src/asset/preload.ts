@@ -31,6 +31,26 @@
 
 export type AssetKind = "image" | "audio" | "json";
 
+/**
+ * Permitted licence identifiers for shipped assets. The default for original
+ * VibeGear2 art / SFX / music is `CC-BY-4.0` per the resolution of
+ * `OPEN_QUESTIONS.md` Q-002 and `ASSETS-LICENSE` at the repo root. Track and
+ * community data are released under `CC-BY-SA-4.0` per GDD section 26.
+ *
+ * `CC0-1.0` and `public-domain` are accepted for assets dedicated to the
+ * public domain (e.g. third-party SFX with a CC0 grant). The list is
+ * intentionally narrow so the loader can reject anything ambiguous.
+ */
+export type AssetLicense = "CC-BY-4.0" | "CC-BY-SA-4.0" | "CC0-1.0" | "public-domain";
+
+/** All accepted asset licence identifiers. Used by the manifest validator. */
+export const ASSET_LICENSES: readonly AssetLicense[] = [
+  "CC-BY-4.0",
+  "CC-BY-SA-4.0",
+  "CC0-1.0",
+  "public-domain",
+];
+
 export interface AssetEntry {
   /** Unique identifier within the manifest. Lowercase slug recommended. */
   id: string;
@@ -44,6 +64,13 @@ export interface AssetEntry {
    * race from mounting.
    */
   critical: boolean;
+  /**
+   * SPDX-style licence identifier for this asset. Required on every entry so
+   * the loader can reject manifests (especially mod-loaded manifests) that
+   * fail to declare provenance per GDD section 26 'Avoiding IP
+   * contamination'. Permitted values are listed in `ASSET_LICENSES`.
+   */
+  license: AssetLicense;
 }
 
 export interface AssetManifest {
@@ -104,6 +131,46 @@ export class PreloadAbortedError extends Error {
   override readonly name = "PreloadAbortedError";
   constructor(message = "asset preload aborted") {
     super(message);
+  }
+}
+
+/**
+ * Thrown when an asset manifest declares an entry without a permitted
+ * `license` value. The mod loader (when implemented) raises this so a third
+ * party cannot ship assets without provenance. Built-in manifests should
+ * never trigger this in practice because the manifest builder always sets a
+ * licence, but the runtime guard catches accidental regressions.
+ */
+export class AssetLicenseError extends Error {
+  override readonly name = "AssetLicenseError";
+  readonly entryId: string;
+  readonly received: unknown;
+  constructor(entryId: string, received: unknown) {
+    super(
+      `asset entry "${entryId}" is missing a valid license; received ${String(received)}. ` +
+        `Permitted values: ${ASSET_LICENSES.join(", ")}.`,
+    );
+    this.entryId = entryId;
+    this.received = received;
+  }
+}
+
+/**
+ * Validate that every entry in a manifest declares a permitted `license`.
+ * Throws `AssetLicenseError` on the first offending entry so callers can
+ * surface a single, actionable failure to the operator.
+ *
+ * Built-in manifests built by `manifestForTrack` always set a licence; this
+ * guard is primarily for the future mod loader described in GDD section 26
+ * (`docs/gdd/26-open-source-project-guidance.md`), which must reject
+ * third-party manifests that omit provenance metadata.
+ */
+export function assertManifestLicenses(manifest: AssetManifest): void {
+  for (const entry of manifest.entries) {
+    const license = (entry as { license?: unknown }).license;
+    if (typeof license !== "string" || !ASSET_LICENSES.includes(license as AssetLicense)) {
+      throw new AssetLicenseError(entry.id, license);
+    }
   }
 }
 

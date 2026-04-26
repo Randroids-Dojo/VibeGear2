@@ -47,8 +47,9 @@ self-hosted were rejected (rationale in the closing reason of dot
 
 **GDD reference:** §1 ("Code under a permissive open-source license. Assets
 under original permissive asset licenses."), §26
-**Status:** open
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** Which permissive licence for code (MIT vs Apache-2.0 vs BSD-2)
 and which for assets (CC0 vs CC-BY-4.0 vs CC-BY-SA-4.0)?
@@ -57,7 +58,21 @@ and which for assets (CC0 vs CC-BY-4.0 vs CC-BY-SA-4.0)?
 CC-BY-4.0 for original assets (credit required, remix allowed). Add `LICENSE`
 and `ASSETS-LICENSE` files at repo root.
 
+**Resolution.** Adopted the recommended defaults. Code is licensed under
+MIT (`LICENSE` at repo root, sibling chore slice). Original art, sound
+effects, and music ship under CC-BY-4.0 by default. Track and community
+data ship under CC-BY-SA-4.0 per GDD section 26 ("Suggested licenses"
+table). Public-domain (`CC0-1.0` or `public-domain`) is permitted on a
+per-entry basis for contributed assets that arrive with that grant.
+Implemented by `feat/assets-license`: `ASSETS-LICENSE` at repo root with
+the CC BY 4.0 text and the per-entry licence taxonomy,
+`AssetEntry.license` required on every manifest entry,
+`assertManifestLicenses` runtime guard for the future mod loader,
+default licences encoded in `DEFAULT_ASSET_LICENSES` in
+`src/asset/manifest.ts`, and unit tests that pin the contract.
+
 **Blocking?** No for early implementation, yes before any public release.
+Resolved.
 
 ---
 

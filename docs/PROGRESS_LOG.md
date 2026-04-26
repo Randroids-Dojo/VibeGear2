@@ -6,6 +6,88 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: ASSETS-LICENSE + per-entry asset licence metadata (Q-002)
+
+**GDD sections touched:** [§26](gdd/26-open-source-project-guidance.md) (no
+text edit; this slice fulfils the "Suggested licenses" table and the
+"Avoiding IP contamination" requirement that every shipped manifest entry
+declares provenance).
+**Branch / PR:** `feat/assets-license` (stacked on
+`feat/github-actions-ci-recovery`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `ASSETS-LICENSE` at repo root with the CC BY 4.0 license body, the
+  per-entry licence taxonomy (`CC-BY-4.0`, `CC-BY-SA-4.0`, `CC0-1.0`,
+  `public-domain`), an attribution policy, and a restatement of GDD
+  section 26's "Avoiding IP contamination" rules.
+- `src/asset/preload.ts`: added `AssetLicense` type union and
+  `ASSET_LICENSES` constant; required `license` on `AssetEntry`; added
+  `AssetLicenseError` and `assertManifestLicenses` so the future mod
+  loader (and any defensive caller) can reject manifests that omit
+  provenance.
+- `src/asset/manifest.ts`: added `DEFAULT_ASSET_LICENSES` (track JSON
+  defaults to `CC-BY-SA-4.0` per GDD section 26 data row, art and audio
+  default to `CC-BY-4.0`); `manifestForTrack` now stamps the licence on
+  every emitted entry and accepts a `licenses` per-kind override hook for
+  mods that ship under a different licence.
+- `src/asset/__tests__/manifest.test.ts`: added five tests covering
+  licence presence on every entry, the per-kind defaults, override
+  behaviour, the validator round-trip, and a separate `describe` block
+  for `assertManifestLicenses` (accept / missing / unknown / first-error
+  rejection).
+- `src/asset/__tests__/preload.test.ts`: updated the `entry()` helper
+  default to set `license: "CC-BY-4.0"` so existing fixtures still build
+  valid `AssetEntry` records under the stricter type.
+- Marked `OPEN_QUESTIONS.md` Q-002 `answered` with the chosen licences,
+  the per-entry taxonomy, and the implementation pointer.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (manifest + preload suites green; new licence tests
+  pass; sibling suites unchanged).
+- `npm run build` clean.
+- `npm run test:e2e` passes against the existing suite (no UI surface
+  changed).
+- Grep for U+2014 and U+2013 across `ASSETS-LICENSE`, `src/asset/*.ts`,
+  `src/asset/__tests__/*.ts`, the OPEN_QUESTIONS update, and this log
+  entry returns nothing.
+
+### Decisions and assumptions
+- Track JSON ships under `CC-BY-SA-4.0`, not `CC-BY-4.0`. GDD section 26
+  's "Suggested licenses" table assigns "Track/community data" to
+  CC BY-SA 4.0 explicitly, so the data row picks that. Art and audio
+  default to CC-BY-4.0 per Q-002's recommended default.
+- The `license` field is required at the type level (not optional with a
+  default fallback). A missing licence would defeat the point of the
+  guard, so the type system enforces presence and the runtime validator
+  exists for non-typed (mod-loaded) inputs.
+- The per-entry licence is a small string union, not an open SPDX field.
+  Section 26 names a small set of permitted licences, and a closed union
+  surfaces accidental drift at compile time. Adding a new licence is a
+  single-line edit.
+- Did not add a `scripts/content-lint.ts` script. The dot lists it as
+  "if present, else add to its dot"; no such script exists in the
+  current tree, and the manifest builder + runtime validator already
+  reject any code path that emits an entry without a licence. Filing as
+  a polish followup if a separate authoring-time linter becomes useful.
+
+### GDD edits
+- None this slice; the GDD already specifies the licence policy.
+
+### Followups created
+- None.
+
+### Open questions resolved
+- Q-002 answered (licence choice for code and assets).
+
+### Dot
+- Closed `VibeGear2-implement-assets-license-3918e9cb` with reason
+  "verified".
+
+---
+
 ## 2026-04-26: Slice: GitHub Actions CI + Vercel auto-deploy (F-003) recovery
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md) (added "Deploy target" subsection)

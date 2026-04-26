@@ -1,0 +1,161 @@
+VibeGear2 asset license declaration
+
+Scope. This file governs the original art, sprites, sound effects, music, and
+other non-code creative assets shipped from this repository (everything under
+`public/`, the canonical asset manifests in `src/data/atlas/`, and any other
+file referenced by an `AssetEntry.license` of `CC-BY-4.0` in the asset
+manifest). It does not govern source code, which is licensed separately under
+the MIT License declared in `LICENSE`.
+
+Default license. All original assets in this repository are released under
+the Creative Commons Attribution 4.0 International License (CC BY 4.0)
+unless the individual asset declares a different license in the manifest.
+
+Per-entry overrides. Each `AssetEntry` in the asset manifest carries its
+own `license` field. Permitted values are documented in
+`src/asset/preload.ts` and currently include:
+
+  CC-BY-4.0     Creative Commons Attribution 4.0 International (default).
+  CC-BY-SA-4.0  Creative Commons Attribution-ShareAlike 4.0 International.
+                Use for track and community data per GDD section 26.
+  CC0-1.0       Creative Commons CC0 1.0 Universal (public-domain dedication).
+  public-domain Plain public domain (no copyright claim).
+
+When an entry declares `CC-BY-SA-4.0`, the assets it covers and any derivative
+works must be distributed under the same license. Mixed-license manifests are
+allowed but every entry must declare its own license; the loader rejects any
+manifest entry that omits the field.
+
+Attribution. When you reuse a CC BY 4.0 or CC BY-SA 4.0 asset from this
+repository, include the asset id and the project name (`VibeGear2`) in your
+attribution. A link back to this repository satisfies the attribution
+requirement under both licenses.
+
+Originality. Per GDD section 26, every shipped asset must be original work
+or correctly licensed work. No copied Top Gear 2 assets, names, or
+soundalikes. No "temporary borrowed art." No sample packs with unclear
+provenance. Contributions that violate this policy will be reverted before
+release.
+
+Full license texts.
+
+  CC BY 4.0:     https://creativecommons.org/licenses/by/4.0/legalcode
+  CC BY-SA 4.0:  https://creativecommons.org/licenses/by-sa/4.0/legalcode
+  CC0 1.0:       https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+By exercising the Licensed Rights (defined below), You accept and agree to be
+bound by the terms and conditions of this Creative Commons Attribution 4.0
+International Public License ("Public License"). To the extent this Public
+License may be interpreted as a contract, You are granted the Licensed Rights
+in consideration of Your acceptance of these terms and conditions, and the
+Licensor grants You such rights in consideration of benefits the Licensor
+receives from making the Licensed Material available under these terms and
+conditions.
+
+Section 1. Definitions.
+
+  a. Adapted Material means material subject to Copyright and Similar Rights
+     that is derived from or based upon the Licensed Material and in which the
+     Licensed Material is translated, altered, arranged, transformed, or
+     otherwise modified in a manner requiring permission under the Copyright
+     and Similar Rights held by the Licensor.
+  b. Copyright and Similar Rights means copyright and/or similar rights
+     closely related to copyright including, without limitation, performance,
+     broadcast, sound recording, and Sui Generis Database Rights, without
+     regard to how the rights are labeled or categorized.
+  c. Licensed Material means the artistic or literary work, database, or
+     other material to which the Licensor applied this Public License.
+  d. Licensed Rights means the rights granted to You subject to the terms
+     and conditions of this Public License, which are limited to all
+     Copyright and Similar Rights that apply to Your use of the Licensed
+     Material and that the Licensor has authority to license.
+  e. Licensor means the individual(s) or entity(ies) granting rights under
+     this Public License.
+  f. Share means to provide material to the public by any means or process
+     that requires permission under the Licensed Rights, such as
+     reproduction, public display, public performance, distribution,
+     dissemination, communication, or importation, and to make material
+     available to the public including in ways that members of the public
+     may access the material from a place and at a time individually chosen
+     by them.
+  g. You means the individual or entity exercising the Licensed Rights under
+     this Public License. Your has a corresponding meaning.
+
+Section 2. Scope.
+
+  a. License grant. Subject to the terms and conditions of this Public
+     License, the Licensor hereby grants You a worldwide, royalty-free,
+     non-sublicensable, non-exclusive, irrevocable license to exercise the
+     Licensed Rights in the Licensed Material to:
+       1. reproduce and Share the Licensed Material, in whole or in part; and
+       2. produce, reproduce, and Share Adapted Material.
+  b. The Licensor waives and/or agrees not to assert any right or authority
+     to forbid You from making technical modifications necessary to exercise
+     the Licensed Rights, including technical modifications necessary to
+     circumvent Effective Technological Measures.
+
+Section 3. License Conditions.
+
+  Your exercise of the Licensed Rights is expressly made subject to the
+  following conditions.
+
+  a. Attribution. If You Share the Licensed Material (including in modified
+     form), You must:
+       1. retain the following if it is supplied by the Licensor with the
+          Licensed Material:
+            i.   identification of the creator(s) of the Licensed Material
+                 and any others designated to receive attribution, in any
+                 reasonable manner requested by the Licensor (including by
+                 pseudonym if designated);
+            ii.  a copyright notice;
+            iii. a notice that refers to this Public License;
+            iv.  a notice that refers to the disclaimer of warranties;
+            v.   a URI or hyperlink to the Licensed Material to the extent
+                 reasonably practicable;
+       2. indicate if You modified the Licensed Material and retain an
+          indication of any previous modifications; and
+       3. indicate the Licensed Material is licensed under this Public
+          License, and include the text of, or the URI or hyperlink to, this
+          Public License.
+
+Section 4. Sui Generis Database Rights.
+
+  Where the Licensed Rights include Sui Generis Database Rights that apply to
+  Your use of the Licensed Material, the Licensor waives the right to
+  exercise those rights to the extent reasonably possible, consistent with
+  the conditions in Section 3.
+
+Section 5. Disclaimer of Warranties and Limitation of Liability.
+
+  Unless otherwise separately undertaken by the Licensor, to the extent
+  possible, the Licensor offers the Licensed Material as-is and as-available,
+  and makes no representations or warranties of any kind concerning the
+  Licensed Material, whether express, implied, statutory, or other. This
+  includes, without limitation, warranties of title, merchantability, fitness
+  for a particular purpose, non-infringement, absence of latent or other
+  defects, accuracy, or the presence or absence of errors, whether or not
+  known or discoverable. Where disclaimers of warranties are not allowed in
+  full or in part, this disclaimer may not apply to You.
+
+  To the extent possible, in no event will the Licensor be liable to You on
+  any legal theory (including, without limitation, negligence) or otherwise
+  for any direct, special, indirect, incidental, consequential, punitive,
+  exemplary, or other losses, costs, expenses, or damages arising out of this
+  Public License or use of the Licensed Material, even if the Licensor has
+  been advised of the possibility of such losses, costs, expenses, or
+  damages.
+
+Section 6. Term and Termination.
+
+  This Public License applies for the term of the Copyright and Similar
+  Rights licensed here. However, if You fail to comply with this Public
+  License, then Your rights under this Public License terminate
+  automatically. Where Your right to use the Licensed Material has
+  terminated, it reinstates automatically as of the date the violation is
+  cured, provided it is cured within 30 days of Your discovery of the
+  violation.
+
+For the canonical legal text and additional sections (interpretation, etc.),
+see https://creativecommons.org/licenses/by/4.0/legalcode.

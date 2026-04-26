@@ -16,6 +16,7 @@ function entry(overrides: Partial<AssetEntry> = {}): AssetEntry {
     kind: "image",
     src: "/e.png",
     critical: true,
+    license: "CC-BY-4.0",
     ...overrides,
   };
 }

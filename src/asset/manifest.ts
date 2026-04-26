@@ -22,7 +22,7 @@
 
 import type { Track, WeatherOption } from "@/data/schemas";
 
-import type { AssetEntry, AssetManifest } from "./preload";
+import type { AssetEntry, AssetLicense, AssetManifest } from "./preload";
 
 /**
  * Resolver hook. Production wires this to the bundler-emitted asset URLs
@@ -49,6 +49,27 @@ export const defaultAssetUrlResolver: AssetUrlResolver = {
   weatherAudio: (weather) => `/assets/audio/weather/${weather}.ogg`,
 };
 
+/**
+ * Default licences applied to each entry kind. Track JSON and any other
+ * structured data are released under `CC-BY-SA-4.0` per GDD section 26
+ * (`Suggested licenses` table, "Track/community data"). Original art (car
+ * sprites, roadside atlases) and original audio (weather beds) ship under
+ * `CC-BY-4.0` per the resolution of `OPEN_QUESTIONS.md` Q-002. Callers can
+ * override per-kind for content that lives under a different licence (e.g.
+ * a CC0 ambient track contributed by a community member).
+ */
+export const DEFAULT_ASSET_LICENSES: {
+  trackJson: AssetLicense;
+  carSprite: AssetLicense;
+  roadsideAtlas: AssetLicense;
+  weatherAudio: AssetLicense;
+} = {
+  trackJson: "CC-BY-SA-4.0",
+  carSprite: "CC-BY-4.0",
+  roadsideAtlas: "CC-BY-4.0",
+  weatherAudio: "CC-BY-4.0",
+};
+
 export interface ManifestForTrackInput {
   track: Track;
   /** Currently selected weather variant. Picks the matching audio track. */
@@ -58,6 +79,11 @@ export interface ManifestForTrackInput {
   /** ids of any AI cars on the grid. Their sprites are non-critical. */
   aiCarIds?: readonly string[];
   resolver?: AssetUrlResolver;
+  /**
+   * Per-kind licence overrides. Defaults to `DEFAULT_ASSET_LICENSES`. Useful
+   * when a mod ships an entire roadside set under a different licence.
+   */
+  licenses?: Partial<typeof DEFAULT_ASSET_LICENSES>;
 }
 
 /**
@@ -67,6 +93,7 @@ export interface ManifestForTrackInput {
  */
 export function manifestForTrack(input: ManifestForTrackInput): AssetManifest {
   const resolver = input.resolver ?? defaultAssetUrlResolver;
+  const licenses = { ...DEFAULT_ASSET_LICENSES, ...(input.licenses ?? {}) };
   const entries: AssetEntry[] = [];
 
   entries.push({
@@ -74,6 +101,7 @@ export function manifestForTrack(input: ManifestForTrackInput): AssetManifest {
     kind: "json",
     src: resolver.trackJson(input.track.id),
     critical: true,
+    license: licenses.trackJson,
   });
 
   entries.push({
@@ -81,6 +109,7 @@ export function manifestForTrack(input: ManifestForTrackInput): AssetManifest {
     kind: "image",
     src: resolver.carSprite(input.playerCarId),
     critical: true,
+    license: licenses.carSprite,
   });
 
   const aiIds = input.aiCarIds ?? [];
@@ -91,6 +120,7 @@ export function manifestForTrack(input: ManifestForTrackInput): AssetManifest {
       kind: "image",
       src: resolver.carSprite(aiId),
       critical: false,
+      license: licenses.carSprite,
     });
   }
 
@@ -106,6 +136,7 @@ export function manifestForTrack(input: ManifestForTrackInput): AssetManifest {
         kind: "image",
         src: resolver.roadsideAtlas(roadsideId),
         critical: false,
+        license: licenses.roadsideAtlas,
       });
     }
   }
@@ -115,6 +146,7 @@ export function manifestForTrack(input: ManifestForTrackInput): AssetManifest {
     kind: "audio",
     src: resolver.weatherAudio(input.weather),
     critical: false,
+    license: licenses.weatherAudio,
   });
 
   return {
