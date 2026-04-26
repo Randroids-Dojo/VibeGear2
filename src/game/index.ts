@@ -11,3 +11,4 @@ export * from "./hudState";
 export * from "./ai";
 export * from "./damageBands";
 export * from "./transmission";
+export * from "./nitro";

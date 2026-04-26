@@ -6,6 +6,140 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: nitro / boost system per §10 §12 §19
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) ("Nitro system",
+"Damage effects on performance", "Weather effects on handling"),
+[§12](gdd/12-upgrade-and-economy-system.md) ("Nitro system" upgrade
+category, §12 cost ladder),
+[§19](gdd/19-controls-and-input.md) (Space + X / Square bindings).
+**Branch / PR:** `feat/nitro-system` (stacked on
+`feat/manual-transmission`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/nitro.ts`: pure state machine over
+  `{ charges: number; activeRemainingSec: number }` with reducer
+  `tickNitro(state, ctx, dt) -> { state, code, isActive }`. The
+  reducer treats taps as rising-edge (`pressed && !wasPressed`) so a
+  held key does not re-fire on every tick; it ignores taps while a
+  charge is currently burning (no stacking, the dot's edge case);
+  releasing the key mid-burn does not abort the charge; holding past
+  the burn does not extend it.
+- Pinned the §10 baselines: `DEFAULT_NITRO_CHARGES = 3`,
+  `BASE_NITRO_DURATION_SEC = 1.1`,
+  `BASE_NITRO_THRUST_MULTIPLIER = 1.5`. The thrust baseline reads as
+  "noticeable, not dominant" and respects the
+  `ACCEL_MULTIPLIER_MAX = 2` clamp the physics step already enforces.
+- Pinned the §12 nitro upgrade ladder via `NITRO_UPGRADE_TIERS`
+  (Stock through Extreme). Each tier scales `chargesBonus`,
+  `durationMultiplier`, and `thrustMultiplier`. Stock is identity;
+  Extreme grants `+1 charge`, `x1.25 duration`, `x1.235 thrust`. The
+  worst-case stacked accel is `1.5 * 1.235 = 1.8525`, comfortably
+  under the `2.0` physics ceiling. `nitroUpgradeTierFor(tier)` and
+  `nitroUpgradeTierForUpgrades(obj)` read either form; out-of-range
+  tiers clamp into the table.
+- Added `getNitroAccelMultiplier(state, ctx)`: returns the
+  per-tick multiplier the physics step's existing `accelMultiplier`
+  slot consumes while a charge is burning, and `1.0` otherwise. The
+  result is the product of the tier's thrust, the car's
+  `nitroEfficiency` stat (§11), and the §10 damage band's
+  `nitroEfficiency`. Clamped into `[1, 2]` so a damaged engine
+  never makes the car slower than no boost, and stacked bonuses
+  cannot turn the slot into a top-speed cheat.
+- Added `getInstabilityMultiplier(state, surface, weather, band)`:
+  returns `1.0` when no charge is burning, otherwise the product of
+  three axes (`weather risk * surface * damage band`) clamped into
+  `[1, INSTABILITY_MULTIPLIER_MAX = 8]`. The §10 weather risk
+  table is reproduced via `NITRO_WEATHER_RISK` (8 schema weather
+  values mapped onto the §10 6 risk buckets; `dusk` and `night`
+  both map to Low; `rain` maps to Medium). Tables are exported so
+  HUD and traction-loss consumers can introspect the per-axis
+  multipliers without re-deriving them.
+- Race-start helper `createNitroForCar(stats, upgrades?)` reads the
+  nitro upgrade tier from the player's installed upgrades and
+  returns a frozen baseline state with `DEFAULT_NITRO_CHARGES +
+  tier.chargesBonus` charges. Re-exported from
+  `src/game/index.ts`.
+- Added `src/game/__tests__/nitro.test.ts` (52 tests): frozen
+  initial state, charge clamps, upgrade ladder shape and curve
+  monotonicity, tap rising-edge detection, no charge stacking,
+  three-charge spend exhaustion path, hold-past-duration boundary,
+  defensive `dt <= 0` and stale-charge clamp paths,
+  thrust-multiplier integration with car stats and damage band,
+  no-boost floor when damage drags the boost below 1.0, the
+  full instability table cross-product (3 surface x 8 weather x 5
+  damage bands = 120 cells), 1000-tick deterministic replay,
+  immutability guard.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (52 new nitro tests on top of the prior suite).
+- `npm run build` clean. No route-size delta (the new module is
+  game-logic only and not yet consumed by the renderer or
+  `raceSession.ts`; integration with the existing physics seam
+  ships in a follow-on slice via the `accelMultiplier` slot
+  already plumbed by the transmission slice).
+- `npm run test:e2e` skipped: pure reducer module with no DOM
+  surface; no e2e specs were added or broken.
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Time field renamed from the dot's `activeUntilMs` to
+  `activeRemainingSec` so it reads in the same units (`dt` in
+  seconds) as the rest of the sim. Folding nitro time into the
+  same dt cadence keeps the §21 replay/ghost system safe; an
+  absolute-ms accumulator would diverge across runs whenever the
+  loop's start timestamp changed.
+- Tap detection uses a `wasPressed` companion rather than
+  edge-triggering inside the input layer. Passing the prior
+  press state through the context keeps the reducer stateless and
+  matches the same pattern the transmission slice's `shiftUp` /
+  `shiftDown` use.
+- The dot pins the instability table at "6 weather x 4 surface x 5
+  damage" (120 cells). The §22 `WeatherOption` enum carries 8
+  values (mapped onto the §10 6 risk buckets), and the physics
+  `Surface` type carries 3 values (`road | rumble | grass`), so
+  the implemented cross-product is 8 x 3 x 5 = 120 cells under
+  test, just along different axes than the dot's stress-test had
+  in mind. The `NITRO_WEATHER_RISK` map is the explicit bridge
+  between the schema's 8 weather values and the §10's 6 risk
+  buckets.
+- `getNitroAccelMultiplier` clamps to a no-boost floor of `1.0`
+  rather than allowing severe damage to drag the multiplier below
+  the no-boost identity. The §10 narrative describes a "weaker"
+  nitro under damage, not a punishing one; the floor keeps the
+  player from being penalised for using a charge while wrecked.
+- Per-tier numbers (Sport `+0`, Factory `+1`, Extreme `+1` charge)
+  pinned without a §12 explicit table; the §12 narrative says
+  "Raises boost thrust and burn duration" without pinning a curve.
+  The implemented curve is monotonically non-decreasing across
+  tiers (asserted by the unit tests) and the worst-case Extreme
+  product stays under the physics `ACCEL_MULTIPLIER_MAX = 2`
+  clamp; a future balancing slice can pick exact numbers without
+  rewriting consumers.
+- The race session integration (resetting nitro to baseline
+  charges at race start, feeding `getNitroAccelMultiplier` into
+  the physics call site) is a follow-on slice. This slice ships
+  the pure module + the per-tier table; the integration is a
+  one-line `accelMultiplier: getNitroAccelMultiplier(...)` plumb
+  that fits cleanly in the next slice without a rewrite.
+
+### Followups created
+- None. The race-session integration is a Phase 1 / 5 follow-on
+  that will consume the helpers added here; it does not need a
+  net-new follow-up entry because the existing
+  `implement-phase-1-7aef013d` and `implement-race-rules-b30656ae`
+  dots are the natural homes.
+
+### GDD edits
+- None. The implementation pins are inside the code; the §10 and
+  §12 narratives stand as written.
+
+---
+
 ## 2026-04-26: Slice: manual transmission and gear shifting per §10 §19
 
 **GDD sections touched:**
