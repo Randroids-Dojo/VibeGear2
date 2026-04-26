@@ -13,9 +13,13 @@ or `obsolete` so the trail is preserved.
 ## F-003 — Auto-deploy pipeline from `main`
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
-**Notes:** Blocked by Q-003 (deploy target). Once chosen, add CI workflow
-that builds, runs the test suite, and deploys on every merge to `main`.
+**Status:** in-progress
+**Notes:** Q-003 resolved to Vercel Hobby + GitHub Actions. The
+`feat/github-actions-ci` slice landed `.github/workflows/ci.yml` and
+`vercel.json`. Marked `done` once the first push to `main` triggers a
+successful `deploy` job and the deployed URL serves the title screen. The
+human prerequisites (vercel link, repo secrets, branch protection) are
+documented in `README.md` Deploy section and in the implement dot.
 
 ## F-002 — Project skeleton (Next.js + TypeScript + CI)
 **Created:** 2026-04-26

@@ -6,6 +6,77 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: GitHub Actions CI + Vercel auto-deploy (F-003)
+
+**GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md) (added "Deploy target" subsection)
+**Branch / PR:** `feat/github-actions-ci` (off `feat/data-schemas`), PR pending
+**Status:** Implemented (workflow lands; first deploy waits on human prerequisites)
+
+### Done
+- Added `.github/workflows/ci.yml`: two jobs.
+  - `verify` runs on every PR and on push to `main`. Steps: checkout,
+    setup-node 20 with npm cache, `npm ci`, `npm run lint`, `npm run
+    typecheck`, `npm run test`, install Playwright chromium with deps,
+    `npm run build`, `npm run test:e2e`. Uploads `playwright-report/` as
+    an artefact on failure (7-day retention).
+  - `deploy` runs only on push to `main` after `verify` is green. Steps:
+    checkout, setup-node, `npm ci`, `vercel pull` for production env,
+    `vercel build --prod`, `vercel deploy --prebuilt --prod`. Surfaces the
+    deploy URL via the GH `environment.url` field.
+  - `concurrency` cancels stale runs on rapid pushes.
+- Added `vercel.json` with `framework: nextjs`, `npm ci` install, `next
+  build` build, region `iad1`.
+- Added `.vercel/` to `.gitignore` so per-developer `vercel link` artefacts
+  stay local.
+- Updated `docs/gdd/21-technical-design-for-web-implementation.md` with a
+  new "Deploy target" subsection naming Vercel and pointing at the workflow.
+- Updated `README.md` with a Deploy section that documents the CI gate, the
+  Vercel preview behaviour, and the one-time human setup steps (vercel link,
+  three repo secrets, branch protection on `main`).
+- Marked `OPEN_QUESTIONS.md` Q-003 `answered` with the full resolution.
+- Marked `FOLLOWUPS.md` F-003 `in-progress` with completion criteria
+  (first green deploy + smoke of deployed URL).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test` passes 26/26.
+- `npm run build` succeeds.
+- `grep` for U+2014 and U+2013 across `.github/workflows/ci.yml`,
+  `vercel.json`, and the new README + GDD additions returns nothing.
+- The `verify` job runs against the workflow's own first PR; `deploy` will
+  fail on first push to `main` until secrets are populated, which is the
+  designed and documented behaviour.
+
+### Decisions and assumptions
+- Used the Vercel CLI from GitHub Actions for production deploys instead of
+  the Vercel GitHub App's auto-prod, so that production is strictly gated
+  on the same CI run that runs the smoke. The GitHub App still handles PR
+  preview URLs (with auto-prod toggled off, per the README setup notes).
+- `--with-deps chromium` installs only chromium, matching `playwright.config.ts`
+  projects array. Cuts CI install time vs all three browsers.
+- Pinned Node 20 (LTS) in CI even though the project's `engines.node` is
+  `>=20`. Lets us bump in one place when 22 ships LTS.
+- Did not add a separate `preview` deploy job. PR previews come from the
+  Vercel GitHub App; running both an Actions preview and an App preview
+  duplicates work without adding signal.
+- Workflow file lands even though the deploy secrets are not configured yet.
+  The `verify` job is the meaningful gate; `deploy` will fail loudly with a
+  clear error until the human steps complete, which is more discoverable
+  than landing the workflow later.
+
+### Followups created
+- None. F-003 stays `in-progress` until the first green production deploy.
+  No new dot needed: the post-merge smoke is part of the next iteration's
+  `dot ready` check.
+
+### GDD edits
+- Added "Deploy target" subsection to
+  [`docs/gdd/21-technical-design-for-web-implementation.md`](gdd/21-technical-design-for-web-implementation.md). Naming the
+  hosting choice in the GDD keeps the doc honest about the architecture.
+
+---
+
 ## 2026-04-26: Slice: Data schemas as Zod validators and TS types (§22)
 
 **GDD sections touched:** [§22](gdd/22-data-schemas.md)
