@@ -418,6 +418,254 @@ describe("stepRaceSession (nitro)", () => {
   });
 });
 
+describe("stepRaceSession (transmission)", () => {
+  function shiftUpInput(): Input {
+    return { ...NEUTRAL_INPUT, throttle: 1, shiftUp: true };
+  }
+  function shiftDownInput(): Input {
+    return { ...NEUTRAL_INPUT, throttle: 1, shiftDown: true };
+  }
+
+  it("seeds transmission state on every car at race start (player and AI)", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const session = createRaceSession(config);
+    expect(session.player.transmission.mode).toBe("auto");
+    expect(session.player.transmission.gear).toBe(1);
+    expect(session.player.transmission.rpm).toBe(0);
+    expect(session.player.lastShiftUpPressed).toBe(false);
+    expect(session.player.lastShiftDownPressed).toBe(false);
+    expect(session.ai[0]?.transmission.mode).toBe("auto");
+    expect(session.ai[0]?.transmission.gear).toBe(1);
+    expect(session.ai[0]?.lastShiftUpPressed).toBe(false);
+    expect(session.ai[0]?.lastShiftDownPressed).toBe(false);
+  });
+
+  it("honours the player's transmissionMode setting (auto vs manual)", () => {
+    const autoConfig = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "auto" },
+    });
+    const manualConfig = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    expect(createRaceSession(autoConfig).player.transmission.mode).toBe("auto");
+    expect(createRaceSession(manualConfig).player.transmission.mode).toBe(
+      "manual",
+    );
+  });
+
+  it("AI cars are always seeded in auto mode regardless of player settings", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    const session = createRaceSession(config);
+    expect(session.ai[0]?.transmission.mode).toBe("auto");
+  });
+
+  it("auto mode ignores shiftUp / shiftDown inputs (no gear advance)", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "auto" },
+    });
+    let session = createRaceSession(config);
+    // Snap into a mid-band gear/speed so auto-shift does not fire on its
+    // own, then hold shiftUp for several ticks. Gear must not advance.
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        transmission: { mode: "auto", gear: 2, rpm: 0.5 },
+        car: { ...session.player.car, speed: 18 },
+      },
+    };
+    for (let i = 0; i < 10; i += 1) {
+      session = stepRaceSession(session, shiftUpInput(), config, DT);
+    }
+    expect(session.player.transmission.mode).toBe("auto");
+    expect(session.player.transmission.gear).toBe(2);
+  });
+
+  it("manual shiftUp fires on the rising edge of the input", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    let session = createRaceSession(config);
+    // Snap to gear 2 mid-band so a shiftUp moves us to gear 3.
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        transmission: { mode: "manual", gear: 2, rpm: 0.5 },
+        car: { ...session.player.car, speed: 18 },
+      },
+    };
+    // First tick with shiftUp held -> rising edge consumed -> gear 3.
+    session = stepRaceSession(session, shiftUpInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(3);
+    expect(session.player.lastShiftUpPressed).toBe(true);
+  });
+
+  it("manual shiftUp held across ticks only fires once (no cascade)", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        transmission: { mode: "manual", gear: 2, rpm: 0.5 },
+        car: { ...session.player.car, speed: 18 },
+      },
+    };
+    // Hold shiftUp for many ticks: gear must advance once and stick.
+    session = stepRaceSession(session, shiftUpInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(3);
+    for (let i = 0; i < 10; i += 1) {
+      session = stepRaceSession(session, shiftUpInput(), config, DT);
+    }
+    expect(session.player.transmission.gear).toBe(3);
+  });
+
+  it("releasing the shift button re-arms the rising-edge detector", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        transmission: { mode: "manual", gear: 2, rpm: 0.5 },
+        car: { ...session.player.car, speed: 18 },
+      },
+    };
+    // Tap, release, tap again: two distinct rising edges, two shifts.
+    session = stepRaceSession(session, shiftUpInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(3);
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.lastShiftUpPressed).toBe(false);
+    session = stepRaceSession(session, shiftUpInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(4);
+  });
+
+  it("manual shiftDown rising edge drops one gear", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        transmission: { mode: "manual", gear: 4, rpm: 0.5 },
+        car: { ...session.player.car, speed: 40 },
+      },
+    };
+    session = stepRaceSession(session, shiftDownInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(3);
+  });
+
+  it("respects the gearbox upgrade tier when capping max gear", () => {
+    // Extreme tier (4) unlocks 7 gears. Starting at gear 6, manual shiftUp
+    // must succeed; from gear 7 it must be capped.
+    const config = buildConfig({
+      countdownSec: 0,
+      player: {
+        stats: STARTER_STATS,
+        transmissionMode: "manual",
+        upgrades: { gearbox: 4 },
+      },
+    });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        transmission: { mode: "manual", gear: 6, rpm: 0.5 },
+        car: { ...session.player.car, speed: 50 },
+      },
+    };
+    session = stepRaceSession(session, shiftUpInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(7);
+    // Re-tap (release first) at gear 7 must be ignored.
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    session = stepRaceSession(session, shiftUpInput(), config, DT);
+    expect(session.player.transmission.gear).toBe(7);
+  });
+
+  it("composes the gear-curve multiplier with nitro multiplicatively", () => {
+    // Two parallel sessions starting from rest at gear 1 so the gear
+    // multiplier is identical on both. One taps nitro, the other does
+    // not. The composed accel must give the nitro session a strictly
+    // larger speed; if the gear multiplier accidentally clobbered the
+    // nitro multiplier, both speeds would be equal.
+    const config = buildConfig({ countdownSec: 0 });
+    const baseline = rollForward(createRaceSession(config), fullThrottle(), config, 30);
+    let boosted = createRaceSession(config);
+    const nitroTap: Input = { ...NEUTRAL_INPUT, throttle: 1, nitro: true };
+    boosted = stepRaceSession(boosted, nitroTap, config, DT);
+    for (let i = 0; i < 29; i += 1) {
+      boosted = stepRaceSession(boosted, nitroTap, config, DT);
+    }
+    expect(boosted.player.car.speed).toBeGreaterThan(baseline.player.car.speed);
+  });
+
+  it("auto mode upshifts as the car accelerates from rest", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    // Roll forward at full throttle for a couple seconds; the auto-shift
+    // reducer should have rolled the player past gear 1 by then.
+    for (let i = 0; i < 240; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    expect(session.player.transmission.gear).toBeGreaterThan(1);
+  });
+
+  it("is deterministic across 1000 ticks with manual shifting inputs", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, transmissionMode: "manual" },
+    });
+    const seed = (s: RaceSessionState): RaceSessionState => ({
+      ...s,
+      player: {
+        ...s.player,
+        transmission: { mode: "manual", gear: 2, rpm: 0 },
+      },
+    });
+    const runOnce = (): RaceSessionState => {
+      let s = seed(createRaceSession(config));
+      // Mix held-throttle and timed shift taps across the run so the
+      // determinism assertion exercises both edge detection and the
+      // composed accel multiplier.
+      for (let i = 0; i < 1000; i += 1) {
+        const input: Input =
+          i === 100 || i === 300 || i === 500
+            ? shiftUpInput()
+            : i === 700
+            ? shiftDownInput()
+            : fullThrottle();
+        s = stepRaceSession(s, input, config, DT);
+      }
+      return s;
+    };
+    const a = runOnce();
+    const b = runOnce();
+    expect(a.player.car.z).toBe(b.player.car.z);
+    expect(a.player.car.speed).toBe(b.player.car.speed);
+    expect(a.player.transmission).toEqual(b.player.transmission);
+    expect(a.player.lastShiftUpPressed).toBe(b.player.lastShiftUpPressed);
+    expect(a.player.lastShiftDownPressed).toBe(b.player.lastShiftDownPressed);
+  });
+});
+
 describe("stepRaceSession (drafting)", () => {
   const FAST = DRAFT_MIN_SPEED_M_PER_S + 30;
 

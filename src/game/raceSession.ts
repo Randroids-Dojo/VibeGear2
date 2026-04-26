@@ -32,6 +32,7 @@
 import type {
   AIDriver,
   CarBaseStats,
+  TransmissionModePersisted,
   UpgradeCategory,
 } from "@/data/schemas";
 import { SEGMENT_LENGTH } from "@/road/constants";
@@ -59,6 +60,13 @@ import {
   tickNitro,
   type NitroState,
 } from "./nitro";
+import {
+  createTransmissionForCar,
+  gearAccelMultiplier,
+  maxGearForUpgrades,
+  tickTransmission,
+  type TransmissionState,
+} from "./transmission";
 import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
@@ -90,6 +98,15 @@ export interface RaceSessionPlayer {
    * callers keep their stock-car behaviour.
    */
   upgrades?: Readonly<CarUpgradeTiers> | null;
+  /**
+   * Player-facing transmission mode from `SaveGameSettings.transmissionMode`.
+   * Defaults to `"auto"` per the §10 default (and to match the way legacy
+   * v1 saves load with the field absent). Manual mode opts the player into
+   * the §19 E / Q (RB / LB) sequential shift inputs in exchange for the
+   * §10 small-but-not-dominant expert-advantage torque bump at the
+   * optimal shift point.
+   */
+  transmissionMode?: TransmissionModePersisted | null;
 }
 
 export interface RaceSessionAI {
@@ -150,17 +167,50 @@ export interface RaceSessionAICar {
   state: AIState;
   nitro: NitroState;
   lastNitroPressed: boolean;
+  /**
+   * Per-car transmission snapshot. AI cars are pinned to `"auto"` because
+   * no AI archetype today opts into manual; the field exists on the AI
+   * shape for parity with the player so the per-tick reducer code path
+   * is identical.
+   */
+  transmission: TransmissionState;
+  /**
+   * Edge-detection mirror of the prior tick's `shiftUp` input. AI inputs
+   * never raise these (the `clean_line` controller does not emit shift
+   * inputs), so the field stays `false` in current builds. Held here so
+   * a future shift-aware AI can flip it without a state-shape change.
+   */
+  lastShiftUpPressed: boolean;
+  /** Edge-detection mirror of the prior tick's `shiftDown` input. */
+  lastShiftDownPressed: boolean;
 }
 
 /**
  * Per-player runtime snapshot. `nitro` carries the §10 nitro reducer's
  * state; `lastNitroPressed` mirrors the prior tick's input so `tickNitro`
  * can detect a fresh tap vs a held press across ticks.
+ *
+ * `transmission` carries the §10 gear-and-RPM snapshot; the per-tick
+ * reducer reads `lastShiftUpPressed` / `lastShiftDownPressed` to detect
+ * the rising edge of a shift-button press in manual mode so a single
+ * tap consumes one shift instead of cascading across every held tick.
  */
 export interface RaceSessionPlayerCar {
   car: CarState;
   nitro: NitroState;
   lastNitroPressed: boolean;
+  transmission: TransmissionState;
+  /**
+   * Edge-detection mirror of the prior tick's `shiftUp` input. The
+   * raceSession converts a held button into a single per-press shift by
+   * passing `shiftUp && !lastShiftUpPressed` into the transmission
+   * reducer. Auto mode ignores the value (its reducer branch never
+   * reads `shiftUp` / `shiftDown`), but the field is updated uniformly
+   * so a mid-race mode toggle would behave correctly.
+   */
+  lastShiftUpPressed: boolean;
+  /** Edge-detection mirror of the prior tick's `shiftDown` input. */
+  lastShiftDownPressed: boolean;
 }
 
 export interface RaceSessionState {
@@ -243,6 +293,12 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     car: { ...INITIAL_CAR_STATE, ...(config.player.initial ?? {}) },
     nitro: createNitroForCar(config.player.stats, config.player.upgrades ?? null),
     lastNitroPressed: false,
+    transmission: createTransmissionForCar(config.player.stats, {
+      mode: config.player.transmissionMode ?? "auto",
+      upgrades: config.player.upgrades ?? null,
+    }),
+    lastShiftUpPressed: false,
+    lastShiftDownPressed: false,
   };
 
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
@@ -258,6 +314,12 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
       state: { ...INITIAL_AI_STATE, seed },
       nitro: createNitroForCar(entry.stats, entry.upgrades ?? null),
       lastNitroPressed: false,
+      transmission: createTransmissionForCar(entry.stats, {
+        mode: "auto",
+        upgrades: entry.upgrades ?? null,
+      }),
+      lastShiftUpPressed: false,
+      lastShiftDownPressed: false,
     };
   });
 
@@ -432,12 +494,18 @@ export function stepRaceSession(
           car: { ...state.player.car },
           nitro: { ...state.player.nitro },
           lastNitroPressed: state.player.lastNitroPressed,
+          transmission: { ...state.player.transmission },
+          lastShiftUpPressed: state.player.lastShiftUpPressed,
+          lastShiftDownPressed: state.player.lastShiftDownPressed,
         },
         ai: state.ai.map((entry) => ({
           car: { ...entry.car },
           state: { ...entry.state },
           nitro: { ...entry.nitro },
           lastNitroPressed: entry.lastNitroPressed,
+          transmission: { ...entry.transmission },
+          lastShiftUpPressed: entry.lastShiftUpPressed,
+          lastShiftDownPressed: entry.lastShiftDownPressed,
         })),
         tick: state.tick + 1,
         sectorTimer: state.sectorTimer,
@@ -459,12 +527,18 @@ export function stepRaceSession(
         car: { ...state.player.car },
         nitro: { ...state.player.nitro },
         lastNitroPressed: state.player.lastNitroPressed,
+        transmission: { ...state.player.transmission },
+        lastShiftUpPressed: state.player.lastShiftUpPressed,
+        lastShiftDownPressed: state.player.lastShiftDownPressed,
       },
       ai: state.ai.map((entry) => ({
         car: { ...entry.car },
         state: { ...entry.state },
         nitro: { ...entry.nitro },
         lastNitroPressed: entry.lastNitroPressed,
+        transmission: { ...entry.transmission },
+        lastShiftUpPressed: entry.lastShiftUpPressed,
+        lastShiftDownPressed: entry.lastShiftDownPressed,
       })),
       tick: 0,
       sectorTimer: createSectorState(config.track.checkpoints),
@@ -499,6 +573,33 @@ export function stepRaceSession(
       carNitroEfficiency: playerStats.nitroEfficiency,
     },
   );
+
+  // §10 transmission: advance the per-tick gear/RPM reducer using the
+  // player's pre-physics speed and the rising-edge shift inputs. The
+  // resulting `gearAccelMultiplier` is composed multiplicatively with
+  // the nitro multiplier so a manual driver who taps nitro mid-band
+  // still benefits from both. Auto mode ignores `shiftUp`/`shiftDown`,
+  // so the edge-gating below has no effect on auto-only players.
+  const playerMaxGear = maxGearForUpgrades(config.player.upgrades ?? null);
+  const playerShiftUpEdge =
+    playerInput.shiftUp && !state.player.lastShiftUpPressed;
+  const playerShiftDownEdge =
+    playerInput.shiftDown && !state.player.lastShiftDownPressed;
+  const playerTransmission = tickTransmission(
+    state.player.transmission,
+    {
+      throttle: playerInput.throttle,
+      brake: playerInput.brake,
+      shiftUp: playerShiftUpEdge,
+      shiftDown: playerShiftDownEdge,
+      speed: state.player.car.speed,
+      topSpeed: playerStats.topSpeed,
+      maxGear: playerMaxGear,
+    },
+    dt,
+  );
+  const playerGearMultiplier = gearAccelMultiplier(playerTransmission);
+  const playerAccelMultiplier = playerNitroMultiplier * playerGearMultiplier;
 
   // Pre-compute every AI's tick output so the per-tick draft scan can
   // read brake / position for the whole field before any physics
@@ -606,7 +707,7 @@ export function stepRaceSession(
     playerStats,
     trackContext,
     dt,
-    { accelMultiplier: playerNitroMultiplier, draftBonus: playerDraftBonus },
+    { accelMultiplier: playerAccelMultiplier, draftBonus: playerDraftBonus },
   );
 
   const nextAi: RaceSessionAICar[] = state.ai.map((entry, index) => {
@@ -618,6 +719,9 @@ export function stepRaceSession(
         state: { ...entry.state },
         nitro: { ...entry.nitro },
         lastNitroPressed: entry.lastNitroPressed,
+        transmission: { ...entry.transmission },
+        lastShiftUpPressed: entry.lastShiftUpPressed,
+        lastShiftDownPressed: entry.lastShiftDownPressed,
       };
     }
     const aiUpgradeTier = aiConfig.upgrades?.nitro;
@@ -637,6 +741,31 @@ export function stepRaceSession(
         carNitroEfficiency: aiConfig.stats.nitroEfficiency,
       },
     );
+    // §10 transmission: AI cars run the same gear/RPM reducer as the
+    // player using their controller's per-tick `Input`. The current
+    // `clean_line` archetype never raises shift inputs, so AI cars
+    // ride the auto-shift branch exclusively; the rising-edge gating
+    // is included so a future shift-aware archetype can opt in
+    // without a session-shape change.
+    const aiMaxGear = maxGearForUpgrades(aiConfig.upgrades ?? null);
+    const aiShiftUpEdge = tick.input.shiftUp && !entry.lastShiftUpPressed;
+    const aiShiftDownEdge =
+      tick.input.shiftDown && !entry.lastShiftDownPressed;
+    const aiTransmission = tickTransmission(
+      entry.transmission,
+      {
+        throttle: tick.input.throttle,
+        brake: tick.input.brake,
+        shiftUp: aiShiftUpEdge,
+        shiftDown: aiShiftDownEdge,
+        speed: entry.car.speed,
+        topSpeed: aiConfig.stats.topSpeed,
+        maxGear: aiMaxGear,
+      },
+      dt,
+    );
+    const aiGearMultiplier = gearAccelMultiplier(aiTransmission);
+    const aiAccelMultiplier = aiNitroMultiplier * aiGearMultiplier;
     const aiDraftBonus = draftMultipliers.get(aiCarId(index)) ?? 1;
     const nextCar = step(
       entry.car,
@@ -644,13 +773,16 @@ export function stepRaceSession(
       aiConfig.stats,
       trackContext,
       dt,
-      { accelMultiplier: aiNitroMultiplier, draftBonus: aiDraftBonus },
+      { accelMultiplier: aiAccelMultiplier, draftBonus: aiDraftBonus },
     );
     return {
       car: nextCar,
       state: tick.nextAiState,
       nitro: aiNitroResult.state,
       lastNitroPressed: tick.input.nitro,
+      transmission: aiTransmission,
+      lastShiftUpPressed: tick.input.shiftUp,
+      lastShiftDownPressed: tick.input.shiftDown,
     };
   });
 
@@ -722,6 +854,9 @@ export function stepRaceSession(
       car: nextPlayerCar,
       nitro: playerNitroResult.state,
       lastNitroPressed: playerInput.nitro,
+      transmission: playerTransmission,
+      lastShiftUpPressed: playerInput.shiftUp,
+      lastShiftDownPressed: playerInput.shiftDown,
     },
     ai: nextAi,
     tick: nextTick,
@@ -766,12 +901,18 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
       car: { ...state.player.car },
       nitro: { ...state.player.nitro },
       lastNitroPressed: state.player.lastNitroPressed,
+      transmission: { ...state.player.transmission },
+      lastShiftUpPressed: state.player.lastShiftUpPressed,
+      lastShiftDownPressed: state.player.lastShiftDownPressed,
     },
     ai: state.ai.map((entry) => ({
       car: { ...entry.car },
       state: { ...entry.state },
       nitro: { ...entry.nitro },
       lastNitroPressed: entry.lastNitroPressed,
+      transmission: { ...entry.transmission },
+      lastShiftUpPressed: entry.lastShiftUpPressed,
+      lastShiftDownPressed: entry.lastShiftDownPressed,
     })),
     tick: state.tick,
     sectorTimer: state.sectorTimer,

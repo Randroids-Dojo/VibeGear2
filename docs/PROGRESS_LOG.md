@@ -6,6 +6,84 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: manual transmission race-session wiring
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) ("Gear shifting") and
+[§19](gdd/19-controls-and-input.md) (E / Q for keyboard, RB / LB for
+gamepad). The pure transmission state machine in
+`src/game/transmission.ts` is now consumed by the race session each
+tick, so the on-track behaviour matches the §10 torque curve plus the
+§19 manual-shift rising-edge contract.
+**Branch / PR:** `feat/manual-transmission-race-wiring` (stacked on
+`feat/drafting-race-wiring`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `createTransmissionForCar(stats, options)` and a
+  race-session-friendly alias `tickTransmission(state, ctx, dt)` to
+  `src/game/transmission.ts`. The constructor reads the player-facing
+  mode (`SaveGameSettings.transmissionMode`) plus the active car's
+  installed gearbox upgrade tier so the per-race state machine starts
+  with the right reducer branch wired up from tick zero.
+- Extended `RaceSessionPlayer` with an optional `transmissionMode`
+  field defaulting to `"auto"` (matching the §10 default and the
+  schema's optional-for-legacy-saves shape).
+- Extended `RaceSessionPlayerCar` and `RaceSessionAICar` with
+  `transmission`, `lastShiftUpPressed`, and `lastShiftDownPressed`
+  fields so the race session can detect the rising edge of the
+  player's shift inputs and feed the resulting one-tap-one-shift
+  signal into `tickTransmission`. AI cars are pinned to `"auto"` with
+  the same edge-detection plumbing for parity (no AI archetype today
+  emits shift inputs).
+- `stepRaceSession` advances transmission state on the same tick as
+  nitro and drafting, then composes
+  `gearAccelMultiplier(transmission)` multiplicatively with the nitro
+  `accelMultiplier` and feeds the composed value into `physics.step`
+  so a manual driver who taps nitro mid-band benefits from both.
+- `cloneSessionState` and the countdown / promoted-to-racing branches
+  spread the new fields uniformly so every state path stays a fresh
+  immutable object (no aliasing between ticks).
+- Added 12 new tests under `stepRaceSession (transmission)` covering
+  the dot's verify items: per-car transmission init at race start,
+  honour `transmissionMode` setting, AI always auto, auto mode ignores
+  shift inputs, manual rising-edge fires once per tap, held shift does
+  not cascade, releasing re-arms the edge detector, manual shiftDown
+  drops a gear, gearbox upgrade tier caps max gear, gear curve
+  composes multiplicatively with nitro, auto mode upshifts on
+  acceleration, and 1000-tick determinism under a mixed
+  shift-tap / throttle input stream.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (917 tests, 41 files; +12 from this slice).
+- `npm run build` clean.
+- `npm run test:e2e` green (28 tests).
+
+### Decisions and assumptions
+- Composed gear multiplier with nitro multiplier multiplicatively. The
+  §10 budget calls the manual peak a small expert advantage (under
+  5%); composing multiplicatively keeps the §10 nitro thrust ceiling
+  the dominant accel knob and lets the gear curve sit alongside as a
+  feel modifier rather than a top-speed lever.
+- Pinned AI cars to `"auto"` regardless of player settings. The
+  `clean_line` archetype never raises shift inputs; future archetypes
+  that want to opt in can pass `transmissionMode: "manual"` through a
+  config-shape extension.
+- Did not wire the race page (`src/app/race/page.tsx`) to read the
+  transmission setting from `loadSave()` yet. The pure runtime is the
+  scope of this dot; integrating the save-loaded settings into the
+  page is a wider integration owned by the savegamesettings dot.
+
+### Followups created
+- None.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: drafting / slipstream race-session wiring
 
 **GDD sections touched:**

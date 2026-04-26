@@ -32,7 +32,7 @@
  * for the current gearbox upgrade.
  */
 
-import type { UpgradeCategory } from "@/data/schemas";
+import type { CarBaseStats, UpgradeCategory } from "@/data/schemas";
 
 /**
  * Operating mode. `auto` is the §10 default; `manual` is the optional
@@ -375,6 +375,90 @@ export function gearAccelMultiplier(state: Readonly<TransmissionState>): number 
   const t = (rpm - REDLINE_SOFT_LIMIT_RPM) / span;
   const penalty = peak * REDLINE_PENALTY_MULTIPLIER;
   return peak + (penalty - peak) * t;
+}
+
+// Per-car constructor ------------------------------------------------------
+
+/**
+ * Options consumed by `createTransmissionForCar` to seed a per-race
+ * transmission snapshot. Mirrors the pattern used by
+ * `createNitroForCar`: the function reads the per-player settings (mode)
+ * plus the active car's installed upgrades (gearbox tier) so the race
+ * session does not have to spread the resolution logic across multiple
+ * call sites.
+ */
+export interface CreateTransmissionOptions {
+  /**
+   * Player-facing mode from `SaveGameSettings.transmissionMode`. When
+   * omitted the §10 default of `"auto"` applies, which matches the way
+   * loaders treat a missing field on legacy saves (`v1` did not carry
+   * the field; the schema marks it optional).
+   */
+  mode?: TransmissionMode | null | undefined;
+  /**
+   * Installed upgrade tiers for the car. Read for the `gearbox` field
+   * only; other categories are ignored. Defaults to no upgrades when
+   * omitted, which yields the stock five-gear box.
+   */
+  upgrades?: Partial<Record<UpgradeCategory, number>> | null | undefined;
+}
+
+/**
+ * Build the per-race initial transmission state for a car. Reads the
+ * player-facing mode (auto / manual) plus the car's installed gearbox
+ * upgrade tier so the per-race state machine starts with the right gear
+ * count and the right reducer branch wired up from tick zero.
+ *
+ * AI cars never opt into manual: callers should either omit `mode` or
+ * pass `"auto"` for AI snapshots so a future archetype that flips into
+ * manual must do so explicitly. The returned state always starts at
+ * `gear = 1, rpm = 0` (idle on the grid); the maximum gear pinned by
+ * the gearbox upgrade is enforced by `stepTransmission` once the race
+ * begins integrating ticks.
+ *
+ * `stats` is accepted for shape parity with `createNitroForCar` so the
+ * race session can pass per-car bundles uniformly. The current pure
+ * state machine does not consume any field on `stats`; future tuning
+ * (per-car gear ratio overrides, redline shift) can layer on without a
+ * call-site refactor.
+ *
+ * Result is frozen so a caller cannot mutate the constant; the per-tick
+ * reducer always returns a fresh object so the freeze is non-load-bearing
+ * inside the sim, but it defends against React renders accidentally
+ * sharing the snapshot across components.
+ */
+export function createTransmissionForCar(
+  _stats: Readonly<CarBaseStats>,
+  options: Readonly<CreateTransmissionOptions> = {},
+): TransmissionState {
+  const mode: TransmissionMode = options.mode === "manual" ? "manual" : "auto";
+  // The max-gear value is consumed by `stepTransmission`'s clamp; we do
+  // not store it on the state shape because the rest of the codebase
+  // already plumbs the installed-upgrades object through to the per-tick
+  // context. Instead, we make sure the seeded `gear` value cannot be out
+  // of band even if a future tweak adds gear seeding.
+  const maxGear = maxGearForUpgrades(options.upgrades);
+  const gear = Math.max(1, Math.min(1, maxGear)); // always 1 in the v1 slice
+  return Object.freeze({ mode, gear, rpm: 0 });
+}
+
+/**
+ * Race-session-friendly alias for `stepTransmission`. The pattern across
+ * the runtime core is `tickX(state, ctx, dt)`; this name lets the race
+ * session call the reducer alongside `tickNitro`, `tickAI`, and
+ * `tickDraftWindow` without a one-off rename. The semantics are
+ * identical: the reducer is pure, never mutates its input, and ignores
+ * the `dt` parameter on the surface but maintains the call-shape so a
+ * future RPM-decay-over-time tweak (currently RPM is a derived value
+ * computed from gear + speed) can introduce dt without a call-site
+ * refactor.
+ */
+export function tickTransmission(
+  state: Readonly<TransmissionState>,
+  ctx: Readonly<TransmissionStepContext>,
+  _dt?: number,
+): TransmissionState {
+  return stepTransmission(state, ctx);
 }
 
 // Helpers ------------------------------------------------------------------
