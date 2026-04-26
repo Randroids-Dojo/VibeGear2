@@ -57,12 +57,17 @@ import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
+  SEGMENT_LENGTH,
+  fitToBox,
   project,
+  projectCar,
   type Camera,
   type CompiledTrack,
+  type MinimapPoint,
   type Viewport,
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
 import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
 
@@ -70,6 +75,20 @@ const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
 const DEFAULT_TRACK_ID = "test/curve";
 const PLAYER_ID = "player";
+
+/**
+ * §20 minimap layout. The wireframe places the minimap in the bottom-left
+ * grip cluster; we anchor a 120x120 box with a 16 px gutter from the
+ * viewport edges so it sits clear of the speedometer and lap-timer.
+ */
+const MINIMAP_PADDING = 16;
+const MINIMAP_SIZE = 120;
+const MINIMAP_BOX = Object.freeze({
+  x: MINIMAP_PADDING,
+  y: VIEWPORT_HEIGHT - MINIMAP_PADDING - MINIMAP_SIZE,
+  w: MINIMAP_SIZE,
+  h: MINIMAP_SIZE,
+});
 
 /**
  * Sparrow GT base stats. Mirrors `src/data/cars/sparrow-gt.json`. Inlined
@@ -110,6 +129,28 @@ interface ResolvedTrack {
 function resolveTrack(requestedId: string | null): ResolvedTrack {
   const id = requestedId && TRACK_IDS.includes(requestedId) ? requestedId : DEFAULT_TRACK_ID;
   return { id, compiled: loadTrack(id) };
+}
+
+/**
+ * Convert a car's forward distance into a minimap marker by mapping
+ * `car.z` (meters) to a compiled `[segmentIndex, progress]` pair and
+ * delegating to `projectCar`. Negative or out-of-range `z` values are
+ * wrapped into the ring so a stationary countdown car always projects
+ * onto the start point.
+ */
+function toMinimapCar(
+  points: readonly MinimapPoint[],
+  carZ: number,
+  totalSegments: number,
+  totalLength: number,
+  isPlayer: boolean,
+): MinimapCar {
+  const wrappedZ = totalLength > 0 ? ((carZ % totalLength) + totalLength) % totalLength : 0;
+  const continuousIndex = wrappedZ / SEGMENT_LENGTH;
+  const segmentIndex = Math.floor(continuousIndex) % Math.max(1, totalSegments);
+  const progress = continuousIndex - Math.floor(continuousIndex);
+  const { x, y } = projectCar(points, segmentIndex, progress);
+  return { x, y, isPlayer };
 }
 
 export default function RacePage(): ReactElement {
@@ -187,6 +228,16 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
     };
     const viewport: Viewport = { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT };
 
+    // Refit the unit-square minimap polyline into the §20 layout box once
+    // per track so the per-frame draw loop only pays for `projectCar`. The
+    // compiled polyline is frozen and never changes during a session.
+    const minimapPoints: readonly MinimapPoint[] = fitToBox(
+      track.compiled.minimapPoints,
+      MINIMAP_BOX,
+    ) as readonly MinimapPoint[];
+    const totalSegments = track.compiled.totalCompiledSegments;
+    const totalLength = track.compiled.totalLengthMeters;
+
     const inputManager = createInputManager({});
 
     handleRef.current = startLoop({
@@ -239,6 +290,26 @@ function RaceCanvas({ track }: RaceCanvasProps): ReactElement {
           speedUnit: "kph",
         });
         drawHud(ctx, hud, viewport);
+
+        // §20 minimap overlay. Per-car position derives from forward
+        // distance (`car.z`) projected back to a `[segmentIndex, progress]`
+        // pair; lateral `car.x` is intentionally not added here because
+        // the polyline is a centerline footprint and `Math.abs(car.x)`
+        // never exceeds `ROAD_WIDTH`, which is below one minimap pixel
+        // at the §20 layout size. AI markers paint first; the player marker
+        // draws on top thanks to the drawer's documented order.
+        const minimapCars: MinimapCar[] = [];
+        if (totalSegments > 0 && totalLength > 0) {
+          minimapCars.push(
+            toMinimapCar(minimapPoints, session.player.car.z, totalSegments, totalLength, true),
+          );
+          for (const entry of session.ai) {
+            minimapCars.push(
+              toMinimapCar(minimapPoints, entry.car.z, totalSegments, totalLength, false),
+            );
+          }
+        }
+        drawMinimap(ctx, minimapPoints, minimapCars, { box: MINIMAP_BOX });
 
         // §20 splits / ghost-delta widget. Lap-timer derives from `elapsed`
         // (seconds since the green light), so the widget reads the same
