@@ -6,6 +6,69 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-004 Playwright save/load round-trip via the garage cars UI
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) (garage flow surfaces),
+[§21](gdd/21-technical-design-for-web-implementation.md) "Save system"
+(the localStorage round-trip contract). No GDD edits.
+**Branch / PR:** `feat/f-004-garage-save-load-e2e`, PR pending.
+**Status:** F-004 closed. The unit suite in `src/persistence/save.test.ts`
+already covered every parse / migrate / write / shim path; this slice adds
+the live-browser regression so a future refactor that breaks the storage
+contract surfaces before merge instead of after.
+
+### Done
+- `e2e/save-persistence.spec.ts`: new Playwright spec, two cases against
+  `/garage/cars`. Case 1 seeds a v3 save with two owned cars, clicks
+  `select-breaker-s`, asserts the active id flips, reads localStorage to
+  confirm the persisted shape, reloads, and confirms the indicator and
+  the disabled "Active" button both reflect the new active id. Case 2
+  seeds 12000 credits, clicks `buy-vanta-xr`, asserts the success toast
+  + decremented credits + new Set Active button, reads localStorage to
+  confirm `credits === 2000`, `ownedCars` contains the purchase, and a
+  fresh upgrade slot was allocated for the new car, then reloads and
+  asserts every persisted field rehydrates. The localStorage-disabled
+  branch surfaces via a `test.skip(!hasStorage)` guard so headless
+  contexts without storage report a clean skip rather than a failure.
+- `docs/FOLLOWUPS.md`: F-004 marked `done` with the spec path and a
+  note that upgrade-installation and units-toggle round-trips remain
+  outstanding for when `/garage/upgrade` and the Settings Display pane
+  ship.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green.
+- `npm run build` clean.
+- `npm run test:e2e` green; the two new cases pass alongside the
+  existing suite.
+
+### Decisions and assumptions
+- Two-mutation seed shape. Rather than one round-trip per spec, the
+  fixture grants two owned cars and 12000 credits so the same seed
+  reaches both the "switch active" and the "buy unowned" branches
+  without re-seeding between tests. The seed is built once via
+  `buildSeededSave()` so a future schema bump is one helper edit.
+- Upgrade and units round-trips deferred. The dot text proposed three
+  round-trips: switch active car, buy upgrade (in `/garage/upgrade`),
+  toggle units (in `/settings`). `/garage/upgrade` does not exist yet
+  (owned by the parent garage-flow dot) and the Settings Display pane
+  is still a placeholder under the Options dot, so those branches stay
+  in F-004's followup note. The two shipped cases cover the load-bearing
+  contract: that *anything* the live garage UI writes survives a reload.
+
+### Followups added
+None new.
+
+### GDD edits
+None.
+
+### Open questions raised
+None.
+
+---
+
 ## 2026-04-26: Slice: F-022 ghost car overlay (drawer side) in `pseudoRoadCanvas.ts`
 
 **GDD sections touched:**

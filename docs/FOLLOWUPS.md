@@ -1056,14 +1056,14 @@ plus the stateful `createTouchInputSource`; `src/game/input.ts` exposes
 ## F-004 — Playwright save/load round-trip via the garage UI
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
 **Notes:** The `feat/localstorage-save` slice unit-tested the persistence
 module against an in-memory Storage shim (15 cases, all paths). The dot spec
 also asked for a Playwright reload-survives-save test, but the save module
 has no UI bindings yet (no garage screen, no options screen), so there is
 nothing meaningful to drive in a browser. Land this once the Phase 2 garage
 flow exists: navigate to the garage, mutate a value (e.g. swap car or buy an
-upgrade), reload, assert the value persisted.
+upgrade), reload, assert the value persisted. **Closed by `feat/f-004-garage-save-load-e2e`** with `e2e/save-persistence.spec.ts`. Two specs: (1) seed two owned cars, switch active car, reload, assert the new active id survives both in localStorage and in the rendered indicator; (2) seed credits, buy an unowned car, reload, assert credits + ownedCars + installedUpgrades all persist. The localStorage-disabled branch skips via `test.skip(!hasStorage)`. Upgrade-installation and units-toggle round-trips remain a follow-up for when `/garage/upgrade` and the Settings Display pane ship.
 
 ## F-003 — Auto-deploy pipeline from `main`
 **Created:** 2026-04-26
