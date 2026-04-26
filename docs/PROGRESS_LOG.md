@@ -6,6 +6,102 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: content budget cap + enforcement test (32 tracks / 6 cars)
+
+**GDD sections touched:**
+[§27](gdd/27-risks-and-mitigations.md) (Scope-creep mitigation: hard cap of
+32 tracks and 6 cars at v1.0) and
+[§24](gdd/24-content-plan.md) (MVP minimums: 8 tracks, 3 cars).
+Phase 6 task per [`docs/IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+The dot (`VibeGear2-implement-content-budget-e42cd8f9`) ships the
+single-source-of-truth cap constant and the Vitest suite that fails the
+build the moment a contributor tries to add a 33rd track or a 7th car.
+**Branch / PR:** `feat/content-budget-cap` (stacked on
+`feat/accessibility-assists`), PR pending.
+**Status:** Implemented (cap constant + 13 enforcement assertions + green
+verify chain).
+
+### Done
+- Authored `src/data/content-budget.ts` exporting the frozen
+  `CONTENT_BUDGET = { tracks: 32, cars: 6, mvpTracks: 8, mvpCars: 3 }`
+  constant with §27 and §24 references in the docblock. The constant is
+  the only place the cap numbers live so a future PR that lifts the cap
+  has exactly one code site to touch (and one GDD §27 row, per the
+  mitigation contract).
+- Authored `src/data/__tests__/content-budget.test.ts` with 13
+  assertions across three describe blocks:
+  - **tracks**: walks `src/data/tracks/**/*.json` recursively, parses
+    each file against `TrackSchema`, asserts the count is at most
+    `CONTENT_BUDGET.tracks`, surfaces non-track JSONs as failures
+    rather than silently skipping them, gates the MVP-minimum check on
+    "at least one non-test track has shipped" so the suite is green
+    during the current pre-content phase, and verifies bidirectional
+    alignment between disk JSONs and the `TRACK_RAW` barrel.
+  - **cars**: counts `src/data/cars/*.json` against `CONTENT_BUDGET.cars`,
+    asserts the bundled `CARS` array meets the MVP minimum, and
+    confirms every disk JSON is re-exported from `src/data/cars/index.ts`.
+  - **cap source-of-truth guard**: positive-integer guards, MVP at-or-
+    below-v1.0 guard, exact-match assertions against the §27 (32 / 6) and
+    §24 (8 / 3) rows so a constant-only edit cannot silently drift away
+    from the GDD, and a `Object.isFrozen` check.
+- Manually verified the cap-exceeded failure path by dropping two
+  scratch JSONs into `src/data/cars/`; the suite failed with both the
+  cap-exceeded message and the registration-mismatch message before
+  the fixtures were removed. Errors point at the offending file paths.
+- Verify chain green: `npm run lint` (no warnings), `npm run typecheck`
+  (no errors), `npm test` (1125 / 1125 across 50 files, including the
+  13 new assertions), `npm run build` (static export succeeds with the
+  pre-existing route table unchanged), `npm run test:e2e` (31 / 31
+  passing across chromium + mobile).
+
+### Why
+- §27 names "scope creep" as a top-tier risk for v1.0 and pins the
+  mitigation as a hard cap. Without enforcement the mitigation is just
+  paperwork: a future loop iteration could land a 33rd track without
+  anyone noticing the scope explosion until the bundle-size budget
+  alarm fires (which is too late, by then the content is authored and
+  the cut hurts). The test slice closes the loop so the cap is
+  load-bearing during code review, not aspirational.
+- The pattern matches the existing `cars-content.test.ts` and
+  `tracks-content.test.ts` content tests (same fail-loud-with-paths
+  diagnostics, same "JSON-is-source-of-truth" stance), so reviewers can
+  pattern-match against work they already trust.
+
+### Skip
+- The dot's "track JSON in subdirectory" edge case (e.g.
+  `src/data/tracks/velvet-coast/harbor-run.json`) is implemented
+  (the walker recurses) but cannot be exercised under fixture today
+  because no region subdirectories exist. The recursion path will
+  activate the moment `implement-mvp-track-0e1b2918` ships its first
+  authored track. The test is intentionally non-skippable so that the
+  recursion behaviour gets exercised on the same PR that adds the
+  first nested track.
+- The MVP-minimum assertion for tracks is gated on "at least one
+  non-test track ships" so the suite passes during the current
+  pre-content phase. Once `implement-mvp-track-0e1b2918` lands the
+  first real track, the gate trips and the assertion enforces the
+  §24 minimum of 8 tracks. No follow-up needed: the gate self-resolves.
+
+### GDD edits
+- None. The constant references the existing §27 cap row and the
+  §24 MVP row verbatim.
+
+### Followups
+- None new from this slice. Sibling dots
+  (`implement-mvp-track-0e1b2918`,
+  `implement-track-editor-fdb02792`,
+  `implement-mod-loader-e9b8b51f`) will benefit from the cap as their
+  content lands, but no coordination work is required from them: the
+  test reads the disk and the barrels, no producer-side change.
+
+### Tests added
+- `src/data/__tests__/content-budget.test.ts` (13 assertions in three
+  describe blocks, covering track count cap, car count cap, MVP
+  minimums, barrel-disk alignment in both directions, and the cap
+  source-of-truth guard).
+
+---
+
 ## 2026-04-26: Slice: accessibility assists pure module + /options Accessibility pane
 
 **GDD sections touched:**
