@@ -6,6 +6,91 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-023 Time Trial recorder lifecycle producer
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes-and-progression.md) "Time Trial mode" (the
+recorder lifecycle this module orchestrates),
+[§22](gdd/22-data-schemas.md) "Ghost replay" (consumer of the
+`Replay` shape this module finalises into).
+**Branch / PR:** `feat/f-023-timetrial-recorder-lifecycle`, PR pending.
+**Status:** F-023 closed. Producer-only slice; the Next.js Time Trial
+route under `src/app/` stays owned by
+`VibeGear2-implement-time-trial-5d65280a`. Mirrors the F-021 / F-022
+producer-then-consumer split around the ghost slice.
+
+### Done
+- `src/game/timeTrial.ts`: new module exposes
+  `createTimeTrialRecorder(options)` returning a stateful orchestrator
+  with an `idle` -> `recording` -> `finished` phase machine that
+  observes per-tick `(phase, tick, input)` snapshots. The orchestrator
+  spawns the inner `createRecorder` from `src/game/ghost.ts` on the
+  first racing tick (so the recorder's tick clock lines up with the
+  race-session `tick` clock that resets to 0 on the green-light tick),
+  records every subsequent racing tick, and finalises when the race
+  phase flips to `finished`. An optional `onFinalize` callback fires
+  exactly once with the finalised `Replay`; callback errors are
+  swallowed so a failing persistence pipeline cannot crash the
+  simulation tick. A `reset()` method drops the existing recorder so
+  the same orchestrator can record a subsequent race.
+  `applyTimeTrialResult(currentGhost, replay)` is a thin intent-named
+  wrapper around `bestGhostFor` for the Time Trial route slice's
+  PB-overwrite decision.
+- `src/game/__tests__/timeTrial.test.ts`: 19 unit tests covering
+  idle-state defaults, ignore-during-countdown, spawn-on-green-light,
+  per-tick recording, finalise-on-finish, single `onFinalize` fire,
+  post-finished tick no-op, duplicate-finished no-op, duplicate or
+  backwards-tick swallow during recording, callback error swallow,
+  `reset()` reuse for a second race, defensive idle-on-skip-racing,
+  the PB selector's strict-less / equal-keep / null-keep / both-null
+  branches, and an integration scenario where a longer recording
+  (strictly higher `finalTimeMs`) does not displace the stored PB but
+  a shorter one does.
+- `docs/FOLLOWUPS.md`: F-023 status flips to `done` with the
+  branch reference, the surface area shipped, and the test coverage
+  summary. The Next.js route deferral note remains, pointing at the
+  time-trial mode dot.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (19 new timeTrial tests; existing ghost / race-
+  session suites unchanged).
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- Shipped the orchestrator as a separate module (`src/game/timeTrial.ts`)
+  rather than folding the recorder into `src/game/raceSession.ts`. Two
+  reasons: (1) the race-session reducer is mode-agnostic and only Time
+  Trial records a ghost, so a `mode` branch inside the reducer would
+  mix concerns and force every other mode test to grow a ghost-disabled
+  fixture; (2) keeping the orchestrator pure (it reads a synthetic
+  `(phase, tick, input)` triple, never a full `RaceSessionState`) lets
+  the unit tests cover every transition without standing up a track,
+  AI grid, or physics step.
+- The orchestrator spawns the recorder on the first racing tick rather
+  than at construction so the recorder's internal tick clock matches the
+  race-session `tick` clock (which resets to 0 on the lights-out tick).
+  Spawning earlier would either record the countdown (wasteful) or
+  require the orchestrator to translate tick numbers later.
+- `onFinalize` callback errors are swallowed. The simulation tick must
+  not crash because the persistence backend exploded; the replay is
+  still readable via `getReplay()` after a failed callback so the call
+  site can retry on a later frame if it wants to.
+- The `applyTimeTrialResult` wrapper is one line on top of `bestGhostFor`,
+  but it gives the route slice an intent-named entry point so the
+  call site reads "apply the time-trial result" instead of "pick the
+  best ghost". The selector's strict-less + equal-keep behaviour is
+  unchanged.
+
+### Followups
+None opened. F-023 closes with this slice; the route consumer remains
+on the existing `VibeGear2-implement-time-trial-5d65280a` dot.
+
+---
+
 ## 2026-04-26: Slice: Q-006 confirm easy-mode tour-clear bonus rate
 
 **GDD sections touched:**

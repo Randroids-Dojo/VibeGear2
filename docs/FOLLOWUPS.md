@@ -773,21 +773,36 @@ sit unused indefinitely.
 ## F-023: Time Trial UI wiring for the ghost recorder
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/ghost-replay-recorder` slice ships
-`src/game/ghost.ts` as a producer module: `createRecorder`,
-`createPlayer`, `Replay`, the `INPUT_FIELDS` mask order, and the cap
-constants (`RECORDER_SOFT_CAP_TICKS`, `RECORDER_HARD_CAP_TICKS`). The
-producer is complete and unit-tested (34 tests, all paths). The
-consumer wiring lands with the time-trial dot
-(`VibeGear2-implement-time-trial-5d65280a`): instantiate
-`createRecorder` on the green-light tick of a Time Trial run, call
-`record(input, tick)` from the same `simulate` callback that drives
-physics, call `finalize()` on the finish-line tick, and compare
-`replay.finalTimeMs` against the stored PB before deciding whether to
-overwrite. Until then the module is a producer waiting for a consumer,
-mirroring the F-019 (damage model) and the closed F-013 (touch input)
-deferral pattern.
+**Status:** done (2026-04-26, `feat/f-023-timetrial-recorder-lifecycle`)
+**Notes:** Closed by `feat/f-023-timetrial-recorder-lifecycle`. The
+recorder lifecycle now ships as a separate producer module in
+`src/game/timeTrial.ts`: `createTimeTrialRecorder(options)` returns a
+stateful orchestrator with an `idle` -> `recording` -> `finished`
+phase machine that observes per-tick `(phase, tick, input)` snapshots
+from the race-session reducer. The orchestrator spawns the inner
+`createRecorder` from `src/game/ghost.ts` on the first racing tick
+(so the recorder's tick clock lines up with the race-session `tick`
+clock that resets to 0 on the green-light tick), records every
+subsequent racing tick, and finalises when the race phase flips to
+`finished`. An optional `onFinalize` callback fires exactly once with
+the finalised `Replay` so the call site can route the result into
+`saveSave` without holding an orchestrator reference; callback errors
+are swallowed so a failing persistence pipeline cannot crash the
+simulation tick. `applyTimeTrialResult(currentGhost, replay)` is a
+thin intent-named wrapper around `bestGhostFor` so the Time Trial
+route slice can funnel the candidate replay through one PB-decision
+helper. Coverage: 19 unit tests in
+`src/game/__tests__/timeTrial.test.ts` pin spawn-on-green-light,
+ignore-during-countdown, finalise-on-finish, single `onFinalize`
+fire, post-finished tick no-op, duplicate-tick swallow, callback
+error swallow, `reset()` reuse, defensive idle-on-skip-racing, the
+PB selector's strict-less / equal-keep / null-keep / both-null
+branches, and an integration scenario where a longer recording
+(strictly higher `finalTimeMs`) does not displace the stored PB but
+a shorter one does. The Next.js Time Trial route under `src/app/`
+remains owned by `VibeGear2-implement-time-trial-5d65280a`; this
+module is the producer that route will wire on top of (mirroring the
+F-021 / F-022 producer-then-consumer split around the ghost slice).
 
 ## F-022: Render the ghost car in `pseudoRoadCanvas.ts`
 **Created:** 2026-04-26
