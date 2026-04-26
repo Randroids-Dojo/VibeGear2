@@ -6,6 +6,100 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Q-004 confirm tour stipend threshold and amount
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms" #1
+(tour stipend lever),
+[§23](gdd/23-balancing-tables.md) "Tour stipend (catch-up mechanism
+#1)" (new subsection that pins the threshold and amount).
+**Branch / PR:** `feat/answer-q-004-tour-stipend`, PR pending.
+**Status:** Q-004 closed. Doc plus content-test slice. The pinned
+constants `STIPEND_THRESHOLD_CREDITS = 1500` and `STIPEND_AMOUNT =
+1000` in `src/game/catchUp.ts` already shipped (the F-035 slice
+`feat/f-035-stipend-at-tour-entry`, commit `927e797`, wires
+`computeStipend` into `enterTour`). This loop confirms the
+recommended default and pins the values into §23 so the
+balancing-pass slice finds them on the same page as the other
+levers. Q-005 (repair cap fraction) and Q-006 (easy-mode tour-clear
+bonus rate) remain open in their own slots.
+
+### Done
+- `docs/OPEN_QUESTIONS.md`: Q-004 status flips from `open` to
+  `answered`. The new Resolution paragraph names the shipping
+  constants, names the F-035 consumer commit that wires them, and
+  pins two re-evaluation triggers (a balancing-pass run that shows
+  the lever firing too rarely or too generously, or a §12 / §15
+  edit that retunes the starter cash and mid-table reward sizing
+  the constants were calibrated against).
+- `docs/gdd/23-balancing-tables.md`: new "Tour stipend (catch-up
+  mechanism #1)" subsection between "Repair cost tour tier scale"
+  and "Damage formula targets". Four-row table (threshold, amount,
+  first-tour gate, per-tour claim cap) plus a paragraph that names
+  `STIPEND_THRESHOLD_CREDITS`, `STIPEND_AMOUNT`, the consumer site,
+  and the per-tour claim record path.
+- `src/data/__tests__/balancing.test.ts`: new "§23 Tour stipend
+  (catch-up mechanism #1)" describe block (section 2c) that mirrors
+  the §23 row as `STIPEND_THRESHOLD_TARGET` and
+  `STIPEND_AMOUNT_TARGET` and pins each value against the
+  corresponding `src/game/catchUp.ts` export. A drift between the
+  §23 markdown row, the local target constants, or the runtime
+  exports fails the build at a single readable site. A third
+  invariant pins that the amount sits below the threshold so the
+  lever cannot reverse into a free win on a single grant.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (new §23 stipend describe block green; existing
+  catchUp unit tests still green because they reference the
+  symbolic exports).
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- Adopted the recommended default verbatim. No constant value
+  change in `src/game/catchUp.ts`; the slice is doc-plus-test only.
+- Pinned the row in §23 even though Q-004 listed the §23 edit as
+  optional. Rationale: the §23 page is already the discoverability
+  surface for the balancing-pass slice (every other lever lives
+  there), and a one-page index of all four catch-up levers is the
+  point of §23. Skipping the row would force the balancing-pass
+  loop to grep `catchUp.ts` for the values, which defeats the §23
+  contract.
+- Did not pre-empt Q-005 (repair-cap fraction) or Q-006 (easy-mode
+  tour-clear bonus rate). The §23 row added here covers stipend
+  only. Q-005 and Q-006 remain open and will land their own §23
+  rows in the slices that close them, so each open question gets
+  one slice that owns its row end-to-end.
+- Did not edit `catchUp.ts` itself. The `OPEN_QUESTIONS.md Q-004
+  through Q-007` reference in the file header still spans the
+  three remaining open questions; collapsing it now would leave a
+  stale comment after Q-005 and Q-006 close. The collapse will
+  happen in the slice that closes the last of the three.
+- Did not extend §23 with rows for Q-005, Q-006, or any other
+  catch-up lever. One open question per slice keeps the resolution
+  paragraphs auditable.
+- Skipped the F-035 commit pin in `docs/FOLLOWUPS.md` because that
+  list tracks open follow-ups and F-035 is already done; the
+  PROGRESS_LOG cross-reference here is the audit trail.
+
+### Followups added
+None new.
+
+### GDD edits
+- `docs/gdd/23-balancing-tables.md`: new "Tour stipend (catch-up
+  mechanism #1)" subsection. Pins the four parameters of the
+  stipend lever (threshold, amount, first-tour gate, per-tour
+  claim cap) so the balancing-pass slice and any future content
+  loop can read every catch-up number from a single page.
+
+### Open questions raised
+None.
+
+---
+
 ## 2026-04-26: Slice: Q-007 confirm practice-mode weather preview surface
 
 **GDD sections touched:**

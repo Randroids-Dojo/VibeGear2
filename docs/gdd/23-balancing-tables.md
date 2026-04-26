@@ -41,6 +41,24 @@ slice extends the championship past the MVP eight tours.
 | 7 | 2.40 |
 | 8 | 2.80 |
 
+## Tour stipend (catch-up mechanism #1)
+
+Per §12 catch-up mechanism #1 a player below a cash threshold receives
+a one-shot tour stipend at tour entry. The lever fires only when the
+tour index is 2 or higher (the first tour reuses the starter cash) and
+only once per `(save, tour)` pair (claims are recorded in
+`save.progress.stipendsClaimed`). The pinned values live in
+`STIPEND_THRESHOLD_CREDITS` and `STIPEND_AMOUNT` in
+`src/game/catchUp.ts` and are consumed by `enterTour` via the F-035
+slice (see `feat/f-035-stipend-at-tour-entry`).
+
+| Lever | Value | Notes |
+| --- | --- | --- |
+| Stipend threshold (credits) | 1,500 | Buys roughly two tier-1 cooling upgrades. |
+| Stipend amount (credits) | 1,000 | Matches a mid-table finish at base 2,000 / normal so the lever is a catch-up not a free win. |
+| First-tour gate | Tour index >= 2 | Tour 1 reuses the starter cash; no double-dip on a fresh save. |
+| Per-tour claim cap | 1 claim per `(save, tour)` | Recorded in `save.progress.stipendsClaimed[tour.id]`. |
+
 ## Damage formula targets
 
 ```

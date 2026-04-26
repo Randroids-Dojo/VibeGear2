@@ -42,6 +42,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CARS_BY_ID } from "@/data/cars";
+import { STIPEND_AMOUNT, STIPEND_THRESHOLD_CREDITS } from "@/game/catchUp";
 import {
   BASE_REWARDS_BY_TRACK_DIFFICULTY,
   baseRewardForTrackDifficulty,
@@ -231,6 +232,34 @@ describe("§23 Repair cost tour tier scale", () => {
 
   it("TOUR_TIER_SCALE is frozen so a stray write cannot drift §23", () => {
     expect(Object.isFrozen(TOUR_TIER_SCALE)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2c. Tour stipend (§23 catch-up mechanism #1, per Q-004)
+// ---------------------------------------------------------------------------
+
+/**
+ * §23 "Tour stipend (catch-up mechanism #1)" verbatim. Pin against
+ * `STIPEND_THRESHOLD_CREDITS` and `STIPEND_AMOUNT` from
+ * `src/game/catchUp.ts`. Resolved by `Q-004` with the dot-spec
+ * defaults; the F-035 slice (`feat/f-035-stipend-at-tour-entry`,
+ * commit `927e797`) wires the lever into `enterTour`.
+ */
+const STIPEND_THRESHOLD_TARGET = 1500;
+const STIPEND_AMOUNT_TARGET = 1000;
+
+describe("§23 Tour stipend (catch-up mechanism #1)", () => {
+  it("stipend threshold matches §23", () => {
+    expect(STIPEND_THRESHOLD_CREDITS).toBe(STIPEND_THRESHOLD_TARGET);
+  });
+
+  it("stipend amount matches §23", () => {
+    expect(STIPEND_AMOUNT).toBe(STIPEND_AMOUNT_TARGET);
+  });
+
+  it("stipend amount sits below the threshold so the lever stays a catch-up", () => {
+    expect(STIPEND_AMOUNT_TARGET).toBeLessThan(STIPEND_THRESHOLD_TARGET);
   });
 });
 

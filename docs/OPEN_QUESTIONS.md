@@ -265,9 +265,11 @@ the lever now; balancing pass owns the final number.
 ## Q-004: Tour stipend threshold and amount
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
-mechanisms" #1
-**Status:** open
+mechanisms" #1, [§23](gdd/23-balancing-tables.md) "Catch-up mechanism
+levers"
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** §12 says "players below a cash threshold receive a
 tour stipend" without pinning the threshold or grant amount. Pinned
@@ -281,7 +283,31 @@ The threshold buys roughly two tier-1 cooling upgrades; the amount
 matches a mid-table finish at base 2000 / normal so the lever is a
 catch-up not a free win.
 
-**Blocking?** No.
+**Resolution.** Adopted the recommended default. The pinned
+constants `STIPEND_THRESHOLD_CREDITS = 1500` and
+`STIPEND_AMOUNT = 1000` in `src/game/catchUp.ts` stay verbatim;
+`computeStipend` keeps the three-clause gate (tour index >= 2,
+wallet strictly below threshold, no prior claim recorded). The
+F-035 consumer slice (`feat/f-035-stipend-at-tour-entry`, commit
+`927e797`) wires the lever into `enterTour` and records the claim
+via `recordStipendClaim`, so this resolution only confirms no value
+change is owed. §23 now carries a "Tour stipend (catch-up
+mechanism #1)" subsection that pins the threshold and amount on a
+single page so the balancing-pass slice
+(`VibeGear2-implement-balancing-pass-71a57fd5`) finds the numbers
+without grepping `catchUp.ts`. Two re-evaluation triggers gate any
+future swap: a balancing-pass run that shows the stipend lever is
+firing too rarely (raise the threshold) or too generously (lower
+the amount), or a §12 / §15 edit that retunes the starter cash and
+mid-table reward sizing this constant was calibrated against.
+Q-005 (repair cap fraction) and Q-006 (easy-mode tour-clear bonus
+rate) stay open in their own §12 catch-up slots; this slice does
+not pre-empt their resolutions.
+
+**Blocking?** No. The constants ship today with the recommended
+default and the F-035 consumer is already wired; this resolution
+only confirms no value change is owed and pins the §23 row.
+Resolved.
 
 ---
 
