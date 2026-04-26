@@ -93,6 +93,53 @@ export const DNF_PARTICIPATION_CREDITS = 200;
 /** §12 tour bonus rate (15% of summed race rewards on a successful clear). */
 export const TOUR_BONUS_RATE = 0.15;
 
+/**
+ * §23 "Reward formula targets" base track reward keyed by track
+ * difficulty rating (`1..5`). The track schema field that owns this
+ * value (`baseTrackReward` per §22) is not yet pinned on every track
+ * JSON; the caller resolves the value either from the per-tour table
+ * the championship slice ships, or from this lookup when only the
+ * difficulty rating is known.
+ *
+ * The §23 column reads:
+ *
+ *     | difficulty | base reward |
+ *     | ---------- | ----------- |
+ *     |     1      |       1,000 |
+ *     |     2      |       1,350 |
+ *     |     3      |       1,750 |
+ *     |     4      |       2,250 |
+ *     |     5      |       2,900 |
+ *
+ * Pinned as a frozen lookup so a future tweak stays in lockstep with
+ * §23 (the `balancing.test.ts` content test asserts each cell matches).
+ *
+ * Out-of-range difficulties (NaN, < 1, > 5) collapse to the closest
+ * in-range bucket so a buggy track JSON cannot strand a race with a
+ * zero reward; the §23 design intent is "every race pays something".
+ */
+export const BASE_REWARDS_BY_TRACK_DIFFICULTY: Readonly<Record<1 | 2 | 3 | 4 | 5, number>> =
+  Object.freeze({
+    1: 1000,
+    2: 1350,
+    3: 1750,
+    4: 2250,
+    5: 2900,
+  });
+
+/**
+ * Resolve the §23 base reward for a track difficulty rating. Out-of-range
+ * inputs clamp into `[1, 5]` so a malformed track value still pays a
+ * reasonable amount. The race-finish wiring slice will route the
+ * resolved value into `awardCredits.input.baseTrackReward`.
+ */
+export function baseRewardForTrackDifficulty(difficulty: number): number {
+  if (!Number.isFinite(difficulty)) return BASE_REWARDS_BY_TRACK_DIFFICULTY[1];
+  const rounded = Math.round(difficulty);
+  const clamped = Math.max(1, Math.min(5, rounded)) as 1 | 2 | 3 | 4 | 5;
+  return BASE_REWARDS_BY_TRACK_DIFFICULTY[clamped];
+}
+
 // Result types -------------------------------------------------------------
 
 export type EconomyFailure =

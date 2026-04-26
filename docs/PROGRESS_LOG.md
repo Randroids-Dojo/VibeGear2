@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §23 balancing pass (pin tables + `balancing.test.ts`)
+
+**GDD sections touched:**
+[§23](gdd/23-balancing-tables.md) Core car balance sheet (re-asserted),
+Reward formula targets (pinned), Damage formula targets (pinned),
+Weather modifiers (pinned for F-043), CPU difficulty modifiers
+(pinned for F-044). [§13](gdd/13-damage-repairs-and-risk.md)
+Damage sources `nitroWhileSeverelyDamagedBonus` constant pinned
+for F-045 wiring.
+**Branch / PR:** `feat/balancing-pass-23` stacked on
+`feat/wire-difficulty-preset-scalars`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-balancing-pass-71a57fd5`. The §23 numeric tables
+now have a single content-test owner (`src/data/__tests__/balancing.test.ts`)
+that asserts each cell matches the source-of-truth code or JSON. Three
+new exported constants pin §23 numbers that previously lived only in
+ad-hoc test fixtures or the GDD prose. Two §23 columns (Weather
+modifiers, CPU difficulty modifiers) need consumer modules that have
+not landed yet; the balancing test pins the numbers so the wiring
+slices (F-043, F-044) can copy them verbatim.
+
+### Done
+- `src/game/damage.ts` (update): `HIT_MAGNITUDE_RANGES` pins the §23
+  rub `[2, 4]`, carHit `[6, 12]`, wallHit `[12, 24]`, offRoadObject
+  `[10, 20]` bands as a frozen `Record<HitKind, {min, max}>`. The race
+  session (future slice) picks a deterministic `baseMagnitude` from
+  the kind's band; `damage.ts` itself does not roll. Existing test
+  fixtures already used the mid-points (3 for rub, 9 for carHit) so
+  no behaviour change.
+  `NITRO_WHILE_SEVERELY_DAMAGED_BONUS = 0.15` pins §23's `+15%`
+  damage bonus when nitro is active on a severe-band car. The
+  consumer logic is filed as F-045 so this slice does not bump
+  `PHYSICS_VERSION` and invalidate ghost replays.
+- `src/game/economy.ts` (update): `BASE_REWARDS_BY_TRACK_DIFFICULTY`
+  pins the §23 reward formula (`difficulty 1..5 -> 1000 / 1350 /
+  1750 / 2250 / 2900 credits`) as a frozen lookup, plus a
+  `baseRewardForTrackDifficulty(difficulty)` helper that clamps
+  out-of-range inputs into `[1, 5]` and rounds fractional values to
+  the nearest tier. The track JSON files do not yet declare a
+  `difficulty` field; the championship slice will wire the helper
+  into the per-race award (F-046).
+- `src/data/__tests__/balancing.test.ts` (new): single-site assertion
+  for every §23 numeric cell, plus deferred-consumer pins for the
+  Weather and CPU difficulty modifier tables. 29 cases covering all
+  five §23 sub-tables.
+- `docs/FOLLOWUPS.md` (update): F-043 (weather wiring), F-044 (CPU
+  difficulty wiring), F-045 (nitro-on-damaged bonus wiring), F-046
+  (track-difficulty resolver in race-finish flow) appended with
+  consumer-side TODO notes.
+
+### Tests
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: 1695 passed (+29 new cases on top of the 1666
+  existing), 74 files. No existing fixture had to change (existing
+  damage tests already used mid-band magnitudes).
+- `npm run build`: clean (no UI surface added).
+- `npm run test:e2e`: 47 passed.
+
+---
+
 ## 2026-04-26: Slice: F-042 wire §28 difficulty preset scalars into physics, damage, nitro, raceSession
 
 **GDD sections touched:**

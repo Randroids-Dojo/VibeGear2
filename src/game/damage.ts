@@ -135,6 +135,56 @@ export const DEFAULT_ZONE_DISTRIBUTION: Readonly<Record<HitKind, Readonly<Record
 export const DAMAGE_UNIT_SCALE = 100;
 
 /**
+ * §23 "Damage formula targets" `baseMagnitude` ranges keyed by `HitKind`.
+ *
+ * The table reads:
+ *
+ *     rubDamage             = 2  to 4
+ *     carHitDamage          = 6  to 12
+ *     wallDamage            = 12 to 24
+ *     offRoadObjectDamage   = 10 to 20
+ *
+ * `offRoadPersistent` is a continuous accumulator (see
+ * `OFF_ROAD_DAMAGE_PER_M` below) rather than a per-event roll, so it is
+ * not part of the §23 table.
+ *
+ * The race session picks a deterministic `baseMagnitude` from the kind's
+ * `[min, max]` band when constructing a `HitEvent` (the seeded-RNG slice
+ * landed `src/game/rng.ts`; the per-encounter pick lives in the
+ * race-session collision handler). This module does not roll any die
+ * itself; the table is the contract a caller must respect.
+ *
+ * Pinned here so a future tweak to the bands stays in lockstep with §23
+ * (the `balancing.test.ts` content test asserts the cell values match).
+ */
+export const HIT_MAGNITUDE_RANGES: Readonly<
+  Record<Exclude<HitKind, "offRoadPersistent">, Readonly<{ min: number; max: number }>>
+> = Object.freeze({
+  rub: Object.freeze({ min: 2, max: 4 }),
+  carHit: Object.freeze({ min: 6, max: 12 }),
+  wallHit: Object.freeze({ min: 12, max: 24 }),
+  offRoadObject: Object.freeze({ min: 10, max: 20 }),
+});
+
+/**
+ * §23 "Damage formula targets" `nitroWhileSeverelyDamagedBonus = +15%`.
+ *
+ * The intent: when the player taps nitro on a severely damaged car, the
+ * damage taken from any subsequent contact event scales by `1 + bonus`
+ * (i.e. 15% extra) for the duration of the burn. The §13 narrative pins
+ * "nitro overuse in damaged state" as one of the listed damage sources;
+ * §23 puts a number on it.
+ *
+ * The constant is exported here so the consumer logic can land in a
+ * later slice without re-deriving the rate. As of this slice the bonus
+ * is a documented pin: the race-session damage path does not yet
+ * multiply by `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` when the burn
+ * is active and the band is `severe` or `catastrophic`. Tracked in
+ * `docs/FOLLOWUPS.md` so the wiring slice has a target.
+ */
+export const NITRO_WHILE_SEVERELY_DAMAGED_BONUS = 0.15;
+
+/**
  * Per-zone performance floor at 100% damage. Linear falloff from `1.0` at
  * zero damage to the floor at full damage. Engine drops to 55% of its
  * peak performance (top speed and accel both multiply by this when the

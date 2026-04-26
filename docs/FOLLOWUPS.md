@@ -10,6 +10,74 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-045: Wire `NITRO_WHILE_SEVERELY_DAMAGED_BONUS` into the damage path
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Pinned by the §23 balancing-pass slice in
+`src/game/damage.ts` as a documented constant (`+15%`). Consumer
+logic still missing: when the player taps nitro on a severely damaged
+or catastrophic-band car, the next contact event should multiply the
+`baseMagnitude` by `(1 + NITRO_WHILE_SEVERELY_DAMAGED_BONUS)` for the
+duration of the burn. The natural home is `applyHit` (extra arg
+`nitroActiveOnDamagedCar?: boolean`), threaded from `raceSession`
+which already knows both the burn state (`nitroState.activeRemainingSec
+> 0`) and the band (`damageBandFromTotal`). Add a unit test that
+asserts a wallHit on a severe-band car with active nitro deposits 15%
+more total damage than the same hit without nitro.
+
+---
+
+## F-044: Wire §23 CPU difficulty modifiers into the AI / catch-up pipeline
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** §23 "CPU difficulty modifiers" gives a per-tier table of
+`paceScalar / recoveryScalar / mistakeScalar` for the
+`Easy / Normal / Hard / Master` ladder. Today the AI ladder is
+per-driver (`AIDriver.paceScalar` on each `src/data/ai/*.json`) and
+there is no consumer for `recoveryScalar` (catch-up rate) or
+`mistakeScalar` (mistake-rate multiplier). Once a difficulty-tier
+consumer lands (likely in `src/game/ai.ts` or a new
+`src/game/aiDifficulty.ts`), copy the table verbatim from the §23
+pin in `src/data/__tests__/balancing.test.ts` into a frozen
+`CPU_DIFFICULTY_MODIFIERS` lookup and replace the placeholder block in
+the balancing test with an import-and-assert cross-check.
+
+---
+
+## F-046: Wire `BASE_REWARDS_BY_TRACK_DIFFICULTY` consumers in track JSON
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Pinned by the §23 balancing-pass slice in
+`src/game/economy.ts` as a frozen lookup keyed by difficulty rating
+`1..5`. Track JSON files under `src/data/tracks/` do not yet declare a
+per-track `difficulty` rating that consumes the table. The
+championship slice (`VibeGear2-implement-tour-region-d9ca9a4d`) is the
+natural home: each track entry will resolve `baseRewardForTrackDifficulty(track.difficulty)`
+and feed the result into `awardCredits.input.baseTrackReward`. Until
+that lands, the helper is a no-op for the runtime; the constant is
+authoritative for the future wiring slice.
+
+---
+
+## F-043: Pin §23 weather modifiers into `weather.ts`
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** §23 "Weather modifiers" gives a per-weather dry / wet tire
+modifier table (Clear, Rain, Heavy rain, Snow, Fog). The consumer
+module (`src/game/weather.ts`) has not landed yet
+(`VibeGear2-implement-weather-38d61fc2`). Once it does, copy the
+table verbatim from `src/data/__tests__/balancing.test.ts` (the §23
+balancing-pass slice pinned the values there) into a frozen
+`WEATHER_TIRE_MODIFIERS` lookup keyed by `WeatherOption`, and replace
+the placeholder block in the balancing test with an import-and-assert
+cross-check against the new constant.
+
+---
+
 ## F-042: Wire §28 difficulty preset scalars into physics, damage, and nitro
 **Created:** 2026-04-26
 **Priority:** nice-to-have
