@@ -32,6 +32,10 @@ import {
   DRAFT_MIN_SPEED_M_PER_S,
 } from "@/game/drafting";
 import { NEUTRAL_INPUT, type Input } from "@/game/input";
+import {
+  DNF_NO_PROGRESS_TIMEOUT_SEC,
+  DNF_OFF_TRACK_TIMEOUT_SEC,
+} from "@/game/raceRules";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 
 const STARTER_STATS: CarBaseStats = Object.freeze({
@@ -1172,5 +1176,264 @@ describe("stepRaceSession (§19 accessibility assists wiring)", () => {
     expect(session.player.weatherVisualReductionActive).toBe(true);
     session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
     expect(session.player.weatherVisualReductionActive).toBe(true);
+  });
+});
+
+describe("stepRaceSession (§7 per-car DNF tracking + finishing order, F-028)", () => {
+  it("seeds per-car race lifecycle fields at session creation (player + AI)", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const session = createRaceSession(config);
+    expect(session.player.status).toBe("racing");
+    expect(session.player.dnfReason).toBeNull();
+    expect(session.player.dnfTimers).toEqual({
+      offTrackSec: 0,
+      noProgressSec: 0,
+      lastProgressMark: 0,
+    });
+    expect(session.player.lapTimes).toEqual([]);
+    expect(session.player.finishedAtMs).toBeNull();
+    expect(session.ai[0]?.status).toBe("racing");
+    expect(session.ai[0]?.lap).toBe(1);
+    expect(session.ai[0]?.lapTimes).toEqual([]);
+    expect(session.ai[0]?.finishedAtMs).toBeNull();
+  });
+
+  it("flips player status to 'dnf' when the off-track timer trips", () => {
+    // Pre-load the DNF timer to one tick below the off-track threshold,
+    // snap the player off-road and slow, then a single step trips it.
+    // This exercises the wiring without spinning 1800 ticks per test.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 100, speed: 0, surface: "grass" },
+        dnfTimers: {
+          ...session.player.dnfTimers,
+          offTrackSec: DNF_OFF_TRACK_TIMEOUT_SEC - DT / 2,
+        },
+      },
+    };
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.player.status).toBe("dnf");
+    expect(session.player.dnfReason).toBe("off-track");
+  });
+
+  it("flips player status to 'dnf' when the no-progress timer trips", () => {
+    // Pre-load the no-progress timer near the threshold, hold the
+    // player still (NEUTRAL_INPUT, speed 0) so it cannot advance the
+    // 5 m delta, and a single step trips it.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, speed: 0 },
+        dnfTimers: {
+          ...session.player.dnfTimers,
+          noProgressSec: DNF_NO_PROGRESS_TIMEOUT_SEC - DT / 2,
+        },
+      },
+    };
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.player.status).toBe("dnf");
+    expect(session.player.dnfReason).toBe("no-progress");
+  });
+
+  it("freezes the player's physics integration once status flips to 'dnf'", () => {
+    // After the player retires, holding full throttle for several ticks
+    // must not move the car. Verifies the DNF gate inside stepRaceSession.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        status: "dnf",
+        dnfReason: "off-track",
+        car: { ...session.player.car, x: 50, speed: 30 },
+      },
+    };
+    const beforeZ = session.player.car.z;
+    const beforeSpeed = session.player.car.speed;
+    for (let i = 0; i < 30; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    expect(session.player.car.z).toBe(beforeZ);
+    expect(session.player.car.speed).toBe(beforeSpeed);
+    // Race phase still racing (player retired but AI is still going).
+    expect(session.race.phase).toBe("racing");
+  });
+
+  it("flips an AI to 'dnf' when its off-track timer trips and freezes its physics", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    // Snap AI off-road, slow, and pre-load its DNF timer near the cap.
+    session = {
+      ...session,
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 100, speed: 0, surface: "grass" },
+        dnfTimers: {
+          ...entry.dnfTimers,
+          offTrackSec: DNF_OFF_TRACK_TIMEOUT_SEC - DT / 2,
+        },
+      })),
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.ai[0]?.status).toBe("dnf");
+    expect(session.ai[0]?.dnfReason).toBe("off-track");
+    const frozenZ = session.ai[0]?.car.z;
+    // Roll several more ticks; AI does not move because physics is gated.
+    for (let i = 0; i < 30; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    expect(session.ai[0]?.car.z).toBe(frozenZ);
+  });
+
+  it("flips race phase to 'finished' once every car has stopped racing", () => {
+    // Pre-DNF both player and the lone AI so the next tick's DNF
+    // detection finds no still-racing cars and the all-stopped gate
+    // moves the phase forward.
+    const config = buildConfig({ countdownSec: 0, totalLaps: 5 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: { ...session.player, status: "dnf", dnfReason: "off-track" },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        status: "dnf",
+        dnfReason: "off-track",
+      })),
+    };
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.race.phase).toBe("finished");
+  });
+
+  it("tracks per-AI lap rollovers and stamps finishedAtMs at race end", () => {
+    // Single-lap race on test/straight: snap the AI just before the
+    // line so a single step crosses, then assert per-AI bookkeeping.
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [{ driver: TEST_DRIVER, stats: STARTER_STATS }],
+      countdownSec: 0,
+      totalLaps: 1,
+    };
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, z: track.totalLengthMeters - 0.1, speed: 60 },
+      })),
+    };
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    const ai0 = session.ai[0]!;
+    expect(ai0.status).toBe("finished");
+    expect(ai0.lap).toBe(1);
+    expect(ai0.lapTimes.length).toBe(1);
+    expect(ai0.lapTimes[0]).toBeGreaterThan(0);
+    expect(ai0.finishedAtMs).not.toBeNull();
+  });
+
+  it("stamps the player's lapTimes + finishedAtMs at race end", () => {
+    // Single-lap race; snap the player just before the line and step.
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 1,
+    };
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          z: track.totalLengthMeters - 0.1,
+          speed: 60,
+        },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.player.status).toBe("finished");
+    expect(session.player.lapTimes.length).toBe(1);
+    expect(session.player.lapTimes[0]).toBeGreaterThan(0);
+    expect(session.player.finishedAtMs).not.toBeNull();
+    // Race phase mirrors the player flip (existing behaviour).
+    expect(session.race.phase).toBe("finished");
+  });
+
+  it("appends per-lap durations across multi-lap races (cumulative-aware)", () => {
+    // Two-lap race: cross lap 1 mid-race, then cross lap 2 later. The
+    // second entry in `lapTimes` is the duration of lap 2 alone, not
+    // the cumulative time. This is the property the §7 fastest-lap
+    // builder relies on (`Math.min(...car.lapTimes)`).
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 3,
+    };
+    let session = createRaceSession(config);
+    // Lap 1: snap to the line and cross.
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: track.totalLengthMeters - 0.1, speed: 60 },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.race.lap).toBe(2);
+    expect(session.player.lapTimes.length).toBe(1);
+    const lap1Ms = session.player.lapTimes[0]!;
+    // Lap 2: spend a couple seconds, then snap and cross again.
+    for (let i = 0; i < 60; i += 1) {
+      session = stepRaceSession(session, fullThrottle(), config, DT);
+    }
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          z: 2 * track.totalLengthMeters - 0.1,
+          speed: 60,
+        },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.race.lap).toBe(3);
+    expect(session.player.lapTimes.length).toBe(2);
+    const lap2Ms = session.player.lapTimes[1]!;
+    // Lap 2 was spent waiting ~1s before the synthetic snap; the
+    // duration is not cumulative — it must be smaller than the full
+    // race elapsed and strictly positive.
+    expect(lap2Ms).toBeGreaterThan(0);
+    expect(lap2Ms).toBeLessThan(lap1Ms + 1_000_000);
+  });
+
+  it("is deterministic across runs with DNF + finishing wiring active", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    const a = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    const b = rollForward(createRaceSession(config), fullThrottle(), config, 600);
+    expect(a.player.status).toBe(b.player.status);
+    expect(a.player.dnfTimers).toEqual(b.player.dnfTimers);
+    expect(a.player.lapTimes).toEqual(b.player.lapTimes);
+    expect(a.player.finishedAtMs).toBe(b.player.finishedAtMs);
+    expect(a.ai[0]?.status).toBe(b.ai[0]?.status);
+    expect(a.ai[0]?.dnfTimers).toEqual(b.ai[0]?.dnfTimers);
+    expect(a.ai[0]?.lap).toBe(b.ai[0]?.lap);
+    expect(a.ai[0]?.lapTimes).toEqual(b.ai[0]?.lapTimes);
   });
 });

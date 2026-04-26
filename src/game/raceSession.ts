@@ -79,12 +79,19 @@ import {
 import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
+  isOffRoad,
   step,
   type CarState,
   type TrackContext,
 } from "./physics";
 import { EMPTY_PASSED_SET } from "./raceCheckpoints";
-import { exceedsRaceTimeLimit } from "./raceRules";
+import {
+  exceedsRaceTimeLimit,
+  INITIAL_DNF_TIMERS,
+  tickDnfTimers,
+  type DnfReason,
+  type DnfTimers,
+} from "./raceRules";
 import {
   DEFAULT_COUNTDOWN_SEC,
   type RaceState,
@@ -215,6 +222,56 @@ export interface RaceSessionAICar {
   lastShiftUpPressed: boolean;
   /** Edge-detection mirror of the prior tick's `shiftDown` input. */
   lastShiftDownPressed: boolean;
+  /**
+   * Per-car race lifecycle status. Initialised to `"racing"` and flipped
+   * by the §7 race-rules wiring once this AI either crosses the final
+   * start/finish line (`"finished"`) or trips a DNF threshold
+   * (`"dnf"`). A non-racing AI is no longer integrated by the physics
+   * step (`step` is skipped, the `car` snapshot is preserved as-is) so a
+   * retired AI freezes in place.
+   */
+  status: RaceCarStatus;
+  /**
+   * Per-car DNF accumulators (off-track / no-progress windows + last
+   * progress mark). Advanced each racing tick by `tickDnfTimers` from
+   * the post-step car snapshot. Frozen at the moment the car flips to
+   * `"finished"` or `"dnf"` (the tick reducer never advances a non-
+   * racing car), so a downstream snapshot can read them safely.
+   */
+  dnfTimers: DnfTimers;
+  /**
+   * Reason this car flipped to `"dnf"`, or `null` while the car is
+   * still racing or once it has finished cleanly. Mirrors the value
+   * returned by `tickDnfTimers` on the trip tick; the §20 results
+   * screen renders the string verbatim.
+   */
+  dnfReason: DnfReason;
+  /**
+   * 1-indexed current lap. Mirrors the meaning of `RaceState.lap` for
+   * the player but lives per-car so multi-AI grids can each track their
+   * own lap progress and the §7 finishing-order builder can split the
+   * field by `lap` plus `finishedAtMs`. Increments on lap rollover
+   * (the same `Math.floor(car.z / trackLength)` reducer the player
+   * uses), clamped to `totalLaps`.
+   */
+  lap: number;
+  /**
+   * Completed lap times in milliseconds, in lap order. The first entry
+   * is lap 1's time; the last entry is the most recently completed
+   * lap. Length is `lap - 1` while racing, exactly `totalLaps` for a
+   * `"finished"` car. The §7 final-state builder
+   * (`buildFinalRaceState`) reads this to derive per-car `bestLapMs`
+   * and the field's fastest lap.
+   */
+  lapTimes: ReadonlyArray<number>;
+  /**
+   * Sim-time-in-ms at which this AI crossed the final start/finish
+   * line, or `null` for cars that have not yet finished (still racing
+   * or DNF). The §7 finishing-order builder sorts the `"finished"`
+   * partition by ascending `finishedAtMs` so a multi-AI grid resolves
+   * its podium deterministically.
+   */
+  finishedAtMs: number | null;
 }
 
 /**
@@ -275,7 +332,59 @@ export interface RaceSessionPlayerCar {
    * `physics.ts` once the §14 weather module lands.
    */
   weatherVisualReductionActive: boolean;
+  /**
+   * Per-car race lifecycle status mirroring `RaceSessionAICar.status`
+   * for shape parity. `RaceState.phase` already carries the player's
+   * race-wide gating signal (`countdown` / `racing` / `finished`); this
+   * field adds the per-car DNF case (`"dnf"`) so the player can be
+   * frozen in place mid-race when the §7 off-track or no-progress
+   * windows trip. The race phase only flips to `"finished"` once the
+   * player either completes the final lap, the hard race time limit
+   * trips, or every car has stopped racing.
+   */
+  status: RaceCarStatus;
+  /** §7 DNF accumulators for the player car. See `RaceSessionAICar.dnfTimers`. */
+  dnfTimers: DnfTimers;
+  /** §7 DNF reason for the player car. See `RaceSessionAICar.dnfReason`. */
+  dnfReason: DnfReason;
+  /**
+   * Per-car completed lap times in milliseconds. Mirrors
+   * `RaceState.lastLapTimeMs` / `bestLapTimeMs` (which remain the
+   * canonical HUD-facing surface for the player) but laid out as the
+   * per-car array the §7 final-state builder consumes. Each entry is
+   * the elapsed-since-start ms at which that lap was completed, minus
+   * the prior entry (so the array is per-lap durations, not cumulative
+   * times). Length is `race.lap - 1` while racing, `totalLaps` for a
+   * `"finished"` player.
+   */
+  lapTimes: ReadonlyArray<number>;
+  /**
+   * Sim-time-in-ms at which the player crossed the final start/finish
+   * line, or `null` while still racing or DNF. Powers the §7 final-
+   * state builder's per-car `raceTimeMs` field.
+   */
+  finishedAtMs: number | null;
 }
+
+/**
+ * Per-car race-lifecycle status.
+ *
+ *   - `racing`: the car is still on track and integrated each tick.
+ *   - `finished`: the car has crossed the final start/finish line.
+ *     Physics integration stops; the car snapshot freezes at the post-
+ *     finish position so the standings strip and the §20 results screen
+ *     can render the same value across the rest of the race.
+ *   - `dnf`: the car tripped one of the §7 DNF thresholds (off-track
+ *     timeout, no-progress timeout) and retires. Physics integration
+ *     stops the same tick the threshold trips so a DNF'd AI freezes
+ *     where it sat rather than continuing to roll.
+ *
+ * Pinned per the iter-19 stress-test on
+ * `VibeGear2-implement-race-rules-b30656ae` (the `CarRankSnapshot.status`
+ * partition is the same set of strings) so the §7 ranking helper and
+ * the per-car runtime field share one vocabulary.
+ */
+export type RaceCarStatus = "racing" | "finished" | "dnf";
 
 export interface RaceSessionState {
   race: RaceState;
@@ -367,6 +476,11 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     assistBadge: null,
     weatherVisualReductionActive:
       (config.player.assists?.weatherVisualReduction ?? false) === true,
+    status: "racing",
+    dnfTimers: { ...INITIAL_DNF_TIMERS },
+    dnfReason: null,
+    lapTimes: [],
+    finishedAtMs: null,
   };
 
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
@@ -388,6 +502,12 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
       }),
       lastShiftUpPressed: false,
       lastShiftDownPressed: false,
+      status: "racing",
+      dnfTimers: { ...INITIAL_DNF_TIMERS },
+      dnfReason: null,
+      lap: 1,
+      lapTimes: [],
+      finishedAtMs: null,
     };
   });
 
@@ -526,15 +646,18 @@ function bufferView(track: CompiledTrack): CompiledSegmentBuffer {
  *   to 0 the phase flips to `racing` and `tick` resets so lap timing starts
  *   at the green light. No physics integration runs in countdown so the cars
  *   sit at their grid positions.
- * - `racing`: runs physics for the player and each AI, advances `elapsed` and
- *   `tick`, checks lap completion. On lap rollover records the lap time and
- *   updates best. When the player finishes the final lap the phase flips to
- *   `finished` and we stop integrating physics. As a §7 safety net, the
- *   phase also flips to `"finished"` when `elapsed` exceeds
- *   `DNF_RACE_TIME_LIMIT_SEC` (10 minutes per the iter-19 stress-test on
- *   dot `VibeGear2-implement-race-rules-b30656ae`) so a stuck race cannot
- *   block the results screen forever. Per-car DNF tracking (off-track and
- *   no-progress timers, per-car `status` field) is filed as a followup.
+ * - `racing`: runs physics for each still-racing car, advances `elapsed`
+ *   and `tick`, checks lap completion. On lap rollover records the lap
+ *   time and updates best (per car). Per-car DNF tracking runs after
+ *   physics: a car off-road and slow long enough trips
+ *   `DNF_OFF_TRACK_TIMEOUT_SEC`; a car not advancing trips
+ *   `DNF_NO_PROGRESS_TIMEOUT_SEC`. A non-racing car (status `"finished"`
+ *   or `"dnf"`) freezes its snapshot and is no longer integrated. The
+ *   race phase flips to `"finished"` when (a) the player completes the
+ *   final lap, (b) every car has stopped racing, or (c) `elapsed`
+ *   exceeds `DNF_RACE_TIME_LIMIT_SEC` as the §7 safety net (10 minutes
+ *   per the iter-19 stress-test on dot
+ *   `VibeGear2-implement-race-rules-b30656ae`).
  * - `finished`: no-op tick. The session is read-only at this point; the
  *   results overlay reads from the snapshot.
  */
@@ -565,26 +688,8 @@ export function stepRaceSession(
           phase: "countdown",
           countdownRemainingSec: remaining,
         },
-        player: {
-          car: { ...state.player.car },
-          nitro: { ...state.player.nitro },
-          lastNitroPressed: state.player.lastNitroPressed,
-          transmission: { ...state.player.transmission },
-          lastShiftUpPressed: state.player.lastShiftUpPressed,
-          lastShiftDownPressed: state.player.lastShiftDownPressed,
-          assistMemory: { ...state.player.assistMemory },
-          assistBadge: state.player.assistBadge,
-          weatherVisualReductionActive: state.player.weatherVisualReductionActive,
-        },
-        ai: state.ai.map((entry) => ({
-          car: { ...entry.car },
-          state: { ...entry.state },
-          nitro: { ...entry.nitro },
-          lastNitroPressed: entry.lastNitroPressed,
-          transmission: { ...entry.transmission },
-          lastShiftUpPressed: entry.lastShiftUpPressed,
-          lastShiftDownPressed: entry.lastShiftDownPressed,
-        })),
+        player: clonePlayerCar(state.player),
+        ai: state.ai.map(cloneAiCar),
         tick: state.tick + 1,
         sectorTimer: state.sectorTimer,
         baselineSplitsMs: state.baselineSplitsMs,
@@ -594,6 +699,12 @@ export function stepRaceSession(
     // Lights out. Flip to racing, zero the tick clock, reset the sector
     // timer so its lap-start tick matches the green light, then drop into
     // the racing branch below by recursing with the promoted state.
+    const promotedPlayer = clonePlayerCar(state.player);
+    // Lights-out resets the §19 assist memory so the smoothing filter,
+    // toggle-nitro latch, and reduced-input winner do not carry stale
+    // state from the warmup countdown into the race. Mirrors the lap-
+    // timer / sector-timer reset on the same tick.
+    promotedPlayer.assistMemory = { ...INITIAL_ASSIST_MEMORY };
     const promoted: RaceSessionState = {
       race: {
         ...state.race,
@@ -601,30 +712,8 @@ export function stepRaceSession(
         countdownRemainingSec: 0,
         elapsed: 0,
       },
-      player: {
-        car: { ...state.player.car },
-        nitro: { ...state.player.nitro },
-        lastNitroPressed: state.player.lastNitroPressed,
-        transmission: { ...state.player.transmission },
-        lastShiftUpPressed: state.player.lastShiftUpPressed,
-        lastShiftDownPressed: state.player.lastShiftDownPressed,
-        // Lights-out resets the §19 assist memory so the smoothing
-        // filter, toggle-nitro latch, and reduced-input winner do not
-        // carry stale state from the warmup countdown into the race.
-        // Mirrors the lap-timer / sector-timer reset on the same tick.
-        assistMemory: { ...INITIAL_ASSIST_MEMORY },
-        assistBadge: state.player.assistBadge,
-        weatherVisualReductionActive: state.player.weatherVisualReductionActive,
-      },
-      ai: state.ai.map((entry) => ({
-        car: { ...entry.car },
-        state: { ...entry.state },
-        nitro: { ...entry.nitro },
-        lastNitroPressed: entry.lastNitroPressed,
-        transmission: { ...entry.transmission },
-        lastShiftUpPressed: entry.lastShiftUpPressed,
-        lastShiftDownPressed: entry.lastShiftDownPressed,
-      })),
+      player: promotedPlayer,
+      ai: state.ai.map(cloneAiCar),
       tick: 0,
       sectorTimer: createSectorState(config.track.checkpoints),
       baselineSplitsMs: state.baselineSplitsMs,
@@ -638,6 +727,7 @@ export function stepRaceSession(
   const trackLength = config.track.totalLengthMeters;
   const playerStats = config.player.stats;
   const playerUpgradeTier = config.player.upgrades?.nitro;
+  const playerIsRacing = state.player.status === "racing";
 
   // §19 accessibility assists: rewrite the player's resolved input
   // before any downstream reducer (nitro, transmission, drafting,
@@ -648,41 +738,65 @@ export function stepRaceSession(
   // either: the producer returns the same input reference when no
   // rewrite happened). `weatherVisualReductionActive` flows out of the
   // same call so the future weather grip multiplier reads it from a
-  // single coherent snapshot per tick.
+  // single coherent snapshot per tick. A non-racing player (DNF or
+  // post-finish) skips the assist call entirely; the resolved input is
+  // forced to neutral so any downstream reducer that still reads it
+  // sees zero throttle / brake / nitro.
   const assistSettings = config.player.assists ?? {};
   const trackWeather =
     config.weather ?? config.track.weatherOptions[0] ?? "clear";
-  const assistResult = applyAssists(
-    playerInput,
-    assistSettings,
-    {
-      speedMps: state.player.car.speed,
-      surface: state.player.car.surface,
-      weather: trackWeather,
-      upcomingCurvature: upcomingCurvature(
-        config.track.segments,
-        state.player.car.z,
-      ),
-      dt,
-    },
-    state.player.assistMemory,
-  );
+  const assistResult = playerIsRacing
+    ? applyAssists(
+        playerInput,
+        assistSettings,
+        {
+          speedMps: state.player.car.speed,
+          surface: state.player.car.surface,
+          weather: trackWeather,
+          upcomingCurvature: upcomingCurvature(
+            config.track.segments,
+            state.player.car.z,
+          ),
+          dt,
+        },
+        state.player.assistMemory,
+      )
+    : {
+        input: NEUTRAL_INPUT,
+        memory: state.player.assistMemory,
+        // Preserve the prior badge so a HUD that snapshotted it before
+        // the DNF flip keeps reading the same value across the rest of
+        // the race. `null` is allowed by `RaceSessionPlayerCar.assistBadge`.
+        badge: state.player.assistBadge ?? {
+          active: false,
+          count: 0,
+          primary: null,
+          active_labels: [],
+        },
+        weatherVisualReductionActive:
+          state.player.weatherVisualReductionActive,
+      };
   const effectivePlayerInput = assistResult.input;
 
   // §10 nitro: advance the reducer for the player using their nitro
   // input, then feed `getNitroAccelMultiplier` into the physics step's
   // `accelMultiplier` slot so an active charge scales acceleration.
   // Reads the post-assist input so toggle-nitro and reduced-input map
-  // through the rest of the pipeline cleanly.
-  const playerNitroResult = tickNitro(
-    state.player.nitro,
-    {
-      nitroPressed: effectivePlayerInput.nitro,
-      wasPressed: state.player.lastNitroPressed,
-      upgradeTier: playerUpgradeTier,
-    },
-    dt,
-  );
+  // through the rest of the pipeline cleanly. A non-racing player
+  // freezes the nitro / transmission state at its prior value so the
+  // §20 results screen reads the same snapshot the moment the car
+  // retired (or finished).
+  const playerNitroResult = playerIsRacing
+    ? tickNitro(
+        state.player.nitro,
+        {
+          nitroPressed: effectivePlayerInput.nitro,
+          wasPressed: state.player.lastNitroPressed,
+          upgradeTier: playerUpgradeTier,
+        },
+        dt,
+      )
+    : { state: state.player.nitro };
   const playerNitroMultiplier = getNitroAccelMultiplier(
     playerNitroResult.state,
     {
@@ -696,25 +810,28 @@ export function stepRaceSession(
   // resulting `gearAccelMultiplier` is composed multiplicatively with
   // the nitro multiplier so a manual driver who taps nitro mid-band
   // still benefits from both. Auto mode ignores `shiftUp`/`shiftDown`,
-  // so the edge-gating below has no effect on auto-only players.
+  // so the edge-gating below has no effect on auto-only players. A
+  // non-racing player freezes its transmission snapshot.
   const playerMaxGear = maxGearForUpgrades(config.player.upgrades ?? null);
   const playerShiftUpEdge =
     effectivePlayerInput.shiftUp && !state.player.lastShiftUpPressed;
   const playerShiftDownEdge =
     effectivePlayerInput.shiftDown && !state.player.lastShiftDownPressed;
-  const playerTransmission = tickTransmission(
-    state.player.transmission,
-    {
-      throttle: effectivePlayerInput.throttle,
-      brake: effectivePlayerInput.brake,
-      shiftUp: playerShiftUpEdge,
-      shiftDown: playerShiftDownEdge,
-      speed: state.player.car.speed,
-      topSpeed: playerStats.topSpeed,
-      maxGear: playerMaxGear,
-    },
-    dt,
-  );
+  const playerTransmission = playerIsRacing
+    ? tickTransmission(
+        state.player.transmission,
+        {
+          throttle: effectivePlayerInput.throttle,
+          brake: effectivePlayerInput.brake,
+          shiftUp: playerShiftUpEdge,
+          shiftDown: playerShiftDownEdge,
+          speed: state.player.car.speed,
+          topSpeed: playerStats.topSpeed,
+          maxGear: playerMaxGear,
+        },
+        dt,
+      )
+    : { ...state.player.transmission };
   const playerGearMultiplier = gearAccelMultiplier(playerTransmission);
   const playerAccelMultiplier = playerNitroMultiplier * playerGearMultiplier;
 
@@ -824,28 +941,31 @@ export function stepRaceSession(
   }
 
   const playerDraftBonus = draftMultipliers.get(PLAYER_CAR_ID) ?? 1;
-  const nextPlayerCar = step(
-    state.player.car,
-    effectivePlayerInput,
-    playerStats,
-    trackContext,
-    dt,
-    { accelMultiplier: playerAccelMultiplier, draftBonus: playerDraftBonus },
-  );
+  // Skip physics integration entirely for non-racing players (DNF or
+  // post-finish). Freezing the snapshot is what makes a retired player
+  // sit in place across the rest of the race rather than continuing to
+  // coast through whatever was already in `car.speed`.
+  const nextPlayerCar = playerIsRacing
+    ? step(
+        state.player.car,
+        effectivePlayerInput,
+        playerStats,
+        trackContext,
+        dt,
+        { accelMultiplier: playerAccelMultiplier, draftBonus: playerDraftBonus },
+      )
+    : { ...state.player.car };
 
   const nextAi: RaceSessionAICar[] = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
     const tick = aiTickResults[index];
-    if (!aiConfig || !tick) {
-      return {
-        car: { ...entry.car },
-        state: { ...entry.state },
-        nitro: { ...entry.nitro },
-        lastNitroPressed: entry.lastNitroPressed,
-        transmission: { ...entry.transmission },
-        lastShiftUpPressed: entry.lastShiftUpPressed,
-        lastShiftDownPressed: entry.lastShiftDownPressed,
-      };
+    // Non-racing AI (DNF or already-finished) freezes its snapshot so
+    // the standings strip and the §20 results screen keep reading the
+    // same value. The DNF / lap rollover wiring downstream still gets
+    // a chance to update bookkeeping, but the physics-step/nitro/
+    // transmission reducers all skip.
+    if (!aiConfig || !tick || entry.status !== "racing") {
+      return cloneAiCar(entry);
     }
     const aiUpgradeTier = aiConfig.upgrades?.nitro;
     const aiNitroResult = tickNitro(
@@ -906,10 +1026,17 @@ export function stepRaceSession(
       transmission: aiTransmission,
       lastShiftUpPressed: tick.input.shiftUp,
       lastShiftDownPressed: tick.input.shiftDown,
+      status: entry.status,
+      dnfTimers: { ...entry.dnfTimers },
+      dnfReason: entry.dnfReason,
+      lap: entry.lap,
+      lapTimes: entry.lapTimes.slice(),
+      finishedAtMs: entry.finishedAtMs,
     };
   });
 
   const nextElapsed = state.race.elapsed + dt;
+  const nextElapsedMs = Math.max(1, Math.round(nextElapsed * 1000));
   const nextTick = state.tick + 1;
 
   // Lap completion. Floor of cumulative track distance.
@@ -917,44 +1044,142 @@ export function stepRaceSession(
   let lastLapTimeMs = state.race.lastLapTimeMs;
   let bestLapTimeMs = state.race.bestLapTimeMs;
   let nextPhase: RaceState["phase"] = state.race.phase;
+  let nextPlayerLapTimes: ReadonlyArray<number> = state.player.lapTimes;
+  let nextPlayerStatus: RaceCarStatus = state.player.status;
+  let nextPlayerFinishedAtMs: number | null = state.player.finishedAtMs;
 
-  if (trackLength > 0) {
+  if (playerIsRacing && trackLength > 0) {
     const lapsCompleted = Math.floor(nextPlayerCar.z / trackLength);
     const intendedLap = lapsCompleted + 1;
     if (intendedLap > state.race.lap) {
       // One or more laps crossed this tick. The MVP records a single lap
       // time for the most recent crossing; multi-lap-per-tick can only
       // happen with absurd dt and is not relevant for 60 Hz.
-      const elapsedMs = Math.max(1, Math.round(nextElapsed * 1000));
-      lastLapTimeMs = elapsedMs;
+      lastLapTimeMs = nextElapsedMs;
       bestLapTimeMs =
         bestLapTimeMs === null
-          ? elapsedMs
-          : Math.min(bestLapTimeMs, elapsedMs);
+          ? nextElapsedMs
+          : Math.min(bestLapTimeMs, nextElapsedMs);
       nextLap = intendedLap;
+      // §7 per-car lap times: append the per-lap duration (current
+      // elapsed minus the cumulative time at the prior lap boundary)
+      // for the §20 results screen + reward bonuses. The first lap's
+      // duration is `nextElapsedMs` since the lap-1 baseline is the
+      // green-light moment (`elapsed = 0`); subsequent laps subtract
+      // the cumulative ms baked into the prior `lapTimes` total.
+      const priorTotalMs = state.player.lapTimes.reduce((a, b) => a + b, 0);
+      const lapDurationMs = Math.max(1, nextElapsedMs - priorTotalMs);
+      nextPlayerLapTimes = [...state.player.lapTimes, lapDurationMs];
       if (nextLap > state.race.totalLaps) {
         nextPhase = "finished";
         nextLap = state.race.totalLaps;
+        nextPlayerStatus = "finished";
+        nextPlayerFinishedAtMs = nextElapsedMs;
       }
     }
   }
+
+  // §7 per-AI lap rollover + finishing. Each AI tracks its own lap
+  // counter (the `RaceState.lap` field is player-only) and accumulates
+  // a per-lap-times array so the §7 final-state builder can derive the
+  // per-car `bestLapMs` and the field's fastest lap. An AI that
+  // crosses the final start/finish line on this tick flips to
+  // `"finished"`; downstream ticks freeze its physics (the `nextAi`
+  // map above already gates on `entry.status !== "racing"`).
+  const aiAfterLap: RaceSessionAICar[] = nextAi.map((entry) => {
+    if (entry.status !== "racing" || trackLength <= 0) return entry;
+    const aiLapsCompleted = Math.floor(entry.car.z / trackLength);
+    const aiIntendedLap = aiLapsCompleted + 1;
+    if (aiIntendedLap <= entry.lap) return entry;
+    const priorAiTotalMs = entry.lapTimes.reduce((a, b) => a + b, 0);
+    const aiLapDurationMs = Math.max(1, nextElapsedMs - priorAiTotalMs);
+    const aiLapTimes = [...entry.lapTimes, aiLapDurationMs];
+    if (aiIntendedLap > state.race.totalLaps) {
+      return {
+        ...entry,
+        lap: state.race.totalLaps,
+        lapTimes: aiLapTimes,
+        status: "finished",
+        finishedAtMs: nextElapsedMs,
+      };
+    }
+    return { ...entry, lap: aiIntendedLap, lapTimes: aiLapTimes };
+  });
+
+  // §7 DNF detection. For each still-racing car, build a `DnfSample`
+  // from the post-step car snapshot and advance `tickDnfTimers`. A car
+  // that trips a threshold this tick flips to `status: "dnf"` with the
+  // reason on the per-car snapshot; downstream ticks freeze its
+  // physics (gates above honour `status !== "racing"`).
+  const roadHalfWidth = trackContext.roadHalfWidth;
+  const playerDnfResult =
+    nextPlayerStatus === "racing"
+      ? tickDnfTimers(
+          state.player.dnfTimers,
+          {
+            offTrack: isOffRoad(nextPlayerCar.x, roadHalfWidth),
+            speed: nextPlayerCar.speed,
+            totalDistance: nextPlayerCar.z,
+          },
+          dt,
+        )
+      : null;
+  const nextPlayerDnfTimers = playerDnfResult
+    ? playerDnfResult.timers
+    : { ...state.player.dnfTimers };
+  let nextPlayerDnfReason: DnfReason = state.player.dnfReason;
+  if (playerDnfResult?.dnf) {
+    nextPlayerStatus = "dnf";
+    nextPlayerDnfReason = playerDnfResult.reason;
+  }
+
+  const aiAfterDnf: RaceSessionAICar[] = aiAfterLap.map((entry) => {
+    if (entry.status !== "racing") return entry;
+    const result = tickDnfTimers(
+      entry.dnfTimers,
+      {
+        offTrack: isOffRoad(entry.car.x, roadHalfWidth),
+        speed: entry.car.speed,
+        totalDistance: entry.car.z,
+      },
+      dt,
+    );
+    if (!result.dnf) {
+      return { ...entry, dnfTimers: result.timers };
+    }
+    return {
+      ...entry,
+      dnfTimers: result.timers,
+      status: "dnf",
+      dnfReason: result.reason,
+    };
+  });
 
   // §7 hard race time limit. The pure helper `exceedsRaceTimeLimit`
   // pins the threshold at `DNF_RACE_TIME_LIMIT_SEC` (10 minutes) per
   // the iter-19 stress-test §4 on dot
   // `VibeGear2-implement-race-rules-b30656ae`. Once the elapsed sim
   // time crosses the cap, the session flips to `"finished"` so a
-  // stuck race (e.g. a player who parks in the gravel and never
-  // moves, or any other no-progress edge the per-car DNF wiring
-  // does not yet cover) cannot block the results screen forever.
-  // The lap-completion branch already moves to `"finished"` when the
+  // stuck race (a player who parks in the gravel and never moves; an
+  // edge case where every car is still racing but no one is making
+  // progress) cannot block the results screen forever. The lap-
+  // completion branch above already moves to `"finished"` when the
   // player wins; this branch is the safety net that fires when the
-  // player did not. Per-car DNF tracking (off-track / no-progress
-  // timers, per-car `status: "dnf"`) is filed as a followup; the
-  // hard cap is the smallest defensible fragment of §7 that can land
-  // without touching the multi-car-state shape.
+  // player did not.
   if (nextPhase !== "finished" && exceedsRaceTimeLimit(nextElapsed)) {
     nextPhase = "finished";
+  }
+
+  // §7 multi-car finish gate. Race phase flips to `"finished"` once
+  // every car in the field has stopped racing (every entry is either
+  // `"finished"` or `"dnf"`). Catches the all-AI-DNF + player-DNF
+  // case so a session whose player retired and whose AIs all retired
+  // does not leave the results screen blocked indefinitely.
+  if (nextPhase !== "finished") {
+    const everyoneStopped =
+      nextPlayerStatus !== "racing" &&
+      aiAfterDnf.every((entry) => entry.status !== "racing");
+    if (everyoneStopped) nextPhase = "finished";
   }
 
   // Sector timer: advance from the player's lap-local z. Lap-rollover within
@@ -1008,8 +1233,13 @@ export function stepRaceSession(
       assistMemory: assistResult.memory,
       assistBadge: assistResult.badge,
       weatherVisualReductionActive: assistResult.weatherVisualReductionActive,
+      status: nextPlayerStatus,
+      dnfTimers: nextPlayerDnfTimers,
+      dnfReason: nextPlayerDnfReason,
+      lapTimes: nextPlayerLapTimes,
+      finishedAtMs: nextPlayerFinishedAtMs,
     },
-    ai: nextAi,
+    ai: aiAfterDnf,
     tick: nextTick,
     sectorTimer: nextSectorTimer,
     baselineSplitsMs: nextBaseline,
@@ -1048,29 +1278,50 @@ export function totalProgress(carZ: number, lap: number, trackLengthMeters: numb
 function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState {
   return {
     race: { ...state.race },
-    player: {
-      car: { ...state.player.car },
-      nitro: { ...state.player.nitro },
-      lastNitroPressed: state.player.lastNitroPressed,
-      transmission: { ...state.player.transmission },
-      lastShiftUpPressed: state.player.lastShiftUpPressed,
-      lastShiftDownPressed: state.player.lastShiftDownPressed,
-      assistMemory: { ...state.player.assistMemory },
-      assistBadge: state.player.assistBadge,
-      weatherVisualReductionActive: state.player.weatherVisualReductionActive,
-    },
-    ai: state.ai.map((entry) => ({
-      car: { ...entry.car },
-      state: { ...entry.state },
-      nitro: { ...entry.nitro },
-      lastNitroPressed: entry.lastNitroPressed,
-      transmission: { ...entry.transmission },
-      lastShiftUpPressed: entry.lastShiftUpPressed,
-      lastShiftDownPressed: entry.lastShiftDownPressed,
-    })),
+    player: clonePlayerCar(state.player),
+    ai: state.ai.map(cloneAiCar),
     tick: state.tick,
     sectorTimer: state.sectorTimer,
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
+  };
+}
+
+function clonePlayerCar(
+  player: Readonly<RaceSessionPlayerCar>,
+): RaceSessionPlayerCar {
+  return {
+    car: { ...player.car },
+    nitro: { ...player.nitro },
+    lastNitroPressed: player.lastNitroPressed,
+    transmission: { ...player.transmission },
+    lastShiftUpPressed: player.lastShiftUpPressed,
+    lastShiftDownPressed: player.lastShiftDownPressed,
+    assistMemory: { ...player.assistMemory },
+    assistBadge: player.assistBadge,
+    weatherVisualReductionActive: player.weatherVisualReductionActive,
+    status: player.status,
+    dnfTimers: { ...player.dnfTimers },
+    dnfReason: player.dnfReason,
+    lapTimes: player.lapTimes.slice(),
+    finishedAtMs: player.finishedAtMs,
+  };
+}
+
+function cloneAiCar(entry: Readonly<RaceSessionAICar>): RaceSessionAICar {
+  return {
+    car: { ...entry.car },
+    state: { ...entry.state },
+    nitro: { ...entry.nitro },
+    lastNitroPressed: entry.lastNitroPressed,
+    transmission: { ...entry.transmission },
+    lastShiftUpPressed: entry.lastShiftUpPressed,
+    lastShiftDownPressed: entry.lastShiftDownPressed,
+    status: entry.status,
+    dnfTimers: { ...entry.dnfTimers },
+    dnfReason: entry.dnfReason,
+    lap: entry.lap,
+    lapTimes: entry.lapTimes.slice(),
+    finishedAtMs: entry.finishedAtMs,
   };
 }

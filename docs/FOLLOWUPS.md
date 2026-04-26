@@ -27,19 +27,19 @@ unit tests stand alone.
 ## F-028: Per-car DNF tracking in raceSession
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/race-rules-time-limit` slice landed the §7 hard race
-time limit (`exceedsRaceTimeLimit` wired into the racing branch), but the
-per-car DNF wiring pinned by the iter-19 stress-test §4 is deferred. The
-pure helpers (`tickDnfTimers`, `DNF_OFF_TRACK_TIMEOUT_SEC`,
-`DNF_NO_PROGRESS_TIMEOUT_SEC`, `DNF_OFF_TRACK_RESET_SPEED_M_PER_S`) are
-already shipped in `src/game/raceRules.ts` with unit coverage. The blocker
-is shape: per-car DNF needs a `cars` array on `RaceState` (or a parallel
-`carDnf` map on `RaceSessionState`) with per-car `status`, `offTrackSec`,
-`noProgressSec`, and `lastProgressMark`, plus a per-car AI lap counter so a
-DNF'd AI is no longer integrated. Land alongside the multi-car finishing
-order work (also currently player-only) and the §20 results screen so the
-new fields have a renderer the same slice they appear.
+**Status:** done
+**Notes:** The `feat/per-car-dnf-tracking` slice wired
+`tickDnfTimers` + `DNF_OFF_TRACK_TIMEOUT_SEC` +
+`DNF_NO_PROGRESS_TIMEOUT_SEC` + `DNF_OFF_TRACK_RESET_SPEED_M_PER_S`
+into `stepRaceSession`. Per-car `status`, `dnfTimers`, `dnfReason`,
+`lap` (AI), `lapTimes`, and `finishedAtMs` now live on
+`RaceSessionPlayerCar` / `RaceSessionAICar` so a DNF'd car (player or
+AI) freezes its physics integration on the same tick its threshold
+trips. The race phase additionally flips to `"finished"` once every
+car has stopped racing, mirroring the §7 hard-cap safety net. The
+§20 results screen and the §12 reward-builder slice can now consume
+the per-car arrays without further shape changes; only the renderer
+plumbing is left and falls under `race-results-7b0abfaa`.
 
 ## F-027: HUD assist badge renderer
 **Created:** 2026-04-26
