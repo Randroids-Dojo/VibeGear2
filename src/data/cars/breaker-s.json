@@ -1,0 +1,31 @@
+{
+  "id": "breaker-s",
+  "name": "Breaker S",
+  "class": "sprint",
+  "purchasePrice": 8000,
+  "repairFactor": 0.95,
+  "baseStats": {
+    "topSpeed": 58.0,
+    "accel": 16.5,
+    "brake": 30.0,
+    "gripDry": 1.08,
+    "gripWet": 0.9,
+    "stability": 1.05,
+    "durability": 0.92,
+    "nitroEfficiency": 0.95
+  },
+  "upgradeCaps": {
+    "engine": 4,
+    "gearbox": 4,
+    "dryTires": 4,
+    "wetTires": 4,
+    "nitro": 4,
+    "armor": 4,
+    "cooling": 4,
+    "aero": 3
+  },
+  "visualProfile": {
+    "spriteSet": "breaker_s",
+    "paletteSet": "starter_b"
+  }
+}

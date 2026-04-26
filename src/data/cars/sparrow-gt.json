@@ -1,0 +1,31 @@
+{
+  "id": "sparrow-gt",
+  "name": "Sparrow GT",
+  "class": "balance",
+  "purchasePrice": 0,
+  "repairFactor": 1.0,
+  "baseStats": {
+    "topSpeed": 61.0,
+    "accel": 16.0,
+    "brake": 28.0,
+    "gripDry": 1.0,
+    "gripWet": 0.82,
+    "stability": 1.0,
+    "durability": 0.95,
+    "nitroEfficiency": 1.0
+  },
+  "upgradeCaps": {
+    "engine": 4,
+    "gearbox": 4,
+    "dryTires": 4,
+    "wetTires": 4,
+    "nitro": 4,
+    "armor": 4,
+    "cooling": 4,
+    "aero": 3
+  },
+  "visualProfile": {
+    "spriteSet": "sparrow_gt",
+    "paletteSet": "starter_a"
+  }
+}

@@ -87,16 +87,30 @@ export type Track = z.infer<typeof TrackSchema>;
 
 // Car -----------------------------------------------------------------------
 
+/**
+ * Car classes per docs/gdd/11-cars-and-stats.md "Car classes" table.
+ *
+ * - sprint: beginner-friendly grip-and-recovery archetype
+ * - balance: all-purpose, no dominant edge
+ * - power: top speed + nitro scaling, harder in weather
+ * - enduro: durability and stable late race
+ * - wet-spec: rain and snow specialist, weak in dry finals
+ */
 export const CarClassSchema = z.enum([
+  "sprint",
   "balance",
-  "speed",
-  "grip",
-  "accel",
-  "heavy",
-  "light",
+  "power",
+  "enduro",
+  "wet-spec",
 ]);
 export type CarClass = z.infer<typeof CarClassSchema>;
 
+/**
+ * Base car stats. All values are positive multipliers or absolute speeds
+ * per docs/gdd/23-balancing-tables.md "Core car balance sheet". Durability
+ * is a multiplier, not a percentage, so values above 1.0 are valid for the
+ * heavy-class entries (Bastion LM at 1.12).
+ */
 export const CarBaseStatsSchema = z.object({
   topSpeed: positiveNumber,
   accel: positiveNumber,
@@ -104,7 +118,7 @@ export const CarBaseStatsSchema = z.object({
   gripDry: positiveNumber,
   gripWet: positiveNumber,
   stability: positiveNumber,
-  durability: unitInterval,
+  durability: positiveNumber,
   nitroEfficiency: positiveNumber,
 });
 export type CarBaseStats = z.infer<typeof CarBaseStatsSchema>;

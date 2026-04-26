@@ -6,6 +6,92 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Car set + stats (§11) and garage car selector
+
+**GDD sections touched:** [§11](gdd/11-cars-and-stats.md), [§22](gdd/22-data-schemas.md), [§23](gdd/23-balancing-tables.md)
+**Branch / PR:** `feat/car-set-stats` (off `main`), PR pending
+**Status:** Implemented
+
+### Done
+- Authored the six MVP cars from §11 + §23 as JSON files under
+  `src/data/cars/`: `sparrow-gt.json`, `breaker-s.json`, `vanta-xr.json`,
+  `tempest-r.json`, `bastion-lm.json`, `nova-shade.json`. Stats match the
+  §23 "Core car balance sheet" exactly. Brake values (which §23 omits)
+  scale with topSpeed and grip per starter vs. late-game tier.
+- Added `src/data/cars/index.ts` exposing `CARS`, `CARS_BY_ID`,
+  `STARTER_CAR_ID`, and `getCar(id)`. Re-exported from
+  `src/data/index.ts` so the rest of the app can `import { getCar } from
+  "@/data"`. Sparrow GT (purchasePrice 0) is the granted starter, matching
+  the existing `defaultSave()` invariant in `src/persistence/save.ts`.
+- Updated `src/data/schemas.ts`:
+  - `CarClassSchema` now enumerates the §11 classes (`sprint`, `balance`,
+    `power`, `enduro`, `wet-spec`) instead of the prior placeholder set
+    (`balance`, `speed`, `grip`, `accel`, `heavy`, `light`).
+  - `CarBaseStatsSchema.durability` widened from `unitInterval` to
+    `positiveNumber` so heavy enduro cars (Bastion LM at 1.12) pass
+    validation. Comment cites §23 as the source.
+- Added `src/data/__tests__/cars-content.test.ts` (29 cases): catalogue
+  size and id set, unique indexing, starter invariant, plus per-car
+  schema validation, §23 balance match (within 1e-5), positive brake,
+  and non-negative upgrade caps. All `it.each`-style so adding a car
+  picks up coverage automatically once it is registered.
+- Added `src/app/garage/cars/page.tsx`, a client component that loads
+  the localStorage save, renders every car with its §22 stats, and lets
+  the player either set the active car (owned cars) or buy one (gated
+  by credits). Selling is intentionally out of scope; the §11 dot's
+  edge case ("cannot sell active car") is satisfied by not exposing
+  selling at all in this slice. Status messages surface save failures.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes 105/105 (29 new + 76 existing). The schema test
+  suite still rejects unknown classes; the §22 example car ("balance")
+  remains valid under the new enum.
+- `npm run build` succeeds; `/garage/cars` route ships at 17.6 kB.
+- `grep` for U+2014 and U+2013 across all touched files returns nothing.
+- Manual visual verification at `/garage/cars` deferred to a human run
+  of `npm run dev`. The agent environment cannot drive a real browser
+  so the persistence round-trip is covered only by unit tests of
+  `loadSave`/`saveSave` plus the page logic. Logged here per RULE 8.
+
+### Decisions and assumptions
+- The prior `CarClassSchema` enum (`speed`, `grip`, `accel`, `heavy`,
+  `light`) was a Phase 0 placeholder that did not match §11. Replacing
+  it with the §11 classes is a schema correction, not a breaking change
+  for shipped saves: only the §22 example used "balance" (still valid)
+  and there are no live cars on disk yet.
+- `durability` was previously `unitInterval` (0..1). §23 lists 1.12 for
+  Bastion LM, so the schema was wrong. Widened to `positiveNumber` with
+  a comment pointing at §23. No callers depended on the upper bound
+  behaviour; the schemas test relied only on the unknown-class and
+  negative-tier rejections, which still hold.
+- Brake values are not in §23. Picked starter brakes between 27 and
+  30, late-game brakes 31 to 33, scaling with grip and stability. If a
+  later balance pass disagrees, only the JSONs need to change.
+- `purchasePrice` is also absent from §23. Sparrow GT is 0 (starter
+  invariant); the rest follow a starter (8k, 10k) vs late (28k, 32k,
+  48k) split that gives the player a clear progression curve. Open to
+  rebalance when the economy slice (§12) lands.
+- Wet-spec is in the schema but no §11 example car declares it. Left
+  the enum entry in for the niche-unlock car that §11 says exists
+  ("Niche unlock") so a future content slice can drop a JSON in
+  without re-touching the schema.
+- Selling is deferred. The §11 dot lists "cannot sell active car" as
+  an edge case; satisfied trivially by not exposing a sell button in
+  this slice. Will be revisited with the upgrade UI.
+
+### Followups created
+- None. Selling, hangar visuals, and the §12 upgrade panel are all
+  already covered by other ready dots.
+
+### GDD edits
+- None. The schema correction (CarClass enum + durability bound)
+  brings the code into agreement with §11 and §23 as written; no GDD
+  edits required.
+
+---
+
 ## 2026-04-26: Slice: Pseudo-3D road renderer (Canvas2D, single straight track)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md), [§16](gdd/16-rendering-and-visual-design.md), [§21](gdd/21-technical-design-for-web-implementation.md), [§22](gdd/22-data-schemas.md)

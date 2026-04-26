@@ -1,0 +1,31 @@
+{
+  "id": "nova-shade",
+  "name": "Nova Shade",
+  "class": "power",
+  "purchasePrice": 48000,
+  "repairFactor": 1.3,
+  "baseStats": {
+    "topSpeed": 82.0,
+    "accel": 22.0,
+    "brake": 33.0,
+    "gripDry": 0.95,
+    "gripWet": 0.78,
+    "stability": 0.92,
+    "durability": 0.9,
+    "nitroEfficiency": 1.12
+  },
+  "upgradeCaps": {
+    "engine": 5,
+    "gearbox": 5,
+    "dryTires": 4,
+    "wetTires": 4,
+    "nitro": 5,
+    "armor": 4,
+    "cooling": 4,
+    "aero": 5
+  },
+  "visualProfile": {
+    "spriteSet": "nova_shade",
+    "paletteSet": "late_c"
+  }
+}

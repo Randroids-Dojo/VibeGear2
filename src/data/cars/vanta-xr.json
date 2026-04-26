@@ -1,0 +1,31 @@
+{
+  "id": "vanta-xr",
+  "name": "Vanta XR",
+  "class": "power",
+  "purchasePrice": 10000,
+  "repairFactor": 1.1,
+  "baseStats": {
+    "topSpeed": 64.0,
+    "accel": 17.5,
+    "brake": 27.0,
+    "gripDry": 0.93,
+    "gripWet": 0.76,
+    "stability": 0.9,
+    "durability": 0.88,
+    "nitroEfficiency": 1.08
+  },
+  "upgradeCaps": {
+    "engine": 4,
+    "gearbox": 4,
+    "dryTires": 4,
+    "wetTires": 4,
+    "nitro": 4,
+    "armor": 4,
+    "cooling": 4,
+    "aero": 3
+  },
+  "visualProfile": {
+    "spriteSet": "vanta_xr",
+    "paletteSet": "starter_c"
+  }
+}

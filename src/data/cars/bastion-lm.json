@@ -1,0 +1,31 @@
+{
+  "id": "bastion-lm",
+  "name": "Bastion LM",
+  "class": "enduro",
+  "purchasePrice": 28000,
+  "repairFactor": 0.85,
+  "baseStats": {
+    "topSpeed": 72.0,
+    "accel": 18.0,
+    "brake": 31.0,
+    "gripDry": 1.0,
+    "gripWet": 0.86,
+    "stability": 1.08,
+    "durability": 1.12,
+    "nitroEfficiency": 0.96
+  },
+  "upgradeCaps": {
+    "engine": 4,
+    "gearbox": 4,
+    "dryTires": 4,
+    "wetTires": 4,
+    "nitro": 4,
+    "armor": 5,
+    "cooling": 5,
+    "aero": 4
+  },
+  "visualProfile": {
+    "spriteSet": "bastion_lm",
+    "paletteSet": "late_b"
+  }
+}

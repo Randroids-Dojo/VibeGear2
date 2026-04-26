@@ -1,0 +1,31 @@
+{
+  "id": "tempest-r",
+  "name": "Tempest R",
+  "class": "balance",
+  "purchasePrice": 32000,
+  "repairFactor": 1.15,
+  "baseStats": {
+    "topSpeed": 76.0,
+    "accel": 20.0,
+    "brake": 32.0,
+    "gripDry": 1.02,
+    "gripWet": 0.84,
+    "stability": 1.0,
+    "durability": 0.96,
+    "nitroEfficiency": 1.05
+  },
+  "upgradeCaps": {
+    "engine": 5,
+    "gearbox": 5,
+    "dryTires": 4,
+    "wetTires": 4,
+    "nitro": 5,
+    "armor": 4,
+    "cooling": 4,
+    "aero": 4
+  },
+  "visualProfile": {
+    "spriteSet": "tempest_r",
+    "paletteSet": "late_a"
+  }
+}
