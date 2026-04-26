@@ -10,6 +10,29 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-038: Wire `buildRaceResult` into the race-finish flow + push to `/race/results`
+**Created:** 2026-04-26
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The `feat/race-results-screen` slice (commit `e1129b7`)
+landed the pure builder `buildRaceResult(state, save, track)` in
+`src/game/raceResult.ts` (33 unit tests) and the standalone
+`/race/results` page that reads a session-storage handoff via
+`src/components/results/raceResultStorage.ts`. The commit message
+itself files the wiring as a follow-up: today nothing on the race
+route calls `buildRaceResult`, writes the storage payload, or
+pushes the router to `/race/results`, so the screen is unreachable
+from gameplay. The wiring should happen at race-finish in
+`src/game/raceSession.ts` (or its caller in `src/app/race/page.tsx`)
+and reuse the same handoff for Practice / Quick Race / Time Trial
+per the dot's "each surface decides whether to apply the patch"
+contract. Mirrors the F-026 / F-032 / F-034 / F-035 / F-036 / F-037
+producer-without-consumer pattern. Promoted to `blocks-release`
+because the results screen is on the GDD §5 inter-race path; the
+race loop cannot complete without it.
+
+---
+
 ## F-037: Wire `easyModeBonus` into the tour-clear bonus payout
 **Created:** 2026-04-26
 **Priority:** nice-to-have
