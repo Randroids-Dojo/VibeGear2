@@ -84,6 +84,7 @@ import {
   type TrackContext,
 } from "./physics";
 import { EMPTY_PASSED_SET } from "./raceCheckpoints";
+import { exceedsRaceTimeLimit } from "./raceRules";
 import {
   DEFAULT_COUNTDOWN_SEC,
   type RaceState,
@@ -528,7 +529,12 @@ function bufferView(track: CompiledTrack): CompiledSegmentBuffer {
  * - `racing`: runs physics for the player and each AI, advances `elapsed` and
  *   `tick`, checks lap completion. On lap rollover records the lap time and
  *   updates best. When the player finishes the final lap the phase flips to
- *   `finished` and we stop integrating physics.
+ *   `finished` and we stop integrating physics. As a §7 safety net, the
+ *   phase also flips to `"finished"` when `elapsed` exceeds
+ *   `DNF_RACE_TIME_LIMIT_SEC` (10 minutes per the iter-19 stress-test on
+ *   dot `VibeGear2-implement-race-rules-b30656ae`) so a stuck race cannot
+ *   block the results screen forever. Per-car DNF tracking (off-track and
+ *   no-progress timers, per-car `status` field) is filed as a followup.
  * - `finished`: no-op tick. The session is read-only at this point; the
  *   results overlay reads from the snapshot.
  */
@@ -931,6 +937,24 @@ export function stepRaceSession(
         nextLap = state.race.totalLaps;
       }
     }
+  }
+
+  // §7 hard race time limit. The pure helper `exceedsRaceTimeLimit`
+  // pins the threshold at `DNF_RACE_TIME_LIMIT_SEC` (10 minutes) per
+  // the iter-19 stress-test §4 on dot
+  // `VibeGear2-implement-race-rules-b30656ae`. Once the elapsed sim
+  // time crosses the cap, the session flips to `"finished"` so a
+  // stuck race (e.g. a player who parks in the gravel and never
+  // moves, or any other no-progress edge the per-car DNF wiring
+  // does not yet cover) cannot block the results screen forever.
+  // The lap-completion branch already moves to `"finished"` when the
+  // player wins; this branch is the safety net that fires when the
+  // player did not. Per-car DNF tracking (off-track / no-progress
+  // timers, per-car `status: "dnf"`) is filed as a followup; the
+  // hard cap is the smallest defensible fragment of §7 that can land
+  // without touching the multi-car-state shape.
+  if (nextPhase !== "finished" && exceedsRaceTimeLimit(nextElapsed)) {
+    nextPhase = "finished";
   }
 
   // Sector timer: advance from the player's lap-local z. Lap-rollover within

@@ -6,6 +6,93 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §7 race rules hard time limit wired into raceSession
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) (DNF / hard race time limit
+safety net now flips a stuck race to `"finished"`).
+**Branch / PR:** `feat/race-rules-time-limit` (stacked on
+`feat/hud-assist-badge`), PR pending.
+**Status:** Implemented (single-file wiring + 3 new tests + 2 followups
+filed; verify chain green). Dot
+`VibeGear2-implement-race-rules-b30656ae` closed; per-car DNF tracking
+deferred to F-028 and the e2e race-finish spec deferred to F-029.
+
+### Done
+- `src/game/raceSession.ts` now imports `exceedsRaceTimeLimit` from
+  `./raceRules` and calls it once per racing tick, after the
+  lap-completion branch. When the elapsed sim time crosses
+  `DNF_RACE_TIME_LIMIT_SEC` (10 minutes per the iter-19 stress-test
+  on dot `VibeGear2-implement-race-rules-b30656ae`), the race phase
+  flips to `"finished"`. The lap-completion `nextPhase` decision wins
+  if both fire on the same tick: a player who crosses the line at the
+  cap still gets a finish, not a timeout.
+- `stepRaceSession`'s docstring now names the time-limit safety net
+  alongside the lap-completion finish branch and points at F-028 for
+  per-car DNF tracking.
+- `src/game/__tests__/raceSession.test.ts` gained a
+  `stepRaceSession (hard race time limit)` describe block with three
+  tests: phase flips to `"finished"` on the tick the cap is crossed,
+  no premature flip when `elapsed` is well below the cap, and a
+  same-tick finish-vs-timeout race resolves to finish (lap clamps to
+  `totalLaps`).
+- `docs/FOLLOWUPS.md`: F-028 (per-car DNF tracking in raceSession)
+  and F-029 (Playwright e2e race-finish spec) filed `nice-to-have`
+  with detailed scope notes so the next slice that touches §7 race
+  rules picks them up cleanly.
+
+### Why
+- §7 requires DNF / timeout behaviour so a stuck race cannot block
+  the results screen forever. The pure helper `exceedsRaceTimeLimit`
+  has been shipped on `raceRules.ts` since the iter-19 dot landed but
+  had no consumer; this slice wires the smallest defensible fragment
+  (the hard cap) into the session reducer without touching the
+  multi-car-state shape.
+- The full per-car DNF wiring (off-track and no-progress timers per
+  car, per-car `status: "dnf"`, removal from physics integration) is
+  larger than fits in one slice. It needs a `cars` array on
+  `RaceState` (or a parallel map on `RaceSessionState`) and updates
+  to every consumer of those shapes (HUD, sector timer, ghost
+  recorder, results overlay). F-028 captures the scope so the
+  follow-up slice has the design notes ready.
+- The lap-completion branch's `nextPhase = "finished"` already runs
+  before the new time-limit check, so the order of operations
+  preserves the user-visible "you finished" outcome over the safety
+  net "the clock ran out" outcome. Documented in the new test that
+  asserts both conditions fire on the same tick.
+
+### Skip
+- Per-car DNF status, off-track timer wiring, and no-progress timer
+  wiring. Filed as F-028.
+- Multi-car finishing order (currently only the player can flip the
+  race to `"finished"`). The lap-completion branch only reads the
+  player's `z`. Land alongside F-028 because the AI-finish path
+  needs the same per-car state shape.
+- Playwright `e2e/race-finish.spec.ts`. Filed as F-029. The `/race`
+  demo route does not yet render a results overlay so there is
+  nothing meaningful to assert in a browser; the unit tests cover
+  the reducer logic.
+- Pause-during-countdown verification (called out in the iter-19
+  stress-test §1). The session's countdown branch already halts on
+  `dt <= 0` and `LoopHandle.pause()` (in `src/game/loop.ts`)
+  short-circuits the simulate callback, so the existing pause path
+  trivially handles this. Adding a dedicated test would duplicate
+  `loop.test.ts` coverage.
+
+### GDD edits
+- None. The hard cap value (10 minutes) was pinned by the iter-19
+  stress-test on the dot, not the GDD; §7 names DNF as a fail state
+  but is silent on the threshold so the §7 text needs no edit.
+
+### Verification
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` (Vitest): all suites pass.
+- `npm run build`: success.
+- `npm run test:e2e` (Playwright): all suites pass.
+
+---
+
 ## 2026-04-26: Slice: F-027 HUD accessibility-assist badge renderer
 
 **GDD sections touched:**

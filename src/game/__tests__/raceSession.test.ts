@@ -230,6 +230,66 @@ describe("stepRaceSession (lap completion)", () => {
   });
 });
 
+describe("stepRaceSession (hard race time limit)", () => {
+  it("flips phase to 'finished' when elapsed crosses DNF_RACE_TIME_LIMIT_SEC", () => {
+    // Build a session that has not yet completed the player's lap, then
+    // fast-forward the race clock to one tick before the §7 hard cap.
+    // Verifies the safety-net behaviour pinned by the iter-19 stress-test
+    // §4: a stuck race cannot block the results screen forever.
+    const config = buildConfig({ countdownSec: 0, totalLaps: 5 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      race: {
+        ...session.race,
+        elapsed: 600 - DT, // one tick below DNF_RACE_TIME_LIMIT_SEC.
+      },
+    };
+    expect(session.race.phase).toBe("racing");
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.race.phase).toBe("finished");
+  });
+
+  it("does not flip to 'finished' when elapsed is well below the cap", () => {
+    // Sanity guard: a one-tick advance early in the race must not trip
+    // the time-limit branch even when the player has produced no input.
+    const config = buildConfig({ countdownSec: 0, totalLaps: 5 });
+    let session = createRaceSession(config);
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.race.phase).toBe("racing");
+  });
+
+  it("preserves a 'finished' decision from lap-completion (no double-flip)", () => {
+    // When the player crosses the final start/finish on the same tick the
+    // hard cap would otherwise trip, the lap-completion branch wins. The
+    // resulting `lap` clamp to `totalLaps` is the user-visible signal that
+    // the race ended on a finish, not a timeout.
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 1,
+    };
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      race: {
+        ...session.race,
+        elapsed: 600 - DT,
+      },
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: track.totalLengthMeters - 0.1, speed: 60 },
+      },
+    };
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(session.race.phase).toBe("finished");
+    expect(session.race.lap).toBe(1);
+  });
+});
+
 describe("totalProgress", () => {
   it("ranks a leader on lap 2 ahead of a follower on lap 1", () => {
     const trackLen = 1200;

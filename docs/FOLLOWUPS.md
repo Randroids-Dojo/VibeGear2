@@ -10,6 +10,37 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-029: Playwright e2e race-finish spec
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The iter-19 stress-test on dot
+`VibeGear2-implement-race-rules-b30656ae` calls for an `e2e/race-finish.spec.ts`
+that runs a full multi-lap race against AI and asserts the results overlay
+appears. The current `/race` demo route does not yet render a results overlay
+(no `data-testid="race-results"` target), and the lap-completion path stops
+physics integration but does not surface a finish UI. Land this once the
+§7 results screen lands (likely the `economy-upgrade-ff73b279` slice or its
+HUD sibling). Until then, the `stepRaceSession` lap-completion and time-limit
+unit tests stand alone.
+
+## F-028: Per-car DNF tracking in raceSession
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/race-rules-time-limit` slice landed the §7 hard race
+time limit (`exceedsRaceTimeLimit` wired into the racing branch), but the
+per-car DNF wiring pinned by the iter-19 stress-test §4 is deferred. The
+pure helpers (`tickDnfTimers`, `DNF_OFF_TRACK_TIMEOUT_SEC`,
+`DNF_NO_PROGRESS_TIMEOUT_SEC`, `DNF_OFF_TRACK_RESET_SPEED_M_PER_S`) are
+already shipped in `src/game/raceRules.ts` with unit coverage. The blocker
+is shape: per-car DNF needs a `cars` array on `RaceState` (or a parallel
+`carDnf` map on `RaceSessionState`) with per-car `status`, `offTrackSec`,
+`noProgressSec`, and `lastProgressMark`, plus a per-car AI lap counter so a
+DNF'd AI is no longer integrated. Land alongside the multi-car finishing
+order work (also currently player-only) and the §20 results screen so the
+new fields have a renderer the same slice they appear.
+
 ## F-027: HUD assist badge renderer
 **Created:** 2026-04-26
 **Priority:** nice-to-have
