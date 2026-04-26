@@ -6,6 +6,106 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: damage model per §13
+
+**GDD sections touched:** [§13](gdd/13-damage-repairs-and-risk.md)
+("Damage sources", "Damage visualization", "Mechanical effects",
+"Repair decisions", "Race-ending damage threshold"),
+[§23](gdd/23-balancing-tables.md) ("Damage formula targets").
+**Branch / PR:** `feat/damage-model` (stacked on
+`feat/drafting-slipstream`), PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/damage.ts`: pure damage module with the public
+  surface `applyHit`, `applyOffRoadDamage`, `performanceMultiplier`,
+  `isWrecked`, `repairCostFor`, `totalRepairCost`, `createDamageState`,
+  `PRISTINE_DAMAGE_STATE`, plus the constants surface
+  (`DEFAULT_ZONE_DISTRIBUTION`, `DAMAGE_UNIT_SCALE = 100`,
+  `PERFORMANCE_FLOOR = { engine: 0.55, tires: 0.65, body: 1.0 }`,
+  `TOTAL_DAMAGE_WEIGHTS = { engine: 0.45, tires: 0.20, body: 0.35 }`,
+  `WRECK_THRESHOLD = 0.95`, `OFF_ROAD_DAMAGE_PER_M = 0.000107`,
+  `REPAIR_BASE_COST_CREDITS = { engine: 1500, tires: 600, body: 900 }`).
+- Per-zone (`engine`, `tires`, `body`) accumulator with weighted total.
+  Hits clamp at 1.0 per zone with no overflow bleed into other zones.
+  No `Math.random` or `Date.now`; identical inputs return deep-equal
+  outputs (1000-iteration deep-equal test).
+- `applyOffRoadDamage(state, speed, dt)` ships the F-015 hand-off:
+  body damage from 5 s of top-speed off-road equals one mid-speed
+  carHit body share within 1%. F-015 marked `in-progress` (producer
+  ready, consumer wiring deferred to the race-session damage
+  integration slice tracked as F-019).
+- Added `src/game/__tests__/damage.test.ts` (42 tests): verify items
+  cell-by-cell (rub mid-range distribution, clamping no-bleed,
+  performance falloff at engine=0.5 -> 0.775, body floor at 1.0,
+  wreck threshold trip and tires-only no-trip, repair cost zero on
+  clean, determinism, idempotent no-op hits, off-road accumulator
+  matching the F-015 stress-test), plus distribution-row sums-to-1
+  invariants and constants-surface sanity checks.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (750 tests, 42 new in `damage.test.ts`).
+- `npm run build` clean. No route-size delta (damage is a game-logic
+  module not yet wired into any page module).
+- `npm run test:e2e` passes (15 specs, no new e2e specs since damage
+  is pure game logic and not yet wired into the race scene).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- The §23 magnitude ranges (e.g. `rubDamage = 2 to 4`) collapse to
+  the mid-range value (caller-supplied) until the seeded-RNG slice
+  lands. The damage module itself never consumes a PRNG so the
+  determinism invariant holds regardless of how the caller picks
+  magnitudes.
+- `DEFAULT_ZONE_DISTRIBUTION` rows (per HitKind) are pinned per the
+  iter-19 stress-test §4. Each row sums to 1.0 so `totalIncrement` is
+  conserved across zones; balancing pass owns final values.
+- `DAMAGE_UNIT_SCALE = 100` converts §23 raw magnitudes (where a wall
+  hit at `24` is "serious but survivable") to the `[0, 1]` per-zone
+  scale this module uses internally. A wall hit at 24 + speedFactor 1
+  deposits 0.24 units across zones, matching the §13 design goal.
+- `PERFORMANCE_FLOOR` keeps a fully damaged car limp-but-finishable
+  per the §13 "Balancing principle". Body damage returns multiplier
+  1.0 because §13 routes body penalties through the `rub` hit
+  category (rubbing penalty surfaces as new tires-zone damage), not
+  through a direct performance multiplier.
+- `TOTAL_DAMAGE_WEIGHTS` weights engine highest because a holed
+  engine ends a race; tires lowest because §13 says "side / rear
+  damage cause handling effects" rather than DNF-class consequences.
+- `WRECK_THRESHOLD = 0.95` (not 1.0) leaves room for a HUD
+  "you're about to wreck" warning band before the §7 race-rules slice
+  flips the car to `dnf`.
+- `OFF_ROAD_DAMAGE_PER_M = 0.000107` is calibrated to the F-015
+  stress-test target (5 s top-speed off-road body damage equals one
+  mid-speed carHit body share within 1%).
+- `REPAIR_BASE_COST_CREDITS` per-zone prices fit the §23 reward
+  formula (a tier-3 race pays 1750, so a typical race's worth of
+  damage costs roughly 100 to 300 credits to repair). Numbers are
+  pinned in one place so the §12 economy / upgrade slice can read
+  them directly.
+- Module is intentionally state-free at the per-car level: `RaceSessionAICar`
+  and `player` will own a `DamageState` field in the integration
+  slice. Keeping the damage module decoupled from `physics.ts` keeps
+  the kinematic step pristine (drafting also uses this pattern).
+
+### Followups created
+- F-019: Race session integration of the §13 damage model
+  (consumer-side wiring deferred until the multi-car collision
+  detection slice).
+- F-015 transitioned `open -> in-progress` since the off-road damage
+  helper exists; a `done` transition lands with the consumer wiring.
+
+### GDD edits
+- None. The module is a faithful implementation of §13 + §23. A
+  future balancing pass may revisit `PERFORMANCE_FLOOR`,
+  `TOTAL_DAMAGE_WEIGHTS`, and the per-kind zone distribution rows;
+  those revisits will land as their own slices with the GDD edit in
+  the same PR.
+
+---
+
 ## 2026-04-26: Slice: drafting / slipstream per §10
 
 **GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md)

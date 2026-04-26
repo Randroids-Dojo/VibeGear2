@@ -10,6 +10,27 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-019: Race session integration of the §13 damage model
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/damage-model` slice ships `src/game/damage.ts` as a
+pure module: `applyHit`, `applyOffRoadDamage`, `performanceMultiplier`,
+`isWrecked`, `repairCostFor`, `totalRepairCost` and the constants
+surface (`PERFORMANCE_FLOOR`, `TOTAL_DAMAGE_WEIGHTS`, `WRECK_THRESHOLD`,
+`OFF_ROAD_DAMAGE_PER_M`, `REPAIR_BASE_COST_CREDITS`, etc). The producer
+is complete and unit-tested (42 tests, all paths). The consumer wiring
+is deferred to the next slice that wires multi-car collision detection
+into the race session: per-car `DamageState` lives on
+`RaceSessionAICar` and on `player`, the physics call site multiplies
+`stats.topSpeed` and `stats.accel` by `performanceMultiplier("engine",
+state.zones.engine)` and grip by `performanceMultiplier("tires",
+state.zones.tires)`, the off-road branch calls `applyOffRoadDamage`
+each tick `isOffRoad(x)`, and `isWrecked` flips the player to `dnf` in
+the §7 race-rules slice. Until then the module is a producer waiting
+for a consumer, mirroring the `feat/drafting-slipstream` deferral
+pattern.
+
 ## F-018: Playwright e2e spec for the loading screen / preload gate
 **Created:** 2026-04-26
 **Priority:** nice-to-have
@@ -63,14 +84,21 @@ the fallback renders, click Reload, assert the page reloads.
 ## F-015: Persistent off-road damage at high speed
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** in-progress
 **Notes:** §10 "Road edge and off-road slowdown" calls for "Increase
 damage slightly if the player persists off-road at high speed". The
 arcade physics slice ships drag and a top-speed cap when off-road but
 defers damage to the §13 damage / repairs slice that owns the damage
-state machine. When the §13 slice lands, plumb a `damage` accumulator
-into the physics state and increment it in `step()` proportional to
-(speed * dt) while off-road.
+state machine. The §13 damage module (`feat/damage-model`) ships the
+`applyOffRoadDamage(state, speed, dt)` helper as a pure pair of zone
+deltas with the chosen rate `OFF_ROAD_DAMAGE_PER_M = 0.000107` (5 s of
+top-speed off-road equals one mid-speed carHit body share within 1%).
+The producer is in place; the consumer wiring is deferred. When the
+race-session damage integration slice lands, call `applyOffRoadDamage`
+once per tick the player car satisfies `isOffRoad(x)` (from
+`src/game/physics.ts`), feed the resulting `DamageState` back into the
+physics call site as a `performanceMultiplier(zone, damage)` scalar on
+`stats.topSpeed` and `stats.accel`, and mark this F-015 entry `done`.
 
 ## F-014: Key remapping UI and persistence
 **Created:** 2026-04-26
