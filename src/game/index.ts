@@ -17,6 +17,7 @@ export * from "./nitro";
 export * from "./sectorTimer";
 export * from "./rng";
 export * from "./ghost";
+export * from "./ghostDriver";
 export * from "./assists";
 export * from "./difficultyPresets";
 // `raceBonuses` is the owner of the §5 bonus pipeline; `raceResult` is

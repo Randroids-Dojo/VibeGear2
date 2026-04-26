@@ -869,6 +869,37 @@ and past-draw-distance, and (d) ring wrap semantics. Lets the
 eventual TT-route slice call one helper for the screen prop instead
 of re-implementing the curve / grade walk at the route site.
 
+**F-022b sub-slice (landed in `feat/f-022b-ghost-driver-helper`):**
+Steps (2) + (3) above (instantiate `createPlayer` and drive the per-tick
+`step` from the recorded inputs) now have a pure helper companion in
+`src/game/ghostDriver.ts`:
+`createGhostDriver({ replay, stats, trackContext?, initial?, stepOptions?,
+alpha?, fill? })` returns a stateful driver whose `tick({ tick, dt,
+camera, viewport, segments, projector? })` advances the internal
+`CarState` via the same `step(...)` the live car uses, projects the
+result via `projectGhostCar(...)`, and returns the drop-in shape
+`drawRoad`'s `ghostCar` prop expects (`{ screenX, screenY, screenW,
+alpha, fill? } | null`). A `null` replay (no PB recorded) and a
+version-mismatched replay both surface as `tick(...) === null` from
+every call so the route can wire the driver unconditionally; the
+`mismatchReason` field mirrors the underlying `Player.mismatchReason`
+for debug surfaces. The driver latches `finished` once the recorded
+replay is exhausted and returns `null` from subsequent calls. Tests in
+`src/game/__tests__/ghostDriver.test.ts` pin (a) null-replay and
+version-drifted-replay paths each return `null` without throwing,
+(b) the per-tick `step` advance matches a reference `step(...)` invocation
+bit-for-bit on the same starter stats and default track context,
+(c) the overlay shape carries the §6 default alpha (0.5) when no override
+is set, (d) `alpha` and `fill` overrides are forwarded to the overlay,
+(e) an off-screen ghost (forwardZ < camera.depth) returns `null` while
+exposing the underlying `lastProjection` for debug, (f) `finished`
+latches on the tick the replay is exhausted, and (g) two drivers fed the
+same replay + ticks produce JSON-equal overlay sequences. The eventual
+TT-route slice now wires three lines (one `createGhostDriver` at session
+creation, one `driver.tick(ctx)` per render frame, one `ghostCar:`
+field on the `drawRoad` call) instead of re-implementing the
+`createPlayer` + `step` + `projectGhostCar` plumbing at the route site.
+
 **Atlas-frame upgrade (deferred):**
 The placeholder rect ships today; the `LoadedAtlas` integration that
 samples the same player-car atlas frame the live car renders (per the
