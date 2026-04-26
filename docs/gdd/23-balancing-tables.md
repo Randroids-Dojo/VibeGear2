@@ -80,6 +80,28 @@ keep the full §12 economic risk surface. The pinned fraction lives in
 | Difficulty gate | `easy`, `normal`, `novice` only | `hard`, `master`, `extreme` always pay raw cost. |
 | Zero-income clamp | Cap collapses to 0 | A player with no race income gets a free essential repair (a future loss-leader race format clamps to 0 here). |
 
+## Easy-mode tour-clear bonus (catch-up mechanism #3)
+
+Per §12 catch-up mechanism #3 a player on the easy difficulty preset
+receives a bonus on top of the flat 0.15x §12 tour-clear bonus so the
+catch-up runway widens for newer drivers without changing the harder
+tiers' risk surface. The bonus is gated on the player-facing
+`save.settings.difficultyPreset === "easy"` so a player who flipped
+Easy on the difficulty pane gets the bonus regardless of which
+championship they entered. The pinned fraction lives in
+`EASY_MODE_TOUR_BONUS_FRACTION` in `src/game/catchUp.ts` and is
+consumed by `easyModeBonus`; the tour-clear payout call site (F-037)
+will append `easyModeBonus(save, raceRewards)` to the same `bonuses`
+list that already carries `tourBonus` so the §20 receipt renders the
+two cash entries side by side.
+
+| Lever | Value | Notes |
+| --- | --- | --- |
+| Easy-mode tour-clear bonus fraction | 0.20 | Stacks on the flat 0.15x §12 tour bonus so the easy-mode tour-clear total is `0.15 + 0.20 = 0.35x` of summed race rewards. |
+| Difficulty gate | `easy` only | `normal`, `hard`, `master` (the §15 four-tier player-facing ladder) always pay only the §12 flat 0.15x tour bonus. A legacy v1 save with no `difficultyPreset` field also pays no easy-mode bonus. |
+| Negative-entry policy | Negative race rewards ignored | Mirrors `tourBonus`; a future loss-leader race cannot claw back the bonus. |
+| Empty tour-complete clamp | Bonus collapses to 0 | A tour with no recorded race rewards gets no bonus. |
+
 ## Damage formula targets
 
 ```

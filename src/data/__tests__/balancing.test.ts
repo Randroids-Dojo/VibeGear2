@@ -44,10 +44,14 @@ import { describe, expect, it } from "vitest";
 import { CARS_BY_ID } from "@/data/cars";
 import {
   cappedRepairCost,
+  EASY_MODE_TOUR_BONUS_FRACTION,
+  easyModeBonus,
   REPAIR_CAP_FRACTION,
   STIPEND_AMOUNT,
   STIPEND_THRESHOLD_CREDITS,
 } from "@/game/catchUp";
+import type { SaveGame } from "@/data/schemas";
+import { defaultSave } from "@/persistence/save";
 import {
   BASE_REWARDS_BY_TRACK_DIFFICULTY,
   baseRewardForTrackDifficulty,
@@ -321,6 +325,84 @@ describe("§23 Repair cap (catch-up mechanism #2)", () => {
 
   it("zero race income collapses the essential-repair cap to 0", () => {
     expect(cappedRepairCost(5000, 0, "essential", "normal")).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2e. Easy-mode tour-clear bonus (§23 catch-up mechanism #3, per Q-006)
+// ---------------------------------------------------------------------------
+
+/**
+ * §23 "Easy-mode tour-clear bonus (catch-up mechanism #3)" verbatim.
+ * Pin against `EASY_MODE_TOUR_BONUS_FRACTION` from
+ * `src/game/catchUp.ts`. Resolved by `Q-006` with the dot-spec
+ * default; the F-037 consumer slice (wire `easyModeBonus` into the
+ * tour-clear bonus payout) is still owed and will append a sibling
+ * `bonuses` entry alongside `tourBonus` so the §20 receipt renders
+ * the easy-mode bonus on its own line.
+ *
+ * The §23 row pins four parameters: the fraction itself, the
+ * `easy`-only difficulty gate, the negative-entry policy, and the
+ * empty tour-complete clamp. The fraction is the only numeric lever
+ * the balancing pass would tune; the three gates are protocol
+ * invariants that a future loop should not flip without re-opening
+ * Q-006.
+ */
+const EASY_MODE_TOUR_BONUS_FRACTION_TARGET = 0.2;
+
+function freshSaveForBonus(): SaveGame {
+  return JSON.parse(JSON.stringify(defaultSave())) as SaveGame;
+}
+
+describe("§23 Easy-mode tour-clear bonus (catch-up mechanism #3)", () => {
+  it("easy-mode tour-clear bonus fraction matches §23", () => {
+    expect(EASY_MODE_TOUR_BONUS_FRACTION).toBeCloseTo(
+      EASY_MODE_TOUR_BONUS_FRACTION_TARGET,
+      9,
+    );
+  });
+
+  it("fraction stays in the (0, 1) range so the bonus is a catch-up not a free win", () => {
+    expect(EASY_MODE_TOUR_BONUS_FRACTION_TARGET).toBeGreaterThan(0);
+    expect(EASY_MODE_TOUR_BONUS_FRACTION_TARGET).toBeLessThan(1);
+  });
+
+  it("easy preset receives the fraction of summed race rewards", () => {
+    const save = freshSaveForBonus();
+    save.settings.difficultyPreset = "easy";
+    const rewards = [1000, 800, 600, 400];
+    const sum = rewards.reduce((a, b) => a + b, 0);
+    expect(easyModeBonus(save, rewards)).toBe(
+      Math.round(sum * EASY_MODE_TOUR_BONUS_FRACTION_TARGET),
+    );
+  });
+
+  it("normal / hard / master presets pay no easy-mode bonus", () => {
+    for (const preset of ["normal", "hard", "master"] as const) {
+      const save = freshSaveForBonus();
+      save.settings.difficultyPreset = preset;
+      expect(easyModeBonus(save, [1000, 800, 600])).toBe(0);
+    }
+  });
+
+  it("undefined difficulty preset (legacy v1 save) pays no easy-mode bonus", () => {
+    const save = freshSaveForBonus();
+    save.settings.difficultyPreset = undefined;
+    expect(easyModeBonus(save, [1000, 800, 600])).toBe(0);
+  });
+
+  it("ignores negative race rewards rather than clawing back the bonus", () => {
+    const save = freshSaveForBonus();
+    save.settings.difficultyPreset = "easy";
+    expect(easyModeBonus(save, [1000, -500, 800])).toBe(
+      Math.round((1000 + 800) * EASY_MODE_TOUR_BONUS_FRACTION_TARGET),
+    );
+  });
+
+  it("empty tour-complete rewards collapses the bonus to 0", () => {
+    const save = freshSaveForBonus();
+    save.settings.difficultyPreset = "easy";
+    expect(easyModeBonus(save, [])).toBe(0);
   });
 });
 

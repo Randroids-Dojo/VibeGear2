@@ -6,6 +6,118 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Q-006 confirm easy-mode tour-clear bonus rate
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms" #3
+(easy-mode tour-clear bonus lever),
+[§23](gdd/23-balancing-tables.md) "Easy-mode tour-clear bonus
+(catch-up mechanism #3)" (new subsection that pins the fraction, the
+difficulty gate, the negative-entry policy, and the empty
+tour-complete clamp).
+**Branch / PR:** `feat/answer-q-006-easy-mode-tour-bonus`, PR pending.
+**Status:** Q-006 closed. Doc plus content-test slice. The pinned
+constant `EASY_MODE_TOUR_BONUS_FRACTION = 0.2` in `src/game/catchUp.ts`
+already shipped (the catch-up levers slice, commit `a3b81cb`). The
+F-037 consumer slice (wire `easyModeBonus` into the tour-clear bonus
+payout) is still owed and will append a sibling `bonuses` entry
+alongside `tourBonus` so the §20 receipt renders the easy-mode bonus
+on its own line. This loop confirms the recommended default and pins
+the value into §23 so the balancing-pass slice finds it on the same
+page as the other catch-up levers. Mirrors the Q-004 / Q-005 doc-plus-
+test pattern. Q-008 (tire modifiers for §23-uncovered weathers) stays
+the only open question in its own §14 / §23 slot.
+
+### Done
+- `docs/OPEN_QUESTIONS.md`: Q-006 status flips from `open` to
+  `answered`. The new Resolution paragraph names the shipping
+  constant, names the catch-up levers commit (`a3b81cb`) that
+  introduced it, names the F-037 wiring still owed, and pins two
+  re-evaluation triggers (a balancing-pass run that shows the
+  easy-mode runway is too short or too generous, or a §12 / §15 edit
+  that retunes the per-race cash awards or the flat 0.15x `tourBonus`
+  rate the fraction was calibrated against).
+- `docs/gdd/23-balancing-tables.md`: new "Easy-mode tour-clear bonus
+  (catch-up mechanism #3)" subsection between "Repair cap (catch-up
+  mechanism #2)" and "Damage formula targets". Four-row table
+  (easy-mode tour-clear bonus fraction, difficulty gate, negative-
+  entry policy, empty tour-complete clamp) plus a paragraph that
+  names `EASY_MODE_TOUR_BONUS_FRACTION`, the consumer site
+  (`easyModeBonus`), and the F-037 wiring still owed.
+- `src/data/__tests__/balancing.test.ts`: new "§23 Easy-mode tour-
+  clear bonus (catch-up mechanism #3)" describe block (section 2e)
+  that mirrors the §23 row as `EASY_MODE_TOUR_BONUS_FRACTION_TARGET`
+  and pins it against `EASY_MODE_TOUR_BONUS_FRACTION` from
+  `src/game/catchUp.ts`. Five additional invariants pin the protocol
+  shape: the fraction stays inside `(0, 1)` so the bonus stays a
+  catch-up; easy preset receives the fraction of summed rewards;
+  normal / hard / master pay no easy-mode bonus; a legacy v1 save
+  with no `difficultyPreset` field pays no bonus; negative rewards
+  are ignored rather than clawing back the bonus; and an empty
+  tour-complete list collapses the bonus to 0. A drift between
+  the §23 markdown row, the local target constant, the runtime
+  export, or the gate behaviour fails the build at a single readable
+  site.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green (new §23 easy-mode bonus describe block green;
+  existing catchUp unit tests still green because they reference the
+  symbolic exports).
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- Adopted the recommended default verbatim. No constant value change
+  in `src/game/catchUp.ts`; the slice is doc-plus-test only.
+- Pinned the row in §23 even though Q-006 listed the §23 edit as
+  optional. Rationale matches the Q-004 / Q-005 slices: §23 is the
+  discoverability surface for the balancing-pass loop, and a one-page
+  index of all four catch-up levers is the point of §23. Skipping the
+  row would force the balancing pass to grep `catchUp.ts` for the
+  values, which defeats the §23 contract.
+- Pinned the protocol gates (easy-only difficulty gate, negative-
+  entry policy, empty tour-complete clamp) as test invariants
+  alongside the fraction. Rationale: those gates were named in the
+  Q-006 question text and the `easyModeBonus` doc comment, and a
+  balancing pass that flips a gate without re-opening Q-006 would
+  silently change the §27 "AI frustration" risk surface that catch-up
+  mechanism #3 is designed against. The fraction is the only knob the
+  balancing pass should tune without a fresh question.
+- Did not edit `catchUp.ts` itself. The `OPEN_QUESTIONS.md Q-004
+  through Q-007` reference in the file header still spans the Q-008
+  slot in a different module (weather tire modifiers); collapsing the
+  reference now would leave a stale comment after Q-008 closes. The
+  collapse will happen in the slice that closes the last of the
+  catch-up questions or as part of the F-037 wiring slice when it
+  lands.
+- Did not pre-empt F-037. The F-037 follow-up (wire `easyModeBonus`
+  into the tour-clear bonus payout) remains in
+  `docs/FOLLOWUPS.md`; this slice only confirms the lever value and
+  pins the §23 row, leaving the consumer site to its own focused
+  slice.
+
+### Followups added
+None new.
+
+### GDD edits
+- `docs/gdd/23-balancing-tables.md`: new "Easy-mode tour-clear bonus
+  (catch-up mechanism #3)" subsection between "Repair cap (catch-up
+  mechanism #2)" and "Damage formula targets". Same table-plus-prose
+  shape as the Q-004 / Q-005 §23 rows so the balancing-pass slice
+  finds every catch-up lever in the same one-page format.
+
+### Open questions resolved
+- Q-006 (easy-mode tour-clear bonus rate): confirmed the dot-spec
+  default of 0.20x. Resolution paragraph in `docs/OPEN_QUESTIONS.md`
+  names the shipping constant, the catch-up levers commit
+  (`a3b81cb`) that introduced it, the F-037 wiring still owed, and
+  the two re-evaluation triggers.
+
+---
+
 ## 2026-04-26: Slice: Q-005 confirm essential-repair cap fraction
 
 **GDD sections touched:**

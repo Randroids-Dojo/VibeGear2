@@ -220,9 +220,11 @@ re-evaluation triggers. Resolved.
 ## Q-006: Easy-mode tour-clear bonus rate
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
-mechanisms" #3
-**Status:** open
+mechanisms" #3, [§23](gdd/23-balancing-tables.md) "Easy-mode tour-clear
+bonus (catch-up mechanism #3)"
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** §12 says "easy mode grants bonus cash for tour clears"
 on top of the flat 0.15x §12 tour bonus, but does not pin the bonus
@@ -237,7 +239,34 @@ balancing-pass slice
 (`VibeGear2-implement-balancing-pass-71a57fd5`) responsible for
 final tuning.
 
-**Blocking?** No.
+**Resolution.** Adopted the recommended default verbatim. The pinned
+constant `EASY_MODE_TOUR_BONUS_FRACTION = 0.2` in
+`src/game/catchUp.ts` stays unchanged, the `easy`-only difficulty
+gate in `easyModeBonus` stays unchanged, and the negative-entry /
+empty tour-complete clamps (which mirror `tourBonus`) stay unchanged.
+The F-037 consumer slice (wire `easyModeBonus` into the tour-clear
+bonus payout) is still owed and will append a sibling `bonuses` entry
+alongside `tourBonus` so the §20 receipt renders the easy-mode bonus
+on its own line; this resolution only confirms no value change is
+owed and pins the row in §23. §23 now carries a "Easy-mode tour-clear
+bonus (catch-up mechanism #3)" subsection between "Repair cap
+(catch-up mechanism #2)" and "Damage formula targets" that pins the
+fraction, the difficulty gate, the negative-entry policy, and the
+empty tour-complete clamp on a single page so the balancing-pass
+slice (`VibeGear2-implement-balancing-pass-71a57fd5`) finds every
+lever in one place. Two re-evaluation triggers gate any future swap:
+a balancing-pass run that shows the easy-mode runway is too short
+(player runs out of credits between tours despite the bonus, raise
+the fraction toward 0.30) or too generous (player out-earns harder
+difficulties on a per-tour basis, lower the fraction toward 0.15), or
+a §12 / §15 edit that retunes the per-race cash awards or the flat
+0.15x `tourBonus` rate the fraction was calibrated against. Q-007
+(practice-mode weather preview) is already answered in its own §12
+catch-up slot; this slice does not pre-empt other open questions.
+
+**Blocking?** No. The constant ships today with the recommended
+default and the F-037 consumer is still owed; this resolution only
+confirms no value change is owed and pins the §23 row. Resolved.
 
 ---
 
