@@ -1,137 +1,112 @@
-# 16. Rendering and Visual Design
+# 16. Rendering and visual design
 
-## Retro-Modern Aesthetic
+## Retro-modern aesthetic
 
-VibeGear2 should evoke classic 16-bit arcade racing through:
+VibeGear2 should look like a memory of a 16-bit racer, not a museum replica.
 
-- Pseudo-3D road projection
-- Strong horizon line
-- Large readable car sprites
-- Scaled roadside objects
-- Parallax background layers
-- Bold color bands
-- Limited but expressive palettes
-- Modern resolution, accessibility, and UI clarity
+Visual priorities:
 
-It should not imitate a specific commercial game's sprites, palettes, UI, or tracks.
+- Bold color blocking
+- Strong foreground speed cues
+- Readable road edges
+- Exaggerated horizons
+- Crisp UI typography
+- Controlled post effects only
 
-## Pseudo-3D Road Rendering Approach
+## Pseudo-3D road rendering approach
 
-A JavaScript pseudo-3D implementation can project road segments from world space to screen space using a scale such as `cameraDepth / z`, then draw road polygons and scaled sprites. Jake Gordon's [JavaScript Racer](https://jakesgordon.com/writing/javascript-racer/) and the [Code inComplete racing tutorial](https://codeincomplete.com/articles/javascript-racer-v1-straight/) outline this style of projection, fixed-step update loops, road segment data, draw distance, camera settings, and off-road tuning variables.
+VibeRacer currently renders a real 3D scene using Three.js with a GLTF car, flat track meshes built from piece geometry, a PerspectiveCamera, and a requestAnimationFrame loop managed by RaceCanvas. That architecture is useful context, but VibeGear2 should replace the mesh-based top-down circuit presentation with a pseudo-3D road renderer built around authored road segments, while keeping the surrounding app shell, input, persistence, and flow concepts. [18]
 
-## Render Steps
+Recommended renderer
 
-1. Determine player segment from `trackZ`.
-2. Compute camera-relative x, y, z for each visible segment.
-3. Accumulate curve offset to bend the road.
-4. Project near and far segment points to screen.
-5. Draw sky and parallax backgrounds.
-6. Draw far road segments toward near segments.
-7. Draw roadside objects and hazards sorted by depth.
-8. Draw AI cars sorted by depth.
-9. Draw player car sprite and effects.
-10. Draw HUD on separate layer.
+- Canvas 2D for road strips, roadside sprites, and HUD.
+- Optional lightweight WebGL layer for post effects later.
+- Segment-based projection:
+- world z drives scale
+- centerline offset fakes curves
+- segment y drives hills
+- clip against previous segment to avoid overdrawing
+- Billboard sprites for cars and trackside objects.
+- Parallax backgrounds drawn by region layer.
 
-## Camera Behavior
+## Camera behavior
 
-| Parameter | Value |
-|---|---:|
-| Logical resolution | 1280x720 |
-| Internal pixel scale | Configurable 1x, 2x, 3x aesthetic |
-| Camera height | 1000 world units |
-| Draw distance | 220 segments |
-| Field of view | 90 degrees |
-| Horizon position | 38 percent from top |
-| Camera shake | Low, event-based |
-| Weather shake | Optional and accessibility-limited |
+- Chase-camera feel without real camera physics.
+- Camera lowers slightly at high speed.
+- Crest lines should reveal horizon dramatically.
+- Collision shake and off-road rumble should be subtle and short.
 
-## Sprite Scaling
+## Sprite scaling
 
-| Sprite Type | Scale Rule |
-|---|---|
-| AI cars | Based on projected segment scale. |
-| Roadside objects | Based on projected scale and side offset. |
-| Pickups | Pulse animation plus depth scale. |
-| Hazards | Depth scale, high contrast outline. |
-| Player car | Fixed lower-screen sprite with animation states. |
+- Cars and objects scale from projected depth.
+- Opponent cars should stay readable earlier than strict realism would dictate.
+- Player car should occupy 16 to 22% of screen height in standard camera mode.
 
-## Parallax Backgrounds
+## Parallax backgrounds
 
-| Layer | Scroll Input |
-|---|---|
-| Sky | Static or slow time-of-day shift. |
-| Far mountains/city | Small offset from cumulative curve. |
-| Mid scenery | Medium offset. |
-| Weather layer | Independent wind and speed scroll. |
-| Foreground flashes | Event-based, such as tunnel lights. |
+Three layers minimum:
 
-## Roadside Objects
+- Sky / weather color band
+- Mid horizon silhouettes
+- Near terrain or city layer
 
-Rules:
+## Roadside objects
 
-- Objects must reinforce speed and theme.
-- Objects must not obscure the road edge.
-- Collision-relevant objects must have clear silhouettes.
-- Decorative objects should be non-collidable by default.
-- Object density should rise in later regions but not reduce readability.
+Use packable sprite categories:
 
-## Car Sprites
+- Utility signs
+- Trees/palms/conifers
+- Fences/barriers
+- Buildings
+- Rock props
+- Light poles
+- Tunnel mouths
 
-Minimum sprite states:
+## Car sprites
 
-| State | Required Frames |
-|---|---:|
-| Player straight | 1 |
-| Player steer left/right | 2 each |
-| Player heavy steer left/right | 1 each |
-| Player boost | 2 |
-| Player damaged smoke | Overlay |
-| AI car straight | 1 per color/body |
-| AI car side angle | Optional |
-| Collision flash | Overlay |
+The player and AI cars should be built from an original sprite grammar:
 
-## UI Style
+- 12 to 16 directional frames
+- 3 damage variants
+- Brake light frame
+- Nitro glow frame
+- Wet spray and snow trail variants
 
-- Use original pixel-inspired vector or bitmap font.
-- Do not use fonts from commercial games.
-- Favor rectangular panels, neon accents, and high contrast.
-- Ensure all numbers are readable at 1280x720 and 1920x1080.
-- Provide colorblind-safe damage and weather indicators.
+## UI style
 
-## Color Palette Guidance
+- Thick, high-contrast edge boxes
+- Monospace timer readout
+- Bold iconography
+- No faux-SNES menu cloning
+- Fast transitions, not elaborate scene changes
 
-| Region | Palette Direction |
-|---|---|
-| Neon Harbor | Deep blues, magenta signs, orange sunset. |
-| Redwood Circuit | Greens, fog blues, warm sawmill browns. |
-| Mirage Basin | Sand, copper, cyan sky, heat shimmer. |
-| Storm Coast | Slate, sea green, white spray, amber lights. |
-| Alpine Static | Snow blue, dark pine, signal red. |
-| Glass Canyon | Rose rock, prism highlights, dark tunnels. |
-| Metro Midnight | Purple-black, cyan, arcade pink, sodium orange. |
-| Aurora Highway | Navy, teal, violet aurora, cold white. |
+## Color palette guidance
 
-## Animation and Effects
+Use rich saturated palettes per region, but reserve the following for systemic readability:
 
-| Effect | Purpose |
-|---|---|
-| Speed lines | Boost feedback. |
-| Road shimmer | Heat and high speed. |
-| Tire smoke | Slip and damage. |
-| Sparks | Barrier scrape. |
-| Pickup pulse | Readability. |
-| Countdown pop | Start excitement. |
-| Finish flash | Race completion. |
-| Damage smoke | Urgency. |
+- Road edge warnings: amber
+- Severe damage: red
+- Wet grip UI: cyan
+- Nitro full: magenta or electric blue
+- Clean PB / record celebration: green and gold
 
-## Performance Targets for Browser Play
+## Animation and effects
 
-| Target | Requirement |
-|---|---|
-| Desktop normal | 60 FPS at 1280x720 logical resolution. |
-| Desktop low | 60 FPS with reduced draw distance and sprites. |
-| Mobile future | 30 FPS fallback. |
-| Input latency | Under 80 ms perceived. |
-| Initial load | Under 10 MB for MVP build. |
-| Race restart | Under 1 second. |
-| Garbage collection | Avoid per-frame allocations in renderer and physics. |
+Recommended VFX set:
+
+- Nitro bloom trail
+- Wet spray
+- Snow mist
+- Dust roost
+- Screen-edge pulse on PB
+- Light camera shake on impact
+- HUD flash on lap complete
+
+## Performance targets
+
+| Device class | Target |
+| --- | --- |
+| Mid-range desktop at 1080p | 60 FPS |
+| Integrated laptop GPU | 60 FPS with reduced draw distance |
+| Lower-end desktop | 30 to 60 FPS with reduced sprite density |
+| Mobile future target | 30 FPS |

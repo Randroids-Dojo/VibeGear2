@@ -1,89 +1,29 @@
-# 6. Game Modes
+# 6. Game modes
 
-## Championship / Career
+### Championship
 
-The main mode.
+The centerpiece mode. The player progresses through tours of four races each, managing cash, repairs, and upgrades between events.
 
-| Feature | Spec |
-|---|---|
-| Structure | 8 original regions, 4 races each for v1.0. |
-| Total v1.0 tracks | 32 official tracks. |
-| Race pack | 20 racers target, including player. |
-| Advancement | Top 10 advances. |
-| Tour scoring | Top 7 score points using VibeGear2's original scoring table. |
-| Economy | Placement, pickups, bonuses, repairs, upgrades. |
-| Save | Local save with optional cloud export later. |
+### Quick race
 
-## Quick Race
+Pick any unlocked track, weather variant, and car/setup. No campaign economy.
 
-Instant single race.
+### Time trial
 
-| Option | Values |
-|---|---|
-| Track | Any unlocked official track, any local mod track. |
-| Car | Any unlocked car shell or default garage car. |
-| Weather | Default, random, or forced. |
-| AI | Off, easy, normal, hard, custom. |
-| Laps | Track default or 1-8. |
-| Upgrades | Career garage, stock, maxed, custom preset. |
+Solo run on any unlocked track against personal best, developer benchmark, or downloaded ghost.
 
-## Time Trial
+### Practice
 
-Skill mode without AI traffic.
+A no-stakes test session with restart, checkpoint reset, visible grip telemetry, and instant weather swap.
 
-| Feature | Spec |
-|---|---|
-| Objective | Fastest lap or fastest race time. |
-| Traffic | Optional ghost only. |
-| Damage | Optional, default off for pure time trial. |
-| Weather | Fixed by leaderboard category. |
-| Leaderboards | Local first, online optional. |
-| Validation | Deterministic physics seed and track hash. |
+### Community challenge
 
-## Practice
+A rotating daily or weekly seeded challenge is appropriate after v1.0, using an official track, locked car class, and sometimes forced weather. This should be asynchronous, not a live-service dependency.
 
-Low-pressure learning.
+### Stretch goals
 
-| Feature | Spec |
-|---|---|
-| Track reset | Instant restart. |
-| Driving assists | Visible grip line, braking hints, curve preview. |
-| Damage | Off by default. |
-| AI | Optional pace cars. |
-| Upgrade testing | Player can temporarily test upgrades. |
-
-## Daily / Weekly Community Challenge
-
-Stretch but strongly recommended.
-
-| Feature | Daily | Weekly |
-|---|---:|---:|
-| Track | Fixed official or curated mod | Longer or harder curated track |
-| Car | Fixed | Fixed or restricted class |
-| Weather | Fixed seed | Fixed seed |
-| Attempts | Unlimited local, best submitted | Unlimited local, best submitted |
-| Rewards | Cosmetic badges | Cosmetic badges and profile banner |
-| Leaderboard | Optional online | Optional online |
-
-## Ghost Mode
-
-Stretch goal after deterministic time trial.
-
-| Ghost Type | Description |
-|---|---|
-| Personal best | Race your own fastest lap. |
-| Friend ghost | Import ghost file or URL. |
-| Medal ghost | Official target ghost for bronze, silver, gold. |
-| Rival ghost | AI personality ghost for flavor. |
-
-## Local Multiplayer
-
-Stretch goal after solo performance is stable.
-
-| Mode | Spec |
-|---|---|
-| Split-screen duel | Two local players, horizontal split. |
-| Shared keyboard | Optional but not ideal. |
-| Gamepad support | Required before shipping split-screen. |
-| AI traffic | Reduced pack count for performance. |
-| Rendering | Two viewports, reduced draw distance if needed. |
+- Local split-screen on large desktop displays.
+- Ghost-versus mode.
+- Community track of the week.
+- Endurance cup.
+- Mirror tracks or reverse variants.

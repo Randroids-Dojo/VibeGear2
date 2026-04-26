@@ -1,126 +1,102 @@
-# 12. Upgrade and Economy System
+# 12. Upgrade and economy system
 
-## Economy Goals
+## Currency rewards
 
-The economy should create decisions, not grind.
+Use a single currency: credits.
 
-The player should often ask:
+Base formula
 
-- Repair now or save for upgrade?
-- Buy wet tires before a rain region?
-- Improve acceleration or top speed?
-- Upgrade boost for passing or armor for survival?
-- Retry for better payout or move on?
-
-## Currency
-
-Use fictional currency: **Credits**.
-
-| Source | Type |
-|---|---|
-| Placement reward | Repeatable |
-| Pickup chips | Repeatable |
-| Clean race bonus | Repeatable |
-| Rival bounty | Repeatable, once per race per rival |
-| Medal reward | One-time |
-| Tour completion bonus | One-time |
-| Daily challenge | Cosmetic or small credit reward, capped |
-
-## Repair Costs
-
-```text
-repairCost = damagePoints * repairRate * regionMultiplier * armorDiscount
+```
+raceReward = baseTrackReward * finishMultiplier * difficultyMultiplier
+tourBonus = sum(raceRewards) * 0.15 on successful tour clear
 ```
 
-Initial values:
+Finish multipliers
 
-| Item | Value |
-|---|---:|
-| Base repair rate | 45 credits per point |
-| Critical repair surcharge | +25 percent above 75 percent damage |
-| Armor discount level 1 | 5 percent |
-| Armor discount level 2 | 10 percent |
-| Armor discount level 3 | 15 percent |
-| Armor discount level 4 | 20 percent |
+| Place | Multiplier |
+| --- | --- |
+| 1 | 1.00 |
+| 2 | 0.82 |
+| 3 | 0.70 |
+| 4 | 0.58 |
+| 5 | 0.48 |
+| 6 | 0.40 |
+| 7 | 0.32 |
+| 8 | 0.24 |
+| 9 to 12 | 0.14 |
 
-## Upgrade Categories
+## Repair costs
 
-| Category | Primary Effect | Secondary Effect |
-|---|---|---|
-| Engine | Acceleration, top speed | Boost efficiency |
-| Transmission | Higher speed range, manual advantage | Lower high-speed drag |
-| Dry Tires | Dry grip and cornering | Lower tire wear |
-| Wet Tires | Rain/snow grip | Reduced puddle slip |
-| Suspension | Steering recovery, hill stability | Less collision wobble |
-| Pulse Boost | More charges, stronger boost | Better boost control |
-| Armor | Damage resistance | Lower repair cost |
-| Cooling | Optional endurance stat | Reduces performance decay |
+Repair cost should scale by damage and car repair class.
 
-## Upgrade Levels
+```
+repairCost = damagePercent * carRepairFactor * tourTierScale
+```
 
-| Level | Label | Design Role |
-|---:|---|---|
-| 0 | Stock | Baseline. |
-| 1 | Street | Cheap early improvement. |
-| 2 | Tuned | Region 2-4 target. |
-| 3 | Pro | Region 5-7 target. |
-| 4 | Elite | Late-game and hard mode. |
+## Upgrade categories
 
-## Pricing Curves
+This category list is intentionally analogous in function to the original’s engine, tires, gearbox, nitro, and armor setup, but it is reorganized for a clearer modern garage. The Top Gear 2 guide’s documented categories and prices are the historical inspiration, not a template to duplicate. [9]
 
-Initial original cost table:
+| Category | Function |
+| --- | --- |
+| Engine | Raises acceleration and small top-speed increments |
+| Gearbox | Unlocks higher gearing and smooths high-speed pull |
+| Dry tires | Raises dry grip and braking |
+| Wet tires | Raises wet/snow grip and stability |
+| Nitro system | Raises boost thrust and burn duration |
+| Chassis armor | Raises collision resilience |
+| Cooling | Reduces late-race damage penalties and nitro heat loss |
+| Aero kit | Small high-speed stability gain |
 
-| Upgrade | Level 1 | Level 2 | Level 3 | Level 4 |
-|---|---:|---:|---:|---:|
-| Engine | 12,000 | 28,000 | 55,000 | 90,000 |
-| Transmission | 8,000 | 22,000 | 46,000 | 76,000 |
-| Dry Tires | 2,500 | 6,000 | 12,000 | 22,000 |
-| Wet Tires | 2,500 | 6,000 | 11,000 | 20,000 |
-| Suspension | 4,000 | 10,000 | 22,000 | 42,000 |
-| Pulse Boost | 9,000 | 21,000 | 45,000 | 78,000 |
-| Armor | 6,000 | 15,000 | 32,000 | 58,000 |
-| Cooling | 5,000 | 13,000 | 28,000 | 50,000 |
+## Upgrade levels
 
-## Strategic Tradeoffs
+Use 4 levels per category:
 
-| Choice | Tradeoff |
-|---|---|
-| Engine first | Faster, but more dangerous if tires/armor are weak. |
-| Tires first | Safer curves, less exciting on straights. |
-| Boost first | Great passing power, risky in bad weather. |
-| Armor first | Lower repair cost, slower progression in speed. |
-| Transmission first | Better top speed but limited if engine is weak. |
-| Save credits | Can buy expensive upgrades sooner but risks poor race results. |
+- Stock
+- Street
+- Sport
+- Factory
+- Extreme
 
-## Catch-Up Mechanisms
+## Pricing curves
 
-| Mechanism | Rule |
-|---|---|
-| Participation credits | Even failed races pay small credits. |
-| Underdog bonus | Lower upgrade rating earns bonus if finishing high. |
-| Retry ghost hint | Game shows better driving line after repeated failures. |
-| Region sponsor | After 3 failed attempts, offer small one-time credit loan. |
-| Assist mode | Optional `tour assist` lowers qualification to 12th, disables some medals. |
-| Resale | Downgraded upgrades refund 65 percent in casual mode only. |
+Pricing should escalate, but not geometrically to the point of grind.
 
-## Avoiding Grind
+| Upgrade tier | Cost multiplier over previous |
+| --- | --- |
+| Street | 1.0 |
+| Sport | 1.8 |
+| Factory | 2.2 |
+| Extreme | 2.7 |
 
-1. A player who qualifies consistently should afford key upgrades.
-2. A player should rarely need to replay the same race more than twice for money.
-3. Placement improvement should be more profitable than pickup farming.
-4. Repair costs should punish collisions, not bankrupt the player.
-5. Optional medals should provide one-time boosts, not required progression.
+## Strategic tradeoffs
 
-## Example Upgrade Effect Table
+The garage should create real decisions:
 
-| Upgrade | L1 | L2 | L3 | L4 |
-|---|---:|---:|---:|---:|
-| Engine acceleration multiplier | 1.08 | 1.18 | 1.32 | 1.48 |
-| Engine top speed multiplier | 1.03 | 1.07 | 1.12 | 1.18 |
-| Transmission top speed multiplier | 1.04 | 1.09 | 1.15 | 1.22 |
-| Dry tire grip multiplier | 1.05 | 1.10 | 1.17 | 1.24 |
-| Wet tire wet-grip recovery | +8 percent | +16 percent | +25 percent | +35 percent |
-| Suspension slip recovery | +8 percent | +17 percent | +28 percent | +40 percent |
-| Pulse Boost charges | 3 | 3 | 4 | 5 |
-| Armor damage reduction | 8 percent | 17 percent | 28 percent | 40 percent |
-| Cooling performance decay reduction | 10 percent | 20 percent | 32 percent | 45 percent |
+- Speed now versus durability later.
+- Wet tires now versus saving for engine.
+- Partial repair versus full repair.
+- Nitro power versus gearbox ceiling.
+- New car purchase versus maxing current car.
+
+## Catch-up mechanisms
+
+To avoid grind:
+
+- Players below a cash threshold receive a tour stipend.
+- Essential repairs are capped at a low percentage of race income.
+- Easy mode grants bonus cash for tour clears.
+- Practice mode can preview track weather so bad setup choices feel fair, not hidden.
+
+## Example upgrade table
+
+| Upgrade | Street | Sport | Factory | Extreme |
+| --- | --- | --- | --- | --- |
+| Engine | 3,000 | 6,000 | 11,000 | 18,000 |
+| Gearbox | 2,500 | 5,000 | 9,000 | 15,000 |
+| Dry tires | 1,200 | 2,400 | 4,200 | 6,400 |
+| Wet tires | 1,200 | 2,400 | 4,200 | 6,400 |
+| Nitro | 2,000 | 4,500 | 8,000 | 13,000 |
+| Chassis armor | 1,800 | 3,600 | 6,200 | 9,600 |
+| Cooling | 1,000 | 2,200 | 4,000 | 6,500 |
+| Aero kit | 1,600 | 3,000 | 5,200 | 8,800 |
