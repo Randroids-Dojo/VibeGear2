@@ -6,6 +6,75 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Q-007 confirm practice-mode weather preview surface
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms" #4
+(practice-mode weather preview),
+[§6](gdd/06-game-modes.md) "Practice mode" (pre-race setup surface),
+[§21](gdd/21-technical-design-for-web-implementation.md) "Save system"
+(deterministic-replay invariant that a per-session seed leak would
+break). No GDD edits.
+**Branch / PR:** `feat/answer-q-007-practice-weather-preview`, PR
+pending.
+**Status:** Q-007 closed. Doc-only resolution. The
+`practiceWeatherPreview(track)` helper in `src/game/catchUp.ts`
+already ships option (a) (the recommended default): the track's
+`weatherOptions` array is returned verbatim as a
+`ReadonlyArray<WeatherOption>`, no per-session seeded roll, no
+probability-weighted sample. This loop only confirms that no surface
+change is owed and pins the re-evaluation triggers for a future
+practice-mode slice.
+
+### Done
+- `docs/OPEN_QUESTIONS.md`: Q-007 status flips from `open` to
+  `answered`. The new Resolution paragraph names the shipping helper
+  surface (`practiceWeatherPreview` in `src/game/catchUp.ts`), cites
+  the `ReadonlyArray<WeatherOption>` return type that prevents the
+  caller from mutating the track JSON, and pins the two triggers
+  that would force a re-evaluation: the practice-mode slice
+  (`VibeGear2-implement-practice-quick-ad3ba399`) landing a surface
+  that requires per-session info (e.g. a stake-on-the-line modifier
+  where setup risk needs the exact roll), or §12 pinning a
+  probability table that justifies option (c). Option (b) stays
+  rejected unless the §21 deterministic-replay invariants are
+  revisited (seed-leakage to the UI would break the invariant that
+  the seed is derivable only from save state plus race-config inputs).
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green.
+- `npm run build` clean.
+- `npm run test:e2e` green.
+- No em or en dashes introduced.
+
+### Decisions and assumptions
+- Doc-only slice. The shipped `practiceWeatherPreview` helper is
+  already the recommended default; no code surface needs to change.
+  Future practice-mode work consumes the helper as-is unless a stake
+  modifier or §12 probability table lands.
+- Trigger conditions named in the resolution paragraph. The two named
+  triggers (a practice-mode slice landing a stake modifier, or §12
+  pinning a probability table) give a future loop a clear handoff so
+  the question does not silently reopen.
+- The catchUp.ts header comment still references "Q-004 through Q-007"
+  for the dev-confirmation thread; left unchanged because Q-004,
+  Q-005, and Q-006 remain open and the per-constant pinning rationale
+  still maps to the same comment block. A future loop that closes the
+  remaining catch-up questions will collapse the reference.
+
+### Followups added
+None new.
+
+### GDD edits
+None.
+
+### Open questions raised
+None.
+
+---
+
 ## 2026-04-26: Slice: pure championship.ts module (enterTour, recordResult, tourComplete, unlockNextTour)
 
 **GDD sections touched:**

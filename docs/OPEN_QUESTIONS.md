@@ -173,8 +173,9 @@ lands.
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up
 mechanisms" #4, [§6](gdd/06-game-modes.md) "Practice mode"
-**Status:** open
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-26
 
 **Question.** §12 says "practice mode can preview track weather so bad
 setup choices feel fair, not hidden." The catch-up module currently
@@ -194,8 +195,25 @@ preview until the practice-mode slice
 which surface is right. Option (a) ships now and is the smallest
 spec.
 
+**Resolution.** Adopted option (a). The `practiceWeatherPreview(track)`
+helper in `src/game/catchUp.ts` already returns the track's
+`weatherOptions` array unchanged (typed `ReadonlyArray<WeatherOption>`
+so callers cannot mutate the track JSON by accident). The practice-mode
+slice (`VibeGear2-implement-practice-quick-ad3ba399`) consumes that
+helper directly; no per-session seeded roll is surfaced to the UI, and
+no probability-weighted sample is drawn. Two re-evaluation triggers
+gate any future swap to (b) or (c): the practice-mode slice landing a
+surface that requires per-session info (e.g. a stake-on-the-line race
+modifier where setup risk needs the exact roll), or §12 pinning a
+probability table that justifies option (c). Option (b) stays rejected
+unless the §21 deterministic-replay invariants are revisited
+(seed-leakage to the UI breaks the invariant that the seed is
+derivable only from save state plus race-config inputs). Catch-up
+mechanism #4 in §12 is now satisfied by the shipping helper.
+
 **Blocking?** No. The catch-up module ships today with option (a);
-the practice slice may revisit.
+this resolution only confirms no surface change is owed and pins the
+re-evaluation triggers. Resolved.
 
 ---
 
