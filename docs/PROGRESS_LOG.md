@@ -6,6 +6,115 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-032 wire leaderboard client into race results surface
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) Optional online
+leaderboard (no schema changes; the client + route handlers landed in
+prior slices, this slice carves the in-app consumer per the
+"signed lap submission concept" producer / consumer split).
+[§20](gdd/20-hud-and-ui-ux.md) Results screen (the leaderboard pill plus
+the optional top-N list now live below the per-race rewards panel).
+**Branch / PR:** `feat/leaderboard-panel-on-results`, PR pending.
+**Status:** Implemented. Closes
+`VibeGear2-implement-f-032-d97641a1` and F-032 in `docs/FOLLOWUPS.md`.
+The `src/leaderboard/client.ts` adapter shipped with zero in-app
+callers; the §20 race results page now consumes it via
+`<LeaderboardPanel />` so the producer / consumer pair from
+`feat/leaderboard-client` finally has both halves wired.
+
+### Done
+- `src/components/results/leaderboardPanelState.ts`: pure model that
+  maps the four `SubmitLapResult` sentinels (`stored`, `rejected`,
+  `network-error`, `disabled`) plus the DNF and idle short-circuits
+  to a stable `PanelStatus` + `label` shape the React component
+  renders without any branching of its own. `deriveSubmitView`,
+  `deriveTopView`, and `buildLeaderboardPanelView` are pure: literal
+  fixtures in, deterministic view out, no IO.
+- `src/components/results/LeaderboardPanel.tsx`: thin React shell
+  that reads `isLeaderboardEnabled()` once on mount and returns
+  `null` when the env flag is off, so the §20 receipt stays clean
+  for the bundled MVP build. When enabled, fires `submitLap` once
+  per mount on a clean finish and `getTop(trackId, 10)` in parallel,
+  rendering the status pill and the optional top-N list. DNF rows
+  skip the network call and surface a `Lap not submitted (DNF).`
+  pill. Uses a placeholder raceToken / signature: the
+  `LEADERBOARD_SIGNING_KEY` is a server-only secret per §21 and the
+  client never holds it; a real signed submission lands with the
+  raceToken issuance route owned by F-030. The route's
+  `bad-signature` / `server-misconfigured` response naturally
+  surfaces as a `rejected` pill with the stable code on
+  `data-rejected-code`.
+- `src/components/results/__tests__/leaderboardPanelState.test.ts`:
+  16 cases pinning every branch (DNF short-circuit, idle pre-submit,
+  stored with and without an id, rejected with the server code,
+  network-error, disabled, top-section hidden / shown across the
+  four `GetTopResult` shapes, plus three composition cases on
+  `buildLeaderboardPanelView`).
+- `src/components/results/__tests__/LeaderboardPanel.test.tsx`: 4
+  SSR-shape cases pinning the env-gate render guard
+  (`enabledOverride: false` -> empty markup), the enabled shell
+  (idle pill, panel data attributes), the DNF short-circuit, and a
+  no-em-dash assertion against the rendered copy.
+- `src/app/race/results/page.tsx`: imports `LeaderboardPanel` and
+  renders it below the next-race card inside the rewards panel.
+  Derives `playerFinished` and `playerBestLapMs` from the player's
+  `FinalCarRecord` so DNF rows skip submission.
+- `e2e/results-screen.spec.ts`: new spec asserts the panel is
+  hidden when `NEXT_PUBLIC_LEADERBOARD_ENABLED` is unset (the
+  default for both local dev and the playwright build). The four
+  submit-result branches are covered by the unit suite; the
+  enabled-branch e2e lands when F-030 provisions Vercel KV and the
+  playwright build sets the env flag.
+- `docs/FOLLOWUPS.md`: F-032 marked `done` with a pointer to the
+  consumer location.
+
+### Verified
+- `npm run lint`: clean.
+- `npm run typecheck`: clean.
+- `npm test`: full suite green (20 new cases across the panel state
+  and SSR shell).
+- `npm run build`: clean static output, no new route surface.
+- `npm run test:e2e`: results-screen suite green; the new
+  `hides the leaderboard panel when the env flag is off` case
+  asserts `getByTestId("leaderboard-panel")` returns count 0 under
+  the default env.
+
+### Decisions and assumptions
+- Placeholder raceToken / signature on the submission. The dot text
+  said "compute the signed token from { trackId, finalTimeMs,
+  ghostHash }", but the actual `LapSubmission` schema is
+  `{ trackId, carId, lapMs, raceToken, signature }` and
+  `LEADERBOARD_SIGNING_KEY` is a server-only secret per §21 and
+  AGENTS.md RULE 7. No client-side signing surface exists yet, so
+  the consumer sends a placeholder pair and surfaces the route's
+  `rejected` response (with `bad-signature` or
+  `server-misconfigured` codes) on the status pill. A real signed
+  submission ships with the raceToken issuance route owned by
+  F-030; until then the consumer is wired and the wire shape is
+  exercised end-to-end by the route smoke at
+  `e2e/leaderboard-routes.spec.ts`.
+- Single env read on mount via `useState(() => isLeaderboardEnabled())`
+  rather than per-render. The flag is a `NEXT_PUBLIC_*` build-time
+  inline; reading it once keeps the SSR snapshot and the first
+  client render in lockstep on whether the panel exists in the
+  DOM. The `enabledOverride` prop exists for the SSR snapshot test
+  and is omitted by production callers.
+- E2E covers only the disabled (default) branch. Setting
+  `NEXT_PUBLIC_LEADERBOARD_ENABLED=true` for playwright would
+  require rebuilding the Next.js bundle with the env baked in, and
+  the route's `submit` handler would still 500 without
+  `LEADERBOARD_SIGNING_KEY`. The four submit-result branches are
+  pinned by `leaderboardPanelState.test.ts`; the enabled e2e
+  branch lands with F-030.
+
+### Followups
+- F-032 closes here. F-030 (Vercel KV provisioning) and the
+  raceToken issuance route remain open and are the natural next
+  steps for the leaderboard slice.
+
+---
+
 ## 2026-04-26: Slice: cross-tab save consistency (writeCounter, storage subscribe, focus revalidate)
 
 **GDD sections touched:**

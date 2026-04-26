@@ -42,11 +42,13 @@ import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { BonusChip } from "@/components/results/BonusChip";
 import { DamageBar } from "@/components/results/DamageBar";
 import { FinishingOrderTable } from "@/components/results/FinishingOrderTable";
+import { LeaderboardPanel } from "@/components/results/LeaderboardPanel";
 import {
   clearRaceResult,
   loadRaceResult,
 } from "@/components/results/raceResultStorage";
 import type { RaceResult } from "@/game/raceResult";
+import type { FinalCarRecord } from "@/game/raceRules";
 
 export default function RaceResultsPage(): ReactElement {
   return (
@@ -118,6 +120,20 @@ function ResultsView(props: ResultsViewProps): ReactElement {
       result.fastestLap.lapMs,
     )}`;
   }, [result.fastestLap]);
+
+  // F-032: derive the leaderboard panel inputs from the result. The
+  // panel hides itself entirely unless `NEXT_PUBLIC_LEADERBOARD_ENABLED`
+  // is set; when on, it submits the player's best lap and renders the
+  // status pill plus the optional top-N. DNF rows skip the network call.
+  const playerRow = useMemo<FinalCarRecord | null>(
+    () =>
+      result.finishingOrder.find(
+        (row) => row.carId === result.playerCarId,
+      ) ?? null,
+    [result.finishingOrder, result.playerCarId],
+  );
+  const playerFinished = playerRow?.status === "finished";
+  const playerBestLapMs = playerRow?.bestLapMs ?? null;
 
   return (
     <main
@@ -203,6 +219,13 @@ function ResultsView(props: ResultsViewProps): ReactElement {
               No upcoming race scheduled.
             </p>
           )}
+
+          <LeaderboardPanel
+            trackId={result.trackId}
+            carId={result.playerCarId}
+            bestLapMs={playerBestLapMs}
+            playerFinished={playerFinished}
+          />
         </div>
       </section>
 

@@ -404,20 +404,30 @@ land the function with unit tests and leave the wiring as a follow-on.
 ## F-032: Wire leaderboard client into race results surface
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** The `feat/leaderboard-client` slice landed
+**Status:** done
+**Notes:** Closed by `feat/leaderboard-panel-on-results`. The §20 race
+results page now renders `<LeaderboardPanel />` from
+`src/components/results/LeaderboardPanel.tsx`. The panel is hidden
+when `NEXT_PUBLIC_LEADERBOARD_ENABLED` is unset (the bundled MVP
+default per AGENTS.md RULE 7); when enabled it fires `submitLap` once
+on a clean finish and `getTop(trackId, 10)` for the top-N read,
+mapping every client sentinel (`stored`, `rejected`, `network-error`,
+`disabled`) to a stable status pill via the pure model in
+`src/components/results/leaderboardPanelState.ts`. DNF rows skip the
+network call and surface a `Lap not submitted (DNF).` pill so the
+receipt is honest. The panel uses a placeholder raceToken / signature
+because the client never holds the `LEADERBOARD_SIGNING_KEY` (server
+secret per §21); a real signed submission lands with the raceToken
+issuance route owned by F-030. Coverage: 16 unit cases against the
+state model, 4 SSR-shape cases against the React shell, plus an e2e
+assertion that the panel is hidden when the env flag is off.
+
+Original notes: The `feat/leaderboard-client` slice landed
 `src/leaderboard/client.ts` with `submitLap` and `getTop`, gated by
 `NEXT_PUBLIC_LEADERBOARD_ENABLED`. The dot was marked `verified` but
-the adapter currently has zero in-app callers (`grep -rn "submitLap\|getTop"
-src/` outside `src/leaderboard/` returns nothing). The expected consumer
-is the post-race results surface owned by
-`VibeGear2-implement-race-results-7b0abfaa`: when the player crosses the
-finish line cleanly the results page should call `submitLap` with the
-signed token, render the `stored | rejected | disabled | error` outcome
-inline, and (optionally) show a top-N leaderboard read via `getTop`. Until
-that slice lands the client adapter is a producer waiting for a consumer,
-mirroring the F-015 / F-026 deferral pattern. Close this followup as part
-of the race-results dot, not as a standalone slice. Distinct from F-030
+the adapter had zero in-app callers; the expected consumer was the
+post-race results surface owned by
+`VibeGear2-implement-race-results-7b0abfaa`. Distinct from F-030
 (Vercel KV provisioning) which is the deploy-side gap.
 
 ## F-031: Source map workspace paths leak in Next.js framework chunks

@@ -169,4 +169,29 @@ test.describe("race results screen", () => {
     await expect(page.getByTestId("race-results-empty")).toBeVisible();
     await expect(page.getByTestId("results-cta-home")).toBeVisible();
   });
+
+  // F-032: the §21 leaderboard panel is hidden when
+  // `NEXT_PUBLIC_LEADERBOARD_ENABLED` is unset (the default for both
+  // local dev and the CI playwright build). The four submitLap
+  // outcomes are exercised against the pure model in
+  // `src/components/results/__tests__/leaderboardPanelState.test.ts`;
+  // the SSR shape is pinned in `LeaderboardPanel.test.tsx`. When the
+  // future deploy provisions Vercel KV (F-030) and turns the flag on,
+  // a follow-on slice can flip this assertion to assert the visible
+  // pill instead.
+  test("hides the leaderboard panel when the env flag is off (default)", async ({
+    page,
+  }) => {
+    await page.goto("/race/results");
+    await page.evaluate(
+      ([key, payload]) => {
+        sessionStorage.setItem(key, payload);
+      },
+      [STORAGE_KEY, JSON.stringify(SEED_RESULT)] as const,
+    );
+    await page.reload();
+
+    await expect(page.getByTestId("race-results")).toBeVisible();
+    await expect(page.getByTestId("leaderboard-panel")).toHaveCount(0);
+  });
 });
