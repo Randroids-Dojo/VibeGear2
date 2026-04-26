@@ -6,6 +6,93 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: options screen route /options (settings UI scaffold)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) (Settings six-pane
+list and pause-menu Settings entry point), [§19](gdd/19-controls-and-input.md)
+(Remapping is a first-class feature; remap UI lives behind /options Controls
+tab).
+**Branch / PR:** `feat/options-screen` (stacked on `feat/minimap-module`),
+PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/app/options/page.tsx` as a Client Component scaffold with
+  six tabs in §20 order (Display, Audio, Controls, Accessibility,
+  Difficulty, Performance). Each pane renders a placeholder citing the
+  exact dot id of the slice that ships its real content
+  (`implement-visual-polish`, `implement-sound-music`,
+  `implement-key-remap`, `implement-accessibility`,
+  `implement-difficulty-preset`, `implement-performance-settings`).
+  Tabs follow the WAI-ARIA Authoring Practices keyboard model: Left and
+  Right cycle with wrap, Home and End jump to ends, focus follows
+  selection. Esc on the page returns to the title via `history.back()`
+  with a fall-through to `/`.
+- Added `src/app/options/page.module.css` with the tab strip, panel,
+  and footer styling. Reset to defaults button is rendered disabled
+  with the SaveGameSettings v2 dot id in its title attribute so the
+  next agent can grep.
+- Added `src/app/options/tabNav.ts` with the pure `nextTabIndex`,
+  `isTabNavKey`, and `TAB_ORDER` exports the page binds to. Lives
+  outside `page.tsx` so the keyboard model is unit-testable in the
+  default node Vitest env without RTL.
+- Added `src/app/options/__tests__/tabNav.test.ts` (10 tests) covering
+  the navigation table, wrap behaviour, Home/End jumps, non-nav-key
+  pass-through, and the empty-tab-set guard.
+- Added `src/app/options/__tests__/page.test.tsx` (9 tests) using the
+  existing `renderToStaticMarkup` pattern. Asserts the six tab test
+  ids, the active-tab `aria-selected` and `data-active` attributes, the
+  Display panel placeholder dot id, the Reset button's disabled state,
+  the back-to-title link, and the `tabIndex=0`/`-1` roving tabindex
+  pattern.
+- Added `e2e/options-screen.spec.ts` (6 tests) covering: all six tabs
+  visible with Display selected, ArrowRight cycle plus wrap,
+  ArrowLeft wrap from first to last, Reset to defaults disabled with
+  the v2 schema dot id in its title, back-to-title link, and Esc
+  returning to `/`.
+- Updated `src/app/page.tsx` to enable the Options main-menu entry as a
+  `Link` to `/options` with `data-testid="menu-options"`. Removed the
+  prior `menu-options-pending` disabled placeholder.
+- Updated `src/app/__tests__/page.test.tsx` to assert the new
+  `menu-options` anchor and tab order. Updated
+  `e2e/title-screen.spec.ts` to assert the link points at `/options`
+  and added a navigation smoke.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` passes (488 tests; 19 new across the two suites).
+- `npm run build` clean. `/options` route reports 2.21 kB / 108 kB
+  first-load.
+- `npm run test:e2e` passes (11 specs).
+- `grep -rP "[\x{2013}\x{2014}]"` on touched files returns nothing.
+
+### Decisions and assumptions
+- Followed the established `renderToStaticMarkup` test style instead of
+  pulling in React Testing Library. The dot description called for
+  arrow-key navigation in the unit test; that interactive coverage
+  lives in `tabNav.test.ts` (pure model) plus the Playwright spec
+  (real browser keyboard events). Adding `@testing-library/react` here
+  would be a one-off divergence from the rest of the suite.
+- Title-screen test id changed from `menu-options-pending` to
+  `menu-options`. The `WORKING_AGREEMENT` rule against
+  backwards-compatibility shims for code with no users yet supports a
+  rename here; both the unit test and the Playwright spec are updated
+  in this slice.
+- Esc handler uses `window.history.length > 1` as a heuristic for the
+  presence of a referrer in this tab. Edge case: `length` can be 1
+  even when entering via a fresh tab in some browsers, so the
+  fallback is a hard navigation to `/` rather than nothing.
+- Tabs use roving tabindex (active = 0, others = -1) per WAI-ARIA so
+  Tab moves between regions instead of cycling tabs. Arrow keys cycle
+  within the tablist as expected.
+
+### Followups created
+- None. The placeholder dots cited in each pane are already ready
+  tasks, so no new tracking entry is needed.
+
+---
+
 ## 2026-04-26: Slice: minimap projection + HUD overlay drawer (split from hud-ui)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) (Race HUD: simplified

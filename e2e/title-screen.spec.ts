@@ -20,9 +20,10 @@ test.describe("title screen", () => {
     await expect(garage).toHaveText("Garage");
     await expect(garage).toHaveAttribute("href", "/garage/cars");
 
-    const optionsPending = page.getByTestId("menu-options-pending");
-    await expect(optionsPending).toBeVisible();
-    await expect(optionsPending).toBeDisabled();
+    const options = page.getByTestId("menu-options");
+    await expect(options).toBeVisible();
+    await expect(options).toHaveText("Options");
+    await expect(options).toHaveAttribute("href", "/options");
 
     await expect(page.getByTestId("build-status")).toContainText("Phase 0");
   });
@@ -37,5 +38,11 @@ test.describe("title screen", () => {
     await page.goto("/");
     await page.getByTestId("menu-garage").click();
     await expect(page).toHaveURL(/\/garage\/cars$/);
+  });
+
+  test("Options link navigates to /options", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-options").click();
+    await expect(page).toHaveURL(/\/options$/);
   });
 });

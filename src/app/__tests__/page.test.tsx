@@ -38,19 +38,16 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/garage/cars"');
   });
 
-  it("renders Options as a disabled button until /options lands", () => {
-    const match = html.match(
-      /<button[^>]*data-testid="menu-options-pending"[^>]*>/,
-    );
-    expect(match, "menu-options-pending button not found").not.toBeNull();
-    expect(match?.[0]).toContain("disabled");
-    expect(match?.[0]).toContain('aria-disabled="true"');
+  it("renders Options as an anchor pointing at /options", () => {
+    const match = html.match(/<a[^>]*data-testid="menu-options"[^>]*>/);
+    expect(match, "menu-options anchor not found").not.toBeNull();
+    expect(match?.[0]).toContain('href="/options"');
   });
 
   it("places Start Race before Garage before Options in tab order", () => {
     const startIdx = html.indexOf('data-testid="menu-start-race"');
     const garageIdx = html.indexOf('data-testid="menu-garage"');
-    const optionsIdx = html.indexOf('data-testid="menu-options-pending"');
+    const optionsIdx = html.indexOf('data-testid="menu-options"');
     expect(startIdx).toBeGreaterThan(-1);
     expect(garageIdx).toBeGreaterThan(startIdx);
     expect(optionsIdx).toBeGreaterThan(garageIdx);

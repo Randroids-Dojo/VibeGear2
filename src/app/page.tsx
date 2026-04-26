@@ -5,12 +5,12 @@ import styles from "./page.module.css";
 /**
  * Title screen.
  *
- * Renders the three top-level main menu items per GDD §5 and §20.
- * "Start Race" and "Garage" navigate to the routes that are already
- * shipped (`/race`, `/garage/cars`). "Options" stays disabled until the
- * `/options` route lands; the disabled control carries
- * `data-testid="menu-options-pending"` so the e2e smoke spec can flip
- * to an enabled assertion in the slice that ships that page.
+ * Renders the three top-level main menu items per GDD §5 and §20:
+ * Start Race -> `/race`, Garage -> `/garage/cars`, Options ->
+ * `/options`. The Options entry was a disabled placeholder
+ * (`menu-options-pending`) until the `/options` scaffold landed in
+ * `VibeGear2-implement-options-screen-a9379c4a`. Its replacement keeps
+ * the original `menu-options` test id that the e2e suite asserts on.
  *
  * Keyboard order is Start Race -> Garage -> Options (DOM order).
  */
@@ -21,9 +21,10 @@ interface MenuItem {
   readonly testId: string;
 }
 
-const ENABLED_MENU: ReadonlyArray<MenuItem> = [
+const MENU: ReadonlyArray<MenuItem> = [
   { label: "Start Race", href: "/race", testId: "menu-start-race" },
   { label: "Garage", href: "/garage/cars", testId: "menu-garage" },
+  { label: "Options", href: "/options", testId: "menu-options" },
 ];
 
 export default function TitlePage() {
@@ -35,7 +36,7 @@ export default function TitlePage() {
         </h1>
         <p className={styles.tagline}>Spiritual successor to Top Gear 2.</p>
         <nav className={styles.menu} aria-label="Main menu">
-          {ENABLED_MENU.map((item) => (
+          {MENU.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -46,16 +47,6 @@ export default function TitlePage() {
               {item.label}
             </Link>
           ))}
-          <button
-            type="button"
-            className={styles.menuItem}
-            data-testid="menu-options-pending"
-            disabled
-            aria-disabled="true"
-            title="Options menu lands in a later slice."
-          >
-            Options
-          </button>
         </nav>
         <footer className={styles.footer}>
           <span data-testid="build-status">Pre-alpha. Phase 0 scaffold.</span>
