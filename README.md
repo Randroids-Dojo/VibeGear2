@@ -30,6 +30,20 @@ npm run build        # production build
 - `src/render/` Canvas2D renderer, sprite atlas, HUD overlay.
 - `docs/` GDD, implementation plan, working agreement, and per-loop logs.
 
+## Licensing
+
+VibeGear2 uses separate licenses for code, original assets, and structured
+game data:
+
+- Source code is licensed under MIT. See [`LICENSE`](LICENSE).
+- Original art, sprites, sound effects, music, and asset manifests default to
+  CC BY 4.0. See [`ASSETS-LICENSE`](ASSETS-LICENSE).
+- Track, championship, balancing, and community mod data default to
+  CC BY-SA 4.0. See [`DATA-LICENSE`](DATA-LICENSE).
+
+The asymmetry is intentional: code stays permissive, original media preserves
+attribution, and community track or data remixes stay share-alike.
+
 ## Deploy
 
 `main` deploys to Vercel Hobby (region `iad1`) via GitHub Actions. Every push
