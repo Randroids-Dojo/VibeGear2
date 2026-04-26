@@ -6,6 +6,93 @@ correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Phase 1 vertical slice integration (drivable /race)
+
+**GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md), [§10](gdd/10-driving-model-and-physics.md), [§15](gdd/15-cpu-opponents-and-ai.md), [§20](gdd/20-hud-and-ui-ux.md), [§21](gdd/21-technical-design-for-web-implementation.md)
+**Branch / PR:** `feat/race-session-vertical-slice` (off `feat/playwright-smoke-recovery`), PR pending
+**Status:** Implemented
+
+### Done
+- Added `src/game/raceSession.ts`: pure glue between input, physics, AI,
+  and race lifecycle. Exposes `createRaceSession` and `stepRaceSession`
+  (both pure, no rAF, no globals) plus a `totalProgress` helper for HUD
+  ranking. The session owns the `phase` lifecycle (countdown -> racing
+  -> finished), the player car state, the AI car array, and a tick
+  counter that resets at the green light so lap timing starts there.
+- Extended `src/game/raceState.ts` with `countdownRemainingSec`,
+  `lastLapTimeMs`, and `bestLapTimeMs`. Added `DEFAULT_COUNTDOWN_SEC`
+  (3 s per the dot stress-test §2) and a `countdownSec` option on
+  `createRaceState` so practice / quick-race modes can opt for an
+  instant start.
+- Wired `/race` to the runtime: track compiler, fixed-step loop, input
+  manager, race session, road renderer, and HUD overlay. Reads
+  `?track=<slug>` from the URL (defaults to `test/curve`, falls back on
+  unknown ids), mounts an 800x480 canvas, wraps in `<ErrorBoundary>`
+  and a Suspense fallback, holds the loop handle in a `useRef` and
+  stops it on unmount so React StrictMode does not spawn two parallel
+  loops.
+- Pause overlay sits on top of the canvas. `usePauseToggle` wires
+  Escape to `loop.pause()` / `loop.resume()`, so the sim halts without
+  stalling the render callback.
+- Lap completion: `floor(player.car.z / track.totalLengthMeters)`
+  drives the lap counter. On increment we record `lastLapTimeMs`,
+  update `bestLapTimeMs`, and on final-lap completion flip to
+  `finished` and freeze physics. The full §7 race-rules engine is
+  still owned by the race-rules dot; this slice ships only the
+  happy-path integration.
+- Single AI clean_line opponent spawns 5 m behind the player at the
+  centerline, per the dot stress-test §4. Full grid placement remains
+  with `implement-ai-grid-02d7e311`.
+- Added `src/game/__tests__/raceSession.test.ts` (12 tests: countdown
+  decrement, lights-out promotion, lap completion + timing, finished
+  freeze, determinism check, immutability of returned state).
+- Added `src/data/__tests__/tracks-content.test.ts` (5 tests: every
+  bundled track validates against `TrackSchema` and compiles via
+  `loadTrack` without throwing).
+- Added `e2e/race-demo.spec.ts`: visits `/race`, asserts the canvas
+  mounts, waits for the countdown to expire, holds ArrowUp for ~2.5 s,
+  asserts the speed HUD reads > 0, and asserts the lap label is
+  `1 / N`.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` 339 tests passing (17 new across the two new suites,
+  3 raceState additions).
+- `npm run build` clean. `/race` ships at 5.62 kB / 129 kB first-load.
+- `npm run test:e2e` 2 of 2 passing locally (title screen smoke +
+  race demo).
+
+### Decisions and assumptions
+- `RaceSession` lives in `src/game/`, not `src/app/`. Pure module, no
+  React. The `/race` page is the only consumer that wires it into the
+  rAF loop.
+- Track JSON is loaded via static `import` (the bundled
+  `src/data/tracks/index.ts` barrel + `loadTrack(id)`) rather than
+  `fetch`, so the bundle ships the JSON at build time and the demo
+  loads instantly.
+- Default countdown is 3 s, per the dot stress-test §2. Configurable
+  via `RaceSessionConfig.countdownSec` so practice / quick-race can
+  override to 0.
+- Asset preload (`LoadingGate`) is intentionally skipped on `/race`
+  for this slice. The MVP demo only needs the track JSON (statically
+  imported) and the road renderer's solid-fill colours; sprite
+  atlases will land with the visual-polish slice. The gate returns
+  once `public/assets/` exists, tracked under F-018.
+- AI per-frame lap is computed from `floor(ai.car.z / totalLength)`
+  (the per-AI lap field is deferred to the AI grid slice).
+- Lap timing uses sim-elapsed time so the value is deterministic
+  across machines, not wall-clock-influenced.
+
+### Followups created
+- None new. The "off-road persistent damage" extension and "full grid
+  spawning" are tracked by their existing slices.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: Recover Playwright e2e harness + title-screen smoke
 
 **GDD sections touched:** [§21](gdd/21-technical-design-for-web-implementation.md)
