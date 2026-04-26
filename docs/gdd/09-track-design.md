@@ -1,6 +1,6 @@
 # 9. Track design
 
-### Track anatomy
+## Track anatomy
 
 Each VibeGear2 track should be authored as a sequence of road segments with the following high-level ingredients:
 
@@ -11,7 +11,7 @@ Each VibeGear2 track should be authored as a sequence of road segments with the 
 - One late-race tension section.
 - Distinct horizon set pieces.
 
-### Road curvature
+## Road curvature
 
 Curves should be bucketed for authoring:
 
@@ -23,7 +23,7 @@ Curves should be bucketed for authoring:
 | Hairpin | Full commitment corner |
 | Compound | Links two or more grades |
 
-### Elevation and hills
+## Elevation and hills
 
 Hills are important for spectacle but should be used deliberately:
 
@@ -32,15 +32,15 @@ Hills are important for spectacle but should be used deliberately:
 - Dip: dramatic speed compression.
 - Plateau: scenic reveal.
 
-### Lane width
+## Lane width
 
 Default lane model: 3 visual lanes, with enough shoulder space to create “squeeze” traffic moments without hiding the road edge.
 
-### Shortcuts and forks
+## Shortcuts and forks
 
 Shortcuts are allowed later, but they should be risk shortcuts, not mandatory knowledge checks. Forked routes are stretch content for post-v1.0 because they increase AI and ghost complexity substantially.
 
-### Hazards
+## Hazards
 
 Allowed hazards:
 
@@ -53,7 +53,7 @@ Allowed hazards:
 
 Avoid gimmick hazards that turn races into memory tests.
 
-### Roadside scenery
+## Roadside scenery
 
 Use scenery to reinforce speed and identity:
 
@@ -62,7 +62,7 @@ Use scenery to reinforce speed and identity:
 - Far horizon silhouettes for region identity.
 - Tunnel segments for contrast and audio shifts.
 
-### Track length targets
+## Track length targets
 
 | Track family | Target time at competitive pace |
 | --- | --- |
@@ -70,7 +70,7 @@ Use scenery to reinforce speed and identity:
 | Medium | 75 to 105 seconds |
 | Long | 105 to 150 seconds |
 
-### Community-created tracks
+## Community-created tracks
 
 Community tracks should follow these rules:
 

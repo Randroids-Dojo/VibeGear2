@@ -1,6 +1,6 @@
 # 22. Data schemas
 
-### Track JSON schema
+## Track JSON schema
 
 ```
 {
@@ -43,7 +43,7 @@
 }
 ```
 
-### Car JSON schema
+## Car JSON schema
 
 ```
 {
@@ -79,7 +79,7 @@
 }
 ```
 
-### Upgrade JSON schema
+## Upgrade JSON schema
 
 ```
 {
@@ -95,7 +95,7 @@
 }
 ```
 
-### Championship JSON schema
+## Championship JSON schema
 
 ```
 {
@@ -117,7 +117,7 @@
 }
 ```
 
-### AI driver JSON schema
+## AI driver JSON schema
 
 ```
 {
@@ -141,7 +141,7 @@
 }
 ```
 
-### Save-game JSON schema
+## Save-game JSON schema
 
 ```
 {

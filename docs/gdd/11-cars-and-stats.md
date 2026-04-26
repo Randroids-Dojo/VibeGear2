@@ -2,7 +2,7 @@
 
 VibeGear2 should use fictional production archetypes rather than licensed analogs.
 
-### Car classes
+## Car classes
 
 | Class | Role | Strength | Weakness |
 | --- | --- | --- | --- |
@@ -12,7 +12,7 @@ VibeGear2 should use fictional production archetypes rather than licensed analog
 | Enduro | Damage/tour specialist | Durability, stable late race | Slower launch |
 | Wet-spec | Niche unlock | Excellent in rain/snow | Weak in dry finals |
 
-### Stat categories
+## Stat categories
 
 - Top speed
 - Acceleration
@@ -23,7 +23,7 @@ VibeGear2 should use fictional production archetypes rather than licensed analog
 - Repair cost class
 - Weather affinity
 
-### Example starting cars
+## Example starting cars
 
 | Car | Archetype | Speed | Accel | Grip | Stability | Durability | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -31,7 +31,7 @@ VibeGear2 should use fictional production archetypes rather than licensed analog
 | Breaker S | Grip starter | 4 | 5 | 7 | 6 | 4 | Wet and tight-course friendly |
 | Vanta XR | Power starter | 6 | 6 | 3 | 3 | 3 | Expert reward curve |
 
-### Example late-game cars
+## Example late-game cars
 
 | Car | Archetype | Speed | Accel | Grip | Stability | Durability | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ VibeGear2 should use fictional production archetypes rather than licensed analog
 | Bastion LM | Enduro bruiser | 7 | 5 | 6 | 7 | 8 | Cheap repairs |
 | Nova Shade | Ultimate specialist | 9 | 8 | 4 | 4 | 4 | Best for leaderboard runs |
 
-### Balance rules
+## Balance rules
 
 - No car should be dominant in all weather.
 - Repairs and setup affinity should offset raw pace.

@@ -2,14 +2,14 @@
 
 VibeGear2 should preserve the “four races per destination block” idea but package it into an original world.
 
-### Structure
+## Structure
 
 Full v1.0 target: 8 tours × 4 tracks = 32 tracks  
 Stretch target: 10 tours × 4 tracks = 40 tracks
 
 This is intentionally smaller than Top Gear 2’s 64-race scope because it is more realistic for a solo/open-source project while still preserving the mini-championship rhythm.
 
-### Original tours
+## Original tours
 
 | Tour | Theme | Weather profile | Difficulty role |
 | --- | --- | --- | --- |
@@ -22,7 +22,7 @@ This is intentionally smaller than Top Gear 2’s 64-race scope because it is mo
 | Moss Frontier | Forest highways and villages | Heavy rain, mist | Technical mid-late game |
 | Crown Circuit | International finale hubs | Mixed and seeded dynamic weather | Endgame mastery |
 
-### Unlock structure
+## Unlock structure
 
 - Tours unlock sequentially on first completion.
 - Bronze-level continuation can unlock the next tour on easy.
