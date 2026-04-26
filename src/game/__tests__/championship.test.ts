@@ -30,6 +30,7 @@ import {
   type TourRaceResult,
 } from "../championship";
 import {
+  EASY_MODE_TOUR_BONUS_FRACTION,
   STIPEND_AMOUNT,
   STIPEND_THRESHOLD_CREDITS,
   getStipendClaimed,
@@ -460,6 +461,113 @@ describe("tourComplete", () => {
       const a = tourComplete(passingCursor, FIXTURE_CHAMPIONSHIP, "player", rewards);
       const b = tourComplete(passingCursor, FIXTURE_CHAMPIONSHIP, "player", rewards);
       expect(a).toEqual(b);
+    });
+  });
+
+  describe("easy-mode tour-clear bonus (F-037)", () => {
+    const passingCursor: ActiveTour = {
+      tourId: "first-tour",
+      raceIndex: 4,
+      results: [
+        makeResult("first/a", 1),
+        makeResult("first/b", 1),
+        makeResult("first/c", 1),
+        makeResult("first/d", 1),
+      ],
+    };
+    const failingCursor: ActiveTour = {
+      tourId: "third-tour",
+      raceIndex: 4,
+      results: [
+        makeResult("third/a", 6),
+        makeResult("third/b", 6),
+        makeResult("third/c", 6),
+        makeResult("third/d", 6),
+      ],
+    };
+
+    function saveWithDifficulty(
+      difficultyPreset: SaveGame["settings"]["difficultyPreset"],
+    ) {
+      const save = freshSave();
+      save.settings.difficultyPreset = difficultyPreset;
+      return save;
+    }
+
+    it("appends tour completion and easy-mode bonuses on a passed Easy tour", () => {
+      const rewards = [1000, 800, 1200, 900];
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        rewards,
+        saveWithDifficulty("easy"),
+      );
+      expect(summary.passed).toBe(true);
+      expect(summary.bonuses.map((b) => b.kind)).toEqual([
+        "tourComplete",
+        "easyModeTourComplete",
+      ]);
+      const rewardSum = rewards.reduce((acc, n) => acc + n, 0);
+      expect(summary.bonuses[0]?.cashCredits).toBe(
+        Math.round(rewardSum * TOUR_COMPLETION_BONUS_RATE),
+      );
+      expect(summary.bonuses[1]).toEqual({
+        kind: "easyModeTourComplete",
+        label: "Easy mode tour clear",
+        cashCredits: Math.round(rewardSum * EASY_MODE_TOUR_BONUS_FRACTION),
+      });
+    });
+
+    it.each(["normal", "hard", "master"] as const)(
+      "does not append the easy-mode bonus for %s difficulty",
+      (difficultyPreset) => {
+        const rewards = [1000, 800, 1200, 900];
+        const summary = tourComplete(
+          passingCursor,
+          FIXTURE_CHAMPIONSHIP,
+          "player",
+          rewards,
+          saveWithDifficulty(difficultyPreset),
+        );
+        expect(summary.bonuses.map((b) => b.kind)).toEqual(["tourComplete"]);
+      },
+    );
+
+    it("does not append either tour-clear bonus on a failed Easy tour", () => {
+      const summary = tourComplete(
+        failingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        [1000, 1000, 1000, 1000],
+        saveWithDifficulty("easy"),
+      );
+      expect(summary.passed).toBe(false);
+      expect(summary.bonuses).toEqual([]);
+    });
+
+    it("keeps the pre-F-037 behavior when no save is supplied", () => {
+      const rewards = [1000, 800, 1200, 900];
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        rewards,
+      );
+      expect(summary.bonuses.map((b) => b.kind)).toEqual(["tourComplete"]);
+    });
+
+    it("clamps negative reward entries before computing the Easy bonus", () => {
+      const summary = tourComplete(
+        passingCursor,
+        FIXTURE_CHAMPIONSHIP,
+        "player",
+        [1000, -500, 1000, 1000],
+        saveWithDifficulty("easy"),
+      );
+      expect(summary.bonuses[1]?.cashCredits).toBe(
+        Math.round(3000 * EASY_MODE_TOUR_BONUS_FRACTION),
+      );
     });
   });
 });

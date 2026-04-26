@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§26](gdd/26-open-source-project-guidance.md) "Suggested licenses",
 [§27](gdd/27-risks-and-mitigations.md) legal/IP safety risks.
-**Branch / PR:** `feat/licence-files-finalisation-loop`, PR pending.
+**Branch / PR:** `feat/licence-files-finalisation-loop`, PR #6.
 **Status:** Implemented.
 
 ### Done
@@ -41,6 +41,49 @@ None.
 
 ### GDD edits
 None. The implementation matches the existing §26 licence table.
+
+---
+
+## 2026-04-26: Slice: F-037 easy-mode tour-clear bonus wiring
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms",
+[§8](gdd/08-world-and-progression-design.md) "Tour progression".
+**Branch / PR:** `feat/f-037-easy-mode-tour-bonus`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/championship.ts`: extended `tourComplete` with an
+  optional `save` argument and appends an `easyModeTourComplete`
+  bonus when a passed tour is completed on the Easy preset.
+- `src/game/raceBonuses.ts`: added the `easyModeTourComplete`
+  bonus kind for the §20 chip pipeline.
+- `src/game/__tests__/championship.test.ts`: added F-037 coverage
+  for Easy, Normal, Hard, Master, failed tours, omitted save, and
+  negative reward clamping.
+- `docs/FOLLOWUPS.md`: marked F-037 done.
+
+### Verified
+- `npx vitest run src/game/__tests__/championship.test.ts src/game/__tests__/raceBonuses.test.ts src/game/__tests__/raceResult.test.ts`
+  green, 148 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green, 2123 passed.
+- `npm run build` clean.
+- `npm run content-lint` clean.
+- `git diff --check` clean.
+- No em or en dashes in touched files.
+
+### Decisions and assumptions
+- Kept the `tourComplete` API backward compatible by making `save`
+  optional. Callers that omit it keep the pre-F-037 bonus list.
+
+### Followups created
+None.
+
+### GDD edits
+None. The implementation matches the existing §12 easy-mode catch-up
+mechanism.
 
 ---
 

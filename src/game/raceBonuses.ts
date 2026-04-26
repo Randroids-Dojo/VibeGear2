@@ -64,6 +64,7 @@ export type RaceBonusKind =
   | "cleanRace"
   | "underdog"
   | "tourComplete"
+  | "easyModeTourComplete"
   | "sponsor";
 
 /**
