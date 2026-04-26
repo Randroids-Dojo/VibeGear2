@@ -6,6 +6,96 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-015 pin race-session integration tests for off-road persistent damage
+
+**GDD sections touched:**
+[§10](gdd/10-arcade-physics-and-controls.md) "Road edge and off-road
+slowdown" (no narrative edits; this slice closes the F-015 followup
+that the §10 narrative had pointed at since the arcade-physics slice).
+[§13](gdd/13-damage-repairs-and-risk.md) "Off-road persistent damage"
+(no narrative edits; the producer-side `applyOffRoadDamage` and the
+`OFF_ROAD_DAMAGE_PER_M = 0.000107` calibration already shipped with
+the §13 damage-model slice).
+**Branch / PR:** `feat/f-015-off-road-damage-tests`, PR pending.
+**Status:** Implemented. Closes `VibeGear2-implement-f-015-fdfdd148`
+and flips F-015 in `docs/FOLLOWUPS.md` from `in-progress` to `done`.
+F-019 and F-047 had already wired the runtime; this slice adds the
+F-015-specific integration pins and closes out the followup.
+
+### Done
+- `src/game/__tests__/raceSession.test.ts`: new
+  `describe("stepRaceSession (§10/§13 off-road persistent damage
+  wiring, F-015)")` block with 7 cases. Pins, end-to-end through
+  `stepRaceSession`: per-tick body emit equals
+  `OFF_ROAD_DAMAGE_PER_M * postStepSpeed * dt * 0.7` exactly (the
+  post-step speed is the §10 `OFF_ROAD_CAP_M_PER_S = 24` because the
+  physics step clamps the snapped 60 m/s before the damage path reads
+  it); 5 s (300 ticks) of off-road holding accumulates exactly the
+  analytical `300 * (per-tick body emit)` with no drift; on-road
+  ticks at speed leave the damage state at `PRISTINE`; AI cars run
+  the same `isOffRoad` gate as the player; the §28 `damageSeverity`
+  scalar attenuates the player emit at the Easy / Hard preset ratio
+  (`0.75 / 1.20`); a hand-built `damageSeverity = 0` assist preset
+  zeros the emit at the producer level (the future-proof contract
+  the dot called out for "no-damage assist preset"); and persistent
+  off-road damage feeds the next tick's `getDamageScalars` lookup so
+  a player who accumulates past the severe-band threshold
+  (`total = 0.75`) sees their post-snap top speed clamp to the
+  severe-band scalar (0.78).
+- `docs/FOLLOWUPS.md`: F-015 status flipped from `in-progress` to
+  `done (2026-04-26, feat/f-015-off-road-damage-tests)` with the
+  wiring trace (F-047 + F-019) and the new test surface noted.
+
+### Verified
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green; the new 7 F-015 integration cases pass alongside
+  the existing 2002-test suite (now 2009 total).
+- `npm run build` clean; postbuild source-map scrub ran.
+- `npm run test:e2e` green (48 / 48).
+
+### Decisions and assumptions
+- The `applyOffRoadDamage` consumer wiring (steps 1-3 of the F-015
+  dot description) had already shipped under F-047 (race-session
+  per-car damage state) and F-019 (damage scalars threaded into the
+  physics call site). This slice closes the dot by landing the
+  step-4 unit test pins at the integration level; the runtime
+  binding required no edits.
+- Picked the §10 off-road cap (`OFF_ROAD_CAP_M_PER_S = 24`) as the
+  reference speed for the integration tests instead of the
+  producer-side 60 m/s reference. The session reads the post-step
+  speed when calling `applyOffRoadDamage`, which the physics step
+  always clamps to the off-road cap; testing at 24 m/s mirrors the
+  actually-attainable runtime behaviour. The 5 s stress-test pin in
+  `damage.test.ts` continues to use 60 m/s directly because it
+  bypasses physics and tests the producer surface in isolation.
+- Re-snapped `x: 100` and `speed: 60` after every `stepRaceSession`
+  in the per-tick / cumulative tests so the §10 off-road drag
+  (`OFF_ROAD_DRAG_M_PER_S2 = 18`) does not slowly bleed the post-step
+  speed below the cap on subsequent ticks. Without the re-snap,
+  coasting drag pushes the speed toward zero over a few seconds and
+  the analytical body-share target stops matching.
+- The "no-damage assist preset" verify item was left as a producer-
+  level pin (calling `applyOffRoadDamage(state, 60, 1, {
+  damageSeverity: 0, ... })` directly) rather than a session-level
+  pin because the §28 player-facing table never pins
+  `damageSeverity = 0` (Easy is `0.75`). Pinning the contract at the
+  producer surface keeps a future debug-tooling override or
+  hand-built preset row honest without inventing a non-canonical
+  preset id.
+
+### Followups created
+- None. F-015 is closed; the `feat/wire-damage-scalars-into-physics`
+  slice already closed the F-019 physics-binding consumer; the
+  hazards-runtime emitter mentioned in F-019 remains the only
+  outstanding §13 consumer (tracked separately under the
+  hazards-runtime dot).
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: F-031 scrub workspace paths from Next.js source maps
 
 **GDD sections touched:**

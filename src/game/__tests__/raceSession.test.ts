@@ -34,7 +34,10 @@ import {
 } from "@/game/raceSession";
 import {
   applyHit,
+  applyOffRoadDamage,
   createDamageState,
+  DEFAULT_ZONE_DISTRIBUTION,
+  OFF_ROAD_DAMAGE_PER_M,
   PRISTINE_DAMAGE_STATE,
   WRECK_THRESHOLD,
 } from "@/game/damage";
@@ -44,6 +47,7 @@ import {
   DRAFT_MIN_SPEED_M_PER_S,
 } from "@/game/drafting";
 import { NEUTRAL_INPUT, type Input } from "@/game/input";
+import { OFF_ROAD_CAP_M_PER_S } from "@/game/physics";
 import {
   DNF_NO_PROGRESS_TIMEOUT_SEC,
   DNF_OFF_TRACK_TIMEOUT_SEC,
@@ -2004,6 +2008,306 @@ describe("stepRaceSession (§13 damage scalars wiring into physics, F-019)", () 
     // not clamped down even if the same tick added off-road / contact
     // damage that would have bumped the band.
     expect(session.player.car.speed).toBeCloseTo(STARTER_STATS.topSpeed, 6);
+  });
+});
+
+describe("stepRaceSession (§10/§13 off-road persistent damage wiring, F-015)", () => {
+  // §10 "Road edge and off-road slowdown" calls for "Increase damage
+  // slightly if the player persists off-road at high speed". F-019 and
+  // F-047 wired the per-tick `applyOffRoadDamage` call inside
+  // `stepRaceSession` (gated by `isOffRoad(car.x)` and `car.speed > 0`),
+  // and the resulting `DamageState` flows back into `getDamageScalars`
+  // on the next tick via the F-019 physics binding. These cases pin the
+  // F-015-specific stress-test contract: per-tick body accumulation
+  // matches the producer-side rate at the post-step speed, AI cars run
+  // the same gate, on-road ticks do not fire the emit, the §28
+  // `damageSeverity` scalar attenuates the player emit, the producer-
+  // side "no damage" assist preset zeros the emit, and persistent
+  // off-road damage feeds the next tick's damage band.
+  //
+  // Note on speed: the session's per-tick `applyOffRoadDamage` reads
+  // the *post-step* speed (the integrated `nextPlayerCar.speed`), which
+  // the §10 physics step clamps to `OFF_ROAD_CAP_M_PER_S = 24` for any
+  // car off the drivable surface. The producer-side unit test in
+  // `damage.test.ts` operates at 60 m/s directly because it bypasses
+  // physics; the integration tests below therefore measure body damage
+  // against the post-step (capped) speed.
+
+  // Helper: snap `x: 100` (well past `ROAD_WIDTH = 4.5`) so the car is
+  // unambiguously off-road, then re-snap after each tick so the
+  // accumulated speed cap does not drift the physics off the test
+  // hypothesis. Using NEUTRAL_INPUT keeps `steer = 0` so x stays put.
+  function snapPlayerOffRoadHolding(
+    session: RaceSessionState,
+    speed: number,
+  ): RaceSessionState {
+    return {
+      ...session,
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          x: 100,
+          speed,
+          surface: "grass",
+        },
+      },
+      // Park the AI off in the distance so collision events never
+      // trip and bias the accumulated body damage measurement.
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 5_000, speed: 0 },
+        status: "dnf" as const,
+        dnfReason: "off-track" as const,
+      })),
+    };
+  }
+
+  it("per-tick body emit matches OFF_ROAD_DAMAGE_PER_M * post-step-speed * dt * body-share", () => {
+    // The session's F-047 wiring forwards the same `applyOffRoadDamage`
+    // arithmetic the producer-side unit tests already pin. One tick
+    // off-road must add exactly
+    // `OFF_ROAD_DAMAGE_PER_M * post_step_speed * dt * 0.7` to the body
+    // zone (no assist scalars wired = identity severity). The post-step
+    // speed is the §10 off-road cap because the snap of 60 m/s clamps
+    // down to `OFF_ROAD_CAP_M_PER_S = 24` inside the physics step.
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = snapPlayerOffRoadHolding(session, 60);
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    const postStepSpeed = session.player.car.speed;
+    expect(postStepSpeed).toBe(OFF_ROAD_CAP_M_PER_S);
+    const expectedBody =
+      OFF_ROAD_DAMAGE_PER_M *
+      postStepSpeed *
+      DT *
+      DEFAULT_ZONE_DISTRIBUTION.offRoadPersistent.body;
+    expect(session.player.damage.zones.body).toBeCloseTo(expectedBody, 8);
+    expect(session.player.damage.offRoadAccumSeconds).toBeCloseTo(DT, 8);
+  });
+
+  it("5 s of off-road at the §10 cap accumulates body damage matching the analytical N*per-tick rate", () => {
+    // F-015 / `OFF_ROAD_DAMAGE_PER_M = 0.000107` is the producer-side
+    // calibration; the integration-level claim is "300 ticks (5 s at
+    // 60 Hz) of off-road accumulation deposit exactly
+    // `300 * (per-tick body emit at the post-step cap)` units of body
+    // damage" with no drift. Re-snapping after every step holds the
+    // off-road cap as the per-tick speed and rules out off-road drag
+    // from skewing the integrand.
+    const TICKS = 300; // 5 s at 60 Hz
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = snapPlayerOffRoadHolding(session, 60);
+    for (let i = 0; i < TICKS; i += 1) {
+      session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+      // Re-snap so the §10 off-road drag does not slowly bleed speed
+      // below the cap on subsequent ticks (the cap is only applied if
+      // pre-clamp speed exceeds it, but coasting drag pushes the
+      // post-step speed below the cap once the car has been on grass
+      // for several ticks).
+      session = snapPlayerOffRoadHolding(session, 60);
+    }
+    const expectedTotalBody =
+      OFF_ROAD_DAMAGE_PER_M *
+      OFF_ROAD_CAP_M_PER_S *
+      DT *
+      DEFAULT_ZONE_DISTRIBUTION.offRoadPersistent.body *
+      TICKS;
+    expect(session.player.damage.zones.body).toBeCloseTo(expectedTotalBody, 6);
+    expect(session.player.damage.offRoadAccumSeconds).toBeCloseTo(
+      TICKS * DT,
+      6,
+    );
+  });
+
+  it("on-road ticks do not accumulate any off-road damage (gate respected)", () => {
+    // The off-road branch only fires when `isOffRoad(car.x)` returns
+    // true. A player snapped on the road (x = 0, surface = road) at
+    // speed for many ticks must leave the damage state at PRISTINE.
+    const SPEED = 60;
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, speed: SPEED, surface: "road" },
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 5_000, speed: 0 },
+        status: "dnf" as const,
+        dnfReason: "off-track" as const,
+      })),
+    };
+    for (let i = 0; i < 60; i += 1) {
+      session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+      session = {
+        ...session,
+        player: {
+          ...session.player,
+          car: { ...session.player.car, x: 0, speed: SPEED, surface: "road" },
+        },
+      };
+    }
+    expect(session.player.damage).toEqual(PRISTINE_DAMAGE_STATE);
+  });
+
+  it("AI cars off-road accumulate body damage on the same gate (parity with player)", () => {
+    // F-047 wires `applyOffRoadDamage` for both the player and AI cars
+    // through the shared `advanceDamage` helper. Snap the AI off-road
+    // and confirm its damage accumulator advances the same way the
+    // player's does (post-step speed clamps to OFF_ROAD_CAP_M_PER_S).
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      // Park the player off the playfield so its damage path stays
+      // isolated from the AI being measured.
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, z: 5_000, speed: 0 },
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 100, speed: 60, surface: "grass" },
+      })),
+    };
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    const aiPostStepSpeed = session.ai[0]?.car.speed ?? 0;
+    expect(aiPostStepSpeed).toBe(OFF_ROAD_CAP_M_PER_S);
+    const expectedBody =
+      OFF_ROAD_DAMAGE_PER_M *
+      aiPostStepSpeed *
+      DT *
+      DEFAULT_ZONE_DISTRIBUTION.offRoadPersistent.body;
+    expect(session.ai[0]?.damage.zones.body).toBeCloseTo(expectedBody, 8);
+    expect(session.ai[0]?.damage.offRoadAccumSeconds).toBeCloseTo(DT, 8);
+  });
+
+  it("the §28 damageSeverity scalar attenuates the player's off-road emit (Easy < Hard)", () => {
+    // The Easy preset reads `damageSeverity = 0.75` (a hand-built
+    // "no damage" preset would read 0; the §28 binding clamps the
+    // table at 0.75 as the lowest player-facing row). Hard reads
+    // 1.20. With identical off-road conditions, Easy must accumulate
+    // strictly less body damage than Hard, proving the assistScalars
+    // resolved at session creation flow into `applyOffRoadDamage`
+    // each tick.
+    const SPEED = 60;
+    function rollOffRoad(preset: "easy" | "hard"): number {
+      const cfg = buildConfig({
+        countdownSec: 0,
+        player: { stats: STARTER_STATS, difficultyPreset: preset },
+      });
+      let s = createRaceSession(cfg);
+      s = snapPlayerOffRoadHolding(s, SPEED);
+      for (let i = 0; i < 60; i += 1) {
+        s = stepRaceSession(s, NEUTRAL_INPUT, cfg, DT);
+        s = snapPlayerOffRoadHolding(s, SPEED);
+      }
+      return s.player.damage.zones.body;
+    }
+    const easy = rollOffRoad("easy");
+    const hard = rollOffRoad("hard");
+    expect(easy).toBeLessThan(hard);
+    // Sanity: the ratio sits at the §28 table ratio (0.75 / 1.20 = 0.625),
+    // since the per-tick increment is linear in `damageSeverity` and
+    // every tick re-snaps to the same speed.
+    expect(easy / hard).toBeCloseTo(0.75 / 1.2, 4);
+  });
+
+  it("a no-damage assist preset (damageSeverity = 0) zeros the off-road emit at the producer level", () => {
+    // The §28 player-facing table never pins `damageSeverity = 0` (Easy
+    // is 0.75), but the F-015 verify item calls out the contract that
+    // a hand-built zero-damage assist must fully suppress the emit. The
+    // producer (`applyOffRoadDamage`) is the layer the session forwards
+    // to; this case pins that contract directly so a future preset row
+    // (or a debug tooling override) can rely on it.
+    const noDamage = applyOffRoadDamage(PRISTINE_DAMAGE_STATE, 60, 1, {
+      steeringAssistScale: 0,
+      nitroStabilityPenalty: 1,
+      damageSeverity: 0,
+      offRoadDragScale: 1,
+    });
+    expect(noDamage.zones.body).toBe(0);
+    expect(noDamage.zones.engine).toBe(0);
+    expect(noDamage.zones.tires).toBe(0);
+    expect(noDamage.total).toBe(0);
+  });
+
+  it("post-step off-road damage feeds the next tick's getDamageScalars (band degrades top speed)", () => {
+    // Verify the F-015 verify item: persistent off-road damage shows
+    // up as `topSpeedScalar < 1` on the NEXT `stepRaceSession` call.
+    // Pre-load just below the severe-band threshold (`total = 0.75`),
+    // re-snap the speed across enough off-road ticks for the body
+    // accumulator to push the weighted total over 0.75, then snap the
+    // player back on-road at the unscaled top speed and confirm the
+    // post-roll speed sits at-or-below the severe-band cap.
+    const config = buildConfig({ countdownSec: 0 });
+    // Pre-load near the severe-band threshold. Total weights sum to 1
+    // with body weight 0.35; pre-load body just under 0.75 and the
+    // off-road accumulator will push it past 0.75 within a handful of
+    // ticks at the off-road cap (the band lookup reads `total * 100`).
+    const nearSevere = createDamageState({
+      engine: 0.75,
+      tires: 0.75,
+      body: 0.74,
+    });
+    expect(nearSevere.total).toBeGreaterThanOrEqual(0.74);
+    expect(nearSevere.total).toBeLessThan(0.75);
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 100, speed: 60, surface: "grass" },
+        damage: nearSevere,
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 5_000, speed: 0 },
+        status: "dnf" as const,
+        dnfReason: "off-track" as const,
+      })),
+    };
+    // Roll enough off-road ticks at the cap that the body accumulator
+    // crosses the 0.75 weighted total threshold. At the post-step cap
+    // (24 m/s), one tick deposits ~3e-5 to body; weighted by 0.35 that
+    // shifts `total` by ~1e-5. We need total to climb from 0.7465 to
+    // 0.75 (~3.5e-3 shift), so roll ~350 ticks to be safe.
+    for (let i = 0; i < 400; i += 1) {
+      session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+      session = {
+        ...session,
+        player: {
+          ...session.player,
+          car: { ...session.player.car, x: 100, speed: 60, surface: "grass" },
+        },
+      };
+    }
+    expect(session.player.damage.total).toBeGreaterThanOrEqual(0.75);
+    // Snap back on-road at the unscaled top speed so the next tick's
+    // physics step reads the severe band's `topSpeedScalar = 0.78`
+    // and clamps to the scaled cap.
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          x: 0,
+          speed: STARTER_STATS.topSpeed,
+          surface: "road",
+        },
+      },
+    };
+    session = rollForward(session, fullThrottle(), config, 6);
+    // Severe band caps topSpeedScalar at 0.78. The post-roll speed
+    // must sit at-or-below the scaled cap rather than the unscaled cap.
+    expect(session.player.car.speed).toBeLessThanOrEqual(
+      STARTER_STATS.topSpeed * 0.78 + 1e-6,
+    );
+    expect(session.player.car.speed).toBeLessThan(STARTER_STATS.topSpeed);
   });
 });
 

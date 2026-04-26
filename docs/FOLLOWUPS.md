@@ -956,7 +956,7 @@ not crash (clipboard permissions granted in setup).
 ## F-015: Persistent off-road damage at high speed
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** in-progress
+**Status:** done (2026-04-26, feat/f-015-off-road-damage-tests)
 **Notes:** §10 "Road edge and off-road slowdown" calls for "Increase
 damage slightly if the player persists off-road at high speed". The
 arcade physics slice ships drag and a top-speed cap when off-road but
@@ -965,12 +965,32 @@ state machine. The §13 damage module (`feat/damage-model`) ships the
 `applyOffRoadDamage(state, speed, dt)` helper as a pure pair of zone
 deltas with the chosen rate `OFF_ROAD_DAMAGE_PER_M = 0.000107` (5 s of
 top-speed off-road equals one mid-speed carHit body share within 1%).
-The producer is in place; the consumer wiring is deferred. When the
-race-session damage integration slice lands, call `applyOffRoadDamage`
-once per tick the player car satisfies `isOffRoad(x)` (from
-`src/game/physics.ts`), feed the resulting `DamageState` back into the
-physics call site as a `performanceMultiplier(zone, damage)` scalar on
-`stats.topSpeed` and `stats.accel`, and mark this F-015 entry `done`.
+
+The consumer wiring landed across F-047 (race-session per-car damage
+state) and F-019 (damage scalars threaded into the physics call site):
+`stepRaceSession` calls `applyOffRoadDamage(state, postStepSpeed, dt,
+playerAssistScalars)` for the player and `(..., undefined)` for each
+AI car whenever the post-step `isOffRoad(car.x, roadHalfWidth)` returns
+true and `car.speed > 0`, then feeds `state.player.damage.total * 100`
+through `getDamageScalars` on the next tick so persistent off-road
+damage shows up as `topSpeedScalar < 1` and `gripScalar < 1` in the
+following physics step.
+
+This slice (`feat/f-015-off-road-damage-tests`) closes F-015 by adding
+the F-015-specific integration pins to `src/game/__tests__/raceSession.test.ts`
+under a new `describe("stepRaceSession (§10/§13 off-road persistent
+damage wiring, F-015)")` block: per-tick body emit matches
+`OFF_ROAD_DAMAGE_PER_M * postStepSpeed * dt * 0.7` exactly (post-step
+speed is the §10 off-road cap `OFF_ROAD_CAP_M_PER_S = 24` because the
+physics step clamps before the damage path reads it); 5 s of off-road
+holding accumulates `300 * (per-tick body emit)` units with no drift;
+on-road ticks leave the damage state at `PRISTINE`; AI cars run the
+same gate as the player; the §28 `damageSeverity` scalar attenuates
+the player emit at the Easy / Hard ratio (0.75 / 1.20); a hand-built
+`damageSeverity = 0` preset zeros the emit at the producer level; and
+persistent off-road damage feeds the next tick's band lookup,
+clamping the player's top speed to the severe-band scalar (0.78) once
+the accumulated damage crosses the `total = 0.75` boundary.
 
 ## F-014: Key remapping UI and persistence
 **Created:** 2026-04-26
