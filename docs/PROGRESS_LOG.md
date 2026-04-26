@@ -6,6 +6,107 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §12 economy + upgrade catalogue (awardCredits, purchaseUpgrade, tourBonus, 32-entry catalogue)
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) (currency rewards,
+upgrade pricing, sequential install rules, tour bonus), references
+to [§22](gdd/22-data-schemas.md) `UpgradeSchema` and §23 placeholder
+columns.
+**Branch / PR:** `feat/economy-upgrade` (stacked on
+`feat/build-version-stamping`), PR pending.
+**Status:** Implemented (`src/data/upgrades.json` ships the 32-entry
+§12 catalogue, `src/data/upgrades.ts` registry with `loadUpgrades`,
+`src/game/economy.ts` exposes `awardCredits`, `computeRaceReward`,
+`tourBonus`, `getUpgradePrice`, `purchaseUpgrade`, `installUpgrade`,
+`purchaseAndInstall`, all pure on `SaveGame` with the
+`EconomyResult` discriminated union. 33 economy + 101 upgrade-content
+unit tests green; full verify chain green.).
+
+### Done
+- `src/data/upgrades.json` (new): 32 entries covering every
+  (category, tier 1..4) cell from §12 "Example upgrade table"
+  cell-by-cell. Costs match §12 exactly. Effect numerics are
+  documented placeholder shapes (one effect per upgrade satisfies
+  `UpgradeEffectsSchema.refine`); the balancing-pass slice owns the
+  final per-tier deltas via §23.
+- `src/data/upgrades.ts` (new): mirror of `src/data/cars/index.ts`.
+  `UPGRADES`, `UPGRADES_BY_ID`, `getUpgrade(id)`, plus `loadUpgrades()`
+  for strict-mode validation. Static JSON import keeps the registry
+  in the client bundle without filesystem IO.
+- `src/data/__tests__/upgrades-content.test.ts` (new): 101 cases
+  covering schema validation per entry, the 32-cell coverage matrix,
+  cell-by-cell §12 price match, registry uniqueness, and
+  `getUpgrade` / `loadUpgrades` smoke.
+- `src/game/economy.ts` (new): `awardCredits` (per-race wallet
+  credit), `computeRaceReward` (pure helper for tour-bonus and
+  spot-checks), `tourBonus` (15% sum-and-round), `purchaseUpgrade`
+  (sequential install, cap, credit, ownership checks),
+  `installUpgrade` and `purchaseAndInstall` (MVP-fold aliases),
+  `getUpgradePrice` (catalogue lookup, throws on unknown id). Uses
+  the iter-19 `EconomyResult` discriminated union with
+  `EconomyFailure` codes (`insufficient_credits`, `upgrade_at_cap`,
+  `tier_skip`, `unknown_car`, `unknown_upgrade`, `car_not_owned`).
+- `src/game/__tests__/economy.test.ts` (new): 33 cases covering the
+  §12 finish-multiplier table cell-by-cell, difficulty multiplier
+  scaling, DNF participation, deterministic repeats, every named
+  failure code, purity (input never mutated, deep-equal assertions),
+  the cap-exact boundary (sparrow-gt aero cap 3 rejects
+  aero-extreme; engine cap 4 accepts engine-extreme), and the
+  install-preserves-other-categories invariant.
+
+### Verified
+- `npm run lint` green (one cycle of `import()` type-annotation fix
+  in the test file).
+- `npm run typecheck` green (one cycle to add `?? 1.0` fallback when
+  reading from the `Record<string, number>` difficulty-multiplier
+  table in the test).
+- `npm test` green: 1429 tests pass, 0 fail.
+- `npm run build` green: no new routes, no bundle-size impact (the
+  upgrade JSON is data-side and currently has no UI consumer).
+- Em-dash sweep: `grep -rPn "[\x{2013}\x{2014}]"` over the new files
+  returns nothing.
+
+### Decisions and assumptions
+- **MVP fold purchase + install.** §12 narrative implies a possible
+  split (buy upgrade, install later for a labor fee) but the GDD
+  does not pin the labor mechanic; this slice folds purchase and
+  install together. `purchaseAndInstall` is the canonical garage
+  call; `installUpgrade` is currently an alias so the future split
+  can land as an additive change.
+- **DNF participation flat rate (200 credits).** §12 does not pin a
+  DNF reward but mentions a "tour stipend" for under-threshold
+  players (catch-up mechanism). 200 credits keeps a wrecked car
+  from being stranded with zero; tunable via `awardCredits`'s
+  `dnfParticipation` option.
+- **Difficulty multiplier table is a placeholder.** §15 ships the
+  player-facing tier names but neither §12 nor §23 prices the
+  multipliers. Pinned `{novice: 0.9, easy: 0.95, normal: 1.0,
+  hard: 1.10, master: 1.10, extreme: 1.20}` matching the iter-19
+  stress-test recommendation. `master` mirrors `hard` until the
+  unlock-gating slice lands.
+- **`baseTrackReward` is caller-supplied.** The Track schema has no
+  `baseReward` field today. Callers (the future race-finish wiring
+  slice) pass the value from a per-tour table; the schema-side
+  decision is deferred.
+- **Effect numerics are placeholders.** Schema requires at least
+  one numeric effect per upgrade. The values match the §12 row's
+  thematic intent (engine raises accel, gearbox raises top speed,
+  etc.) but are flagged for replacement in the balancing pass.
+- **No `applyRepairCost`.** §12 names a `tourTierScale` factor with
+  no §23 column. Filed F-033 to land it once the dev signs off on
+  the placeholder table; this slice intentionally does not freeze
+  the values.
+
+### Followups created
+- F-033: Implement `applyRepairCost` once §23 ships `tourTierScale`.
+- F-034: Wire `awardCredits` into the race-finish flow.
+
+### GDD edits
+- None.
+
+---
+
 ## 2026-04-26: Slice: §21 build version stamping (git SHA + version + sourcemaps)
 
 **GDD sections touched:**

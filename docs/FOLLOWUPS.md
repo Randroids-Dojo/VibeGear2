@@ -10,6 +10,47 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-034: Wire `awardCredits` into the race-finish flow
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/economy-upgrade` slice landed
+`awardCredits(save, { placement, status, baseTrackReward, difficulty })`
+plus `tourBonus(rewards)` in `src/game/economy.ts` and proved the
+formula with 33 unit tests. The function has no in-app caller yet:
+the post-race results screen owned by
+`VibeGear2-implement-race-results-7b0abfaa` is the natural consumer
+and should call `awardCredits` at the moment the player car crosses
+the final finish line, then merge the new save via `saveSave`. The
+caller also needs to pass `baseTrackReward`; until the track JSON
+schema gains a `baseReward` field, the wiring slice can pin a
+per-tour table in `src/data/championships/baseRewards.ts` (one row
+per tour, matching §23 Race Reward column). Mirrors the
+F-026 / F-032 producer-without-consumer pattern. Distinct from
+F-033 (repair-cost wiring) which is the next economy-side gap.
+
+## F-033: Implement `applyRepairCost` once §23 ships `tourTierScale`
+**Created:** 2026-04-26
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The `feat/economy-upgrade` slice intentionally deferred
+`applyRepairCost` because §12 names a `tourTierScale` factor in the
+formula `repairCost = damagePercent * carRepairFactor *
+tourTierScale` that has no §23 column today. The iter-19 stress-test
+on `VibeGear2-implement-economy-upgrade-ff73b279` proposed a
+placeholder table (1.0, 1.15, 1.30, 1.50, 1.75, 2.05, 2.40, 2.80 for
+tours 1..8) but flagged that the implementer must NOT freeze it
+without dev sign-off. File `Q-NNN` in `docs/OPEN_QUESTIONS.md` first
+asking the dev to confirm or replace the table; once answered, add
+`applyRepairCost(save, { carId, zoneRepairs, tourTier })` to
+`src/game/economy.ts` reading per-zone damage from the in-flight
+`DamageState`, computing the credit cost via `repairCostFor` from
+`damage.ts`, multiplying by the resolved scale, and returning a
+fresh `SaveGame` with `garage.credits` decremented and (separately)
+the post-race damage zeroed. The caller (the §20 results-screen
+"Repair" button) is the natural consumer; until that surface lands,
+land the function with unit tests and leave the wiring as a follow-on.
+
 ## F-032: Wire leaderboard client into race results surface
 **Created:** 2026-04-26
 **Priority:** nice-to-have

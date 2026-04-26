@@ -1,0 +1,258 @@
+[
+  {
+    "id": "engine-street",
+    "category": "engine",
+    "tier": 1,
+    "name": "Street Engine",
+    "cost": 3000,
+    "effects": { "accel": 0.04, "topSpeed": 0.02 }
+  },
+  {
+    "id": "engine-sport",
+    "category": "engine",
+    "tier": 2,
+    "name": "Sport Engine",
+    "cost": 6000,
+    "effects": { "accel": 0.08, "topSpeed": 0.04 }
+  },
+  {
+    "id": "engine-factory",
+    "category": "engine",
+    "tier": 3,
+    "name": "Factory Engine",
+    "cost": 11000,
+    "effects": { "accel": 0.12, "topSpeed": 0.06 }
+  },
+  {
+    "id": "engine-extreme",
+    "category": "engine",
+    "tier": 4,
+    "name": "Extreme Engine",
+    "cost": 18000,
+    "effects": { "accel": 0.16, "topSpeed": 0.08 }
+  },
+  {
+    "id": "gearbox-street",
+    "category": "gearbox",
+    "tier": 1,
+    "name": "Street Gearbox",
+    "cost": 2500,
+    "effects": { "topSpeed": 0.03 }
+  },
+  {
+    "id": "gearbox-sport",
+    "category": "gearbox",
+    "tier": 2,
+    "name": "Sport Gearbox",
+    "cost": 5000,
+    "effects": { "topSpeed": 0.05 }
+  },
+  {
+    "id": "gearbox-factory",
+    "category": "gearbox",
+    "tier": 3,
+    "name": "Factory Gearbox",
+    "cost": 9000,
+    "effects": { "topSpeed": 0.07 }
+  },
+  {
+    "id": "gearbox-extreme",
+    "category": "gearbox",
+    "tier": 4,
+    "name": "Extreme Gearbox",
+    "cost": 15000,
+    "effects": { "topSpeed": 0.09 }
+  },
+  {
+    "id": "dry-tires-street",
+    "category": "dryTires",
+    "tier": 1,
+    "name": "Street Dry Tires",
+    "cost": 1200,
+    "effects": { "gripDry": 0.04, "brake": 0.02 }
+  },
+  {
+    "id": "dry-tires-sport",
+    "category": "dryTires",
+    "tier": 2,
+    "name": "Sport Dry Tires",
+    "cost": 2400,
+    "effects": { "gripDry": 0.07, "brake": 0.04 }
+  },
+  {
+    "id": "dry-tires-factory",
+    "category": "dryTires",
+    "tier": 3,
+    "name": "Factory Dry Tires",
+    "cost": 4200,
+    "effects": { "gripDry": 0.10, "brake": 0.06 }
+  },
+  {
+    "id": "dry-tires-extreme",
+    "category": "dryTires",
+    "tier": 4,
+    "name": "Extreme Dry Tires",
+    "cost": 6400,
+    "effects": { "gripDry": 0.14, "brake": 0.08 }
+  },
+  {
+    "id": "wet-tires-street",
+    "category": "wetTires",
+    "tier": 1,
+    "name": "Street Wet Tires",
+    "cost": 1200,
+    "effects": { "gripWet": 0.05, "stability": 0.02 }
+  },
+  {
+    "id": "wet-tires-sport",
+    "category": "wetTires",
+    "tier": 2,
+    "name": "Sport Wet Tires",
+    "cost": 2400,
+    "effects": { "gripWet": 0.09, "stability": 0.03 }
+  },
+  {
+    "id": "wet-tires-factory",
+    "category": "wetTires",
+    "tier": 3,
+    "name": "Factory Wet Tires",
+    "cost": 4200,
+    "effects": { "gripWet": 0.13, "stability": 0.04 }
+  },
+  {
+    "id": "wet-tires-extreme",
+    "category": "wetTires",
+    "tier": 4,
+    "name": "Extreme Wet Tires",
+    "cost": 6400,
+    "effects": { "gripWet": 0.18, "stability": 0.05 }
+  },
+  {
+    "id": "nitro-street",
+    "category": "nitro",
+    "tier": 1,
+    "name": "Street Nitro",
+    "cost": 2000,
+    "effects": { "nitroEfficiency": 0.05 }
+  },
+  {
+    "id": "nitro-sport",
+    "category": "nitro",
+    "tier": 2,
+    "name": "Sport Nitro",
+    "cost": 4500,
+    "effects": { "nitroEfficiency": 0.10 }
+  },
+  {
+    "id": "nitro-factory",
+    "category": "nitro",
+    "tier": 3,
+    "name": "Factory Nitro",
+    "cost": 8000,
+    "effects": { "nitroEfficiency": 0.15 }
+  },
+  {
+    "id": "nitro-extreme",
+    "category": "nitro",
+    "tier": 4,
+    "name": "Extreme Nitro",
+    "cost": 13000,
+    "effects": { "nitroEfficiency": 0.20 }
+  },
+  {
+    "id": "armor-street",
+    "category": "armor",
+    "tier": 1,
+    "name": "Street Chassis Armor",
+    "cost": 1800,
+    "effects": { "durability": 0.04 }
+  },
+  {
+    "id": "armor-sport",
+    "category": "armor",
+    "tier": 2,
+    "name": "Sport Chassis Armor",
+    "cost": 3600,
+    "effects": { "durability": 0.08 }
+  },
+  {
+    "id": "armor-factory",
+    "category": "armor",
+    "tier": 3,
+    "name": "Factory Chassis Armor",
+    "cost": 6200,
+    "effects": { "durability": 0.12 }
+  },
+  {
+    "id": "armor-extreme",
+    "category": "armor",
+    "tier": 4,
+    "name": "Extreme Chassis Armor",
+    "cost": 9600,
+    "effects": { "durability": 0.16 }
+  },
+  {
+    "id": "cooling-street",
+    "category": "cooling",
+    "tier": 1,
+    "name": "Street Cooling",
+    "cost": 1000,
+    "effects": { "durability": 0.02, "nitroEfficiency": 0.02 }
+  },
+  {
+    "id": "cooling-sport",
+    "category": "cooling",
+    "tier": 2,
+    "name": "Sport Cooling",
+    "cost": 2200,
+    "effects": { "durability": 0.04, "nitroEfficiency": 0.04 }
+  },
+  {
+    "id": "cooling-factory",
+    "category": "cooling",
+    "tier": 3,
+    "name": "Factory Cooling",
+    "cost": 4000,
+    "effects": { "durability": 0.06, "nitroEfficiency": 0.06 }
+  },
+  {
+    "id": "cooling-extreme",
+    "category": "cooling",
+    "tier": 4,
+    "name": "Extreme Cooling",
+    "cost": 6500,
+    "effects": { "durability": 0.08, "nitroEfficiency": 0.08 }
+  },
+  {
+    "id": "aero-street",
+    "category": "aero",
+    "tier": 1,
+    "name": "Street Aero Kit",
+    "cost": 1600,
+    "effects": { "stability": 0.03, "topSpeed": 0.01 }
+  },
+  {
+    "id": "aero-sport",
+    "category": "aero",
+    "tier": 2,
+    "name": "Sport Aero Kit",
+    "cost": 3000,
+    "effects": { "stability": 0.05, "topSpeed": 0.02 }
+  },
+  {
+    "id": "aero-factory",
+    "category": "aero",
+    "tier": 3,
+    "name": "Factory Aero Kit",
+    "cost": 5200,
+    "effects": { "stability": 0.07, "topSpeed": 0.03 }
+  },
+  {
+    "id": "aero-extreme",
+    "category": "aero",
+    "tier": 4,
+    "name": "Extreme Aero Kit",
+    "cost": 8800,
+    "effects": { "stability": 0.09, "topSpeed": 0.04 }
+  }
+]
