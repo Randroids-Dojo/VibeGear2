@@ -6,6 +6,115 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: §21 leaderboard pure primitives (sign + noop store)
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) (signed lap
+submission concept, leaderboard back end concept).
+**Branch / PR:** `feat/leaderboard-primitives` (stacked on
+`feat/per-car-dnf-tracking`), PR pending.
+**Status:** Implemented (types + sign/verify + noop store + 22 new
+tests; verify chain green). First slice of parent dot
+`VibeGear2-implement-optional-online-4b2341af`; route handlers,
+Vercel KV adapter, and client adapter remain on the parent dot for
+later slices.
+
+### Done
+- `src/leaderboard/types.ts` (new): `LapSubmission`,
+  `LeaderboardEntry`, `LeaderboardStore`, `VerifiedSubmission`. Pure
+  contracts; safe to import from both server route handlers and the
+  future client adapter. `VerifiedSubmission` strips `signature` and
+  `raceToken` before reaching the store so a buggy backend cannot
+  leak the race token back to clients.
+- `src/leaderboard/sign.ts` (new): `canonicalize`, `signSubmission`,
+  `verifySubmission`. Uses Web Crypto (`crypto.subtle`) so the same
+  module runs under Node tests and the future Edge runtime per
+  AGENTS.md RULE 8. The canonical string is field-quoted with
+  `JSON.stringify` and `|`-joined; `lapMs` is integer-truncated so
+  float drift across clients does not change the tuple. Comparison
+  uses a constant-time loop; verify returns false (never throws) on
+  malformed hex so the route handler can collapse every signature
+  failure into a single 401.
+- `src/leaderboard/store-noop.ts` (new): `createNoopStore()`. Default
+  store when `LEADERBOARD_BACKEND` is unset. `submit()` returns
+  `null` (the documented sentinel for un-queryable inserts), `top()`
+  returns `[]`, `clear()` resolves. Constructed (not a singleton) so
+  a future variant can carry per-instance config without breaking
+  callers.
+- `src/leaderboard/__tests__/sign.test.ts` (new): 15 cases covering
+  canonical-form stability, integer truncation, embedded-quote
+  escaping, the pinned reference HMAC-SHA-256 (locks the
+  algorithm + canonicalization for forward compatibility),
+  determinism, per-field tamper detection, wrong-secret rejection,
+  malformed-signature rejection, and the dev-mode empty-secret
+  guard. Confirms `playerName` is intentionally outside the tuple.
+- `src/leaderboard/__tests__/store-noop.test.ts` (new): exports a
+  reusable `runStoreContract(name, factory)` so future Vercel KV /
+  Upstash / in-memory stores re-run the same suite. Asserts the
+  noop-specific sentinels (`submit` returns null, `top` always
+  empty, each call returns an independent array).
+
+### Why
+- §21 calls out optional online leaderboard as the only post-MVP
+  persistence touchpoint. The signed-lap-submission flow is the
+  minimum surface that lets a future deploy slice plug in any
+  backing store without re-shaping the contract. Shipping the pure
+  primitives first lets the route-handler slice that follows be a
+  thin glue layer (validate -> verify -> store), which keeps each
+  PR small per AGENTS.md RULE 4.
+- The reference signature is pinned in the test so a future
+  algorithm or canonicalization change is a deliberate, reviewed
+  break, not a silent invalidation of every existing submission.
+
+### Verified
+- `npm run lint`, `npm run typecheck`, `npm test` (1210 passing),
+  `npm run build`, `npm run test:e2e` (31 passing).
+- No em-dashes or en-dashes in any added file
+  (`grep -rPn '[\x{2014}\x{2013}]' src/leaderboard/` returns
+  nothing).
+
+### Decisions and assumptions
+- Web Crypto over Node `crypto` so the future route handlers can run
+  under Edge runtime without a second code path.
+- HMAC-SHA-256 hex (not base64) for the signature so the wire format
+  is grep-friendly and URL-safe.
+- `lapMs` is integer-truncated in canonicalization so two clients
+  rounding the same physical lap differently still produce the same
+  signature. The store also persists integer ms.
+- `playerName` is deliberately outside the canonical tuple. Handles
+  are display-only; the store is free to truncate or omit them. A
+  future cosmetic slice can add a separate handle-claim flow if the
+  GDD calls for one.
+- `VerifiedSubmission` is the shape stores see, not `LapSubmission`,
+  so the `raceToken` and `signature` fields cannot leak back through
+  a buggy backend.
+- The contract test exports `runStoreContract` so a future
+  in-memory test fake or production Vercel KV adapter re-runs the
+  exact same suite without copying the assertions.
+
+### Followups created
+- `VibeGear2-implement-leaderboard-route-2bc936cd`: route handlers
+  (`POST /api/leaderboard/submit`, `GET /api/leaderboard/[trackId]`)
+  that wire `signSubmission` + `verifySubmission` + a
+  `LeaderboardStore` together. Status codes per the parent dot's
+  edge-case list (401 / 422 / 404 / 200).
+- `VibeGear2-implement-leaderboard-client-48a44048`: client adapter
+  (`src/leaderboard/client.ts` with the
+  `NEXT_PUBLIC_LEADERBOARD_ENABLED` feature flag) and the Vercel KV
+  store (`src/leaderboard/store-vercel-kv.ts`, loaded dynamically
+  when `LEADERBOARD_BACKEND=vercel-kv`). Re-runs the
+  `runStoreContract` suite exported from
+  `store-noop.test.ts`.
+- The parent dot
+  `VibeGear2-implement-optional-online-4b2341af` is marked done and
+  replaced by these two child dots so each remaining piece is a
+  PR-sized slice of its own per AGENTS.md RULE 4.
+
+### GDD edits
+- None. The pure primitives match the §21 description exactly.
+
+---
+
 ## 2026-04-26: Slice: §20 HUD lap-timer + best-lap widget
 
 **GDD sections touched:**
