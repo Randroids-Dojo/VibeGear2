@@ -314,8 +314,8 @@ describe("drawRoad ghost car overlay", () => {
   });
 });
 
-describe("drawRoad foreground road continuation", () => {
-  it("fills the near-plane gap from the closest visible strip to the bottom", () => {
+describe("drawRoad foreground projection", () => {
+  it("draws the projector-supplied foreground endpoint as a normal strip pair", () => {
     const spy = makeCanvasSpy();
     const colors = {
       skyTop: "#000001",
@@ -330,7 +330,16 @@ describe("drawRoad foreground road continuation", () => {
     };
     const strips: readonly Strip[] = [
       strip({ visible: false, screenY: VIEWPORT.height, screenW: 0 }),
-      strip({ screenY: 300, screenW: 80, segment: { ...strip({}).segment, index: 0 } }),
+      strip({
+        screenY: 300,
+        screenW: 80,
+        foreground: {
+          screenX: VIEWPORT.width / 2,
+          screenY: VIEWPORT.height,
+          screenW: 240,
+        },
+        segment: { ...strip({}).segment, index: 0 },
+      }),
       strip({ screenY: 240, screenW: 40, segment: { ...strip({}).segment, index: 1 } }),
     ];
 

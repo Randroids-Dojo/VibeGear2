@@ -180,6 +180,26 @@ describe("project (pseudo-3D segment projector)", () => {
     expect(second.visible).toBe(true);
     expect(second.scale).toBeCloseTo(CAMERA_DEPTH / SEGMENT_LENGTH, 6);
   });
+
+  it("attaches a projected foreground endpoint to the closest visible strip", () => {
+    const segs = flatTrack(16);
+    const strips = project(segs, makeCamera(), VIEWPORT, { drawDistance: 8 });
+    const visible = strips.filter((s) => s.visible);
+    expect(visible.length).toBeGreaterThan(1);
+
+    const near = visible[0]!;
+    const far = visible[1]!;
+    expect(near.foreground).toBeDefined();
+    expect(near.foreground!.screenY).toBe(VIEWPORT.height);
+    expect(near.foreground!.screenX).toBeCloseTo(near.screenX, 6);
+    expect(near.foreground!.screenW).toBeGreaterThan(near.screenW);
+
+    const expected =
+      near.screenW +
+      ((near.screenW - far.screenW) * (VIEWPORT.height - near.screenY)) /
+        (near.screenY - far.screenY);
+    expect(near.foreground!.screenW).toBeCloseTo(expected, 6);
+  });
 });
 
 describe("upcomingCurvature", () => {

@@ -134,7 +134,38 @@ export function project(
     maxY = strip.screenY;
   }
 
+  attachForegroundProjection(strips, viewport);
+
   return strips;
+}
+
+/**
+ * Attach a screen-bottom endpoint to the closest visible strip. This keeps
+ * the renderer's foreground road inside the same projection contract as
+ * the rest of the strip list instead of patching the lower viewport with
+ * hard-coded road geometry.
+ */
+function attachForegroundProjection(strips: Strip[], viewport: Viewport): void {
+  const nearIndex = strips.findIndex((strip) => strip.visible);
+  if (nearIndex < 0) return;
+
+  const near = strips[nearIndex]!;
+  if (near.screenY >= viewport.height) return;
+
+  const far = strips.slice(nearIndex + 1).find((strip) => strip.visible);
+  const projectedHalfW =
+    far && near.screenY > far.screenY
+      ? near.screenW +
+        ((near.screenW - far.screenW) * (viewport.height - near.screenY)) /
+          (near.screenY - far.screenY)
+      : near.screenW;
+  const screenW = Math.max(near.screenW, projectedHalfW);
+
+  near.foreground = {
+    screenX: near.screenX,
+    screenY: viewport.height,
+    screenW,
+  };
 }
 
 /**

@@ -26,6 +26,10 @@ Correct them by adding a new entry that references the old one.
 - `src/render/pseudoRoadCanvas.ts`: extends the closest visible road
   strip down to the bottom of the viewport so the lower quarter no
   longer shows the sky gradient under the car.
+- `src/road/segmentProjector.ts`: moved foreground coverage into the
+  projection contract by attaching a screen-bottom endpoint to the
+  closest visible strip. The renderer now draws that endpoint as a
+  normal strip pair instead of inventing foreground geometry.
 - `src/app/race/page.tsx`: passes the player-car overlay option to the
   road renderer every race frame so a fresh race has a visible car
   anchor at the bottom of the view.
@@ -52,9 +56,11 @@ Correct them by adding a new entry that references the old one.
 - Browser foreground check at 2048x1240 confirmed the bottom quarter
   is 0.55 percent blue and 79.78 percent road, with the player car
   still visible.
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 48 passed.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 1 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and
-  content-lint all passed; 2,128 unit tests passed.
+  content-lint all passed; 2,130 unit tests passed.
 - `grep -rn $'\u2014\|\u2013' src/render/pseudoRoadCanvas.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/app/race/page.tsx`
   returned no hits.
 - `git diff --check` clean.

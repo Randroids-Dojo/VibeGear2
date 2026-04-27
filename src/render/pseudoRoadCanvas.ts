@@ -412,112 +412,57 @@ function drawStrips(
     const near = strips[n - 1];
     if (!far || !near) continue;
     if (!far.visible || !near.visible) continue;
-
-    const segIndex = far.segment.index;
-
-    // Grass band: full-width fill behind the road on this strip slice.
-    const grassColor = pickAlternating(
-      segIndex,
-      GRASS_STRIPE_LEN,
-      colors.grassLight,
-      colors.grassDark,
-    );
-    ctx.fillStyle = grassColor;
-    const yTop = far.screenY;
-    const yBottom = near.screenY;
-    if (yBottom > yTop) {
-      ctx.fillRect(0, yTop, viewport.width, yBottom - yTop);
-    }
-
-    // Rumble strips: trapezoid 15% wider than the road.
-    const rumbleColor = pickAlternating(
-      segIndex,
-      RUMBLE_STRIPE_LEN,
-      colors.rumbleLight,
-      colors.rumbleDark,
-    );
-    drawTrapezoid(
-      ctx,
-      rumbleColor,
-      near.screenX,
-      near.screenY,
-      near.screenW * 1.15,
-      far.screenX,
-      far.screenY,
-      far.screenW * 1.15,
-    );
-
-    // Road surface.
-    const roadColor = pickAlternating(
-      segIndex,
-      RUMBLE_STRIPE_LEN,
-      colors.roadLight,
-      colors.roadDark,
-    );
-    drawTrapezoid(
-      ctx,
-      roadColor,
-      near.screenX,
-      near.screenY,
-      near.screenW,
-      far.screenX,
-      far.screenY,
-      far.screenW,
-    );
-
-    // Lane markings: a narrow center stripe on alternating segments. Phase 1
-    // ships a single lane line down the middle; multi-lane comes in §9.
-    if (Math.floor(segIndex / LANE_STRIPE_LEN) % 2 === 0) {
-      const laneHalfNear = Math.max(1, near.screenW * 0.03);
-      const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
-      drawTrapezoid(
-        ctx,
-        colors.lane,
-        near.screenX,
-        near.screenY,
-        laneHalfNear,
-        far.screenX,
-        far.screenY,
-        laneHalfFar,
-      );
-    }
+    drawStripPair(ctx, near, far, viewport, colors);
   }
-  drawForegroundContinuation(ctx, strips, viewport, colors);
+
+  const foregroundFar = strips.find((strip) => strip.visible && strip.foreground);
+  if (foregroundFar?.foreground) {
+    drawStripPair(
+      ctx,
+      {
+        segment: foregroundFar.segment,
+        screenX: foregroundFar.foreground.screenX,
+        screenY: foregroundFar.foreground.screenY,
+        screenW: foregroundFar.foreground.screenW,
+      },
+      foregroundFar,
+      viewport,
+      colors,
+    );
+  }
 }
 
-/**
- * Fill the near-plane gap between the closest projected strip and the
- * bottom of the viewport. The projector correctly hides strips behind
- * the camera near plane; without this continuation the sky gradient
- * remains visible in the foreground, which makes the lower quarter of
- * the race screen look like empty blue space instead of road.
- */
-function drawForegroundContinuation(
+interface StripEdge {
+  segment: Strip["segment"];
+  screenX: number;
+  screenY: number;
+  screenW: number;
+}
+
+function drawStripPair(
   ctx: CanvasRenderingContext2D,
-  strips: readonly Strip[],
+  near: StripEdge,
+  far: StripEdge,
   viewport: Viewport,
   colors: RoadColors,
 ): void {
-  const near = strips.find((strip) => strip.visible);
-  if (!near) return;
-  if (near.screenY >= viewport.height) return;
+  const segIndex = far.segment.index;
 
   const grassColor = pickAlternating(
-    near.segment.index,
+    segIndex,
     GRASS_STRIPE_LEN,
     colors.grassLight,
     colors.grassDark,
   );
   ctx.fillStyle = grassColor;
-  ctx.fillRect(0, near.screenY, viewport.width, viewport.height - near.screenY);
-
-  const bottomX = near.screenX;
-  const bottomY = viewport.height;
-  const roadBottomHalfW = Math.max(near.screenW * 2.8, viewport.width * 0.54);
-  const rumbleBottomHalfW = roadBottomHalfW * 1.15;
+  const yTop = far.screenY;
+  const yBottom = near.screenY;
+  if (yBottom > yTop) {
+    ctx.fillRect(0, yTop, viewport.width, yBottom - yTop);
+  }
 
   const rumbleColor = pickAlternating(
-    near.segment.index,
+    segIndex,
     RUMBLE_STRIPE_LEN,
     colors.rumbleLight,
     colors.rumbleDark,
@@ -525,16 +470,16 @@ function drawForegroundContinuation(
   drawTrapezoid(
     ctx,
     rumbleColor,
-    bottomX,
-    bottomY,
-    rumbleBottomHalfW,
     near.screenX,
     near.screenY,
     near.screenW * 1.15,
+    far.screenX,
+    far.screenY,
+    far.screenW * 1.15,
   );
 
   const roadColor = pickAlternating(
-    near.segment.index,
+    segIndex,
     RUMBLE_STRIPE_LEN,
     colors.roadLight,
     colors.roadDark,
@@ -542,24 +487,26 @@ function drawForegroundContinuation(
   drawTrapezoid(
     ctx,
     roadColor,
-    bottomX,
-    bottomY,
-    roadBottomHalfW,
     near.screenX,
     near.screenY,
     near.screenW,
+    far.screenX,
+    far.screenY,
+    far.screenW,
   );
 
-  if (Math.floor(near.segment.index / LANE_STRIPE_LEN) % 2 === 0) {
+  if (Math.floor(segIndex / LANE_STRIPE_LEN) % 2 === 0) {
+    const laneHalfNear = Math.max(1, near.screenW * 0.03);
+    const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
     drawTrapezoid(
       ctx,
       colors.lane,
-      bottomX,
-      bottomY,
-      Math.max(2, roadBottomHalfW * 0.025),
       near.screenX,
       near.screenY,
-      Math.max(1, near.screenW * 0.03),
+      laneHalfNear,
+      far.screenX,
+      far.screenY,
+      laneHalfFar,
     );
   }
 }
