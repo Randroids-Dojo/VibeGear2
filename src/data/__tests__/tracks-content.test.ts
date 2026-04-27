@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
 import { TRACK_IDS, TRACK_RAW, loadTrack } from "@/data";
 import { TrackSchema } from "@/data/schemas";
 
-const EXPECTED_IDS = ["test/curve", "test/straight"];
+const EXPECTED_IDS = ["test/curve", "test/elevation", "test/straight"];
 
 describe("track catalogue", () => {
   it("registers every expected MVP track id", () => {
@@ -47,3 +47,15 @@ describe.each(EXPECTED_IDS.map((id) => [id] as const))(
     });
   },
 );
+
+describe("test/elevation track", () => {
+  it("contains non-zero authored grade so the live smoke path exercises hills", () => {
+    const parsed = TrackSchema.parse(TRACK_RAW["test/elevation"]);
+    expect(parsed.segments.some((segment) => segment.grade !== 0)).toBe(true);
+  });
+
+  it("compiles grade-bearing segments into the renderer segment buffer", () => {
+    const compiled = loadTrack("test/elevation");
+    expect(compiled.segments.some((segment) => segment.grade !== 0)).toBe(true);
+  });
+});

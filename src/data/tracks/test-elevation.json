@@ -1,0 +1,28 @@
+{
+  "id": "test/elevation",
+  "name": "Test Elevation",
+  "tourId": "test",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1200,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 1,
+  "segments": [
+    { "len": 72, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 156, "curve": 0, "grade": 0.09, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 132, "curve": 0.18, "grade": -0.08, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 120, "curve": 0, "grade": 0.04, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 120, "curve": -0.22, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 180, "curve": 0, "grade": -0.03, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 180, "curve": 0.14, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
+    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "crest" },
+    { "segmentIndex": 5, "label": "plateau-exit" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}
