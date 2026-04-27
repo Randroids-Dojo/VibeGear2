@@ -34,8 +34,9 @@ renderer.
 - `docs/FOLLOWUPS.md`: marked F-052 done.
 - `docs/GDD_COVERAGE.json`: changed GDD-16-PARALLAX-ROADSIDE from
   open followup to implemented code plus automated tests.
-- `docs/WORKING_AGREEMENT.md`: added PR review-thread inspection to
-  the merge process so Copilot feedback is checked during future loops.
+- `docs/WORKING_AGREEMENT.md`: added PR review-thread inspection and
+  response requirements to the merge process so Copilot and inline
+  feedback are handled during future loops.
 
 ### Verified
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/parallax.test.ts src/data/__tests__/tracks-content.test.ts`
