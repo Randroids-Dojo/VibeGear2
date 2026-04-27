@@ -10,6 +10,21 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-058: Add weather-specific car trail and spray variants
+**Created:** 2026-04-27
+**Priority:** polish
+**Status:** open
+**Notes:** F-051 ships the live and ghost car sprite atlas path with
+directional, damage, brake, and nitro frames. §16 also calls for wet
+spray and snow trail variants. Those are not frame rows in the current
+Sparrow sheet and should land with the later weather VFX work so the
+renderer can select them from actual weather state rather than a fake
+always-on decoration. Add weather-specific atlas or effect assets,
+thread weather state into the car overlay draw path, and cover clear,
+wet, and snow cases in renderer tests.
+
+---
+
 ## F-057: Fix turn-induced foreground road shear
 **Created:** 2026-04-27
 **Priority:** polish
@@ -145,7 +160,7 @@ roadside sign colour.
 ## F-051: Replace live and ghost car placeholders with atlas sprites
 **Created:** 2026-04-26
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** The live player car and Time Trial ghost still use original
 Canvas2D placeholder shapes. §16 expects 12 to 16 directional car
 frames, damage variants, brake lights, nitro effects, and weather
@@ -153,6 +168,17 @@ variants. Replace the live `playerCar` overlay and the F-022 ghost
 rectangle with frames from the same loaded sprite atlas, selected from
 steering and road curve state. Keep the current Canvas2D shape only as
 a missing-asset fallback.
+
+Closed by `feat/f-051-car-atlas-sprites`. `public/art/cars/sparrow.svg`
+now supplies an original 12-frame clean row plus dented, battered,
+brake, and nitro frames behind the existing `src/data/atlas/cars.json`
+metadata. The race route loads that atlas once per mount and passes it
+to `drawRoad`; live and ghost overlays draw atlas frames when the image
+is available, with the old procedural live car and blue ghost rectangle
+kept as missing-asset fallbacks. The live frame selection combines
+current steering input with upcoming road curve so the car sprite leans
+with driver intent and track shape. Renderer tests cover both atlas
+draw paths and existing fallback paths.
 
 ---
 

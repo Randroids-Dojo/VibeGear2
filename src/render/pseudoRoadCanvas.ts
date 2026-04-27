@@ -29,6 +29,7 @@ import type { Camera, Strip, Viewport } from "@/road/types";
 
 import { drawDust, type DustState } from "./dust";
 import { drawParallax, type ParallaxLayer } from "./parallax";
+import { frame, type LoadedAtlas } from "./spriteAtlas";
 import { drawVfx, type VfxState } from "./vfx";
 
 /**
@@ -69,6 +70,7 @@ export const PLAYER_CAR_DEFAULT_TAIL_LIGHT = "#ff3d38";
  */
 export const PLAYER_CAR_HEIGHT_FRACTION = 0.18;
 export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
+export const PLAYER_CAR_DEFAULT_SPRITE_ID = "sparrow_clean";
 export const ROADSIDE_DRAW_PERIOD = 10;
 export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.22;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
@@ -147,6 +149,9 @@ export interface DrawRoadOptions {
     screenW: number;
     alpha?: number;
     fill?: string;
+    atlas?: LoadedAtlas | null;
+    spriteId?: string;
+    frameIndex?: number;
   } | null;
   /**
    * Optional live player car overlay. Pseudo-3D road strips represent the
@@ -161,6 +166,9 @@ export interface DrawRoadOptions {
     tire?: string;
     tailLight?: string;
     windshield?: string;
+    atlas?: LoadedAtlas | null;
+    spriteId?: string;
+    frameIndex?: number;
   } | null;
 }
 
@@ -496,9 +504,27 @@ function drawGhostCar(
   if (alpha <= 0) return;
 
   const fill = ghost.fill ?? GHOST_CAR_DEFAULT_FILL;
+  if (ghost.atlas?.image) {
+    const sprite = frame(
+      ghost.atlas,
+      ghost.spriteId ?? PLAYER_CAR_DEFAULT_SPRITE_ID,
+      ghost.frameIndex ?? 0,
+    );
+    drawAtlasCarFrame(
+      ctx,
+      ghost.atlas.image,
+      sprite,
+      ghost.screenX,
+      ghost.screenY,
+      ghost.screenW,
+      alpha,
+    );
+    return;
+  }
+
   // 1:0.5 aspect places the rectangle centered on the projected ground
   // point with the silhouette sitting just above it; matches the §17
-  // car-silhouette aspect well enough to read as a vehicle.
+  // car-silhouette aspect well enough to read as a fallback vehicle.
   const halfW = ghost.screenW / 2;
   const heightPx = ghost.screenW / 2;
 
@@ -536,6 +562,16 @@ function drawPlayerCar(
   const bottomY = viewport.height - Math.max(14, viewport.height * 0.035);
   const topY = bottomY - height;
   const halfW = width / 2;
+
+  if (car.atlas?.image) {
+    const sprite = frame(
+      car.atlas,
+      car.spriteId ?? PLAYER_CAR_DEFAULT_SPRITE_ID,
+      car.frameIndex ?? 0,
+    );
+    drawAtlasCarFrame(ctx, car.atlas.image, sprite, centerX, bottomY, width, 1);
+    return;
+  }
 
   const prevFill = ctx.fillStyle;
   try {
@@ -592,6 +628,33 @@ function drawPlayerCar(
     ctx.fillRect(centerX + halfW * 0.36, bottomY - height * 0.24, width * 0.16, height * 0.08);
   } finally {
     ctx.fillStyle = prevFill;
+  }
+}
+
+function drawAtlasCarFrame(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  sprite: ReturnType<typeof frame>,
+  anchorX: number,
+  anchorY: number,
+  width: number,
+  alpha: number,
+): void {
+  if (!Number.isFinite(width) || width <= 0) return;
+  if (!Number.isFinite(anchorX) || !Number.isFinite(anchorY)) return;
+
+  const height = width * (sprite.h / sprite.w);
+  const pivotX = sprite.anchor?.x ?? 0.5;
+  const pivotY = sprite.anchor?.y ?? 1;
+  const dx = anchorX - width * pivotX;
+  const dy = anchorY - height * pivotY;
+
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.drawImage(image, sprite.x, sprite.y, sprite.w, sprite.h, dx, dy, width, height);
+  } finally {
+    ctx.globalAlpha = prevAlpha;
   }
 }
 
