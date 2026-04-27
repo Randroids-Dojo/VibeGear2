@@ -69,16 +69,59 @@ test.describe("options screen", () => {
     );
   });
 
-  test("Reset to defaults is disabled and cites the reset wiring followup", async ({ page }) => {
+  test("Reset to defaults restores shipped settings and preserves placeholder-owned settings", async ({ page }) => {
     await page.goto("/options");
 
     const reset = page.getByTestId("options-reset-defaults");
     await expect(reset).toBeVisible();
-    await expect(reset).toBeDisabled();
-    await expect(reset).toHaveAttribute(
-      "title",
-      /F-049/,
+    await expect(reset).toBeEnabled();
+
+    await page.getByTestId("options-tab-accessibility").click();
+    await page.getByTestId("accessibility-toggle-autoAccelerate").check();
+    await page.getByTestId("options-tab-difficulty").click();
+    await page.getByTestId("difficulty-preset-hard-input").check();
+
+    await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) throw new Error("save missing after option edits");
+      const save = JSON.parse(raw);
+      save.profileName = "Reset Proof";
+      save.settings.displaySpeedUnit = "mph";
+      save.settings.transmissionMode = "manual";
+      save.settings.audio = { master: 0.2, music: 0.3, sfx: 0.4 };
+      save.settings.accessibility = {
+        colorBlindMode: "protanopia",
+        reducedMotion: true,
+        largeUiText: true,
+        screenShakeScale: 0.25,
+      };
+      save.settings.keyBindings = {
+        throttle: ["KeyI"],
+        brake: ["KeyK"],
+      };
+      window.localStorage.setItem(key, JSON.stringify(save));
+    }, "vibegear2:save:v3");
+
+    await reset.click();
+    await expect(page.getByTestId("options-reset-status")).toContainText(
+      "reset to defaults",
     );
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }, "vibegear2:save:v3");
+
+    expect(persisted?.settings?.assists?.autoAccelerate).toBe(false);
+    expect(persisted?.settings?.difficultyPreset).toBe("normal");
+    expect(persisted?.profileName).toBe("Reset Proof");
+    expect(persisted?.settings?.displaySpeedUnit).toBe("mph");
+    expect(persisted?.settings?.transmissionMode).toBe("manual");
+    expect(persisted?.settings?.audio).toEqual({
+      master: 0.2,
+      music: 0.3,
+      sfx: 0.4,
+    });
   });
 
   test("Back to title link returns to /", async ({ page }) => {

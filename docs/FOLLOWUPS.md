@@ -84,7 +84,7 @@ player reaches the grade-bearing segment.
 ## F-049: Implement options reset persistence wiring
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** The `/options` footer renders a disabled "Reset to defaults"
 button. SaveGameSettings v2 has shipped, so the remaining blocker is not
 schema allocation; it is reset semantics across panes that now ship at
@@ -93,6 +93,13 @@ default source and persistence path. The action should reset only fields
 owned by shipped panes, leave placeholder-pane fields untouched, write
 through `saveSave`, and keep the existing disabled state until that full
 path is wired and tested.
+
+Closed by `feat/f-049-options-reset`. The footer button now resets shipped
+options fields only: `settings.assists` and `settings.difficultyPreset`.
+Profile data and placeholder-owned settings such as display units, audio,
+accessibility presentation prefs, transmission mode, and key bindings are
+preserved. Unit tests cover the pure reset helper and Playwright covers the
+full localStorage round-trip.
 
 ---
 

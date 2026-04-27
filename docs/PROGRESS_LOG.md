@@ -6,6 +6,61 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-049 options reset persistence
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) controls and accessibility settings,
+[§20](gdd/20-hud-and-ui-ux.md) settings screen,
+[§22](gdd/22-data-schemas.md) `SaveGameSettings`.
+**Branch / PR:** `feat/f-049-options-reset`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/options/optionsResetState.ts`: added a pure helper that
+  resets only shipped options fields to defaults: accessibility assists and
+  difficulty preset.
+- `src/app/options/page.tsx`: enabled the footer reset button, persisted
+  the reset through `saveSave`, reported status, and remounted the active
+  pane after a successful reset so the visible controls refresh.
+- `src/app/options/__tests__/page.test.tsx`,
+  `src/components/options/__tests__/optionsResetState.test.ts`, and
+  `e2e/options-screen.spec.ts`: added unit and browser coverage for the
+  reset contract.
+- `docs/FOLLOWUPS.md`: marked F-049 done.
+- `docs/GDD_COVERAGE.json`: added GDD-20-OPTIONS-RESET.
+
+### Verified
+- `npx vitest run src/components/options/__tests__/optionsResetState.test.ts src/app/options/__tests__/page.test.tsx`
+  green, 13 passed.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/options-screen.spec.ts` green, 6 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,147 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' src/app/options/page.tsx src/app/options/page.module.css src/app/options/__tests__/page.test.tsx src/components/options/optionsResetState.ts src/components/options/__tests__/optionsResetState.test.ts e2e/options-screen.spec.ts docs/FOLLOWUPS.md docs/GDD_COVERAGE.json docs/PROGRESS_LOG.md`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- The reset action intentionally owns only fields for panes that actually
+  ship today: `settings.assists` and `settings.difficultyPreset`. Display,
+  audio, controls, performance, profile import/export, and profile progress
+  data are preserved until those panes define their own reset semantics.
+
+### Coverage ledger
+- GDD-20-OPTIONS-RESET: covered by the new reset helper, page wiring, unit
+  tests, and the Playwright localStorage round-trip.
+- Uncovered adjacent requirements: F-014 still tracks full key remapping UI
+  and persistence; F-049 does not reset key bindings because the Controls
+  pane is still a placeholder.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements the existing options and save-schema intent.
+
+---
+
 ## 2026-04-26: Slice: F-002/F-003 foundation followup closure
 
 **GDD sections touched:**

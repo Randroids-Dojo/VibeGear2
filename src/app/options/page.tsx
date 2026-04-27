@@ -9,9 +9,8 @@
  * content, so the next agent can grep its dot id and find the exact
  * insertion point.
  *
- * - The Reset to defaults button is intentionally disabled: full reset
- *   semantics need F-049 persistence wiring so each shipped pane can
- *   reset without clobbering fields still owned by placeholder panes.
+ * - The Reset to defaults button resets only fields owned by shipped
+ *   panes. Placeholder-pane fields stay untouched until those panes land.
  * - Pressing Esc returns to the title screen via `history.back()` when
  *   there is browser history, otherwise it falls through to a hard
  *   navigation to "/". This matches the §20 pause-menu Exit-to-title
@@ -30,6 +29,8 @@ import type { CSSProperties, KeyboardEvent, ReactElement } from "react";
 import { AccessibilityPane } from "@/components/options/AccessibilityPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
 import { ProfileSection } from "@/components/options/ProfileSection";
+import { resetShippedOptionsToDefaults } from "@/components/options/optionsResetState";
+import { defaultSave, loadSave, saveSave } from "@/persistence";
 
 import styles from "./page.module.css";
 import { TAB_ORDER, isTabNavKey, nextTabIndex, type TabKey } from "./tabNav";
@@ -103,10 +104,18 @@ const TABS: ReadonlyArray<TabSpec> = [
   },
 ];
 
-const RESET_PENDING_FOLLOWUP = "F-049";
+interface ResetStatus {
+  readonly kind: "idle" | "info" | "error";
+  readonly message: string;
+}
 
 export default function OptionsPage(): ReactElement {
   const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [resetStatus, setResetStatus] = useState<ResetStatus>({
+    kind: "idle",
+    message: "",
+  });
+  const [resetNonce, setResetNonce] = useState<number>(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const focusOnUpdateRef = useRef<boolean>(false);
 
@@ -154,6 +163,33 @@ export default function OptionsPage(): ReactElement {
 
   const onTabClick = useCallback((index: number) => {
     setActiveIndex(index);
+  }, []);
+
+  const onResetDefaults = useCallback(() => {
+    const loaded = loadSave();
+    const current = loaded.kind === "loaded" ? loaded.save : defaultSave();
+    const result = resetShippedOptionsToDefaults(current, defaultSave());
+    if (result.kind === "noop") {
+      setResetStatus({
+        kind: "info",
+        message: "Shipped options are already at defaults.",
+      });
+      return;
+    }
+
+    const write = saveSave(result.save);
+    if (write.kind === "ok") {
+      setResetNonce((n) => n + 1);
+      setResetStatus({
+        kind: "info",
+        message: "Shipped options reset to defaults.",
+      });
+    } else {
+      setResetStatus({
+        kind: "error",
+        message: `Save failed (${write.reason}); defaults kept in memory only.`,
+      });
+    }
   }, []);
 
   const activeTab = TABS[activeIndex] ?? TABS[0];
@@ -215,6 +251,7 @@ export default function OptionsPage(): ReactElement {
         </ul>
 
         <section
+          key={`${activeTab.key}-${resetNonce}`}
           className={styles.panel}
           role="tabpanel"
           id={`options-panel-${activeTab.key}`}
@@ -249,13 +286,21 @@ export default function OptionsPage(): ReactElement {
             type="button"
             className={styles.resetButton}
             data-testid="options-reset-defaults"
-            disabled
-            aria-disabled="true"
-            title={`Disabled until ${RESET_PENDING_FOLLOWUP} ships options reset persistence wiring.`}
+            onClick={onResetDefaults}
+            title="Reset shipped options panes to defaults."
           >
             Reset to defaults
           </button>
         </footer>
+        {resetStatus.kind !== "idle" ? (
+          <p
+            className={styles.resetStatus}
+            data-testid="options-reset-status"
+            data-status={resetStatus.kind}
+          >
+            {resetStatus.message}
+          </p>
+        ) : null}
       </section>
     </main>
   );
