@@ -810,7 +810,8 @@ function drawDutyCycleTrapezoids(
 ): void {
   const span = worldFar - worldNear;
   if (span <= 0) return;
-  if (cycleMeters <= 0 || visibleMeters <= 0 || visibleMeters >= cycleMeters) {
+  if (cycleMeters <= 0 || visibleMeters <= 0) return;
+  if (visibleMeters >= cycleMeters) {
     drawPhasedTrapezoids(
       ctx,
       near,
