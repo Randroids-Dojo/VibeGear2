@@ -10,6 +10,22 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-060: Correct live car turn sprite direction
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** done (2026-04-27)
+**Notes:** Manual race observation after F-059: the live car sprite still
+turned visually backward. Moving right selected frames that looked like a
+left turn, and moving left selected frames that looked like a right turn.
+
+Closed by `fix/f-060-car-turn-direction`. The live car frame mapper now
+matches the actual Sparrow atlas row: positive steering selects the
+positive-skew frames near the start of the row, and negative steering
+selects the negative-skew frames near the row end. Unit tests pin right,
+left, and curve-influenced frame selection.
+
+---
+
 ## F-059: Fix turn-at-crest road warp and reversed car sprite lean
 **Created:** 2026-04-27
 **Priority:** blocks-release
