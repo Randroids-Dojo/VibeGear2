@@ -60,6 +60,44 @@
       ],
       "testRefs": ["scripts/__tests__/content-lint.test.ts"],
       "followupRefs": ["F-053"]
+    },
+    {
+      "id": "GDD-21-PROJECT-SKELETON",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/IMPLEMENTATION_PLAN.md"
+      ],
+      "requirement": "The web implementation has a Next.js and TypeScript project skeleton with lint, typecheck, unit tests, e2e smoke coverage, content lint, and a CI verify gate.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "package.json",
+        "src/app/page.tsx",
+        "vitest.config.ts",
+        "playwright.config.ts",
+        ".github/workflows/ci.yml"
+      ],
+      "testRefs": [
+        "src/app/__tests__/page.test.tsx",
+        "e2e/title-screen.spec.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": ["F-002"]
+    },
+    {
+      "id": "GDD-21-VERCEL-DEPLOY",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "README.md"
+      ],
+      "requirement": "Production deploys from main go to Vercel Hobby only after the GitHub Actions verify job passes.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        ".github/workflows/ci.yml",
+        "vercel.json",
+        "README.md"
+      ],
+      "followupRefs": ["F-003"]
     }
   ]
 }
