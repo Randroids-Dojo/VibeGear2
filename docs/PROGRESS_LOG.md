@@ -20,37 +20,39 @@ pipeline.
 
 ### Done
 - `src/road/segmentProjector.ts`: replaced per-camera-segment grade
-  resets with a continuous compiled centerline profile. Road strips now
-  subtract the camera's fractional centerline position before projection,
-  so grade reversals stay continuous as the car crosses segment
-  boundaries.
+  resets with a bounded local projection-window blend. Road strips now
+  blend toward the next segment's local window as the car approaches a
+  segment boundary, so grade reversals stay continuous without
+  accumulating the whole track's elevation into the view.
 - `src/road/segmentProjector.ts`: moved ghost car projection onto the
-  same continuous profile so Time Trial overlays stay on the same road
+  same bounded local blend so Time Trial overlays stay on the same road
   plane as the live strips.
 - `src/road/__tests__/segmentProjector.test.ts`: added a deterministic
-  dip-to-climb regression that bounds near-road screen-space movement
-  through the observed hill-bottom transition.
+  dip-to-climb regression that bounds a projected ahead marker through
+  the observed hill-bottom transition, plus a long-climb regression that
+  rejects the full-screen road-wall failure seen in PR preview.
 - `docs/FOLLOWUPS.md`: marked F-054 done.
 - `docs/GDD_COVERAGE.json`: linked the elevation coverage row to the
   F-054 regression test.
 
 ### Verified
 - `npx vitest run src/road/__tests__/segmentProjector.test.ts` green,
-  34 passed.
+  35 passed.
 - `npm run typecheck` clean.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and content-lint
-  all passed; 2,160 unit tests passed.
+  all passed; 2,161 unit tests passed.
 - `npm run test:e2e` green, 55 passed.
 
 ### Decisions and assumptions
 - The observed bounce was handled in the projection layer because the
   physics state has no vertical collision or ground-contact accumulator
   today. The fix keeps physics unchanged and makes the rendered road
-  continuous against the car's fractional forward position.
+  continuous near segment boundaries while preserving the established
+  local hill scale.
 
 ### Coverage ledger
-- GDD-09-ELEVATION-LIVE: covered by continuous centerline sampling,
+- GDD-09-ELEVATION-LIVE: covered by bounded local projection blending,
   the segment projector regression, and the existing race Playwright
   authored-elevation smoke.
 - Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS remains open

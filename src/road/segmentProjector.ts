@@ -21,70 +21,42 @@ export interface ProjectorOptions {
   drawDistance?: number;
 }
 
-interface CenterlineProfile {
-  readonly x: readonly number[];
-  readonly y: readonly number[];
-  readonly totalX: number;
-  readonly totalY: number;
-}
-
-interface CenterlineSample {
+interface LocalProjectionOffset {
   readonly x: number;
   readonly y: number;
 }
 
-function buildCenterlineProfile(segments: readonly CompiledSegment[]): CenterlineProfile {
-  const x: number[] = new Array(segments.length);
-  const y: number[] = new Array(segments.length);
+function buildLocalProjectionOffsets(
+  segments: readonly CompiledSegment[],
+  baseSegmentIndex: number,
+  count: number,
+): LocalProjectionOffset[] {
+  const offsets: LocalProjectionOffset[] = new Array(count);
   let dx = 0;
-  let worldX = 0;
+  let x = 0;
   let dy = 0;
-  let worldY = 0;
+  let y = 0;
+  const totalSegments = segments.length;
 
-  for (let i = 0; i < segments.length; i++) {
-    const segment = segments[i];
-    x[i] = worldX;
-    y[i] = worldY;
+  for (let n = 0; n < count; n++) {
+    offsets[n] = { x, y };
+    const segment = segments[(baseSegmentIndex + n) % totalSegments];
     if (!segment) continue;
-    worldX += dx;
+    x += dx;
     dx += segment.curve;
-    worldY += dy;
+    y += dy;
     dy += segment.grade;
   }
 
-  return { x, y, totalX: worldX, totalY: worldY };
-}
-
-function sampleCenterline(
-  profile: CenterlineProfile,
-  continuousIndex: number,
-): CenterlineSample {
-  const totalSegments = profile.x.length;
-  if (totalSegments === 0) return { x: 0, y: 0 };
-
-  const segmentIndex = Math.floor(continuousIndex);
-  const percent = continuousIndex - segmentIndex;
-  const wrappedIndex =
-    ((segmentIndex % totalSegments) + totalSegments) % totalSegments;
-  const lap = Math.floor(segmentIndex / totalSegments);
-  const nextSegmentIndex = segmentIndex + 1;
-  const wrappedNext =
-    ((nextSegmentIndex % totalSegments) + totalSegments) % totalSegments;
-  const nextLap = Math.floor(nextSegmentIndex / totalSegments);
-
-  const startX = (profile.x[wrappedIndex] ?? 0) + profile.totalX * lap;
-  const startY = (profile.y[wrappedIndex] ?? 0) + profile.totalY * lap;
-  const endX = (profile.x[wrappedNext] ?? 0) + profile.totalX * nextLap;
-  const endY = (profile.y[wrappedNext] ?? 0) + profile.totalY * nextLap;
-
-  return {
-    x: lerp(startX, endX, percent),
-    y: lerp(startY, endY, percent),
-  };
+  return offsets;
 }
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
+}
+
+function smoothStep(t: number): number {
+  return t * t * (3 - 2 * t);
 }
 
 /**
@@ -119,9 +91,20 @@ export function project(
   const wrappedCameraZ =
     ((camera.z % trackLength) + trackLength) % trackLength;
   const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
-  const cameraContinuousIndex = wrappedCameraZ / SEGMENT_LENGTH;
-  const centerline = buildCenterlineProfile(segments);
-  const cameraCenterline = sampleCenterline(centerline, cameraContinuousIndex);
+  const cameraOffsetWithinSegment =
+    wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
+  const segmentProgress = cameraOffsetWithinSegment / SEGMENT_LENGTH;
+  const boundaryBlend = smoothStep(segmentProgress);
+  const currentOffsets = buildLocalProjectionOffsets(
+    segments,
+    baseSegmentIndex,
+    drawDistance,
+  );
+  const nextOffsets = buildLocalProjectionOffsets(
+    segments,
+    (baseSegmentIndex + 1) % totalSegments,
+    drawDistance,
+  );
 
   const halfW = viewport.width / 2;
   const halfH = viewport.height / 2;
@@ -134,18 +117,19 @@ export function project(
     const segment = segments[segIndex];
     if (!segment) continue;
 
-    const stripCenterline = sampleCenterline(centerline, logicalIndex);
-    // Camera-space world position. The centerline profile keeps curve
-    // and grade continuous across fractional camera positions so the
-    // rendered road does not jump when the camera crosses a segment
-    // boundary at a hill bottom or crest.
-    const worldX = stripCenterline.x - cameraCenterline.x - camera.x;
-    const worldY = stripCenterline.y - cameraCenterline.y - camera.y;
+    const current = currentOffsets[n] ?? { x: 0, y: 0 };
+    const next = n > 0 ? nextOffsets[n - 1] ?? current : current;
+    // Camera-space world position. The projection remains a bounded
+    // local hill window, matching the existing pseudo-3D scale, but
+    // blends toward the next segment's local window as the camera
+    // approaches a segment boundary. That removes grade-reversal pops
+    // without accumulating the whole track's elevation into the view.
+    const worldX = lerp(current.x, next.x, boundaryBlend) - camera.x;
+    const worldY = lerp(current.y, next.y, boundaryBlend) - camera.y;
     // Use the segment offset relative to the camera so wrap-around works.
     // `n * SEGMENT_LENGTH` is the segment's distance ahead of the camera
     // segment; subtract the fractional camera offset within its segment so
     // the closest strip sits exactly at the camera.
-    const cameraOffsetWithinSegment = wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
     const sz = n * SEGMENT_LENGTH - cameraOffsetWithinSegment;
 
     let strip: Strip;
@@ -365,10 +349,10 @@ const HIDDEN_GHOST_PROJECTION: Readonly<GhostCarProjection> = Object.freeze({
  *     near edge sits at `cameraDepth / (ghostZ - cameraZ)` scale, which
  *     is the same expression the strip loop uses.
  *
- * Samples the same continuous compiled centerline profile used by the
- * strip projector. The ghost's lateral `ghostX` is added to the sampled
- * centerline offset before camera subtraction, which mirrors how a live
- * car at `(z, x)` would project.
+ * Samples the same bounded local hill window used by the strip projector.
+ * The ghost's lateral `ghostX` is added to the sampled curve offset
+ * before camera subtraction, which mirrors how a live car at `(z, x)`
+ * would project.
  *
  * Edge cases:
  *
@@ -427,6 +411,11 @@ export function projectGhostCar(
     ((camera.z % trackLength) + trackLength) % trackLength;
   const wrappedGhostZ =
     ((ghostZ % trackLength) + trackLength) % trackLength;
+  const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
+  const cameraOffsetWithinSegment =
+    wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
+  const segmentProgress = cameraOffsetWithinSegment / SEGMENT_LENGTH;
+  const boundaryBlend = smoothStep(segmentProgress);
 
   // Forward distance from the camera to the ghost. A ghost behind the
   // camera in lap-relative terms wraps to "one lap ahead" so a player
@@ -443,17 +432,26 @@ export function projectGhostCar(
     return HIDDEN_GHOST_PROJECTION;
   }
 
-  const centerline = buildCenterlineProfile(segments);
-  const cameraCenterline = sampleCenterline(
-    centerline,
-    wrappedCameraZ / SEGMENT_LENGTH,
+  const ghostSegmentOffset = Math.floor(
+    (forwardZ + cameraOffsetWithinSegment) / SEGMENT_LENGTH,
   );
-  const ghostCenterline = sampleCenterline(
-    centerline,
-    (wrappedCameraZ + forwardZ) / SEGMENT_LENGTH,
+  const currentOffsets = buildLocalProjectionOffsets(
+    segments,
+    baseSegmentIndex,
+    ghostSegmentOffset + 1,
   );
-  const worldX = ghostCenterline.x + ghostX - cameraCenterline.x - camera.x;
-  const worldY = ghostCenterline.y - cameraCenterline.y - camera.y;
+  const nextOffsets = buildLocalProjectionOffsets(
+    segments,
+    (baseSegmentIndex + 1) % totalSegments,
+    ghostSegmentOffset + 1,
+  );
+  const current = currentOffsets[ghostSegmentOffset] ?? { x: 0, y: 0 };
+  const next =
+    ghostSegmentOffset > 0
+      ? nextOffsets[ghostSegmentOffset - 1] ?? current
+      : current;
+  const worldX = lerp(current.x, next.x, boundaryBlend) + ghostX - camera.x;
+  const worldY = lerp(current.y, next.y, boundaryBlend) - camera.y;
   const sz = forwardZ;
   const scale = camera.depth / sz;
   const halfW = viewport.width / 2;

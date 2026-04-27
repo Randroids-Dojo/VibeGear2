@@ -30,12 +30,13 @@ Closed by `fix/f-054-hill-stutter`. The issue was in the renderer
 projection path, not the physics collision path: `project` restarted
 curve and grade accumulation from zero at the active camera segment, so
 the road could jump when the player crossed segment boundaries near a
-grade reversal. `src/road/segmentProjector.ts` now samples a continuous
-compiled centerline profile for strips and ghost cars, subtracting the
-camera's fractional centerline position before projection. The regression
-test in `src/road/__tests__/segmentProjector.test.ts` drives through a
-dip-to-climb transition and asserts the near road stays within a bounded
-screen-space delta.
+grade reversal. `src/road/segmentProjector.ts` now blends the bounded
+local projection window toward the next segment window as the camera
+approaches a segment boundary, preserving the existing hill scale while
+removing boundary pops. The regression tests in
+`src/road/__tests__/segmentProjector.test.ts` drive through a
+dip-to-climb transition and assert long climbs do not accumulate into a
+full-screen road wall.
 
 ---
 
