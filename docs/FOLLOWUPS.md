@@ -55,7 +55,7 @@ a missing-asset fallback.
 ## F-050: Prove authored elevation in the live race view
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-26)
 **Notes:** §9 defines mild crests, aggressive crests, dips, and
 plateaus, while §16 and §21 say segment `grade` drives hills through
 the pseudo-3D projection pipeline. The bundled `/race` content used in
@@ -65,6 +65,14 @@ small representative track with non-zero grade, validate it through the
 track schema and compiler, and add a browser smoke that confirms the
 projected road and horizon shift as the car advances through the
 grade-bearing segments.
+
+Closed by `fix/f-050-live-elevation-proof`. `/race` now defaults to
+`test/elevation`, a bundled smoke track with authored flat launch,
+crest, dip, plateau, and recovery segments. Track content tests assert
+the JSON validates and compiles with non-zero grade. The race demo
+Playwright smoke samples the center canvas column before and after
+accelerating and asserts the top of the projected road rises as the
+player reaches the grade-bearing segment.
 
 ---
 

@@ -12,11 +12,13 @@
  */
 
 import testCurve from "./test-curve.json";
+import testElevation from "./test-elevation.json";
 import testStraight from "./test-straight.json";
 
 export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "test/straight": testStraight,
   "test/curve": testCurve,
+  "test/elevation": testElevation,
 });
 
 /** Sorted list of available track slugs for menu builders. */

@@ -91,7 +91,7 @@ import type { RaceResult } from "@/game/raceResult";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
-const DEFAULT_TRACK_ID = "test/curve";
+const DEFAULT_TRACK_ID = "test/elevation";
 const PLAYER_ID = "player";
 
 /**

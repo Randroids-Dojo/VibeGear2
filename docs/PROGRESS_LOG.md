@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-050 live elevation proof
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) elevation and hills,
+[§16](gdd/16-rendering-and-visual-design.md) segment-based projection,
+[§22](gdd/22-data-schemas.md) Track JSON schema.
+**Branch / PR:** `fix/f-050-live-elevation-proof`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/tracks/test-elevation.json`: added a bundled smoke track
+  with an authored flat launch, crest, dip, plateau, and recovery run.
+- `src/data/tracks/index.ts`: registered `test/elevation` in the track
+  catalogue.
+- `src/app/race/page.tsx`: changed the default `/race` track to
+  `test/elevation` so the main live race path exercises authored grade.
+- `src/data/__tests__/tracks-content.test.ts`: added catalogue coverage
+  and non-zero grade assertions for the elevation track.
+- `e2e/race-demo.spec.ts`: added a canvas-pixel smoke that verifies the
+  projected road top moves upward while driving into the grade-bearing
+  segment.
+- `docs/FOLLOWUPS.md`: marked F-050 done.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts` green,
+  9 passed.
+- `npm run lint` clean.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 2 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed; 2,134 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' src/data/tracks/test-elevation.json src/data/tracks/index.ts src/app/race/page.tsx src/data/__tests__/tracks-content.test.ts e2e/race-demo.spec.ts docs/FOLLOWUPS.md docs/PROGRESS_LOG.md`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Kept the existing `test/curve` and `test/straight` fixtures available
+  for focused flat-road tests. Only the default smoke path changes to
+  `test/elevation` so future agents cannot miss grade-backed rendering
+  in `/race`.
+- The e2e samples canvas pixels rather than a hidden debug metric so the
+  proof stays tied to what the player actually sees.
+
+### Followups created
+None.
+
+### GDD edits
+None. The implementation matches the existing §9, §16, and §22
+requirements.
+
+---
+
 ## 2026-04-26: Slice: Vercel local link ignores
 
 **GDD sections touched:**
