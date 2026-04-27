@@ -34,7 +34,7 @@
         "src/road/__tests__/segmentProjector.test.ts",
         "e2e/race-demo.spec.ts"
       ],
-      "followupRefs": ["F-050", "F-054"]
+      "followupRefs": ["F-050", "F-054", "F-057"]
     },
     {
       "id": "GDD-16-ROAD-MARKINGS",
