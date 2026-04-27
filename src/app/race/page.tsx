@@ -379,6 +379,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
     const persistedDifficulty = persistedSettings.difficultyPreset;
     const timeTrialEnabled = mode === "timeTrial";
     const raceSeed = 1;
+    let timeTrialSaveSnapshot = sessionSave;
 
     const config: RaceSessionConfig = {
       track: track.compiled,
@@ -400,7 +401,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         timeTrialRecorderRef.current = null;
         return;
       }
-      const currentGhost = sessionSave.ghosts?.[track.id] ?? null;
+      const currentGhost = timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
       ghostDriverRef.current = createGhostDriver({
         replay: currentGhost,
         stats: STARTER_STATS,
@@ -408,19 +409,26 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
       timeTrialRecorderRef.current = createTimeTrialRecorder({
         trackId: track.id,
         trackVersion: track.version,
-        carId: sessionSave.garage.activeCarId,
+        carId: timeTrialSaveSnapshot.garage.activeCarId,
         seed: raceSeed,
         onFinalize: (replay) => {
-          const current = sessionSave.ghosts?.[track.id] ?? null;
+          const latest = loadSave();
+          const latestSave =
+            latest.kind === "loaded" ? latest.save : timeTrialSaveSnapshot;
+          const current = latestSave.ghosts?.[track.id] ?? null;
           const best = applyTimeTrialResult(current, replay);
           if (best === null || best === current) return;
-          saveSave({
-            ...sessionSave,
+          const nextSave: SaveGame = {
+            ...latestSave,
             ghosts: {
-              ...(sessionSave.ghosts ?? {}),
+              ...(latestSave.ghosts ?? {}),
               [track.id]: best,
             },
-          });
+          };
+          const write = saveSave(nextSave);
+          if (write.kind === "ok") {
+            timeTrialSaveSnapshot = nextSave;
+          }
         },
       });
     };
