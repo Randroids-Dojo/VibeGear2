@@ -43,13 +43,19 @@ import type { Camera, Viewport } from "@/road/types";
  */
 export interface ParallaxLayer {
   id: "sky" | "mountains" | "hills";
-  image: HTMLImageElement | null;
+  image: (CanvasImageSource & { width: number }) | null;
   /** Horizontal scroll factor; 0 = static, 1 = locks to `camera.x`. */
   scrollX: number;
   /** Vertical band height in CSS pixels. */
   bandHeight: number;
   /** Vertical anchor in viewport: 0 = top, 1 = bottom. */
   yAnchor: number;
+  /**
+   * Optional fallback fill for procedural or not-yet-loaded layers.
+   * Kept per-layer so live race views can avoid the dev-only magenta
+   * missing-art fill while tests can still exercise that fallback.
+   */
+  fallbackFill?: string;
 }
 
 /**
@@ -120,7 +126,7 @@ export function drawParallax(
       // not loaded. Renderers are expected to swap in the loaded image
       // once `loadImage` resolves; see `spriteAtlas.loadAtlas` for the
       // analogous pattern in the sprite path.
-      ctx.fillStyle = PLACEHOLDER_FILL;
+      ctx.fillStyle = layer.fallbackFill ?? PLACEHOLDER_FILL;
       ctx.fillRect(0, y, viewport.width, height);
       continue;
     }

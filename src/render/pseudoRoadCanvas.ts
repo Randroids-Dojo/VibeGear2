@@ -9,8 +9,9 @@
  * the drawer paints the parallax bands instead of the flat sky gradient,
  * preserving the painter's algorithm (background first, road over).
  *
- * No textures in Phase 1, no sprites in this module. Those land in
- * follow-up slices (`spriteAtlas.ts`).
+ * Texture-backed sprite atlases land in `spriteAtlas.ts`; this drawer
+ * owns the procedural roadside billboard fallback so compiled roadside
+ * ids are visible before binary art ships.
  *
  * The drawer is the only module that knows about a Canvas2D context. The
  * projector is pure so unit tests can run without jsdom canvas mocking.
@@ -21,6 +22,7 @@ import {
   GRASS_STRIPE_LEN,
   LANE_STRIPE_LEN,
   RUMBLE_STRIPE_LEN,
+  SPRITE_BASE_SCALE,
 } from "@/road/constants";
 import type { Camera, Strip, Viewport } from "@/road/types";
 
@@ -66,6 +68,8 @@ export const PLAYER_CAR_DEFAULT_TAIL_LIGHT = "#ff3d38";
  */
 export const PLAYER_CAR_HEIGHT_FRACTION = 0.18;
 export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
+export const ROADSIDE_DRAW_PERIOD = 10;
+export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.22;
 
 export interface RoadColors {
   skyTop: string;
@@ -151,6 +155,27 @@ export interface DrawRoadOptions {
   } | null;
 }
 
+type RoadsideSpriteKind = "sign" | "tree" | "fence" | "rock" | "pole";
+
+interface RoadsideSpriteStyle {
+  kind: RoadsideSpriteKind;
+  widthToHeight: number;
+  heightRoadFactor: number;
+  minHeight: number;
+}
+
+const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
+  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.85, minHeight: 8 },
+  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.35, minHeight: 12 },
+  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.5, minHeight: 5 },
+  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.42, minHeight: 5 },
+  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 1.9, minHeight: 14 },
+  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.35, minHeight: 12 },
+  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.85, minHeight: 8 },
+  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.5, minHeight: 5 },
+  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.42, minHeight: 5 },
+};
+
 const FALLBACK_COLORS: RoadColors = {
   skyTop: DEFAULT_COLORS.skyTop,
   skyBottom: DEFAULT_COLORS.skyBottom,
@@ -234,9 +259,11 @@ export function drawRoad(
       ctx.save();
       ctx.translate(shakeOffset.dx, shakeOffset.dy);
       drawStrips(ctx, strips, viewport, colors);
+      drawRoadsideSprites(ctx, strips, viewport);
       ctx.restore();
     } else {
       drawStrips(ctx, strips, viewport, colors);
+      drawRoadsideSprites(ctx, strips, viewport);
     }
   }
 
@@ -261,6 +288,163 @@ export function drawRoad(
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
   }
+}
+
+function roadsideStyleFor(id: string): RoadsideSpriteStyle | null {
+  if (id === "default") return null;
+  return ROADSIDE_SPRITE_STYLES[id] ?? null;
+}
+
+function shouldDrawRoadsideSprite(strip: Strip, side: "left" | "right"): boolean {
+  const offset = side === "left" ? 0 : Math.floor(ROADSIDE_DRAW_PERIOD / 2);
+  return (strip.segment.index + offset) % ROADSIDE_DRAW_PERIOD === 0;
+}
+
+function drawRoadsideSprites(
+  ctx: CanvasRenderingContext2D,
+  strips: readonly Strip[],
+  viewport: Viewport,
+): void {
+  for (let i = strips.length - 1; i >= 0; i--) {
+    const strip = strips[i];
+    if (!strip?.visible) continue;
+    drawRoadsideSprite(ctx, strip, viewport, "left");
+    drawRoadsideSprite(ctx, strip, viewport, "right");
+  }
+}
+
+function drawRoadsideSprite(
+  ctx: CanvasRenderingContext2D,
+  strip: Strip,
+  viewport: Viewport,
+  side: "left" | "right",
+): void {
+  if (!shouldDrawRoadsideSprite(strip, side)) return;
+  const id =
+    side === "left" ? strip.segment.roadsideLeftId : strip.segment.roadsideRightId;
+  const style = roadsideStyleFor(id);
+  if (!style) return;
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+  if (!Number.isFinite(strip.screenW) || strip.screenW <= 0) return;
+  if (!Number.isFinite(strip.screenX) || !Number.isFinite(strip.screenY)) return;
+
+  const maxHeight = viewport.height * ROADSIDE_MAX_HEIGHT_FRACTION;
+  const height = Math.max(
+    style.minHeight,
+    Math.min(maxHeight, strip.screenW * style.heightRoadFactor * SPRITE_BASE_SCALE),
+  );
+  const width = height * style.widthToHeight;
+  const sideSign = side === "left" ? -1 : 1;
+  const baseX = strip.screenX + sideSign * strip.screenW * 1.32;
+  const baseY = strip.screenY;
+
+  if (baseY + height < 0 || baseY - height > viewport.height) return;
+  if (baseX + width < 0 || baseX - width > viewport.width) return;
+
+  switch (style.kind) {
+    case "tree":
+      drawTreeSprite(ctx, baseX, baseY, width, height);
+      break;
+    case "sign":
+      drawSignSprite(ctx, baseX, baseY, width, height);
+      break;
+    case "fence":
+      drawFenceSprite(ctx, baseX, baseY, width, height);
+      break;
+    case "rock":
+      drawRockSprite(ctx, baseX, baseY, width, height);
+      break;
+    case "pole":
+      drawPoleSprite(ctx, baseX, baseY, width, height);
+      break;
+  }
+}
+
+function drawTreeSprite(
+  ctx: CanvasRenderingContext2D,
+  baseX: number,
+  baseY: number,
+  width: number,
+  height: number,
+): void {
+  ctx.fillStyle = "#1b3a20";
+  ctx.fillRect(baseX - width * 0.08, baseY - height * 0.42, width * 0.16, height * 0.42);
+  ctx.fillStyle = "#245c2f";
+  ctx.beginPath();
+  ctx.moveTo(baseX, baseY - height);
+  ctx.lineTo(baseX + width * 0.55, baseY - height * 0.32);
+  ctx.lineTo(baseX - width * 0.55, baseY - height * 0.32);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#2f7a3a";
+  ctx.beginPath();
+  ctx.moveTo(baseX, baseY - height * 0.8);
+  ctx.lineTo(baseX + width * 0.45, baseY - height * 0.18);
+  ctx.lineTo(baseX - width * 0.45, baseY - height * 0.18);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawSignSprite(
+  ctx: CanvasRenderingContext2D,
+  baseX: number,
+  baseY: number,
+  width: number,
+  height: number,
+): void {
+  ctx.fillStyle = "#d9d7c7";
+  ctx.fillRect(baseX - width * 0.08, baseY - height * 0.58, width * 0.16, height * 0.58);
+  ctx.fillStyle = "#e7d24d";
+  ctx.fillRect(baseX - width * 0.5, baseY - height, width, height * 0.38);
+  ctx.fillStyle = "#23304d";
+  ctx.fillRect(baseX - width * 0.36, baseY - height * 0.88, width * 0.72, height * 0.08);
+}
+
+function drawFenceSprite(
+  ctx: CanvasRenderingContext2D,
+  baseX: number,
+  baseY: number,
+  width: number,
+  height: number,
+): void {
+  ctx.fillStyle = "#d7d4c5";
+  ctx.fillRect(baseX - width * 0.5, baseY - height * 0.7, width, height * 0.12);
+  ctx.fillRect(baseX - width * 0.5, baseY - height * 0.38, width, height * 0.12);
+  ctx.fillStyle = "#8d8a80";
+  ctx.fillRect(baseX - width * 0.08, baseY - height, width * 0.16, height);
+}
+
+function drawRockSprite(
+  ctx: CanvasRenderingContext2D,
+  baseX: number,
+  baseY: number,
+  width: number,
+  height: number,
+): void {
+  ctx.fillStyle = "#767c82";
+  ctx.beginPath();
+  ctx.moveTo(baseX - width * 0.5, baseY);
+  ctx.lineTo(baseX - width * 0.36, baseY - height * 0.7);
+  ctx.lineTo(baseX + width * 0.08, baseY - height);
+  ctx.lineTo(baseX + width * 0.5, baseY - height * 0.42);
+  ctx.lineTo(baseX + width * 0.44, baseY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#9aa0a5";
+  ctx.fillRect(baseX - width * 0.18, baseY - height * 0.7, width * 0.28, height * 0.12);
+}
+
+function drawPoleSprite(
+  ctx: CanvasRenderingContext2D,
+  baseX: number,
+  baseY: number,
+  width: number,
+  height: number,
+): void {
+  ctx.fillStyle = "#c9ccd2";
+  ctx.fillRect(baseX - width * 0.22, baseY - height, width * 0.44, height);
+  ctx.fillStyle = "#f1e36a";
+  ctx.fillRect(baseX - width * 1.4, baseY - height, width * 2.8, height * 0.09);
 }
 
 /**

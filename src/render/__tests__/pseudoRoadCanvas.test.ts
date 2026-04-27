@@ -362,6 +362,67 @@ describe("drawRoad foreground projection", () => {
   });
 });
 
+describe("drawRoad roadside sprites", () => {
+  it("paints compiled roadside ids as depth-scaled billboards", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 440,
+        screenW: 260,
+        segment: {
+          ...strip({}).segment,
+          index: 0,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "light_pole",
+        },
+      }),
+      strip({
+        screenY: 300,
+        screenW: 110,
+        segment: {
+          ...strip({}).segment,
+          index: 1,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "light_pole",
+        },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {});
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(true);
+    expect(fills.some((call) => call.fillStyle === "#2f7a3a")).toBe(true);
+
+    const fillRects = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    expect(fillRects.some((call) => call.fillStyle === "#1b3a20")).toBe(true);
+  });
+
+  it("skips the default roadside id", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 440,
+        screenW: 260,
+        segment: { ...strip({}).segment, index: 0 },
+      }),
+      strip({
+        screenY: 300,
+        screenW: 110,
+        segment: { ...strip({}).segment, index: 1 },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {});
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(false);
+    expect(fills.some((call) => call.fillStyle === "#2f7a3a")).toBe(false);
+  });
+});
+
 describe("drawRoad player car overlay", () => {
   it("paints the live player car at the §16 standard camera footprint", () => {
     const spy = makeCanvasSpy();

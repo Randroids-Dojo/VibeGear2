@@ -83,6 +83,7 @@ import {
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
 import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
+import type { ParallaxLayer } from "@/render/parallax";
 import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
 import { defaultSave, loadSave, saveSave } from "@/persistence/save";
@@ -108,6 +109,77 @@ const MINIMAP_BOX = Object.freeze({
   w: MINIMAP_SIZE,
   h: MINIMAP_SIZE,
 });
+
+function createLayerCanvas(
+  width: number,
+  height: number,
+  paint: (ctx: CanvasRenderingContext2D, width: number, height: number) => void,
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (ctx) paint(ctx, width, height);
+  return canvas;
+}
+
+function createTemperateParallaxLayers(viewport: Viewport): readonly ParallaxLayer[] {
+  const sky = createLayerCanvas(512, 256, (ctx, width, height) => {
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, "#0e1730");
+    gradient.addColorStop(1, "#4d6f94");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  });
+  const mountains = createLayerCanvas(512, 96, (ctx, width, height) => {
+    ctx.fillStyle = "#253a55";
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    ctx.lineTo(64, height * 0.08);
+    ctx.lineTo(130, height * 0.82);
+    ctx.lineTo(210, height * 0.06);
+    ctx.lineTo(300, height * 0.74);
+    ctx.lineTo(386, height * 0.1);
+    ctx.lineTo(width, height * 0.78);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  });
+  const hills = createLayerCanvas(512, 96, (ctx, width, height) => {
+    ctx.fillStyle = "#265c2d";
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    ctx.quadraticCurveTo(width * 0.18, height * 0.3, width * 0.36, height * 0.7);
+    ctx.quadraticCurveTo(width * 0.58, height * 1.05, width * 0.78, height * 0.45);
+    ctx.quadraticCurveTo(width * 0.9, height * 0.18, width, height * 0.5);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#43565d";
+    for (let x = 28; x < width; x += 74) {
+      const blockHeight = 12 + ((x / 2) % 18);
+      ctx.fillRect(x, height - blockHeight - 3, 18, blockHeight);
+    }
+  });
+
+  return [
+    { id: "sky", image: sky, scrollX: 0, bandHeight: viewport.height, yAnchor: 0 },
+    {
+      id: "mountains",
+      image: mountains,
+      scrollX: 0.22,
+      bandHeight: viewport.height * 0.1,
+      yAnchor: 0.01,
+    },
+    {
+      id: "hills",
+      image: hills,
+      scrollX: 0.55,
+      bandHeight: viewport.height * 0.09,
+      yAnchor: 0.04,
+    },
+  ];
+}
 
 /**
  * Sparrow GT base stats. Mirrors `src/data/cars/sparrow-gt.json`. Inlined
@@ -449,6 +521,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
       depth: CAMERA_DEPTH,
     };
     const viewport: Viewport = { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT };
+    const parallaxLayers = createTemperateParallaxLayers(viewport);
 
     // Refit the unit-square minimap polyline into the §20 layout box once
     // per track so the per-frame draw loop only pays for `projectCar`. The
@@ -606,6 +679,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
           ghostOverlayTickRef.current = null;
         }
         drawRoad(ctx, strips, viewport, {
+          parallax: { layers: parallaxLayers, camera },
           ghostCar: ghostOverlayRef.current,
           playerCar: {},
         });

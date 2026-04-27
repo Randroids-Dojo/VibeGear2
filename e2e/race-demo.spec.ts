@@ -21,6 +21,30 @@ async function centerRoadTopY(canvas: Locator): Promise<number> {
   });
 }
 
+async function countCanvasColourNear(
+  canvas: Locator,
+  target: { r: number; g: number; b: number },
+  tolerance: number,
+): Promise<number> {
+  return canvas.evaluate((node, { colour, maxDelta }) => {
+    const canvasEl = node as HTMLCanvasElement;
+    const ctx = canvasEl.getContext("2d");
+    if (!ctx) return 0;
+    const { data } = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
+    let count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (
+        Math.abs((data[i] ?? 0) - colour.r) <= maxDelta &&
+        Math.abs((data[i + 1] ?? 0) - colour.g) <= maxDelta &&
+        Math.abs((data[i + 2] ?? 0) - colour.b) <= maxDelta
+      ) {
+        count += 1;
+      }
+    }
+    return count;
+  }, { colour: target, maxDelta: tolerance });
+}
+
 /**
  * Phase 1 vertical-slice smoke. Visits `/race`, waits for the loading gate
  * to settle, asserts the countdown renders, drives forward for a few
@@ -87,5 +111,29 @@ test.describe("phase 1 race demo", () => {
     const after = await centerRoadTopY(canvas);
     expect(after).toBeGreaterThanOrEqual(0);
     expect(before - after).toBeGreaterThanOrEqual(12);
+  });
+
+  test("default race track renders parallax and roadside billboard colours", async ({
+    page,
+  }) => {
+    await page.goto("/race");
+    const canvas = page.getByTestId("race-canvas-element");
+    await expect(canvas).toBeVisible();
+    await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+      timeout: 10_000,
+    });
+
+    const mountainPixels = await countCanvasColourNear(canvas, {
+      r: 37,
+      g: 58,
+      b: 85,
+    }, 3);
+    const signPixels = await countCanvasColourNear(canvas, {
+      r: 231,
+      g: 210,
+      b: 77,
+    }, 3);
+    expect(mountainPixels).toBeGreaterThan(0);
+    expect(signPixels).toBeGreaterThan(0);
   });
 });

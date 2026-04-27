@@ -33,13 +33,25 @@ refs, plus the latest progress-log entry's coverage-ledger section.
 ## F-052: Add parallax horizon and roadside sprites to the race renderer
 **Created:** 2026-04-26
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** §16 and §21 call for layered horizon art, parallax
 backgrounds, and roadside sprites drawn from compiled track segment
 content. The current race view renders flat sky, grass, and road strips
 only. Wire the race renderer to consume region background layers and
 roadside sprite ids from compiled track data, then verify that the
 assets move at distinct depths in a browser smoke.
+
+Closed by `feat/f-052-parallax-roadside`. The live race route now
+builds three procedural temperate parallax layers (sky, mountains,
+hills) and passes them to `drawRoad` with the live camera so each layer
+uses its own scroll depth. `drawRoad` now reads `roadsideLeftId` and
+`roadsideRightId` from compiled strips and paints original procedural
+billboards for sign, tree, fence, rock, and light-pole ids. The bundled
+`test/elevation` smoke track now authors non-default roadside ids so
+the default `/race` path proves both elevation and track-driven scenery.
+Unit tests cover parallax fallback fills and roadside id drawing; the
+race Playwright smoke samples canvas pixels for the horizon layer and
+roadside sign colour.
 
 ---
 
