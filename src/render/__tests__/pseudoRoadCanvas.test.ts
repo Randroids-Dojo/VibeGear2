@@ -297,10 +297,12 @@ describe("drawRoad player car overlay", () => {
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: {} });
 
     const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
-    expect(fills).toHaveLength(3);
-    expect(fills[0]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_SHADOW);
-    expect(fills[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_FILL);
-    expect(fills[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_WINDSHIELD);
+    expect(fills).toHaveLength(5);
+    expect(fills[0]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_SHADOW);
+    expect(fills[3]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_FILL);
+    expect(fills[4]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_WINDSHIELD);
 
     const height = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION;
     expect(height / VIEWPORT.height).toBeGreaterThanOrEqual(0.16);
@@ -308,40 +310,40 @@ describe("drawRoad player car overlay", () => {
     expect(height * PLAYER_CAR_WIDTH_TO_HEIGHT).toBeCloseTo(99.36, 2);
   });
 
-  it("paints tires, rear deck, and two tail-light rects", () => {
+  it("paints contained tires, rear deck, and two tail-light rects", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: {} });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills).toHaveLength(5);
+    expect(fills[0]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_SHADOW);
+    expect(fills[3]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_FILL);
+    expect(fills[4]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_WINDSHIELD);
 
     const fillRects = spy.calls.filter(
       (c): c is FillRectCall => c.type === "fillRect",
     );
-    expect(fillRects).toHaveLength(6);
+    expect(fillRects).toHaveLength(4);
 
-    const tireW = VIEWPORT.height *
-      PLAYER_CAR_HEIGHT_FRACTION *
-      PLAYER_CAR_WIDTH_TO_HEIGHT *
-      0.18;
-    const tireH = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * 0.5;
-    expect(fillRects[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
-    expect(fillRects[1]!.w).toBeCloseTo(tireW, 6);
-    expect(fillRects[1]!.h).toBeCloseTo(tireH, 6);
-    expect(fillRects[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
-    expect(fillRects[2]!.w).toBeCloseTo(tireW, 6);
-    expect(fillRects[2]!.h).toBeCloseTo(tireH, 6);
-
-    expect(fillRects[3]!.fillStyle).toBe("#d7a91e");
+    expect(fillRects[1]!.fillStyle).toBe("#d7a91e");
+    expect(fillRects[1]!.w).toBeCloseTo(
+      VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * PLAYER_CAR_WIDTH_TO_HEIGHT * 0.64,
+      6,
+    );
 
     const tailLightW = VIEWPORT.height *
       PLAYER_CAR_HEIGHT_FRACTION *
       PLAYER_CAR_WIDTH_TO_HEIGHT *
-      0.18;
+      0.16;
     const tailLightH = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * 0.08;
-    expect(fillRects[4]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
-    expect(fillRects[4]!.w).toBeCloseTo(tailLightW, 6);
-    expect(fillRects[4]!.h).toBeCloseTo(tailLightH, 6);
-    expect(fillRects[5]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
-    expect(fillRects[5]!.w).toBeCloseTo(tailLightW, 6);
-    expect(fillRects[5]!.h).toBeCloseTo(tailLightH, 6);
+    expect(fillRects[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
+    expect(fillRects[2]!.w).toBeCloseTo(tailLightW, 6);
+    expect(fillRects[2]!.h).toBeCloseTo(tailLightH, 6);
+    expect(fillRects[3]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
+    expect(fillRects[3]!.w).toBeCloseTo(tailLightW, 6);
+    expect(fillRects[3]!.h).toBeCloseTo(tailLightH, 6);
   });
 
   it("restores fillStyle after painting the player car", () => {
@@ -358,9 +360,11 @@ describe("drawRoad player car overlay", () => {
     });
 
     const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
-    expect(fills[0]!.fillStyle).toBe("#001122");
-    expect(fills[1]!.fillStyle).toBe("#aa3300");
-    expect(fills[2]!.fillStyle).toBe("#223344");
+    expect(fills[0]!.fillStyle).toBe("#050505");
+    expect(fills[1]!.fillStyle).toBe("#050505");
+    expect(fills[2]!.fillStyle).toBe("#001122");
+    expect(fills[3]!.fillStyle).toBe("#aa3300");
+    expect(fills[4]!.fillStyle).toBe("#223344");
     expect(spy.finalAlpha()).toBeCloseTo(1, 6);
   });
 

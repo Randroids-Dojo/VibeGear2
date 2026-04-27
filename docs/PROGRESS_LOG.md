@@ -21,6 +21,8 @@ Correct them by adding a new entry that references the old one.
 - `src/render/pseudoRoadCanvas.ts`: refined the placeholder into a
   rear chase-view silhouette with tires, rear deck, and tail lights so
   it reads less like a flat UI icon.
+- `src/render/pseudoRoadCanvas.ts`: replaced protruding tire blocks and
+  the over-wide rear deck with contained path shapes.
 - `src/app/race/page.tsx`: passes the player-car overlay option to the
   road renderer every race frame so a fresh race has a visible car
   anchor at the bottom of the view.
@@ -41,6 +43,9 @@ Correct them by adding a new entry that references the old one.
 - Browser layout check at 2048x1240 confirmed a 1280x768 canvas,
   a clipped 1x1 debug metrics box, 3,954 yellow car pixels, and
   217 red tail-light pixels during countdown.
+- Browser artifact check at 2048x1240 confirmed 3,841 yellow car
+  pixels, 193 red tail-light pixels, and only 38 dark pixels outside
+  the right side of the car footprint.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 1 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and
   content-lint all passed; 2,128 unit tests passed.

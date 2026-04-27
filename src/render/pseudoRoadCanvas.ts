@@ -343,8 +343,20 @@ function drawPlayerCar(
   const prevFill = ctx.fillStyle;
   try {
     ctx.fillStyle = car.tire ?? PLAYER_CAR_DEFAULT_TIRE;
-    ctx.fillRect(centerX - halfW * 0.72, topY + height * 0.38, width * 0.18, height * 0.5);
-    ctx.fillRect(centerX + halfW * 0.54, topY + height * 0.38, width * 0.18, height * 0.5);
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.68, bottomY - height * 0.12);
+    ctx.lineTo(centerX - halfW * 0.54, bottomY - height * 0.12);
+    ctx.lineTo(centerX - halfW * 0.48, topY + height * 0.42);
+    ctx.lineTo(centerX - halfW * 0.58, topY + height * 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(centerX + halfW * 0.54, bottomY - height * 0.12);
+    ctx.lineTo(centerX + halfW * 0.68, bottomY - height * 0.12);
+    ctx.lineTo(centerX + halfW * 0.58, topY + height * 0.42);
+    ctx.lineTo(centerX + halfW * 0.48, topY + height * 0.42);
+    ctx.closePath();
+    ctx.fill();
 
     ctx.fillStyle = car.shadow ?? PLAYER_CAR_DEFAULT_SHADOW;
     ctx.beginPath();
@@ -376,11 +388,11 @@ function drawPlayerCar(
     ctx.fill();
 
     ctx.fillStyle = "#d7a91e";
-    ctx.fillRect(centerX - halfW * 0.42, topY + height * 0.54, width * 0.84, height * 0.09);
+    ctx.fillRect(centerX - halfW * 0.32, topY + height * 0.56, width * 0.64, height * 0.07);
 
     ctx.fillStyle = car.tailLight ?? PLAYER_CAR_DEFAULT_TAIL_LIGHT;
-    ctx.fillRect(centerX - halfW * 0.54, bottomY - height * 0.24, width * 0.18, height * 0.08);
-    ctx.fillRect(centerX + halfW * 0.36, bottomY - height * 0.24, width * 0.18, height * 0.08);
+    ctx.fillRect(centerX - halfW * 0.52, bottomY - height * 0.24, width * 0.16, height * 0.08);
+    ctx.fillRect(centerX + halfW * 0.36, bottomY - height * 0.24, width * 0.16, height * 0.08);
   } finally {
     ctx.fillStyle = prevFill;
   }
