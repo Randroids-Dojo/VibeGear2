@@ -228,7 +228,7 @@ export function tickAI(
   driver: Readonly<AIDriver>,
   aiState: Readonly<AIState>,
   aiCar: Readonly<CarState>,
-  _player: Readonly<PlayerView>,
+  player: Readonly<PlayerView>,
   track: Readonly<CompiledSegmentBuffer>,
   race: Readonly<RaceState>,
   stats: Readonly<CarBaseStats>,
@@ -280,7 +280,7 @@ export function tickAI(
     context.roadHalfWidth,
   );
 
-  const playerLeadMeters = Math.max(0, _player.car.z - aiCar.z);
+  const playerLeadMeters = Math.max(0, player.car.z - aiCar.z);
   const recoveryPaceBonus =
     clamp(
       playerLeadMeters / AI_TUNING.RECOVERY_GAP_FOR_MAX_BONUS,

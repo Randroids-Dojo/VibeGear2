@@ -39,7 +39,6 @@
  * `getCpuModifiers(presetId)` returns the same frozen object reference
  * every call so callers can lean on identity comparison.
  *
- * The module is intentionally consumer-agnostic in this slice: the
  * The AI controller consumes all three scalars. Adding a new tier row,
  * renaming a scalar, or moving the §23 numbers requires updating both
  * the table here and the `aiDifficulty.test.ts` unit pin (and the §23
