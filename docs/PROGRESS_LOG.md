@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: CONTRIBUTING.md guide
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) open-source project
+guidance.
+**Branch / PR:** `docs/f-056-contributing-guide`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `docs/CONTRIBUTING.md`: replaced the working-notes page with the
+  contributor-facing workflow, verification, originality, licensing,
+  asset-manifest, schema, issue-label, and maintainer-expectation guide.
+- `docs/MODDING.md`: added a small placeholder so contributor docs have a
+  resolving modding reference until the dedicated modding guide slice
+  expands it.
+- `README.md`: linked the contributing guide from the project overview.
+- `docs/GDD_COVERAGE.json`: added GDD-26-CONTRIBUTING-GUIDE coverage.
+
+### Verified
+- `npm run content-lint` clean.
+- `perl -ne 'print "$ARGV:$.:$_" if /[\x{2013}\x{2014}]/' docs/CONTRIBUTING.md docs/MODDING.md`
+  returned no matches.
+- Link targets for CONTRIBUTING.md and README.md were inspected.
+
+### Decisions and assumptions
+- `docs/MODDING.md` stays intentionally small because the full modding
+  guide is a separate dot. The contributor guide links to the binding
+  legal and GDD rules without duplicating mod-loader specifics.
+
+### Coverage ledger
+- GDD-26-CONTRIBUTING-GUIDE: covered by `docs/CONTRIBUTING.md`,
+  `README.md`, and content-lint coverage validation.
+- Uncovered adjacent requirements: the full modding guide remains owned by
+  `VibeGear2-implement-modding-md-efbf1c83`.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §26 intent.
+
+---
+
 ## 2026-04-27: Slice: F-055 distance-phase road markings
 
 **GDD sections touched:**

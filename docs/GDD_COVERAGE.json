@@ -2,6 +2,21 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-26-CONTRIBUTING-GUIDE",
+      "gddSections": [
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Contributor documentation explains PR workflow, originality confirmation, licensing, asset manifest rules, schema checks, and issue labels.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "docs/CONTRIBUTING.md",
+        "README.md"
+      ],
+      "testRefs": [
+        "scripts/content-lint.ts"
+      ]
+    },
+    {
       "id": "GDD-09-ELEVATION-LIVE",
       "gddSections": [
         "docs/gdd/09-track-design.md",
