@@ -32,26 +32,28 @@ pipeline.
   the observed hill-bottom transition, plus a long-climb regression that
   rejects the full-screen road-wall failure seen in PR preview.
 - `src/render/pseudoRoadCanvas.ts`: removed segment-index phase gates
-  from the temporary procedural centerline and rumble markings so uphill
-  frames do not snap between different line patterns.
+  from road markings, then replaced them with road-distance phase
+  rendering that splits strips at rumble, road-shade, and lane-marking
+  phase boundaries.
 - `src/render/__tests__/pseudoRoadCanvas.test.ts`: added a regression
-  that adjacent uphill strips keep steady rumble and centerline fills.
+  that adjacent uphill strips keep steady rumble and centerline fills,
+  plus a regression that a lane dash boundary inside a strip is
+  interpolated instead of flipping the whole strip.
 - `docs/FOLLOWUPS.md`: marked F-054 done.
 - `docs/GDD_COVERAGE.json`: linked the elevation coverage row to the
   F-054 regression test.
 - `docs/FOLLOWUPS.md` and `docs/GDD_COVERAGE.json`: added F-055 for
-  the final camera-phase-stable road-marking pass, so the temporary
-  stabilization in this slice is tracked explicitly.
+  the camera-phase-stable road-marking pass and closed it in this slice.
 
 ### Verified
 - `npx vitest run src/road/__tests__/segmentProjector.test.ts` green,
   35 passed.
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/road/__tests__/segmentProjector.test.ts`
-  green, 54 passed.
+  green, 55 passed.
 - `npm run typecheck` clean.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and content-lint
-  all passed; 2,162 unit tests passed.
+  all passed; 2,163 unit tests passed.
 - `npm run test:e2e` green, 55 passed.
 
 ### Decisions and assumptions
