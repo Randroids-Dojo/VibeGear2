@@ -10,6 +10,24 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-054: Fix hill-bottom car stutter and repeated road collision bounce
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** open
+**Notes:** Manual race observation: when the player reaches the bottom
+of a hill and starts climbing the next grade, the player car appears to
+stutter, bounce, or repeatedly collide with the road. This likely sits
+at the seam between authored grade projection, camera road-height
+sampling, and physics / damage collision feedback. Reproduce on the
+default `/race` elevation track, then add a deterministic regression
+test that drives through the dip-to-climb transition and asserts the
+player car does not receive repeated ground-collision impulses or
+visible vertical jitter. Inspect `src/road/segmentProjector.ts`,
+`src/game/physics.ts`, `src/game/raceSession.ts`, and the camera setup
+in `src/app/race/page.tsx`.
+
+---
+
 ## F-053: Add a machine-checkable GDD coverage ledger
 **Created:** 2026-04-26
 **Priority:** blocks-release

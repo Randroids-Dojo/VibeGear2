@@ -67,7 +67,8 @@ renderer.
   under F-051.
 
 ### Followups created
-None.
+- F-054: hill-bottom car stutter / repeated road-collision bounce
+  observed on the live elevation track.
 
 ### GDD edits
 None. This slice implements existing §9, §16, and §21 requirements.
