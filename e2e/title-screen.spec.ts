@@ -23,7 +23,7 @@ test.describe("title screen", () => {
     const garage = page.getByTestId("menu-garage");
     await expect(garage).toBeVisible();
     await expect(garage).toHaveText("Garage");
-    await expect(garage).toHaveAttribute("href", "/garage/cars");
+    await expect(garage).toHaveAttribute("href", "/garage");
 
     const options = page.getByTestId("menu-options");
     await expect(options).toBeVisible();
@@ -39,10 +39,10 @@ test.describe("title screen", () => {
     await expect(page).toHaveURL(/\/race(\?.*)?$/);
   });
 
-  test("Garage link navigates to /garage/cars", async ({ page }) => {
+  test("Garage link navigates to /garage", async ({ page }) => {
     await page.goto("/");
     await page.getByTestId("menu-garage").click();
-    await expect(page).toHaveURL(/\/garage\/cars$/);
+    await expect(page).toHaveURL(/\/garage$/);
   });
 
   test("Time Trial link navigates to time-trial race mode", async ({ page }) => {
