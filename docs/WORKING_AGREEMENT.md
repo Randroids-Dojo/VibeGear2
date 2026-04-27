@@ -54,6 +54,9 @@ build*; this agreement wins for *how to operate*.
   - Any followups created and the ids they got in `FOLLOWUPS.md`.
 - Do not open a PR until CI would plausibly pass locally (type-check, lint,
   tests).
+- Before merging, inspect unresolved PR review comments and review threads,
+  including automated Copilot feedback. Address actionable comments with a
+  follow-up commit or state why they are not actionable.
 - Wait for CI to go green before merging. If CI fails, fix the cause; do not
   retry the same red push hoping for a flake.
 - Squash-merge into `main` unless the slice deliberately benefits from
