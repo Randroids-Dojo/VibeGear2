@@ -86,3 +86,6 @@ canonical safe and unsafe content patterns, the PR checklist, and the
 `legal-review` escalation path. Read this before contributing any art,
 audio, track data, or non-trivial code that resembles existing
 copyrighted material.
+
+Contributing: see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for branch,
+PR, verification, originality, licensing, and review expectations.
