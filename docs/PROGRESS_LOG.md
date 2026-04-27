@@ -14,7 +14,7 @@ scaling,
 [§17](gdd/17-art-direction.md) car design language and asset export,
 [§21](gdd/21-technical-design-for-web-implementation.md) sprite atlas
 renderer pipeline.
-**Branch / PR:** `feat/f-051-car-atlas-sprites`, PR pending.
+**Branch / PR:** `feat/f-051-car-atlas-sprites`, PR #22.
 **Status:** Implemented.
 
 ### Done
