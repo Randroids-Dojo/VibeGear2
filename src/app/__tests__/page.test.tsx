@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import TitlePage from "../page";
 
 /**
- * Title-screen menu wiring (GDD §5, §20). Asserts the three menu items
+ * Title-screen menu wiring (GDD §5, §20). Asserts the main menu items
  * render with the expected hrefs (or pending state for Options) and
  * keep the data-testid hooks the e2e smoke spec depends on.
  *
@@ -32,6 +32,12 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/race"');
   });
 
+  it("renders Time Trial as an anchor pointing at /time-trial", () => {
+    const match = html.match(/<a[^>]*data-testid="menu-time-trial"[^>]*>/);
+    expect(match, "menu-time-trial anchor not found").not.toBeNull();
+    expect(match?.[0]).toContain('href="/time-trial"');
+  });
+
   it("renders Garage as an anchor pointing at /garage/cars", () => {
     const match = html.match(/<a[^>]*data-testid="menu-garage"[^>]*>/);
     expect(match, "menu-garage anchor not found").not.toBeNull();
@@ -44,12 +50,14 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/options"');
   });
 
-  it("places Start Race before Garage before Options in tab order", () => {
+  it("places Start Race before Time Trial before Garage before Options in tab order", () => {
     const startIdx = html.indexOf('data-testid="menu-start-race"');
+    const timeTrialIdx = html.indexOf('data-testid="menu-time-trial"');
     const garageIdx = html.indexOf('data-testid="menu-garage"');
     const optionsIdx = html.indexOf('data-testid="menu-options"');
     expect(startIdx).toBeGreaterThan(-1);
-    expect(garageIdx).toBeGreaterThan(startIdx);
+    expect(timeTrialIdx).toBeGreaterThan(startIdx);
+    expect(garageIdx).toBeGreaterThan(timeTrialIdx);
     expect(optionsIdx).toBeGreaterThan(garageIdx);
   });
 

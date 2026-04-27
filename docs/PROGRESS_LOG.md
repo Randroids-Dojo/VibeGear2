@@ -6,6 +6,61 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-022 Time Trial ghost consumer
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) "Time trial",
+[§20](gdd/20-hud-and-ui-ux.md) race HUD and title navigation,
+[§22](gdd/22-data-schemas.md) "Ghost replay".
+**Branch / PR:** `feat/f-022-time-trial-ghost-consumer`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/race/page.tsx`: added `?mode=timeTrial` support, saved
+  ghost playback via `createGhostDriver`, recorder persistence via
+  `createTimeTrialRecorder` and `applyTimeTrialResult`, and a
+  `data-mode` hook for browser verification.
+- `src/app/race/page.tsx`: review fix reloads the latest save before
+  committing a new time-trial ghost, preserving unrelated save changes
+  and letting same-page restarts consume the new personal best.
+- `src/app/time-trial/page.tsx`: added a route that enters the race
+  shell in Time Trial mode.
+- `src/app/page.tsx`: added a Time Trial menu entry.
+- `src/game/index.ts`: exported the Time Trial helper module from the
+  game barrel.
+- `src/app/__tests__/page.test.tsx` and `e2e/title-screen.spec.ts`:
+  covered the new title menu entry and Time Trial navigation.
+- `docs/FOLLOWUPS.md`: marked F-022 done.
+
+### Verified
+- `grep -rn $'\u2014\|\u2013' src/app/race/page.tsx src/app/time-trial/page.tsx src/app/page.tsx src/app/__tests__/page.test.tsx e2e/title-screen.spec.ts src/game/index.ts docs/FOLLOWUPS.md docs/PROGRESS_LOG.md`
+  returned no hits.
+- `npx vitest run src/app/__tests__/page.test.tsx src/game/__tests__/timeTrial.test.ts src/game/__tests__/ghostDriver.test.ts`
+  green, 38 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm test` green, 2117 passed.
+- `npm run content-lint` clean.
+- `npm run build` clean.
+- `npm run test:e2e -- e2e/title-screen.spec.ts` green, 5 passed.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Time Trial mode skips economy credit persistence on finish so the
+  ghost PB write cannot be overwritten by the normal race reward save.
+- The `/time-trial` route redirects to `/race?mode=timeTrial` to keep
+  the race shell single-owner until the broader mode-selection UI
+  lands.
+
+### Followups created
+None.
+
+### GDD edits
+None. The implementation matches the existing §6 and §22 ghost replay
+contracts.
+
+---
+
 ## 2026-04-26: Slice: Licence files finalisation
 
 **GDD sections touched:**
@@ -49,7 +104,7 @@ None. The implementation matches the existing §26 licence table.
 **GDD sections touched:**
 [§12](gdd/12-upgrade-and-economy-system.md) "Catch-up mechanisms",
 [§8](gdd/08-world-and-progression-design.md) "Tour progression".
-**Branch / PR:** `feat/f-037-easy-mode-tour-bonus`, PR pending.
+**Branch / PR:** `feat/f-037-easy-mode-tour-bonus`, PR #7.
 **Status:** Implemented.
 
 ### Done

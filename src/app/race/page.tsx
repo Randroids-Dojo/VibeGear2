@@ -40,14 +40,17 @@ import { PauseOverlay } from "@/components/pause/PauseOverlay";
 import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
-import { TRACK_IDS, loadTrack } from "@/data";
-import type { Track } from "@/data/schemas";
+import { TRACK_IDS, TRACK_RAW, loadTrack } from "@/data";
+import { TrackSchema, type Track } from "@/data/schemas";
 import {
+  applyTimeTrialResult,
   buildFinalCarInputsFromSession,
   buildFinalRaceState,
   buildRaceResult,
+  createGhostDriver,
   createInputManager,
   createRaceSession,
+  createTimeTrialRecorder,
   deriveHudState,
   deriveSplitsState,
   applyRaceResultRecords,
@@ -59,6 +62,9 @@ import {
   type RaceSessionConfig,
   type RaceSessionState,
   type RankedCar,
+  type GhostDriver,
+  type GhostOverlay,
+  type TimeTrialRecorder,
 } from "@/game";
 import { FIXED_STEP_SECONDS } from "@/game/loop";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
@@ -135,12 +141,20 @@ const DEMO_DRIVER: AIDriver = Object.freeze({
 
 interface ResolvedTrack {
   id: string;
+  version: number;
   compiled: CompiledTrack;
 }
 
 function resolveTrack(requestedId: string | null): ResolvedTrack {
   const id = requestedId && TRACK_IDS.includes(requestedId) ? requestedId : DEFAULT_TRACK_ID;
-  return { id, compiled: loadTrack(id) };
+  const parsed = TrackSchema.parse(TRACK_RAW[id]);
+  return { id, version: parsed.version, compiled: loadTrack(id) };
+}
+
+type RaceMode = "race" | "timeTrial";
+
+function resolveRaceMode(raw: string | null): RaceMode {
+  return raw === "timeTrial" ? "timeTrial" : "race";
 }
 
 /**
@@ -265,21 +279,28 @@ function RaceShell(): ReactElement {
   const search = useSearchParams();
   const requestedId = search?.get("track") ?? null;
   const lapsRaw = search?.get("laps") ?? null;
+  const modeRaw = search?.get("mode") ?? null;
   const track = useMemo(() => resolveTrack(requestedId), [requestedId]);
   const lapsOverride = useMemo(() => resolveLapsOverride(lapsRaw), [lapsRaw]);
-  return <RaceCanvas track={track} lapsOverride={lapsOverride} />;
+  const mode = useMemo(() => resolveRaceMode(modeRaw), [modeRaw]);
+  return <RaceCanvas track={track} lapsOverride={lapsOverride} mode={mode} />;
 }
 
 interface RaceCanvasProps {
   track: ResolvedTrack;
   lapsOverride: number | null;
+  mode: RaceMode;
 }
 
-function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
+function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
   const sessionRef = useRef<RaceSessionState | null>(null);
+  const ghostDriverRef = useRef<GhostDriver | null>(null);
+  const ghostOverlayRef = useRef<GhostOverlay>(null);
+  const ghostOverlayTickRef = useRef<number | null>(null);
+  const timeTrialRecorderRef = useRef<TimeTrialRecorder | null>(null);
   // Imperative pause-menu effects, populated inside the loop effect
   // below so the hook layer can stay decoupled from the loop / session
   // / config refs. The hook reads these getters once per click; mid-
@@ -348,12 +369,17 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
     // as `false` already, and an undefined `difficultyPreset` resolves
     // to Balanced via `resolvePresetScalars`.
     const persisted = loadSave();
+    const sessionSave =
+      persisted.kind === "loaded" ? persisted.save : defaultSave();
     const persistedSettings =
       persisted.kind === "loaded"
         ? persisted.save.settings
         : defaultSave().settings;
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
+    const timeTrialEnabled = mode === "timeTrial";
+    const raceSeed = 1;
+    let timeTrialSaveSnapshot = sessionSave;
 
     const config: RaceSessionConfig = {
       track: track.compiled,
@@ -363,11 +389,52 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
         difficultyPreset: persistedDifficulty,
       },
       ai: [{ driver: DEMO_DRIVER, stats: STARTER_STATS }],
-      seed: 1,
+      seed: raceSeed,
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
 
+    const resetTimeTrialRuntime = (): void => {
+      ghostOverlayRef.current = null;
+      ghostOverlayTickRef.current = null;
+      if (!timeTrialEnabled) {
+        ghostDriverRef.current = null;
+        timeTrialRecorderRef.current = null;
+        return;
+      }
+      const currentGhost = timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
+      ghostDriverRef.current = createGhostDriver({
+        replay: currentGhost,
+        stats: STARTER_STATS,
+      });
+      timeTrialRecorderRef.current = createTimeTrialRecorder({
+        trackId: track.id,
+        trackVersion: track.version,
+        carId: timeTrialSaveSnapshot.garage.activeCarId,
+        seed: raceSeed,
+        onFinalize: (replay) => {
+          const latest = loadSave();
+          const latestSave =
+            latest.kind === "loaded" ? latest.save : timeTrialSaveSnapshot;
+          const current = latestSave.ghosts?.[track.id] ?? null;
+          const best = applyTimeTrialResult(current, replay);
+          if (best === null || best === current) return;
+          const nextSave: SaveGame = {
+            ...latestSave,
+            ghosts: {
+              ...(latestSave.ghosts ?? {}),
+              [track.id]: best,
+            },
+          };
+          const write = saveSave(nextSave);
+          if (write.kind === "ok") {
+            timeTrialSaveSnapshot = nextSave;
+          }
+        },
+      });
+    };
+
     sessionRef.current = createRaceSession(config);
+    resetTimeTrialRuntime();
     // Re-arm the natural-finish guard on every fresh mount. The
     // restart callback below also flips it back so a second race
     // after a restart still routes once when it finishes.
@@ -406,6 +473,7 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
       const handle = handleRef.current;
       if (!handle) return;
       sessionRef.current = createRaceSession(config);
+      resetTimeTrialRuntime();
       // Re-arm the natural-finish guard so the restarted race can
       // route on its own finish. Must precede `handle.resume()` so the
       // first render tick after resume sees the fresh `false` latch.
@@ -463,14 +531,16 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
       // F-034: credit the wallet (DNF cars receive the §12 participation
       // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
       // the §20 results screen renders the actual wallet change.
-      const committed = commitRaceCredits({
-        result,
-        save,
-        // §15 default per `SaveGameSettingsSchema`: a v1 save without
-        // a `difficultyPreset` field reads as `'normal'`.
-        difficulty: persistedDifficulty ?? "normal",
-        baseTrackReward: baseRewardForTrackDifficulty(track.compiled.difficulty),
-      });
+      const committed = timeTrialEnabled
+        ? { ...result, creditsAwarded: 0 }
+        : commitRaceCredits({
+            result,
+            save,
+            // §15 default per `SaveGameSettingsSchema`: a v1 save without
+            // a `difficultyPreset` field reads as `'normal'`.
+            difficulty: persistedDifficulty ?? "normal",
+            baseTrackReward: baseRewardForTrackDifficulty(track.compiled.difficulty),
+          });
       saveRaceResult(committed);
       // Flip the natural-finish guard so the render callback's finish
       // wiring cannot also fire on the next frame (the loop tear-down
@@ -500,6 +570,11 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
         const input = inputManager.sample();
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
+        timeTrialRecorderRef.current?.observe({
+          phase: next.race.phase,
+          tick: next.tick,
+          input,
+        });
       },
       render: () => {
         const session = sessionRef.current;
@@ -508,7 +583,25 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
         camera.x = session.player.car.x;
 
         const strips = project(track.compiled.segments, camera, viewport);
-        drawRoad(ctx, strips, viewport);
+        if (
+          timeTrialEnabled &&
+          session.race.phase === "racing" &&
+          ghostDriverRef.current !== null &&
+          ghostOverlayTickRef.current !== session.tick
+        ) {
+          ghostOverlayRef.current = ghostDriverRef.current.tick({
+            tick: session.tick,
+            dt: FIXED_STEP_SECONDS,
+            camera,
+            viewport,
+            segments: track.compiled.segments,
+          });
+          ghostOverlayTickRef.current = session.tick;
+        } else if (!timeTrialEnabled || session.race.phase === "countdown") {
+          ghostOverlayRef.current = null;
+          ghostOverlayTickRef.current = null;
+        }
+        drawRoad(ctx, strips, viewport, { ghostCar: ghostOverlayRef.current });
 
         const cars: RankedCar[] = [
           {
@@ -625,16 +718,18 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
             // results screen will render. The `commitRaceCredits`
             // helper persists the merged save and mirrors the
             // wallet delta onto `RaceResult.creditsAwarded`.
-            const committed = commitRaceCredits({
-              result,
-              save,
-              // §15 default per `SaveGameSettingsSchema`: a v1 save
-              // without a `difficultyPreset` reads as `'normal'`.
-              difficulty: persistedDifficulty ?? "normal",
-              baseTrackReward: baseRewardForTrackDifficulty(
-                track.compiled.difficulty,
-              ),
-            });
+            const committed = timeTrialEnabled
+              ? { ...result, creditsAwarded: 0 }
+              : commitRaceCredits({
+                  result,
+                  save,
+                  // §15 default per `SaveGameSettingsSchema`: a v1 save
+                  // without a `difficultyPreset` reads as `'normal'`.
+                  difficulty: persistedDifficulty ?? "normal",
+                  baseTrackReward: baseRewardForTrackDifficulty(
+                    track.compiled.difficulty,
+                  ),
+                });
             saveRaceResult(committed);
             // Tear down the loop / input before the route hop so the
             // rAF handle and the keydown listener cannot outlive the
@@ -661,10 +756,15 @@ function RaceCanvas({ track, lapsOverride }: RaceCanvasProps): ReactElement {
       sessionRef.current = null;
       inputManager.dispose();
     };
-  }, [track, router, lapsOverride, initialTotalLaps]);
+  }, [track, router, lapsOverride, initialTotalLaps, mode]);
 
   return (
-    <main data-testid="race-canvas" data-track={track.id} style={shellStyle}>
+    <main
+      data-testid="race-canvas"
+      data-track={track.id}
+      data-mode={mode}
+      style={shellStyle}
+    >
       <canvas
         ref={canvasRef}
         width={VIEWPORT_WIDTH}
