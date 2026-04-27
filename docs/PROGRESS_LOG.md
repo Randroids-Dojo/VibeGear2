@@ -6,6 +6,34 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Vercel local link ignores
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) deploy target.
+**Branch / PR:** `chore/vercel-local-ignores`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `.gitignore`: added Vercel CLI local link outputs so `.vercel` project
+  metadata and `.env*.local` files stay out of git.
+
+### Verified
+- `grep -rn $'\u2014\|\u2013' .gitignore docs/PROGRESS_LOG.md` returned
+  no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Kept the deploy credentials in GitHub Actions secrets only. No Vercel
+  project id, org id, token, or local environment value is committed.
+
+### Followups created
+None.
+
+### GDD edits
+None. The implementation matches the existing §21 deploy target setup.
+
+---
+
 ## 2026-04-26: Slice: Race start player car overlay
 
 **GDD sections touched:**
