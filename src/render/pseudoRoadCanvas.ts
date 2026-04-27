@@ -663,6 +663,10 @@ function drawCarWeatherTrail(
       return;
     }
 
+    if (weather !== "light_rain" && weather !== "rain" && weather !== "heavy_rain") {
+      return;
+    }
+
     ctx.globalAlpha = weather === "heavy_rain" ? 0.7 : 0.52;
     ctx.fillStyle = "#d8f4ff";
     ctx.beginPath();

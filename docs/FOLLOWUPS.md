@@ -63,8 +63,9 @@ wet, and snow cases in renderer tests.
 Closed by `feat/f-058-weather-car-trails`. `drawRoad` now accepts active
 weather on the live `playerCar` overlay, paints rain / heavy-rain spray
 and snow mist behind the car, and draws no extra trail in clear weather.
-The race route passes the active race weather from track/session setup,
-and renderer tests cover clear, wet, and snow cases.
+Fog is explicitly treated as a no-trail condition. The race route passes
+the active race weather from track/session setup, and renderer tests
+cover clear, fog, wet, and snow cases.
 
 ---
 

@@ -25,17 +25,17 @@ renderer pipeline.
 - `src/app/race/page.tsx`: passes the active race weather from the
   race config / compiled track into the live player car draw path.
 - `src/render/__tests__/pseudoRoadCanvas.test.ts`: covers clear, wet,
-  and snow trail behavior plus alpha restoration.
+  fog, wet, and snow trail behavior plus alpha restoration.
 - `docs/FOLLOWUPS.md`: closed F-058.
 - `docs/GDD_COVERAGE.json`: marked GDD-16-CAR-WEATHER-VARIANTS as
   implemented with renderer test coverage.
 
 ### Verified
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
-  green, 26 passed.
+  green, 27 passed.
 - `npm run content-lint` clean.
 - `npm run verify` clean: lint, typecheck, unit tests, and content-lint
-  all passed; 2,174 unit tests passed.
+  all passed; 2,175 unit tests passed.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
 
 ### Decisions and assumptions

@@ -775,6 +775,18 @@ describe("drawRoad player car overlay", () => {
     expect(fills.some((call) => call.fillStyle === "#edf7ff")).toBe(false);
   });
 
+  it("does not paint weather trails in fog", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: { weather: "fog" },
+    });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills).toHaveLength(5);
+    expect(fills.some((call) => call.fillStyle === "#d8f4ff")).toBe(false);
+    expect(fills.some((call) => call.fillStyle === "#edf7ff")).toBe(false);
+  });
+
   it("draws the live player car from the loaded atlas when available", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
