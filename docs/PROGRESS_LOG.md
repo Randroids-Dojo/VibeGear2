@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: Garage summary review fixes
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) garage loop,
+[§11](gdd/11-cars-and-stats.md) starter cars,
+[§12](gdd/12-upgrade-and-economy-system.md) upgrade categories,
+[§21](gdd/21-technical-design-for-web-implementation.md) save
+consistency.
+**Branch / PR:** `fix/garage-summary-review-fixes`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/garage/garageSummaryState.ts`: derives garage
+  upgrade categories from `UpgradeCategorySchema.options` so the hub
+  cannot drift from the save schema.
+- `src/app/garage/page.tsx`: keeps in-memory garage state aligned with
+  the `writeCounter` increment applied by `saveSave` after a successful
+  write.
+- `e2e/garage-summary.spec.ts`: aligns the seeded `colorBlindMode`
+  union with the persisted save schema.
+- `src/components/garage/__tests__/garageSummaryState.test.ts`:
+  renames the paid-car rejection case from starter repair to starter
+  selection.
+
+### Verified
+- `npx vitest run src/components/garage/__tests__/garageSummaryState.test.ts src/app/__tests__/page.test.tsx`
+  green, 13 passed.
+- `npm run content-lint` clean.
+- `npm run test:e2e -- e2e/garage-summary.spec.ts` green, 2 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,184 unit tests passed.
+
+### Decisions and assumptions
+- This is a follow-up hotfix because PR #27 merged before the
+  review-fix commit reached main.
+
+### Coverage ledger
+- GDD-05-GARAGE-SUMMARY remains covered. This slice tightens the same
+  implementation and tests after review.
+- Uncovered adjacent requirements: real repair purchasing, real
+  upgrade purchasing, standings, weather fit, ghost status, leaderboard
+  status, full next-race tournament data, and §11 starter catalogue
+  alignment remain future garage slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-27: Slice: Garage summary surface
 
 **GDD sections touched:**
