@@ -13,7 +13,7 @@ or `obsolete` so the trail is preserved.
 ## F-055: Replace temporary procedural road markings with texture-phase markings
 **Created:** 2026-04-27
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** The F-054 hill-stutter slice stabilized uphill frames by
 removing segment-index phase gates from the temporary procedural
 centerline and rumble markings. That prevents visible snapping while the
@@ -24,6 +24,13 @@ dashed lane lines, alternating rumble bands, grade changes, and segment
 boundaries without popping from one uphill frame to the next. Add a
 renderer regression that advances the camera through a climb and asserts
 the marking phase changes smoothly rather than snapping.
+
+Closed by `fix/f-054-hill-stutter`. `src/render/pseudoRoadCanvas.ts`
+now draws rumble, road shade, and lane markings from road-distance
+phase, splitting a projected strip when a phase boundary lands inside
+it. `src/render/__tests__/pseudoRoadCanvas.test.ts` covers the in-strip
+lane boundary split so uphill frames cannot flip an entire trapezoid at
+once.
 
 ---
 

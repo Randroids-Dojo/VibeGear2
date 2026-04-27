@@ -32,7 +32,9 @@
         "docs/gdd/21-technical-design-for-web-implementation.md"
       ],
       "requirement": "Road edge and lane markings remain visually stable across camera motion, grade changes, and segment boundaries.",
-      "coverage": ["open-followup"],
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/render/pseudoRoadCanvas.ts"],
+      "testRefs": ["src/render/__tests__/pseudoRoadCanvas.test.ts"],
       "followupRefs": ["F-055"]
     },
     {

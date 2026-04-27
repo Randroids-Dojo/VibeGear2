@@ -20,7 +20,9 @@
 import {
   DEFAULT_COLORS,
   GRASS_STRIPE_LEN,
+  LANE_STRIPE_LEN,
   RUMBLE_STRIPE_LEN,
+  SEGMENT_LENGTH,
   SPRITE_BASE_SCALE,
 } from "@/road/constants";
 import type { Camera, Strip, Viewport } from "@/road/types";
@@ -95,6 +97,12 @@ export interface DrawRoadOptions {
     layers: readonly ParallaxLayer[];
     camera: Pick<Camera, "x" | "z">;
   };
+  /**
+   * Camera world-z used for foreground road-marking phase. The live race
+   * route gets this from the same camera used for projection. Dev callers
+   * can omit it; non-foreground strips still phase from compiled worldZ.
+   */
+  markingCameraZ?: number;
   /**
    * Optional VFX state. When present, the drawer paints active flashes
    * over the parallax / sky band, then translates the canvas by the
@@ -257,11 +265,11 @@ export function drawRoad(
     if (shakeOffset && (shakeOffset.dx !== 0 || shakeOffset.dy !== 0)) {
       ctx.save();
       ctx.translate(shakeOffset.dx, shakeOffset.dy);
-      drawStrips(ctx, strips, viewport, colors);
+      drawStrips(ctx, strips, viewport, colors, markingCameraZFrom(options));
       drawRoadsideSprites(ctx, strips, viewport);
       ctx.restore();
     } else {
-      drawStrips(ctx, strips, viewport, colors);
+      drawStrips(ctx, strips, viewport, colors, markingCameraZFrom(options));
       drawRoadsideSprites(ctx, strips, viewport);
     }
   }
@@ -287,6 +295,10 @@ export function drawRoad(
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
   }
+}
+
+function markingCameraZFrom(options: DrawRoadOptions): number | null {
+  return options.markingCameraZ ?? options.parallax?.camera.z ?? null;
 }
 
 function roadsideStyleFor(id: string): RoadsideSpriteStyle | null {
@@ -586,6 +598,7 @@ function drawStrips(
   strips: readonly Strip[],
   viewport: Viewport,
   colors: RoadColors,
+  markingCameraZ: number | null,
 ): void {
   // Walk far to near so the painter's algorithm covers distant strips with
   // closer ones. We need pairs (near, far); start from the last visible
@@ -595,11 +608,12 @@ function drawStrips(
     const near = strips[n - 1];
     if (!far || !near) continue;
     if (!far.visible || !near.visible) continue;
-    drawStripPair(ctx, near, far, viewport, colors);
+    drawStripPair(ctx, edgeFromStrip(near), edgeFromStrip(far), viewport, colors);
   }
 
   const foregroundFar = strips.find((strip) => strip.visible && strip.foreground);
   if (foregroundFar?.foreground) {
+    const farEdge = edgeFromStrip(foregroundFar);
     drawStripPair(
       ctx,
       {
@@ -607,8 +621,9 @@ function drawStrips(
         screenX: foregroundFar.foreground.screenX,
         screenY: foregroundFar.foreground.screenY,
         screenW: foregroundFar.foreground.screenW,
+        worldZ: markingCameraZ ?? farEdge.worldZ - SEGMENT_LENGTH,
       },
-      foregroundFar,
+      farEdge,
       viewport,
       colors,
     );
@@ -620,6 +635,17 @@ interface StripEdge {
   screenX: number;
   screenY: number;
   screenW: number;
+  worldZ: number;
+}
+
+function edgeFromStrip(strip: Strip): StripEdge {
+  return {
+    segment: strip.segment,
+    screenX: strip.screenX,
+    screenY: strip.screenY,
+    screenW: strip.screenW,
+    worldZ: strip.segment.worldZ,
+  };
 }
 
 function drawStripPair(
@@ -630,6 +656,8 @@ function drawStripPair(
   colors: RoadColors,
 ): void {
   const segIndex = far.segment.index;
+  const worldNear = near.worldZ;
+  const worldFar = far.worldZ > worldNear ? far.worldZ : worldNear + SEGMENT_LENGTH;
 
   const grassColor = pickAlternating(
     segIndex,
@@ -644,44 +672,108 @@ function drawStripPair(
     ctx.fillRect(0, yTop, viewport.width, yBottom - yTop);
   }
 
-  drawTrapezoid(
+  drawPhasedTrapezoids(
     ctx,
-    colors.rumbleLight,
-    near.screenX,
-    near.screenY,
-    near.screenW * 1.15,
-    far.screenX,
-    far.screenY,
-    far.screenW * 1.15,
+    near,
+    far,
+    worldNear,
+    worldFar,
+    1.15,
+    RUMBLE_STRIPE_LEN * SEGMENT_LENGTH,
+    (worldZ) =>
+      pickAlternatingByWorld(worldZ, RUMBLE_STRIPE_LEN * SEGMENT_LENGTH, colors.rumbleLight, colors.rumbleDark),
   );
 
-  const roadColor = pickAlternating(
-    segIndex,
-    RUMBLE_STRIPE_LEN,
-    colors.roadLight,
-    colors.roadDark,
-  );
-  drawTrapezoid(
+  drawPhasedTrapezoids(
     ctx,
-    roadColor,
-    near.screenX,
-    near.screenY,
-    near.screenW,
-    far.screenX,
-    far.screenY,
-    far.screenW,
+    near,
+    far,
+    worldNear,
+    worldFar,
+    1,
+    RUMBLE_STRIPE_LEN * SEGMENT_LENGTH,
+    (worldZ) =>
+      pickAlternatingByWorld(worldZ, RUMBLE_STRIPE_LEN * SEGMENT_LENGTH, colors.roadLight, colors.roadDark),
   );
 
-  const laneHalfNear = Math.max(1, near.screenW * 0.03);
-  const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
-  drawTrapezoid(
+  drawPhasedTrapezoids(
     ctx,
-    colors.lane,
-    near.screenX,
-    near.screenY,
-    laneHalfNear,
-    far.screenX,
-    far.screenY,
-    laneHalfFar,
+    near,
+    far,
+    worldNear,
+    worldFar,
+    0.03,
+    LANE_STRIPE_LEN * SEGMENT_LENGTH,
+    (worldZ) =>
+      Math.floor(worldZ / (LANE_STRIPE_LEN * SEGMENT_LENGTH)) % 2 === 0
+        ? colors.lane
+        : null,
+    { minNearHalfW: 1, minFarHalfW: 0.5 },
   );
+}
+
+function pickAlternatingByWorld(
+  worldZ: number,
+  periodMeters: number,
+  light: string,
+  dark: string,
+): string {
+  return Math.floor(worldZ / periodMeters) % 2 === 0 ? light : dark;
+}
+
+function nextPhaseBoundary(worldZ: number, periodMeters: number): number {
+  return (Math.floor(worldZ / periodMeters) + 1) * periodMeters;
+}
+
+function lerpNumber(start: number, end: number, t: number): number {
+  return start + (end - start) * t;
+}
+
+function edgeAt(near: StripEdge, far: StripEdge, t: number): Pick<StripEdge, "screenX" | "screenY" | "screenW"> {
+  return {
+    screenX: lerpNumber(near.screenX, far.screenX, t),
+    screenY: lerpNumber(near.screenY, far.screenY, t),
+    screenW: lerpNumber(near.screenW, far.screenW, t),
+  };
+}
+
+function drawPhasedTrapezoids(
+  ctx: CanvasRenderingContext2D,
+  near: StripEdge,
+  far: StripEdge,
+  worldNear: number,
+  worldFar: number,
+  widthScale: number,
+  periodMeters: number,
+  colorAtWorld: (worldZ: number) => string | null,
+  widthOptions: { minNearHalfW?: number; minFarHalfW?: number } = {},
+): void {
+  const span = worldFar - worldNear;
+  if (span <= 0) return;
+
+  let cursor = worldNear;
+  let guard = 0;
+  while (cursor < worldFar && guard < 16) {
+    const next = Math.min(worldFar, nextPhaseBoundary(cursor, periodMeters));
+    const mid = (cursor + next) / 2;
+    const color = colorAtWorld(mid);
+    if (color) {
+      const tNear = (cursor - worldNear) / span;
+      const tFar = (next - worldNear) / span;
+      const nearEdge = edgeAt(near, far, tNear);
+      const farEdge = edgeAt(near, far, tFar);
+      drawTrapezoid(
+        ctx,
+        color,
+        nearEdge.screenX,
+        nearEdge.screenY,
+        Math.max(widthOptions.minNearHalfW ?? 0, nearEdge.screenW * widthScale),
+        farEdge.screenX,
+        farEdge.screenY,
+        Math.max(widthOptions.minFarHalfW ?? 0, farEdge.screenW * widthScale),
+      );
+    }
+    cursor = next;
+    guard += 1;
+  }
 }
