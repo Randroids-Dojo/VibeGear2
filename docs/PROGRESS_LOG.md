@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-002/F-003 foundation followup closure
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) web
+implementation and deploy target,
+[§25](gdd/25-development-roadmap.md) prototype and v1.0 foundation.
+**Branch / PR:** `docs/foundation-followups-close`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `docs/FOLLOWUPS.md`: marked F-002 and F-003 done with the evidence that
+  the project skeleton, verify stack, GitHub Actions gate, and Vercel
+  production deploy path are all present and passing on `main`.
+- `docs/GDD_COVERAGE.json`: added ledger rows for the project skeleton and
+  Vercel production deploy requirements so future agents can see this
+  foundation coverage directly.
+
+### Verified
+- `npx vitest run scripts/__tests__/content-lint.test.ts` green,
+  54 passed.
+- `npm run content-lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,143 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' docs/FOLLOWUPS.md docs/GDD_COVERAGE.json docs/PROGRESS_LOG.md`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- This is a docs-only closure slice. Runtime code and workflow behavior are
+  unchanged because the required scaffold, tests, CI, and deploy path already
+  exist on `main`.
+
+### Coverage ledger
+- GDD-21-PROJECT-SKELETON: covered by the existing app shell, scripts,
+  Vitest, Playwright, content lint, and GitHub Actions verify gate.
+- GDD-21-VERCEL-DEPLOY: covered by the existing Vercel production workflow
+  and successful production smoke.
+- Uncovered adjacent requirements: None.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice closes stale followups against already-implemented
+foundation work.
+
+---
+
 ## 2026-04-26: Slice: F-053 GDD coverage ledger
 
 **GDD sections touched:**

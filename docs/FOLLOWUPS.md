@@ -1265,10 +1265,10 @@ nothing meaningful to drive in a browser. Land this once the Phase 2 garage
 flow exists: navigate to the garage, mutate a value (e.g. swap car or buy an
 upgrade), reload, assert the value persisted. **Closed by `feat/f-004-garage-save-load-e2e`** with `e2e/save-persistence.spec.ts`. Two specs: (1) seed two owned cars, switch active car, reload, assert the new active id survives both in localStorage and in the rendered indicator; (2) seed credits, buy an unowned car, reload, assert credits + ownedCars + installedUpgrades all persist. The localStorage-disabled branch skips via `test.skip(!hasStorage)`. Upgrade-installation and units-toggle round-trips remain a follow-up for when `/garage/upgrade` and the Settings Display pane ship.
 
-## F-003 — Auto-deploy pipeline from `main`
+## F-003: Auto-deploy pipeline from `main`
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** in-progress
+**Status:** done (2026-04-26)
 **Notes:** Q-003 resolved to Vercel Hobby + GitHub Actions. The
 `feat/github-actions-ci-recovery` slice landed `.github/workflows/ci.yml`
 and `vercel.json` (re-applying the work originally on
@@ -1279,12 +1279,14 @@ typecheck, Vitest, and Playwright; deploy job runs `vercel build --prod`
 not cancellable mid-flight. Marked `done` once the first push to `main`
 triggers a successful `deploy` job and the deployed URL serves the title
 screen. Human prerequisites (vercel link, three repo secrets, branch
-protection) are documented in `README.md` Deploy section.
+protection) are documented in `README.md` Deploy section. Closed after the
+main pipeline and production Vercel deploy passed for build `71166d0`; the
+production title URL served the expected build and `/race` returned HTTP 200.
 
-## F-002 — Project skeleton (Next.js + TypeScript + CI)
+## F-002: Project skeleton (Next.js + TypeScript + CI)
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** in-progress
+**Status:** done (2026-04-26)
 **Notes:** First implementation slice once Q-001 is answered. Must include
 lint, type-check, unit tests, e2e harness, and a smoke test that the dev
 server boots. App shell, lint (next lint), strict type-check, and the Vitest
@@ -1293,7 +1295,9 @@ e2e harness with title-screen smoke landed in the
 `feat/playwright-smoke-recovery` slice (`npm run test:e2e`,
 `npm run verify:full`). Remaining: GitHub Actions CI (own slice, blocked by
 F-003 deploy target choice; landed in
-`feat/github-actions-ci-recovery`).
+`feat/github-actions-ci-recovery`). Closed after the app shell, lint,
+strict typecheck, Vitest, Playwright e2e, content lint, GitHub Actions CI,
+and Vercel production deploy path were all present and green on `main`.
 
 ## F-001 — Author GDD sections 18–28
 **Created:** 2026-04-26
