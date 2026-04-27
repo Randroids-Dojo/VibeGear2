@@ -42,7 +42,8 @@ import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
 import { TRACK_IDS, TRACK_RAW, loadTrack } from "@/data";
-import { TrackSchema, type Track } from "@/data/schemas";
+import carsAtlasFixture from "@/data/atlas/cars.json";
+import { AtlasMetaSchema, TrackSchema, type Track } from "@/data/schemas";
 import {
   applyTimeTrialResult,
   buildFinalCarInputsFromSession,
@@ -76,12 +77,14 @@ import {
   fitToBox,
   project,
   projectCar,
+  upcomingCurvature,
   type Camera,
   type CompiledTrack,
   type MinimapPoint,
   type Viewport,
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { loadAtlas, type LoadedAtlas } from "@/render/spriteAtlas";
 import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
 import type { ParallaxLayer } from "@/render/parallax";
 import { drawSplitsWidget } from "@/render/hudSplits";
@@ -95,6 +98,7 @@ const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
 const DEFAULT_TRACK_ID = "test/elevation";
 const PLAYER_ID = "player";
+const CARS_ATLAS_META = AtlasMetaSchema.parse(carsAtlasFixture);
 
 /**
  * §20 minimap layout. The wireframe places the minimap in the bottom-left
@@ -109,6 +113,15 @@ const MINIMAP_BOX = Object.freeze({
   w: MINIMAP_SIZE,
   h: MINIMAP_SIZE,
 });
+
+function playerCarFrameIndex(steer: number, roadCurve: number): number {
+  const visualSteer = Math.max(-1, Math.min(1, steer + roadCurve * 0.35));
+  if (visualSteer <= -0.66) return 10;
+  if (visualSteer <= -0.25) return 11;
+  if (visualSteer >= 0.66) return 2;
+  if (visualSteer >= 0.25) return 1;
+  return 0;
+}
 
 function createLayerCanvas(
   width: number,
@@ -374,6 +387,8 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
   const ghostOverlayRef = useRef<GhostOverlay>(null);
   const ghostOverlayTickRef = useRef<number | null>(null);
   const timeTrialRecorderRef = useRef<TimeTrialRecorder | null>(null);
+  const lastSteerRef = useRef<number>(0);
+  const carAtlasRef = useRef<LoadedAtlas | null>(null);
   // Imperative pause-menu effects, populated inside the loop effect
   // below so the hook layer can stay decoupled from the loop / session
   // / config refs. The hook reads these getters once per click; mid-
@@ -401,6 +416,16 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
     position: number;
   }>(() => ({ speed: 0, lap: 1, totalLaps: initialTotalLaps, position: 1 }));
   const [resultMs, setResultMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void loadAtlas(CARS_ATLAS_META).then((atlas) => {
+      if (active) carAtlasRef.current = atlas;
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const pause = usePauseToggle({ loop: () => handleRef.current });
 
@@ -645,6 +670,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         const session = sessionRef.current;
         if (!session) return;
         const input = inputManager.sample();
+        lastSteerRef.current = input.steer;
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
         timeTrialRecorderRef.current?.observe({
@@ -660,6 +686,10 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         camera.x = session.player.car.x;
 
         const strips = project(track.compiled.segments, camera, viewport);
+        const playerFrameIndex = playerCarFrameIndex(
+          lastSteerRef.current,
+          upcomingCurvature(track.compiled.segments, camera.z, SEGMENT_LENGTH * 5),
+        );
         if (
           timeTrialEnabled &&
           session.race.phase === "racing" &&
@@ -680,8 +710,17 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         }
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
-          ghostCar: ghostOverlayRef.current,
-          playerCar: {},
+          ghostCar: ghostOverlayRef.current
+            ? {
+                ...ghostOverlayRef.current,
+                atlas: carAtlasRef.current,
+                frameIndex: playerFrameIndex,
+              }
+            : null,
+          playerCar: {
+            atlas: carAtlasRef.current,
+            frameIndex: playerFrameIndex,
+          },
         });
 
         const cars: RankedCar[] = [

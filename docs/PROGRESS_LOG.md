@@ -6,6 +6,64 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-051 car atlas sprite overlays
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) car sprites and sprite
+scaling,
+[§17](gdd/17-art-direction.md) car design language and asset export,
+[§21](gdd/21-technical-design-for-web-implementation.md) sprite atlas
+renderer pipeline.
+**Branch / PR:** `feat/f-051-car-atlas-sprites`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `public/art/cars/sparrow.svg`: added an original car sprite sheet with
+  12 clean directional frames plus dented, battered, brake, and nitro
+  variants.
+- `public/art.manifest.json`: added provenance and licence metadata for
+  the shipped car sprite sheet.
+- `src/data/atlas/cars.json`: pointed the existing atlas metadata at the
+  shipped SVG sprite sheet.
+- `src/render/pseudoRoadCanvas.ts`: draws live and ghost car overlays
+  from atlas frames when a loaded atlas image is available, while keeping
+  the existing procedural live car and blue ghost rectangle as fallback
+  paths.
+- `src/app/race/page.tsx`: loads the car atlas once per race mount and
+  selects a frame from current steering input plus upcoming road curve.
+- `docs/FOLLOWUPS.md`: closed F-051.
+- `docs/GDD_COVERAGE.json`: marked GDD-16-CAR-SPRITE-ATLAS as
+  implemented with renderer test coverage.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/spriteAtlas.test.ts`
+  green, 39 passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,167 unit tests passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+
+### Decisions and assumptions
+- The first atlas asset ships as an SVG sprite sheet because the Canvas
+  path already accepts browser `Image` sources and the metadata uses
+  source rectangles. The renderer still falls back cleanly if the asset
+  cannot load.
+
+### Coverage ledger
+- GDD-16-CAR-SPRITE-ATLAS: covered by the shipped car atlas, live and
+  ghost renderer wiring, and renderer unit tests.
+- Uncovered adjacent requirements: weather-specific spray and snow trail
+  variants remain owned by the later weather VFX slices.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §16, §17, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: F-057 turn foreground projection continuity
 
 **GDD sections touched:**

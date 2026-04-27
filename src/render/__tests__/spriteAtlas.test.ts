@@ -59,7 +59,7 @@ describe("AtlasMetaSchema", () => {
 
   it("rejects an empty frames array", () => {
     const broken = {
-      image: "art/cars/sparrow.png",
+      image: "art/cars/sparrow.svg",
       width: 64,
       height: 64,
       sprites: { sparrow: [] },
@@ -69,7 +69,7 @@ describe("AtlasMetaSchema", () => {
 
   it("rejects an empty sprites map", () => {
     const broken = {
-      image: "art/cars/sparrow.png",
+      image: "art/cars/sparrow.svg",
       width: 64,
       height: 64,
       sprites: {},
@@ -79,7 +79,7 @@ describe("AtlasMetaSchema", () => {
 
   it("rejects a non-positive frame width", () => {
     const broken = {
-      image: "art/cars/sparrow.png",
+      image: "art/cars/sparrow.svg",
       width: 64,
       height: 64,
       sprites: { sparrow: [{ x: 0, y: 0, w: 0, h: 32 }] },
@@ -96,7 +96,7 @@ describe("loadAtlas", () => {
     expect(result.fallback).toBe(false);
     expect(result.image).not.toBeNull();
     expect(result.meta).toBe(meta);
-    expect(lastSrc()).toBe("/art/cars/sparrow.png");
+    expect(lastSrc()).toBe("/art/cars/sparrow.svg");
   });
 
   it("resolves with fallback when the image errors and logs once", async () => {
@@ -110,19 +110,19 @@ describe("loadAtlas", () => {
     expect(result.fallback).toBe(true);
     expect(result.image).toBeNull();
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(errorSpy).toHaveBeenCalledWith("[atlas]", "/art/cars/sparrow.png");
+    expect(errorSpy).toHaveBeenCalledWith("[atlas]", "/art/cars/sparrow.svg");
   });
 
   it("normalises a leading-slash image path", async () => {
     const meta: AtlasMeta = {
-      image: "/art/cars/sparrow.png",
+      image: "/art/cars/sparrow.svg",
       width: 64,
       height: 64,
       sprites: { sparrow: [{ x: 0, y: 0, w: 64, h: 64 }] },
     };
     const { ctor, lastSrc } = makeImageCtor("load");
     await loadAtlas(meta, { ImageCtor: ctor });
-    expect(lastSrc()).toBe("/art/cars/sparrow.png");
+    expect(lastSrc()).toBe("/art/cars/sparrow.svg");
   });
 
   it("falls back when no Image constructor is available", async () => {

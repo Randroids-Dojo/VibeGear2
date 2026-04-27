@@ -20,12 +20,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { Strip, Viewport } from "@/road/types";
+import type { LoadedAtlas } from "../spriteAtlas";
 
 import {
   GHOST_CAR_DEFAULT_ALPHA,
   GHOST_CAR_DEFAULT_FILL,
   PLAYER_CAR_DEFAULT_FILL,
   PLAYER_CAR_DEFAULT_SHADOW,
+  PLAYER_CAR_DEFAULT_SPRITE_ID,
   PLAYER_CAR_DEFAULT_TAIL_LIGHT,
   PLAYER_CAR_DEFAULT_TIRE,
   PLAYER_CAR_DEFAULT_WINDSHIELD,
@@ -54,7 +56,20 @@ interface FillCall {
   path: readonly [number, number][];
 }
 
-type DrawCall = FillRectCall | FillCall;
+interface DrawImageCall {
+  type: "drawImage";
+  globalAlpha: number;
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+  dx: number;
+  dy: number;
+  dw: number;
+  dh: number;
+}
+
+type DrawCall = FillRectCall | FillCall | DrawImageCall;
 
 interface CanvasSpy {
   ctx: CanvasRenderingContext2D;
@@ -110,7 +125,19 @@ function makeCanvasSpy(): CanvasSpy {
         addColorStop(): void {},
       };
     },
-    drawImage(): void {},
+    drawImage(
+      _image: CanvasImageSource,
+      sx: number,
+      sy: number,
+      sw: number,
+      sh: number,
+      dx: number,
+      dy: number,
+      dw: number,
+      dh: number,
+    ): void {
+      calls.push({ type: "drawImage", globalAlpha, sx, sy, sw, sh, dx, dy, dw, dh });
+    },
   } as unknown as CanvasRenderingContext2D;
   return {
     ctx,
@@ -126,6 +153,24 @@ function makeCanvasSpy(): CanvasSpy {
  * because it is independent of the strip array.
  */
 const EMPTY_STRIPS: readonly Strip[] = [];
+
+function loadedCarAtlas(): LoadedAtlas {
+  return {
+    image: {} as HTMLImageElement,
+    fallback: false,
+    meta: {
+      image: "art/cars/sparrow.svg",
+      width: 128,
+      height: 32,
+      sprites: {
+        [PLAYER_CAR_DEFAULT_SPRITE_ID]: [
+          { x: 0, y: 0, w: 64, h: 32 },
+          { x: 64, y: 0, w: 64, h: 32 },
+        ],
+      },
+    },
+  };
+}
 
 function strip(overrides: Partial<Strip>): Strip {
   return {
@@ -213,6 +258,32 @@ describe("drawRoad ghost car overlay", () => {
     );
     expect(ghostRect).toBeDefined();
     expect(ghostRect!.fillStyle).toBe("#ff8800");
+  });
+
+  it("draws the ghost from the loaded car atlas when available", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      ghostCar: {
+        screenX: 100,
+        screenY: 200,
+        screenW: 64,
+        alpha: 0.25,
+        atlas: loadedCarAtlas(),
+        frameIndex: 1,
+      },
+    });
+
+    const draw = spy.calls.find((c): c is DrawImageCall => c.type === "drawImage");
+    expect(draw).toBeDefined();
+    expect(draw!.globalAlpha).toBeCloseTo(0.25, 6);
+    expect(draw!.sx).toBe(64);
+    expect(draw!.sy).toBe(0);
+    expect(draw!.sw).toBe(64);
+    expect(draw!.sh).toBe(32);
+    expect(draw!.dx).toBeCloseTo(68, 6);
+    expect(draw!.dy).toBeCloseTo(168, 6);
+    expect(draw!.dw).toBeCloseTo(64, 6);
+    expect(draw!.dh).toBeCloseTo(32, 6);
   });
 
   it("clamps an out-of-range alpha to [0, 1]", () => {
@@ -662,6 +733,23 @@ describe("drawRoad player car overlay", () => {
     expect(fills[3]!.fillStyle).toBe("#aa3300");
     expect(fills[4]!.fillStyle).toBe("#223344");
     expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("draws the live player car from the loaded atlas when available", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: { atlas: loadedCarAtlas(), frameIndex: 1 },
+    });
+
+    const draw = spy.calls.find((c): c is DrawImageCall => c.type === "drawImage");
+    const width =
+      VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * PLAYER_CAR_WIDTH_TO_HEIGHT;
+    expect(draw).toBeDefined();
+    expect(draw!.globalAlpha).toBeCloseTo(1, 6);
+    expect(draw!.sx).toBe(64);
+    expect(draw!.dw).toBeCloseTo(width, 6);
+    expect(draw!.dh).toBeCloseTo(width * 0.5, 6);
+    expect(draw!.dx).toBeCloseTo(VIEWPORT.width / 2 - width / 2, 6);
   });
 
   it("does not paint the live player car when omitted or null", () => {

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "sparrow-car-sprite-atlas",
+    "src": "/art/cars/sparrow.svg",
+    "path": "art/cars/sparrow.svg",
+    "kind": "image",
+    "license": "CC-BY-4.0",
+    "source": "original by VibeGear2 project contributors in this repository",
+    "originality": "Original stylized compact sports coupe sprite sheet drawn for VibeGear2 on 2026-04-27. It uses simple geometric shapes and does not trace or copy a commercial game asset, real vehicle, logo, or manufacturer design.",
+    "date": "2026-04-27"
+  }
+]
