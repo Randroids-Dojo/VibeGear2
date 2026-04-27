@@ -362,6 +362,38 @@ describe("drawRoad foreground projection", () => {
   });
 });
 
+describe("drawRoad procedural markings", () => {
+  it("keeps rumble and centerline markings stable across adjacent uphill strips", () => {
+    const spy = makeCanvasSpy();
+    const colors = {
+      skyTop: "#000001",
+      skyBottom: "#000002",
+      grassLight: "#112233",
+      grassDark: "#223344",
+      rumbleLight: "#334455",
+      rumbleDark: "#445566",
+      roadLight: "#556677",
+      roadDark: "#667788",
+      lane: "#778899",
+    };
+    const strips: readonly Strip[] = [
+      strip({ screenY: 430, screenW: 220, segment: { ...strip({}).segment, index: 8 } }),
+      strip({ screenY: 340, screenW: 140, segment: { ...strip({}).segment, index: 9 } }),
+      strip({ screenY: 260, screenW: 90, segment: { ...strip({}).segment, index: 10 } }),
+      strip({ screenY: 210, screenW: 55, segment: { ...strip({}).segment, index: 11 } }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, { colors });
+
+    const fills = spy.calls.filter((call): call is FillCall => call.type === "fill");
+    const rumbleFills = fills.filter((call) => call.fillStyle === colors.rumbleLight);
+    const laneFills = fills.filter((call) => call.fillStyle === colors.lane);
+    expect(fills.some((call) => call.fillStyle === colors.rumbleDark)).toBe(false);
+    expect(rumbleFills.length).toBe(3);
+    expect(laneFills.length).toBe(3);
+  });
+});
+
 describe("drawRoad roadside sprites", () => {
   it("paints compiled roadside ids as depth-scaled billboards", () => {
     const spy = makeCanvasSpy();

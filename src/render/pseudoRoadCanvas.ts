@@ -20,7 +20,6 @@
 import {
   DEFAULT_COLORS,
   GRASS_STRIPE_LEN,
-  LANE_STRIPE_LEN,
   RUMBLE_STRIPE_LEN,
   SPRITE_BASE_SCALE,
 } from "@/road/constants";
@@ -645,15 +644,9 @@ function drawStripPair(
     ctx.fillRect(0, yTop, viewport.width, yBottom - yTop);
   }
 
-  const rumbleColor = pickAlternating(
-    segIndex,
-    RUMBLE_STRIPE_LEN,
-    colors.rumbleLight,
-    colors.rumbleDark,
-  );
   drawTrapezoid(
     ctx,
-    rumbleColor,
+    colors.rumbleLight,
     near.screenX,
     near.screenY,
     near.screenW * 1.15,
@@ -679,18 +672,16 @@ function drawStripPair(
     far.screenW,
   );
 
-  if (Math.floor(segIndex / LANE_STRIPE_LEN) % 2 === 0) {
-    const laneHalfNear = Math.max(1, near.screenW * 0.03);
-    const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
-    drawTrapezoid(
-      ctx,
-      colors.lane,
-      near.screenX,
-      near.screenY,
-      laneHalfNear,
-      far.screenX,
-      far.screenY,
-      laneHalfFar,
-    );
-  }
+  const laneHalfNear = Math.max(1, near.screenW * 0.03);
+  const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
+  drawTrapezoid(
+    ctx,
+    colors.lane,
+    near.screenX,
+    near.screenY,
+    laneHalfNear,
+    far.screenX,
+    far.screenY,
+    laneHalfFar,
+  );
 }

@@ -31,17 +31,27 @@ pipeline.
   dip-to-climb regression that bounds a projected ahead marker through
   the observed hill-bottom transition, plus a long-climb regression that
   rejects the full-screen road-wall failure seen in PR preview.
+- `src/render/pseudoRoadCanvas.ts`: removed segment-index phase gates
+  from the temporary procedural centerline and rumble markings so uphill
+  frames do not snap between different line patterns.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: added a regression
+  that adjacent uphill strips keep steady rumble and centerline fills.
 - `docs/FOLLOWUPS.md`: marked F-054 done.
 - `docs/GDD_COVERAGE.json`: linked the elevation coverage row to the
   F-054 regression test.
+- `docs/FOLLOWUPS.md` and `docs/GDD_COVERAGE.json`: added F-055 for
+  the final camera-phase-stable road-marking pass, so the temporary
+  stabilization in this slice is tracked explicitly.
 
 ### Verified
 - `npx vitest run src/road/__tests__/segmentProjector.test.ts` green,
   35 passed.
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/road/__tests__/segmentProjector.test.ts`
+  green, 54 passed.
 - `npm run typecheck` clean.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and content-lint
-  all passed; 2,161 unit tests passed.
+  all passed; 2,162 unit tests passed.
 - `npm run test:e2e` green, 55 passed.
 
 ### Decisions and assumptions
