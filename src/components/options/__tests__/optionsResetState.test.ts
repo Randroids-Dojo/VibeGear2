@@ -74,7 +74,7 @@ describe("resetShippedOptionsToDefaults", () => {
         customised.settings.accessibility,
       );
       expect(result.save.settings.keyBindings).toEqual(
-        customised.settings.keyBindings,
+        defaultSave().settings.keyBindings,
       );
     }
   });

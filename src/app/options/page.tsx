@@ -27,6 +27,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, ReactElement } from "react";
 
 import { AccessibilityPane } from "@/components/options/AccessibilityPane";
+import { ControlsPane } from "@/components/options/ControlsPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
 import { ProfileSection } from "@/components/options/ProfileSection";
 import { resetShippedOptionsToDefaults } from "@/components/options/optionsResetState";
@@ -76,9 +77,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   {
     key: "controls",
     label: "Controls",
-    headline: "Control remap coming soon",
-    body: "Keyboard and gamepad rebinding lands with the dedicated key remap UI per GDD section 19.",
-    dotId: "VibeGear2-implement-key-remap-a0908466",
+    pane: () => <ControlsPane />,
   },
   {
     key: "accessibility",

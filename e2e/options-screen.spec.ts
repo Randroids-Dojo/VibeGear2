@@ -95,10 +95,6 @@ test.describe("options screen", () => {
         largeUiText: true,
         screenShakeScale: 0.25,
       };
-      save.settings.keyBindings = {
-        throttle: ["KeyI"],
-        brake: ["KeyK"],
-      };
       window.localStorage.setItem(key, JSON.stringify(save));
     }, "vibegear2:save:v3");
 
@@ -122,6 +118,65 @@ test.describe("options screen", () => {
       music: 0.3,
       sfx: 0.4,
     });
+  });
+
+  test("Controls remapping persists custom keyboard bindings and rejects conflicts", async ({
+    page,
+  }) => {
+    await page.goto("/options");
+    await page.getByTestId("options-tab-controls").click();
+
+    await expect(page.getByTestId("controls-pane")).toBeVisible();
+    await expect(page.getByTestId("controls-binding-nitro")).toHaveText("Space");
+
+    await page.getByTestId("controls-remap-nitro").click();
+    await expect(page.getByTestId("controls-row-nitro")).toHaveAttribute(
+      "data-listening",
+      "true",
+    );
+    await page.keyboard.press("KeyN");
+
+    await expect(page.getByTestId("controls-binding-nitro")).toHaveText("N");
+    await expect(page.getByTestId("controls-status")).toContainText("saved");
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }, "vibegear2:save:v3");
+    expect(persisted?.settings?.keyBindings?.nitro).toEqual(["KeyN"]);
+
+    await page.getByTestId("controls-remap-brake").click();
+    await page.keyboard.press("KeyN");
+    await expect(page.getByTestId("controls-status")).toContainText(
+      "already bound to Nitro",
+    );
+    await expect(page.getByTestId("controls-binding-brake")).toHaveText("Down");
+  });
+
+  test("custom accelerate binding is used when a race starts", async ({
+    page,
+  }) => {
+    await page.goto("/options");
+    await page.getByTestId("options-tab-controls").click();
+    await page.getByTestId("controls-remap-accelerate").click();
+    await page.keyboard.press("KeyI");
+
+    await page.goto("/race?track=test/straight");
+    const canvas = page.getByTestId("race-canvas-element");
+    await expect(canvas).toBeVisible();
+    await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+      timeout: 10_000,
+    });
+
+    await canvas.focus();
+    await page.keyboard.down("KeyI");
+    await page.waitForTimeout(1_500);
+    await page.keyboard.up("KeyI");
+
+    const speedText = await page.getByTestId("hud-speed").innerText();
+    const speed = Number(speedText);
+    expect(Number.isFinite(speed)).toBe(true);
+    expect(speed).toBeGreaterThan(0);
   });
 
   test("Back to title link returns to /", async ({ page }) => {

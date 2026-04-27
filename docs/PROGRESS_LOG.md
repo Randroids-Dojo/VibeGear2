@@ -6,6 +6,63 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-014 key remapping UI and persistence
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) keyboard remapping,
+[§20](gdd/20-hud-and-ui-ux.md) settings screen,
+[§22](gdd/22-data-schemas.md) `SaveGameSettings.keyBindings`.
+**Branch / PR:** `feat/f-014-key-remapping`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/options/controlsPaneState.ts`: added the pure controls
+  remapping model, display labels, conflict detection, default reset, and
+  event-token normalisation.
+- `src/components/options/ControlsPane.tsx`: replaced the Controls
+  placeholder with a real remapping pane that captures one primary key per
+  action and persists changes through `saveSave`.
+- `src/app/race/page.tsx`: reads persisted key bindings at race start and
+  passes them to `createInputManager`.
+- `src/components/options/optionsResetState.ts`: now resets key bindings
+  because Controls is a shipped pane.
+- `e2e/options-screen.spec.ts`: covers persistence, conflict rejection, and
+  custom binding consumption in a live race.
+- `docs/FOLLOWUPS.md`: marked F-014 done.
+- `docs/GDD_COVERAGE.json`: added GDD-19-KEY-REMAPPING.
+
+### Verified
+- `npx vitest run src/components/options/__tests__/controlsPaneState.test.ts src/components/options/__tests__/ControlsPane.test.tsx src/components/options/__tests__/optionsResetState.test.ts src/app/options/__tests__/page.test.tsx`
+  green, 21 passed.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/options-screen.spec.ts` green, 8 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,155 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' src/components/options/ControlsPane.tsx src/components/options/controlsPaneState.ts src/components/options/__tests__/ControlsPane.test.tsx src/components/options/__tests__/controlsPaneState.test.ts src/components/options/optionsResetState.ts src/components/options/__tests__/optionsResetState.test.ts src/app/options/page.tsx src/app/race/page.tsx e2e/options-screen.spec.ts docs/FOLLOWUPS.md docs/GDD_COVERAGE.json docs/PROGRESS_LOG.md`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- The pane captures one primary key per action. The save schema still
+  supports up to four tokens per action, and defaults keep their multi-key
+  bindings until the player remaps an action.
+- Conflict validation rejects any key already bound to another action.
+
+### Coverage ledger
+- GDD-19-KEY-REMAPPING: covered by the Controls pane, pure helper tests,
+  and Playwright persistence plus race-consumption tests.
+- Uncovered adjacent requirements: Gamepad remapping remains out of scope
+  for this desktop keyboard slice; the GDD only requires full desktop
+  remapping here.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §19, §20, and §22 requirements.
+
+---
+
 ## 2026-04-27: Slice: F-049 options reset persistence
 
 **GDD sections touched:**

@@ -20,13 +20,16 @@ export function resetShippedOptionsToDefaults(
       ...save.settings,
       assists: { ...defaults.settings.assists },
       difficultyPreset: defaults.settings.difficultyPreset,
+      keyBindings: defaults.settings.keyBindings,
     },
   };
 
   if (
     JSON.stringify(next.settings.assists) ===
       JSON.stringify(save.settings.assists) &&
-    next.settings.difficultyPreset === save.settings.difficultyPreset
+    next.settings.difficultyPreset === save.settings.difficultyPreset &&
+    JSON.stringify(next.settings.keyBindings) ===
+      JSON.stringify(save.settings.keyBindings)
   ) {
     return { kind: "noop", reason: "already-default" };
   }
