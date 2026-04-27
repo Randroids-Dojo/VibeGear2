@@ -34,6 +34,9 @@ renderer pipeline.
 - `docs/FOLLOWUPS.md`: closed F-051.
 - `docs/GDD_COVERAGE.json`: marked GDD-16-CAR-SPRITE-ATLAS as
   implemented with renderer test coverage.
+- `docs/FOLLOWUPS.md` and `docs/GDD_COVERAGE.json`: added F-058 for
+  the weather-specific car spray and snow trail variants that remain
+  outside this atlas overlay slice.
 
 ### Verified
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/spriteAtlas.test.ts`
@@ -54,10 +57,10 @@ renderer pipeline.
 - GDD-16-CAR-SPRITE-ATLAS: covered by the shipped car atlas, live and
   ghost renderer wiring, and renderer unit tests.
 - Uncovered adjacent requirements: weather-specific spray and snow trail
-  variants remain owned by the later weather VFX slices.
+  variants are tracked under F-058.
 
 ### Followups created
-None.
+- F-058: add weather-specific car trail and spray variants.
 
 ### GDD edits
 None. This slice implements existing §16, §17, and §21 intent.

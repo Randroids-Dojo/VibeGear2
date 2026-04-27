@@ -10,6 +10,21 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-058: Add weather-specific car trail and spray variants
+**Created:** 2026-04-27
+**Priority:** polish
+**Status:** open
+**Notes:** F-051 ships the live and ghost car sprite atlas path with
+directional, damage, brake, and nitro frames. §16 also calls for wet
+spray and snow trail variants. Those are not frame rows in the current
+Sparrow sheet and should land with the later weather VFX work so the
+renderer can select them from actual weather state rather than a fake
+always-on decoration. Add weather-specific atlas or effect assets,
+thread weather state into the car overlay draw path, and cover clear,
+wet, and snow cases in renderer tests.
+
+---
+
 ## F-057: Fix turn-induced foreground road shear
 **Created:** 2026-04-27
 **Priority:** polish
