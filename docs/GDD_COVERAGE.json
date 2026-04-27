@@ -47,7 +47,7 @@
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": ["src/render/pseudoRoadCanvas.ts"],
       "testRefs": ["src/render/__tests__/pseudoRoadCanvas.test.ts"],
-      "followupRefs": ["F-055"]
+      "followupRefs": ["F-055", "F-056"]
     },
     {
       "id": "GDD-16-CAR-SPRITE-ATLAS",
