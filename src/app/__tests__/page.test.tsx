@@ -38,10 +38,10 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/time-trial"');
   });
 
-  it("renders Garage as an anchor pointing at /garage/cars", () => {
+  it("renders Garage as an anchor pointing at /garage", () => {
     const match = html.match(/<a[^>]*data-testid="menu-garage"[^>]*>/);
     expect(match, "menu-garage anchor not found").not.toBeNull();
-    expect(match?.[0]).toContain('href="/garage/cars"');
+    expect(match?.[0]).toContain('href="/garage"');
   });
 
   it("renders Options as an anchor pointing at /options", () => {

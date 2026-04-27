@@ -10,6 +10,35 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-063: Align starter selection content with the three §11 starter examples
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The garage summary starter recovery screen can pick from cars
+with `purchasePrice: 0`, but the current catalogue only has Sparrow GT
+as a free starter. §11 names Sparrow GT, Breaker S, and Vanta XR as the
+starter examples. Decide whether all three should be free championship
+starters or whether the GDD examples should be revised, then align the
+catalogue, starter picker, save defaults, and tests in one slice.
+
+## F-062: Implement garage upgrade purchase surface
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The garage summary surface shows installed upgrade tiers and
+links to `/garage/upgrade`, but the route is only a placeholder. Build
+the §12 upgrade purchase flow with tier costs, eligibility checks,
+credits persistence, installed tier updates, and save reload coverage.
+
+## F-061: Implement garage repair purchase surface
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The garage summary surface links to `/garage/repair`, but the
+route is only a placeholder until the repair economy slice lands. Build
+the §13 repair purchase flow once race damage persistence exists, then
+show pending damage and repair cost in the garage summary.
+
 ## F-060: Correct live car turn sprite direction
 **Created:** 2026-04-27
 **Priority:** blocks-release

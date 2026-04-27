@@ -6,6 +6,72 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: Garage summary surface
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) garage loop,
+[§11](gdd/11-cars-and-stats.md) car selection,
+[§12](gdd/12-upgrade-and-economy-system.md) installed upgrades,
+[§20](gdd/20-hud-and-ui-ux.md) garage layout.
+**Branch / PR:** `feat/garage-summary-flow`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/page.tsx`: routes the title menu Garage entry to the new
+  garage hub instead of the car selector.
+- `src/app/garage/page.tsx`: renders the first garage hub with active
+  car, credits, owned count, repair placeholder, installed upgrade
+  tiers, next race action, and links to cars, repairs, upgrades, and
+  race entry.
+- `src/components/garage/garageSummaryState.ts`: adds deterministic
+  state projection for the garage summary and starter recovery path.
+- `src/app/garage/repair/page.tsx` and
+  `src/app/garage/upgrade/page.tsx`: add explicit placeholder routes so
+  the summary actions do not dead-end before their purchase slices land.
+- `e2e/garage-summary.spec.ts`: covers summary rendering, action link
+  routing, and recovery from a save whose active car id is no longer
+  owned or known.
+- `docs/FOLLOWUPS.md`: created followups for repair purchase, upgrade
+  purchase, and starter catalogue alignment.
+- `docs/GDD_COVERAGE.json`: added GDD-05-GARAGE-SUMMARY.
+
+### Verified
+- `npx vitest run src/components/garage/__tests__/garageSummaryState.test.ts`
+  green, 5 passed.
+- `npm run content-lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,184 unit tests passed.
+- `npm run test:e2e -- e2e/title-screen.spec.ts e2e/garage-summary.spec.ts`
+  green, 7 passed.
+
+### Decisions and assumptions
+- The garage hub ships as a summary and routing surface first. Repair
+  and upgrade purchase flows are separate PR-sized slices because they
+  need their own save mutations and economy tests.
+- Starter recovery currently uses free catalogue entries. The catalogue
+  only has Sparrow GT as `purchasePrice: 0`, so the §11 three-starter
+  wording is tracked as F-063 instead of silently changing economy
+  balance in this slice.
+
+### Coverage ledger
+- GDD-05-GARAGE-SUMMARY: covered by the new garage hub, state helper,
+  and Playwright summary flow.
+- Uncovered adjacent requirements: real repair purchasing, real
+  upgrade purchasing, standings, weather fit, ghost status, leaderboard
+  status, and full next-race tournament data remain future garage
+  slices.
+
+### Followups created
+- F-061: Implement garage repair purchase surface.
+- F-062: Implement garage upgrade purchase surface.
+- F-063: Align starter selection content with the three §11 starter
+  examples.
+
+### GDD edits
+None. This slice implements existing §5, §11, §12, and §20 intent.
+
+---
+
 ## 2026-04-27: Slice: F-048 AI difficulty scalars
 
 **GDD sections touched:**
