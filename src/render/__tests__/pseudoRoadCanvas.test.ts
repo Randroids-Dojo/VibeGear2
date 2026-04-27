@@ -421,6 +421,38 @@ describe("drawRoad roadside sprites", () => {
     expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(false);
     expect(fills.some((call) => call.fillStyle === "#2f7a3a")).toBe(false);
   });
+
+  it("culls roadside sprites whose base is above the viewport", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: -1,
+        screenW: 260,
+        segment: {
+          ...strip({}).segment,
+          index: 0,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "default",
+        },
+      }),
+      strip({
+        screenY: -80,
+        screenW: 110,
+        segment: {
+          ...strip({}).segment,
+          index: 1,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "default",
+        },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {});
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(false);
+    expect(fills.some((call) => call.fillStyle === "#2f7a3a")).toBe(false);
+  });
 });
 
 describe("drawRoad player car overlay", () => {

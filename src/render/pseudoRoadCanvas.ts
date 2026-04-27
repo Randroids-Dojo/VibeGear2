@@ -338,7 +338,7 @@ function drawRoadsideSprite(
   const baseX = strip.screenX + sideSign * strip.screenW * 1.32;
   const baseY = strip.screenY;
 
-  if (baseY + height < 0 || baseY - height > viewport.height) return;
+  if (baseY < 0 || baseY - height > viewport.height) return;
   if (baseX + width < 0 || baseX - width > viewport.width) return;
 
   switch (style.kind) {

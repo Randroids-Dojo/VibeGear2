@@ -43,6 +43,9 @@ renderer.
 - `npm run verify` clean: lint, typecheck, unit tests, and
   content-lint all passed; 2,158 unit tests passed.
 - `npm run test:e2e` green, 55 passed.
+- Copilot PR review thread on roadside vertical culling addressed with
+  a focused `pseudoRoadCanvas` regression test; the focused test file
+  and `npm run typecheck` are green after the fix.
 
 ### Decisions and assumptions
 - Binary region art is not present in the repo yet, so this slice uses
