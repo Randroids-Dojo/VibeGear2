@@ -119,6 +119,29 @@
         "e2e/options-screen.spec.ts"
       ],
       "followupRefs": ["F-049"]
+    },
+    {
+      "id": "GDD-19-KEY-REMAPPING",
+      "gddSections": [
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Desktop keyboard actions can be remapped in options, conflicts are rejected, bindings persist to the save, and races consume the persisted bindings at session start.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/options/ControlsPane.tsx",
+        "src/components/options/controlsPaneState.ts",
+        "src/app/options/page.tsx",
+        "src/app/race/page.tsx",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/controlsPaneState.test.ts",
+        "src/components/options/__tests__/ControlsPane.test.tsx",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["F-014"]
     }
   ]
 }

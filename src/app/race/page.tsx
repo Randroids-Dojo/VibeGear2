@@ -37,6 +37,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { PauseOverlay } from "@/components/pause/PauseOverlay";
+import { readKeyBindings } from "@/components/options/controlsPaneState";
 import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
@@ -377,6 +378,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         : defaultSave().settings;
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
+    const persistedKeyBindings = readKeyBindings(sessionSave);
     const timeTrialEnabled = mode === "timeTrial";
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
@@ -458,7 +460,9 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
     const totalSegments = track.compiled.totalCompiledSegments;
     const totalLength = track.compiled.totalLengthMeters;
 
-    const inputManager = createInputManager({});
+    const inputManager = createInputManager({
+      bindings: persistedKeyBindings,
+    });
 
     // Wire the §20 pause-menu imperative actions. Each callback closes
     // over the local `config`, the persisted save, the input manager,

@@ -97,9 +97,11 @@ path is wired and tested.
 Closed by `feat/f-049-options-reset`. The footer button now resets shipped
 options fields only: `settings.assists` and `settings.difficultyPreset`.
 Profile data and placeholder-owned settings such as display units, audio,
-accessibility presentation prefs, transmission mode, and key bindings are
-preserved. Unit tests cover the pure reset helper and Playwright covers the
-full localStorage round-trip.
+accessibility presentation prefs, and transmission mode are preserved. At
+the time F-049 landed, key bindings were still preserved because Controls
+was a placeholder; F-014 later made key bindings a shipped pane and added
+them to reset defaults. Unit tests cover the pure reset helper and Playwright
+covers the full localStorage round-trip.
 
 ---
 
@@ -1238,12 +1240,18 @@ the accumulated damage crosses the `total = 0.75` boundary.
 ## F-014: Key remapping UI and persistence
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** `createInputManager` already accepts a `bindings` override and
 the §22 SaveSchema reserves a slot for control profiles, but there is no
 UI to edit or persist them. Build a settings screen that shows each action,
 prompts for a key, validates against conflicts, and writes back to the
 save file. §19 lists this as a first-class feature on desktop.
+
+Closed by `feat/f-014-key-remapping`. The `/options` Controls tab now
+renders a real remapping pane, captures one primary key per action, rejects
+conflicts against other actions, persists to `settings.keyBindings`, and
+offers a reset for bindings. `/race` now reads persisted key bindings when
+creating the input manager, so a custom binding applies at race start.
 
 ## F-013: Touch and mobile input
 **Created:** 2026-04-26
