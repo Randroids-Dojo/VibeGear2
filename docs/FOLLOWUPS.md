@@ -382,7 +382,7 @@ the §6 mode wiring (separate dots own those surfaces).
 ## F-037: Wire `easyModeBonus` into the tour-clear bonus payout
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-26, `feat/f-037-easy-mode-tour-bonus`)
 **Notes:** The `feat/economy-catch-up` slice landed
 `easyModeBonus(save, sumRewards)` in `src/game/catchUp.ts` and proved
 the rate with eight unit tests. The function has no in-app caller
@@ -394,6 +394,18 @@ combined amount via `awardCredits` (or a new
 `creditFlat(save, amount)` helper if that path lands first).
 Mirrors the F-026 / F-032 / F-034 producer-without-consumer
 pattern.
+
+**Resolution:** Closed by `feat/f-037-easy-mode-tour-bonus`.
+`tourComplete(activeTour, championship, playerCarId?, raceRewards?, save?)`
+now accepts an optional save and appends an `easyModeTourComplete`
+bonus when the tour passed, race rewards produce a positive sum, and
+`save.settings.difficultyPreset === "easy"`. Existing callers that
+omit the save keep the previous bonus list exactly: the standard
+`tourComplete` chip only. The easy-mode chip uses the already-pinned
+`easyModeBonus(save, raceRewards)` helper, so negative reward entries
+are clamped consistently with the standard tour-clear bonus. The
+future `/world` surface can sum `summary.bonuses` and credit both
+tour-clear bonuses through the same wallet path.
 
 ---
 

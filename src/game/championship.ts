@@ -16,15 +16,15 @@
  * - `recordResult(activeTour, raceResult)`: append the per-race outcome
  *   and advance `raceIndex`. Never mutates the input. Caller decides
  *   whether to persist (the §20 results screen owns the save commit).
- * - `tourComplete(activeTour, championship, playerCarId?, raceRewards?)`:
+ * - `tourComplete(activeTour, championship, playerCarId?, raceRewards?, save?)`:
  *   aggregate the recorded results into `{ passed, playerStanding,
  *   standings, bonuses }`. `passed` is true when the player's aggregate
  *   placement is at most `tour.requiredStanding`. `standings` is a
  *   per-car points list computed from the §7 `PLACEMENT_POINTS` table;
  *   DNFs receive `0`. `bonuses` is the §12 tour-clear `RaceBonus` list
  *   (today: `tourCompletionBonus` per F-039 when `raceRewards` is
- *   supplied and the tour passed; F-037 will append `easyModeBonus`
- *   alongside). The wallet credit is the page surface's responsibility:
+ *   supplied and the tour passed; the optional save argument appends
+ *   the Easy preset catch-up bonus). The wallet credit is the page surface's responsibility:
  *   the §20 results screen sums the `bonuses` `cashCredits` into a
  *   single `awardCredits` call so the chip strip and the wallet delta
  *   stay in lockstep with the per-race pipeline.
@@ -51,16 +51,13 @@
  * - The `/world` page surface (region map, tour-tile picker, "Enter
  *   tour" affordance). The pure module here is the data plane the page
  *   consumes; the page wiring lands in a follow-up sub-slice.
- * - F-037 easy-mode tour-clear bonus: `tourComplete` is the consumer;
- *   the `easyModeBonus` call lands in a follow-up so the §12 lever
- *   appends a second `RaceBonus` to the same `bonuses` list.
  * - The Playwright `e2e/tour-flow.spec.ts` end-to-end spec: lands once
  *   the `/world` page surface ships.
  */
 
 import type { Championship, ChampionshipTour, SaveGame } from "@/data/schemas";
 
-import { computeStipend, recordStipendClaim } from "./catchUp";
+import { computeStipend, easyModeBonus, recordStipendClaim } from "./catchUp";
 import { PLACEMENT_POINTS } from "./raceResult";
 import { tourCompletionBonus, type RaceBonus } from "./raceBonuses";
 
@@ -165,12 +162,13 @@ export interface TourCompletionSummary {
    */
   readonly standings: ReadonlyArray<TourStandingsEntry>;
   /**
-   * §12 tour-clear bonus list. Today this carries the `tourComplete`
+   * §12 tour-clear bonus list. This carries the `tourComplete`
    * `RaceBonus` (per F-039) when the caller passes `raceRewards` and
-   * the tour passed; the §12 `easyModeBonus` (F-037) will append a
-   * second entry once its consumer wires here. Empty when the tour
-   * failed, when `raceRewards` is omitted / empty, or when the rewards
-   * sum to zero (the bonus would round to 0). The §20 results screen
+   * the tour passed. When the optional `save` argument is present and
+   * its difficulty preset is Easy, this also carries an
+   * `easyModeTourComplete` chip for the §12 catch-up lever. Empty when
+   * the tour failed, when `raceRewards` is omitted / empty, or when
+   * the rewards sum to zero (the bonus would round to 0). The §20 results screen
    * folds these into a single `awardCredits` call alongside the per-race
    * placement payout so the chip strip and the wallet delta agree.
    */
@@ -314,18 +312,17 @@ export function recordResult(
  * results screen (sum of placement cash + bonuses). The list feeds the
  * §12 `tourCompletionBonus` lever (F-039): when supplied with at least
  * one entry on a passed tour the returned `bonuses` array carries a
- * single `tourComplete` `RaceBonus`; otherwise it is empty. Defaults to
- * an empty list so callers that do not yet thread the per-race ledger
- * (existing unit tests, the championship pure-module sub-slice) keep
- * `bonuses` empty without changing their assertions. F-037 will append
- * `easyModeBonus(save, raceRewards)` to the same list once its consumer
- * wires here.
+ * `tourComplete` `RaceBonus`; otherwise it is empty. The optional
+ * `save` argument feeds the §12 easy-mode tour-clear catch-up lever.
+ * Defaults keep callers that do not yet thread the per-race ledger or
+ * save object on the pre-F-037 behavior.
  */
 export function tourComplete(
   activeTour: ActiveTour,
   championship: Championship,
   playerCarId = "player",
   raceRewards: ReadonlyArray<number> = [],
+  save?: SaveGame,
 ): TourCompletionSummary {
   const lookup = findTour(championship, activeTour.tourId);
   if (lookup === null) {
@@ -343,11 +340,10 @@ export function tourComplete(
   const playerStanding = standingOf(sorted, playerCarId);
   const passed =
     playerStanding !== null && playerStanding <= tour.requiredStanding;
-  // §12 F-039: append the tour-completion bonus when the lever fires.
+  // §12 F-039/F-037: append tour-clear bonuses when their levers fire.
   // `tourCompletionBonus` already filters failed tours, empty rewards,
-  // and zero-sum rewards down to `null`, so this branch is a thin
-  // collector. F-037's `easyModeBonus` will append a sibling entry to
-  // the same list once its consumer wires here.
+  // and zero-sum rewards down to `null`; `easyModeBonus` mirrors the
+  // same reward list and returns 0 for non-Easy presets.
   const bonuses: RaceBonus[] = [];
   const completionBonus = tourCompletionBonus({
     raceRewards,
@@ -355,6 +351,16 @@ export function tourComplete(
   });
   if (completionBonus !== null) {
     bonuses.push(completionBonus);
+  }
+  if (passed && save !== undefined) {
+    const easyCredits = easyModeBonus(save, raceRewards);
+    if (easyCredits > 0) {
+      bonuses.push({
+        kind: "easyModeTourComplete",
+        label: "Easy mode tour clear",
+        cashCredits: easyCredits,
+      });
+    }
   }
   return { passed, playerStanding, standings: sorted, bonuses };
 }
