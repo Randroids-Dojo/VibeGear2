@@ -125,6 +125,16 @@
   cursor: not-allowed;
 }
 
+.resetStatus {
+  margin: 0;
+  color: var(--accent, #8cf);
+  font-size: 0.9rem;
+}
+
+.resetStatus[data-status="error"] {
+  color: #f88;
+}
+
 .backLink {
   color: var(--accent, #8cf);
   text-decoration: none;

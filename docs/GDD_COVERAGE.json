@@ -98,6 +98,27 @@
         "README.md"
       ],
       "followupRefs": ["F-003"]
+    },
+    {
+      "id": "GDD-20-OPTIONS-RESET",
+      "gddSections": [
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The options screen can reset shipped settings panes to defaults without overwriting settings owned by placeholder panes or profile data.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/options/page.tsx",
+        "src/components/options/optionsResetState.ts",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/optionsResetState.test.ts",
+        "src/app/options/__tests__/page.test.tsx",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["F-049"]
     }
   ]
 }

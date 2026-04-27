@@ -63,15 +63,13 @@ describe("OptionsPage", () => {
     expect(html).toContain("VibeGear2-implement-visual-polish-7d31d112");
   });
 
-  it("disables the Reset to defaults button until reset persistence lands", () => {
+  it("enables the Reset to defaults button now that reset persistence has landed", () => {
     const reset = html.match(
       /<button[^>]*data-testid="options-reset-defaults"[^>]*>/,
     );
     expect(reset, "reset button not found").not.toBeNull();
-    expect(reset?.[0]).toContain("disabled");
-    expect(reset?.[0]).toContain('aria-disabled="true"');
-    expect(reset?.[0]).toContain("F-049");
-    expect(reset?.[0]).toContain("options reset persistence wiring");
+    expect(reset?.[0]).not.toContain("disabled");
+    expect(reset?.[0]).toContain("Reset shipped options panes to defaults");
   });
 
   it("renders a back-to-title link", () => {
