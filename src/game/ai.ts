@@ -20,36 +20,33 @@
  *   tickAI(driver, aiState, aiCar, player, track, race, dt)
  *     -> { input, nextAiState }
  *
- * No globals, no time source, no RNG. Same arguments produce identical
- * outputs across runs, satisfying the §21 replay/ghost determinism
- * requirement (AGENTS.md RULE 8 "Determinism is mandatory"). The clean
- * line slice contains zero randomness; the `seed` field on `AIState` is
- * carried through so later mistake-prone archetypes can stream a
- * dedicated PRNG without a breaking signature change.
+ * No globals or time source. Same arguments, including `AIState.seed`,
+ * produce identical outputs across runs, satisfying the §21
+ * replay/ghost determinism requirement (AGENTS.md RULE 8 "Determinism
+ * is mandatory"). The `seed` field on `AIState` is the dedicated
+ * deterministic PRNG channel for the shared AI mistake hook.
  *
  * §23 "CPU difficulty modifiers" wiring: `tickAI` accepts an optional
  * `cpuModifiers` parameter (the §15-tier scalars from
- * `aiDifficulty.getCpuModifiers`) and stacks `cpuModifiers.paceScalar`
- * on top of the per-driver `AIDriver.paceScalar` at the targetSpeed
- * compute site. `mistakeScalar` and `recoveryScalar` are reserved on
- * the same shape but have no consumer yet (mistake injection lands
- * with the aggressive / chaotic / bully archetypes; rubber-banding
- * lands with the §15 deferred catch-up slice). Defaults to identity
- * (`getCpuModifiers("normal")`) so existing callers keep their
- * pre-binding behaviour bit-for-bit; `raceSession` resolves the
- * tier once per session via `resolveCpuModifiers` and forwards the
- * cached reference into every AI tick.
+ * `aiDifficulty.getCpuModifiers`) and stacks all three scalar columns
+ * on top of per-driver AI data. `paceScalar` raises or lowers target
+ * speed, `recoveryScalar` scales the light catch-up term when an AI
+ * trails the player, and `mistakeScalar` scales the per-driver
+ * `mistakeRate` for deterministic lane-target mistakes. Defaults to
+ * identity (`getCpuModifiers("normal")`) so existing callers keep
+ * Normal behavior unchanged.
  *
  * Out of scope for this slice (deferred to follow-up AI dots):
  * - Overtake / lane-shift behaviour. §15 lists it; the clean_line single
  *   AI may collide with the player. Collision avoidance lands with the
  *   full grid slice.
  * - Nitro firing. The clean_line AI never fires nitro in this slice.
- * - Mistake injection (miss apex, brake too early in fog, etc.). The
- *   §23 `mistakeScalar` consumer lands with that pipeline.
+ * - Archetype-specific mistake shapes (miss apex, brake too early in
+ *   fog, etc.). This slice ships the shared deterministic lane-target
+ *   mistake hook.
  * - Weather skill modulation of `paceScalar`.
- * - Rubber-banding catch-up logic. The §23 `recoveryScalar` consumer
- *   lands with that slice.
+ * - Full rubber-banding policy. This slice ships the light catch-up
+ *   pace hook so the §23 `recoveryScalar` row is consumed.
  */
 
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
@@ -62,14 +59,14 @@ import {
 import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
+import { createRng } from "./rng";
 
 /**
  * Identity §23 CPU modifiers row used as the default when a caller does
  * not supply tier-resolved scalars. Equivalent to
  * `getCpuModifiers("normal")`: each scalar is `1.0` so the per-driver
- * `paceScalar` (and future `mistakeScalar` / `recoveryScalar` consumers)
- * pass through untouched, preserving pre-binding behaviour bit-for-bit
- * for any caller that has not yet adopted the tier wiring.
+ * `paceScalar`, `mistakeRate`, and light recovery term pass through
+ * unchanged for any caller that has not yet adopted the tier wiring.
  */
 export const IDENTITY_CPU_MODIFIERS: CpuDifficultyModifiers =
   getCpuModifiers("normal");
@@ -162,6 +159,20 @@ export const AI_TUNING = Object.freeze({
    * a damping term.
    */
   STEER_GAIN: 1.5,
+  /**
+   * Maximum lane-target offset injected by a deterministic mistake, in
+   * meters. Kept below the road half-width so a mistake nudges the AI
+   * toward a worse line without teleporting it off the road.
+   */
+  MAX_MISTAKE_OFFSET: ROAD_WIDTH * 0.35,
+  /**
+   * Maximum pace lift from the light catch-up term before the §23
+   * `recoveryScalar` row is applied. The term only applies while the AI
+   * trails the player and remains below the chassis top-speed clamp.
+   */
+  MAX_RECOVERY_PACE_BONUS: 0.05,
+  /** Player gap, in meters, that reaches the maximum recovery term. */
+  RECOVERY_GAP_FOR_MAX_BONUS: 240,
 });
 
 /**
@@ -217,7 +228,7 @@ export function tickAI(
   driver: Readonly<AIDriver>,
   aiState: Readonly<AIState>,
   aiCar: Readonly<CarState>,
-  _player: Readonly<PlayerView>,
+  player: Readonly<PlayerView>,
   track: Readonly<CompiledSegmentBuffer>,
   race: Readonly<RaceState>,
   stats: Readonly<CarBaseStats>,
@@ -242,11 +253,42 @@ export function tickAI(
   // converts a `-0` from the multiplication on a perfectly straight
   // segment back to `+0` so call-sites can `expect(steer).toBe(0)`.
   const rawIdealOffset = -authoredCurve * AI_TUNING.MAX_RACING_LINE_OFFSET;
-  const idealLateralOffset = clamp(
+  const baseIdealLateralOffset = clamp(
     rawIdealOffset === 0 ? 0 : rawIdealOffset,
     -context.roadHalfWidth,
     context.roadHalfWidth,
   );
+  const effectiveMistakeRate = clamp(
+    driver.mistakeRate * cpuModifiers.mistakeScalar,
+    0,
+    1,
+  );
+  let nextSeed = aiState.seed;
+  let mistakeOffset = 0;
+  if (race.phase === "racing" && effectiveMistakeRate > 0) {
+    const mistakeRng = createRng(aiState.seed);
+    const mistakeActive = mistakeRng.nextBool(effectiveMistakeRate);
+    const mistakeDirection = mistakeRng.next() < 0.5 ? -1 : 1;
+    mistakeOffset = mistakeActive
+      ? mistakeDirection * AI_TUNING.MAX_MISTAKE_OFFSET
+      : 0;
+    nextSeed = mistakeRng.state;
+  }
+  const idealLateralOffset = clamp(
+    baseIdealLateralOffset + mistakeOffset,
+    -context.roadHalfWidth,
+    context.roadHalfWidth,
+  );
+
+  const playerLeadMeters = Math.max(0, player.car.z - aiCar.z);
+  const recoveryPaceBonus =
+    clamp(
+      playerLeadMeters / AI_TUNING.RECOVERY_GAP_FOR_MAX_BONUS,
+      0,
+      1,
+    ) *
+    AI_TUNING.MAX_RECOVERY_PACE_BONUS *
+    cpuModifiers.recoveryScalar;
 
   // Target speed per segment. §15 "AI chooses a lane offset target" plus
   // a per-driver `paceScalar` from §22 maps onto a curve-aware target
@@ -261,7 +303,11 @@ export function tickAI(
   // authored `paceScalar > 1` still cannot exceed the chassis ceiling.
   const curvePenalty = 1 - AI_TUNING.CLEAN_LINE_CURVE_DECEL * Math.abs(authoredCurve);
   const composedPaceScalar = driver.paceScalar * cpuModifiers.paceScalar;
-  const rawTarget = stats.topSpeed * Math.max(0, curvePenalty) * composedPaceScalar;
+  const rawTarget =
+    stats.topSpeed *
+    Math.max(0, curvePenalty) *
+    composedPaceScalar *
+    (1 + recoveryPaceBonus);
   const targetSpeed = clamp(rawTarget, AI_TUNING.MIN_AI_SPEED, stats.topSpeed);
 
   // The state we will return regardless of phase. Mirrors the car so
@@ -272,7 +318,7 @@ export function tickAI(
     speed: aiCar.speed,
     intent: aiState.intent,
     targetSpeed,
-    seed: aiState.seed,
+    seed: nextSeed,
   };
 
   // Countdown: do not integrate inputs. Per the dot stress-test item 10

@@ -88,6 +88,26 @@
       "followupRefs": ["F-058"]
     },
     {
+      "id": "GDD-15-CPU-DIFFICULTY-RUNTIME",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "CPU difficulty tiers affect AI pace, light recovery, and mistake frequency through the §23 modifier table.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/ai.ts",
+        "src/game/aiDifficulty.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/ai.test.ts",
+        "src/game/__tests__/aiDifficulty.test.ts",
+        "src/data/__tests__/balancing.test.ts"
+      ],
+      "followupRefs": ["F-048"]
+    },
+    {
       "id": "GDD-16-PARALLAX-ROADSIDE",
       "gddSections": [
         "docs/gdd/09-track-design.md",

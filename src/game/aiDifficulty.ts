@@ -21,30 +21,27 @@
  *     captures archetype identity (rocket > clean_line > cautious);
  *     the tier scalar captures player-facing difficulty.
  *
- *   - `recoveryScalar`: tier-level multiplier on rubber-banding catch
- *     up rate. > 1 makes the AI close gaps faster (Hard, Master);
- *     < 1 lets the player extend a lead (Easy). The catch-up
- *     consumer has not landed yet (rubber-banding is a deferred
- *     §15 slice); this scalar is the binding §23 owes the runtime.
+ *   - `recoveryScalar`: tier-level multiplier on the light AI catch-up
+ *     rate. > 1 makes the AI close gaps faster (Hard, Master); < 1
+ *     lets the player extend a lead (Easy). The shared consumer lives
+ *     in `tickAI`; full rubber-banding policy is still a deferred §15
+ *     slice.
  *
  *   - `mistakeScalar`: tier-level multiplier on per-driver
  *     `AIDriver.mistakeRate`. > 1 makes the AI fumble more (Easy:
  *     a `mistakeRate = 0.08` driver effectively runs at
  *     `0.08 * 1.4 = 0.112`); < 1 cleans them up (Master: same
- *     driver at `0.08 * 0.45 = 0.036`). The mistake-injection
- *     consumer has not landed yet (clean_line slice has zero
- *     randomness); this scalar is the binding §23 owes the runtime.
+ *     driver at `0.08 * 0.45 = 0.036`). The shared deterministic
+ *     lane-target mistake hook lives in `tickAI`; archetype-specific
+ *     mistake shapes remain a deferred §15 slice.
  *
  * Determinism: no `Math.random`, no `Date.now`, no globals.
  * `getCpuModifiers(presetId)` returns the same frozen object reference
  * every call so callers can lean on identity comparison.
  *
- * The module is intentionally consumer-agnostic in this slice: the
- * AI controller, catch-up logic, and mistake injection wire the
- * scalars in follow-up slices so the §15 slice surface does not have
- * to bump alongside this binding. Adding a new tier row, renaming a
- * scalar, or moving the §23 numbers requires updating both the
- * table here and the `aiDifficulty.test.ts` unit pin (and the §23
+ * The AI controller consumes all three scalars. Adding a new tier row,
+ * renaming a scalar, or moving the §23 numbers requires updating both
+ * the table here and the `aiDifficulty.test.ts` unit pin (and the §23
  * cross-check in `src/data/__tests__/balancing.test.ts`).
  *
  * Distinct from `src/game/difficultyPresets.ts`. That module owns the
@@ -73,15 +70,13 @@ export interface CpuDifficultyModifiers {
   /**
    * Multiplier on rubber-banding catch-up rate. `1.0` is Normal;
    * > 1.0 makes the AI close gaps faster (Hard, Master); < 1.0
-   * lets the player extend a lead (Easy). The catch-up consumer
-   * has not landed yet; the scalar is reserved here.
+   * lets the player extend a lead (Easy).
    */
   readonly recoveryScalar: number;
   /**
    * Multiplier on per-driver `AIDriver.mistakeRate`. `1.0` is
    * Normal; > 1.0 makes the AI fumble more (Easy); < 1.0 cleans
-   * them up (Hard, Master). The mistake-injection consumer has not
-   * landed yet; the scalar is reserved here.
+   * them up (Hard, Master).
    */
   readonly mistakeScalar: number;
 }

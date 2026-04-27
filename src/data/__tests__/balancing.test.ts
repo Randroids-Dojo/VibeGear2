@@ -26,10 +26,8 @@
  *  5. CPU difficulty modifiers (§23) -> `CPU_DIFFICULTY_MODIFIERS`
  *     in `src/game/aiDifficulty.ts`. The §23 column gives
  *     pace / recovery / mistake scalars per `Easy / Normal / Hard /
- *     Master` ladder. The catch-up consumer (`recoveryScalar`) and
- *     mistake-injection consumer (`mistakeScalar`) have not landed
- *     yet (rubber-banding and randomised mistakes are deferred §15
- *     slices); the table here is the binding the wiring slices read.
+ *     Master` ladder. `tickAI` consumes all three scalars; the table
+ *     here keeps future balancing edits visible.
  *  6. Track difficulty rating rubric (§23) -> qualitative weights, no
  *     runtime consumer; out of scope here.
  *

@@ -515,6 +515,115 @@ describe("tickAI (§23 CPU difficulty tier paceScalar)", () => {
   });
 });
 
+describe("tickAI (§23 CPU difficulty mistakeScalar and recoveryScalar)", () => {
+  it("Easy tier produces more deterministic lane-target mistakes than Hard", () => {
+    const mistakeDriver: AIDriver = {
+      ...CLEAN_LINE_DRIVER,
+      mistakeRate: 0.5,
+    };
+    const countMistakes = (
+      modifiers: ReturnType<typeof getCpuModifiers>,
+    ): number => {
+      let aiState = freshAi({ seed: 123 });
+      let count = 0;
+      for (let i = 0; i < 300; i += 1) {
+        const result = tickAI(
+          mistakeDriver,
+          aiState,
+          freshCar({ speed: 20, z: i * 6 }),
+          PLAYER_FAR_BEHIND,
+          STRAIGHT_TRACK,
+          RACING,
+          STARTER_STATS,
+          DEFAULT_AI_TRACK_CONTEXT,
+          0,
+          modifiers,
+        );
+        if (result.input.steer !== 0) count += 1;
+        aiState = result.nextAiState;
+      }
+      return count;
+    };
+
+    expect(countMistakes(getCpuModifiers("easy"))).toBeGreaterThan(
+      countMistakes(getCpuModifiers("hard")),
+    );
+  });
+
+  it("advances the AI seed only when a positive mistake rate is consumed", () => {
+    const noMistake = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi({ seed: 7 }),
+      freshCar({ speed: 20 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const mistakeDriver: AIDriver = {
+      ...CLEAN_LINE_DRIVER,
+      mistakeRate: 0.5,
+    };
+    const withMistakeRate = tickAI(
+      mistakeDriver,
+      freshAi({ seed: 7 }),
+      freshCar({ speed: 20 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(noMistake.nextAiState.seed).toBe(7);
+    expect(withMistakeRate.nextAiState.seed).not.toBe(7);
+  });
+
+  it("Master recovery term is larger than Easy under matched trailing gap", () => {
+    const easyRecoveryOnly = {
+      ...getCpuModifiers("easy"),
+      paceScalar: 1,
+      mistakeScalar: 1,
+    };
+    const masterRecoveryOnly = {
+      ...getCpuModifiers("master"),
+      paceScalar: 1,
+      mistakeScalar: 1,
+    };
+    const aiCar = freshCar({ z: 900, speed: 30 });
+    const playerAhead: PlayerView = {
+      car: freshCar({ z: aiCar.z + 240, speed: 30 }),
+    };
+    const easy = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      aiCar,
+      playerAhead,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      easyRecoveryOnly,
+    );
+    const master = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      aiCar,
+      playerAhead,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      masterRecoveryOnly,
+    );
+
+    expect(master.nextAiState.targetSpeed).toBeGreaterThan(
+      easy.nextAiState.targetSpeed,
+    );
+  });
+});
+
 describe("AI_TUNING (constants are sane)", () => {
   it("MAX_RACING_LINE_OFFSET keeps the AI inside the road", () => {
     expect(AI_TUNING.MAX_RACING_LINE_OFFSET).toBeLessThan(
@@ -524,5 +633,11 @@ describe("AI_TUNING (constants are sane)", () => {
 
   it("MIN_AI_SPEED is positive so a curve cannot stop the AI", () => {
     expect(AI_TUNING.MIN_AI_SPEED).toBeGreaterThan(0);
+  });
+
+  it("MAX_MISTAKE_OFFSET stays within the recoverable road width", () => {
+    expect(AI_TUNING.MAX_MISTAKE_OFFSET).toBeLessThan(
+      DEFAULT_AI_TRACK_CONTEXT.roadHalfWidth,
+    );
   });
 });
