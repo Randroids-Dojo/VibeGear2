@@ -48,6 +48,23 @@ export const GHOST_CAR_DEFAULT_ALPHA = 0.5;
  */
 export const GHOST_CAR_DEFAULT_FILL = "#5fb6ff";
 
+/**
+ * Default live player-car overlay colours. These are placeholder fills
+ * until the §16 / §17 atlas slice wires real directional sprites through
+ * the renderer.
+ */
+export const PLAYER_CAR_DEFAULT_FILL = "#f2c94c";
+export const PLAYER_CAR_DEFAULT_SHADOW = "rgba(0, 0, 0, 0.55)";
+export const PLAYER_CAR_DEFAULT_WINDSHIELD = "#18243d";
+
+/**
+ * Standard player-car footprint. §16 pins the player car at 16 to 22
+ * percent of screen height in the standard camera mode; 0.18 leaves
+ * headroom for the HUD and minimap while reading clearly at 800x480.
+ */
+export const PLAYER_CAR_HEIGHT_FRACTION = 0.18;
+export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
+
 export interface RoadColors {
   skyTop: string;
   skyBottom: string;
@@ -115,6 +132,18 @@ export interface DrawRoadOptions {
     screenW: number;
     alpha?: number;
     fill?: string;
+  } | null;
+  /**
+   * Optional live player car overlay. Pseudo-3D road strips represent the
+   * world moving under a chase camera, so the player car is drawn as a
+   * fixed bottom-screen overlay after the road and dust layers. The
+   * placeholder is intentionally simple until atlas sprites land, but it
+   * preserves the §16 standard camera footprint.
+   */
+  playerCar?: {
+    fill?: string;
+    shadow?: string;
+    windshield?: string;
   } | null;
 }
 
@@ -219,10 +248,14 @@ export function drawRoad(
     drawGhostCar(ctx, options.ghostCar, viewport);
   }
 
-  // Dust paints last so particles sit over the road / grass strips.
+  // Dust paints over the road / grass strips and under the live car.
   // The pool is owned by the caller; the drawer is read-only on it.
   if (options.dust) {
     drawDust(ctx, options.dust, viewport);
+  }
+
+  if (options.playerCar) {
+    drawPlayerCar(ctx, options.playerCar, viewport);
   }
 }
 
@@ -276,6 +309,66 @@ function drawGhostCar(
     ctx.fillRect(ghost.screenX - halfW, ghost.screenY - heightPx, ghost.screenW, heightPx);
   } finally {
     ctx.globalAlpha = prevAlpha;
+    ctx.fillStyle = prevFill;
+  }
+}
+
+/**
+ * Paint the live player car as a centered chase-camera overlay.
+ *
+ * The shape is a temporary original silhouette, not a substitute for the
+ * §17 directional sprite atlas. It gives the runtime view the correct
+ * readable player-car anchor at race start and keeps the visual footprint
+ * inside the §16 16 to 22 percent height band.
+ */
+function drawPlayerCar(
+  ctx: CanvasRenderingContext2D,
+  car: NonNullable<DrawRoadOptions["playerCar"]>,
+  viewport: Viewport,
+): void {
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+
+  const height = viewport.height * PLAYER_CAR_HEIGHT_FRACTION;
+  if (!Number.isFinite(height) || height <= 0) return;
+  const width = height * PLAYER_CAR_WIDTH_TO_HEIGHT;
+  const centerX = viewport.width / 2;
+  const bottomY = viewport.height - Math.max(14, viewport.height * 0.035);
+  const topY = bottomY - height;
+  const halfW = width / 2;
+
+  const prevFill = ctx.fillStyle;
+  try {
+    ctx.fillStyle = car.shadow ?? PLAYER_CAR_DEFAULT_SHADOW;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.78, bottomY);
+    ctx.lineTo(centerX + halfW * 0.78, bottomY);
+    ctx.lineTo(centerX + halfW * 0.48, topY + height * 0.1);
+    ctx.lineTo(centerX - halfW * 0.48, topY + height * 0.1);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = car.fill ?? PLAYER_CAR_DEFAULT_FILL;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.62, bottomY - height * 0.04);
+    ctx.lineTo(centerX + halfW * 0.62, bottomY - height * 0.04);
+    ctx.lineTo(centerX + halfW * 0.36, topY);
+    ctx.lineTo(centerX - halfW * 0.36, topY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = car.windshield ?? PLAYER_CAR_DEFAULT_WINDSHIELD;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.28, topY + height * 0.18);
+    ctx.lineTo(centerX + halfW * 0.28, topY + height * 0.18);
+    ctx.lineTo(centerX + halfW * 0.18, topY + height * 0.5);
+    ctx.lineTo(centerX - halfW * 0.18, topY + height * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#f7f7f7";
+    ctx.fillRect(centerX - halfW * 0.5, bottomY - height * 0.24, width * 0.16, height * 0.08);
+    ctx.fillRect(centerX + halfW * 0.34, bottomY - height * 0.24, width * 0.16, height * 0.08);
+  } finally {
     ctx.fillStyle = prevFill;
   }
 }

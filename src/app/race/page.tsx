@@ -601,7 +601,10 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
           ghostOverlayRef.current = null;
           ghostOverlayTickRef.current = null;
         }
-        drawRoad(ctx, strips, viewport, { ghostCar: ghostOverlayRef.current });
+        drawRoad(ctx, strips, viewport, {
+          ghostCar: ghostOverlayRef.current,
+          playerCar: {},
+        });
 
         const cars: RankedCar[] = [
           {

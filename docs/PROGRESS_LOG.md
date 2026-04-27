@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Race start player car overlay
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) "Sprite scaling",
+[§20](gdd/20-hud-and-ui-ux.md) race HUD.
+**Branch / PR:** `fix/race-start-view`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added a live player-car overlay
+  placeholder that paints after the road and dust layers, using the
+  §16 standard camera footprint of 18 percent viewport height.
+- `src/app/race/page.tsx`: passes the player-car overlay option to the
+  road renderer every race frame so a fresh race has a visible car
+  anchor at the bottom of the view.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered the player
+  car overlay footprint, default colours, custom colours, headlights,
+  and omitted / null behavior.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 14 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- Browser pixel check against `http://localhost:3000/race` found
+  3,160 live-car pixels in the lower canvas during countdown.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 1 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed; 2,128 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' src/render/pseudoRoadCanvas.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/app/race/page.tsx`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Used an original Canvas2D placeholder silhouette until the §17 car
+  sprite atlas is wired into the live race renderer.
+
+### Followups created
+None.
+
+### GDD edits
+None. The implementation matches the existing §16 player-car footprint.
+
+---
+
 ## 2026-04-26: Slice: F-022 Time Trial ghost consumer
 
 **GDD sections touched:**
