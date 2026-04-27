@@ -16,7 +16,7 @@ interface SeededSave {
     transmissionMode: "auto" | "manual";
     audio: { master: number; music: number; sfx: number };
     accessibility: {
-      colorBlindMode: "off" | "deuter" | "prot" | "trit";
+      colorBlindMode: "off" | "protanopia" | "deuteranopia" | "tritanopia";
       reducedMotion: boolean;
       largeUiText: boolean;
       screenShakeScale: number;

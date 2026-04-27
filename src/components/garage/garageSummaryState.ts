@@ -4,17 +4,10 @@ import type {
   SaveGame,
   UpgradeCategory,
 } from "@/data/schemas";
+import { UpgradeCategorySchema } from "@/data/schemas";
 
-const UPGRADE_CATEGORIES: ReadonlyArray<UpgradeCategory> = [
-  "engine",
-  "gearbox",
-  "dryTires",
-  "wetTires",
-  "nitro",
-  "armor",
-  "cooling",
-  "aero",
-];
+const UPGRADE_CATEGORIES: ReadonlyArray<UpgradeCategory> =
+  UpgradeCategorySchema.options;
 
 export interface GarageSummaryView {
   readonly activeCar: Car | null;
@@ -86,16 +79,9 @@ export function starterCars(): ReadonlyArray<Car> {
 }
 
 function defaultUpgradeTiers(): Record<UpgradeCategory, number> {
-  return {
-    engine: 0,
-    gearbox: 0,
-    dryTires: 0,
-    wetTires: 0,
-    nitro: 0,
-    armor: 0,
-    cooling: 0,
-    aero: 0,
-  };
+  return Object.fromEntries(
+    UPGRADE_CATEGORIES.map((category) => [category, 0]),
+  ) as Record<UpgradeCategory, number>;
 }
 
 function upgradeLabel(category: UpgradeCategory): string {

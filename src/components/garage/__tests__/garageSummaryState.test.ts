@@ -59,7 +59,7 @@ describe("selectStarterCar", () => {
     expect(next?.garage.installedUpgrades["sparrow-gt"]?.engine).toBe(0);
   });
 
-  it("rejects paid cars for starter repair", () => {
+  it("rejects paid cars for starter selection", () => {
     expect(selectStarterCar(defaultSave(), "vanta-xr")).toBeNull();
   });
 });
