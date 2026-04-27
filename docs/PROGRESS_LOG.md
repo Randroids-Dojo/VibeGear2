@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-056 uphill lane-marking duty cycle
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) road lanes and shoulders,
+[§16](gdd/16-rendering-and-visual-design.md) road-strip rendering,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer pipeline.
+**Branch / PR:** `fix/f-056-uphill-marking-continuity`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: changed lane markings from a full
+  48 m visible phase to a short visible duty inside the existing repeat
+  cycle. The projected dash now enters the near camera as a short mark
+  instead of filling a whole uphill strip.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: added renderer
+  geometry regressions for in-strip duty boundaries and near-camera
+  short dashes.
+- `docs/FOLLOWUPS.md`: added and closed F-056 for the observed uphill
+  marking pulse.
+- `docs/GDD_COVERAGE.json`: linked F-056 to GDD-16-ROAD-MARKINGS.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts` green,
+  21 passed.
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/road/__tests__/segmentProjector.test.ts`
+  green, 56 passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,164 unit tests passed.
+
+### Decisions and assumptions
+- F-055 correctly moved phase to road distance, but the dash duty was
+  still too large for a lane mark. This slice preserves world-distance
+  phase while making the visible dash span physically short.
+
+### Coverage ledger
+- GDD-16-ROAD-MARKINGS: covered by short-duty lane marking draws and
+  renderer unit tests.
+- Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS remains open
+  under F-051.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §9, §16, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: CONTRIBUTING.md guide
 
 **GDD sections touched:**

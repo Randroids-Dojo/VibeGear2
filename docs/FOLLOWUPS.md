@@ -10,6 +10,23 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-056: Shorten lane dash duty cycle during uphill texture-phase rendering
+**Created:** 2026-04-27
+**Priority:** polish
+**Status:** done (2026-04-27)
+**Notes:** Manual race observation after F-055: uphill road markings were
+still changing dramatically, but farther apart. The centerline and edge
+context looked stable for longer spans, then popped into a very large
+near-camera wedge while climbing. The issue was not segment-index phase;
+it was that lane dashes used the full `LANE_STRIPE_LEN` period as the
+visible dash span. `src/render/pseudoRoadCanvas.ts` now treats the lane
+marking as a short visible duty inside the longer repeat cycle, so a dash
+entering the foreground is physically short instead of filling an entire
+48 m phase. `src/render/__tests__/pseudoRoadCanvas.test.ts` pins both an
+in-strip duty boundary and the near-camera short-dash case.
+
+---
+
 ## F-055: Replace temporary procedural road markings with texture-phase markings
 **Created:** 2026-04-27
 **Priority:** polish

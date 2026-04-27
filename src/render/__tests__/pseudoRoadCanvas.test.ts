@@ -415,7 +415,7 @@ describe("drawRoad procedural markings", () => {
     expect(laneFills.length).toBeLessThanOrEqual(3);
   });
 
-  it("splits a lane dash at the road-distance phase boundary inside a strip", () => {
+  it("splits a lane dash at the road-distance duty boundary inside a strip", () => {
     const spy = makeCanvasSpy();
     const colors = {
       skyTop: "#000001",
@@ -448,6 +448,47 @@ describe("drawRoad procedural markings", () => {
     );
     expect(laneFills).toHaveLength(1);
     const lanePath = laneFills[0]!.path;
+    expect(lanePath[0]![1]).toBeCloseTo(380, 6);
+    expect(lanePath[1]![1]).toBeCloseTo(380, 6);
+    expect(lanePath[2]![1]).toBeCloseTo(330, 6);
+    expect(lanePath[3]![1]).toBeCloseTo(330, 6);
+  });
+
+  it("keeps a near-camera lane dash short instead of filling the whole strip", () => {
+    const spy = makeCanvasSpy();
+    const colors = {
+      skyTop: "#000001",
+      skyBottom: "#000002",
+      grassLight: "#112233",
+      grassDark: "#223344",
+      rumbleLight: "#334455",
+      rumbleDark: "#445566",
+      roadLight: "#556677",
+      roadDark: "#667788",
+      lane: "#778899",
+    };
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 430,
+        screenW: 220,
+        segment: { ...strip({}).segment, index: 9, worldZ: 54 },
+      }),
+      strip({
+        screenY: 330,
+        screenW: 120,
+        segment: { ...strip({}).segment, index: 10, worldZ: 66 },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, { colors });
+
+    const laneFills = spy.calls.filter(
+      (call): call is FillCall => call.type === "fill" && call.fillStyle === colors.lane,
+    );
+    expect(laneFills).toHaveLength(1);
+    const lanePath = laneFills[0]!.path;
+    expect(lanePath[0]![1]).toBeCloseTo(430, 6);
+    expect(lanePath[1]![1]).toBeCloseTo(430, 6);
     expect(lanePath[2]![1]).toBeCloseTo(380, 6);
     expect(lanePath[3]![1]).toBeCloseTo(380, 6);
   });

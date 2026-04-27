@@ -71,6 +71,8 @@ export const PLAYER_CAR_HEIGHT_FRACTION = 0.18;
 export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
 export const ROADSIDE_DRAW_PERIOD = 10;
 export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.22;
+const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
+const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
 export interface RoadColors {
   skyTop: string;
@@ -696,16 +698,17 @@ function drawStripPair(
       pickAlternatingByWorld(worldZ, RUMBLE_STRIPE_LEN * SEGMENT_LENGTH, colors.roadLight, colors.roadDark),
   );
 
-  drawPhasedTrapezoids(
+  drawDutyCycleTrapezoids(
     ctx,
     near,
     far,
     worldNear,
     worldFar,
     0.03,
-    LANE_STRIPE_LEN * SEGMENT_LENGTH,
+    LANE_DASH_CYCLE_METERS,
+    LANE_DASH_VISIBLE_METERS,
     (worldZ) =>
-      Math.floor(worldZ / (LANE_STRIPE_LEN * SEGMENT_LENGTH)) % 2 === 0
+      modulo(worldZ, LANE_DASH_CYCLE_METERS) < LANE_DASH_VISIBLE_METERS
         ? colors.lane
         : null,
     { minNearHalfW: 1, minFarHalfW: 0.5 },
@@ -723,6 +726,21 @@ function pickAlternatingByWorld(
 
 function nextPhaseBoundary(worldZ: number, periodMeters: number): number {
   return (Math.floor(worldZ / periodMeters) + 1) * periodMeters;
+}
+
+function modulo(value: number, period: number): number {
+  return ((value % period) + period) % period;
+}
+
+function nextDutyBoundary(
+  worldZ: number,
+  cycleMeters: number,
+  visibleMeters: number,
+): number {
+  const phase = modulo(worldZ, cycleMeters);
+  const cycleStart = worldZ - phase;
+  if (phase < visibleMeters) return cycleStart + visibleMeters;
+  return cycleStart + cycleMeters;
 }
 
 function lerpNumber(start: number, end: number, t: number): number {
@@ -755,6 +773,63 @@ function drawPhasedTrapezoids(
   let guard = 0;
   while (cursor < worldFar && guard < 16) {
     const next = Math.min(worldFar, nextPhaseBoundary(cursor, periodMeters));
+    const mid = (cursor + next) / 2;
+    const color = colorAtWorld(mid);
+    if (color) {
+      const tNear = (cursor - worldNear) / span;
+      const tFar = (next - worldNear) / span;
+      const nearEdge = edgeAt(near, far, tNear);
+      const farEdge = edgeAt(near, far, tFar);
+      drawTrapezoid(
+        ctx,
+        color,
+        nearEdge.screenX,
+        nearEdge.screenY,
+        Math.max(widthOptions.minNearHalfW ?? 0, nearEdge.screenW * widthScale),
+        farEdge.screenX,
+        farEdge.screenY,
+        Math.max(widthOptions.minFarHalfW ?? 0, farEdge.screenW * widthScale),
+      );
+    }
+    cursor = next;
+    guard += 1;
+  }
+}
+
+function drawDutyCycleTrapezoids(
+  ctx: CanvasRenderingContext2D,
+  near: StripEdge,
+  far: StripEdge,
+  worldNear: number,
+  worldFar: number,
+  widthScale: number,
+  cycleMeters: number,
+  visibleMeters: number,
+  colorAtWorld: (worldZ: number) => string | null,
+  widthOptions: { minNearHalfW?: number; minFarHalfW?: number } = {},
+): void {
+  const span = worldFar - worldNear;
+  if (span <= 0) return;
+  if (cycleMeters <= 0 || visibleMeters <= 0) return;
+  if (visibleMeters >= cycleMeters) {
+    drawPhasedTrapezoids(
+      ctx,
+      near,
+      far,
+      worldNear,
+      worldFar,
+      widthScale,
+      cycleMeters,
+      colorAtWorld,
+      widthOptions,
+    );
+    return;
+  }
+
+  let cursor = worldNear;
+  let guard = 0;
+  while (cursor < worldFar && guard < 32) {
+    const next = Math.min(worldFar, nextDutyBoundary(cursor, cycleMeters, visibleMeters));
     const mid = (cursor + next) / 2;
     const color = colorAtWorld(mid);
     if (color) {
