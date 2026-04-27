@@ -19,9 +19,10 @@
       ],
       "testRefs": [
         "src/data/__tests__/tracks-content.test.ts",
+        "src/road/__tests__/segmentProjector.test.ts",
         "e2e/race-demo.spec.ts"
       ],
-      "followupRefs": ["F-050"]
+      "followupRefs": ["F-050", "F-054"]
     },
     {
       "id": "GDD-16-CAR-SPRITE-ATLAS",

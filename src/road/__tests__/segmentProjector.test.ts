@@ -200,6 +200,40 @@ describe("project (pseudo-3D segment projector)", () => {
         (near.screenY - far.screenY);
     expect(near.foreground!.screenW).toBeCloseTo(expected, 6);
   });
+
+  it("keeps near-road elevation continuous through a dip-to-climb transition", () => {
+    const segs = flatTrack(96);
+    for (let i = 0; i < 16; i++) {
+      segs[i] = { ...segs[i]!, grade: -0.35 };
+    }
+    for (let i = 16; i < 32; i++) {
+      segs[i] = { ...segs[i]!, grade: 0.35 };
+    }
+
+    let previousY: number | null = null;
+    let maxDelta = 0;
+    for (
+      let cameraZ = 14 * SEGMENT_LENGTH;
+      cameraZ <= 18 * SEGMENT_LENGTH;
+      cameraZ += 0.5
+    ) {
+      const strips = project(
+        segs,
+        makeCamera({ z: cameraZ }),
+        VIEWPORT,
+        { drawDistance: 64 },
+      );
+      const nearRoad = strips[1];
+      if (!nearRoad?.visible) continue;
+      if (previousY !== null) {
+        maxDelta = Math.max(maxDelta, Math.abs(nearRoad.screenY - previousY));
+      }
+      previousY = nearRoad.screenY;
+    }
+
+    expect(previousY).not.toBeNull();
+    expect(maxDelta).toBeLessThan(40);
+  });
 });
 
 describe("upcomingCurvature", () => {

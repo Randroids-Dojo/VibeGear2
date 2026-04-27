@@ -6,6 +6,64 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-054 hill-bottom projection continuity
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) elevation and hills,
+[§10](gdd/10-driving-model-and-physics.md) air and hill behavior,
+[§16](gdd/16-rendering-and-visual-design.md) segment-based road
+projection and camera behavior,
+[§21](gdd/21-technical-design-for-web-implementation.md) renderer
+pipeline.
+**Branch / PR:** `fix/f-054-hill-stutter`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/road/segmentProjector.ts`: replaced per-camera-segment grade
+  resets with a continuous compiled centerline profile. Road strips now
+  subtract the camera's fractional centerline position before projection,
+  so grade reversals stay continuous as the car crosses segment
+  boundaries.
+- `src/road/segmentProjector.ts`: moved ghost car projection onto the
+  same continuous profile so Time Trial overlays stay on the same road
+  plane as the live strips.
+- `src/road/__tests__/segmentProjector.test.ts`: added a deterministic
+  dip-to-climb regression that bounds near-road screen-space movement
+  through the observed hill-bottom transition.
+- `docs/FOLLOWUPS.md`: marked F-054 done.
+- `docs/GDD_COVERAGE.json`: linked the elevation coverage row to the
+  F-054 regression test.
+
+### Verified
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts` green,
+  34 passed.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,160 unit tests passed.
+- `npm run test:e2e` green, 55 passed.
+
+### Decisions and assumptions
+- The observed bounce was handled in the projection layer because the
+  physics state has no vertical collision or ground-contact accumulator
+  today. The fix keeps physics unchanged and makes the rendered road
+  continuous against the car's fractional forward position.
+
+### Coverage ledger
+- GDD-09-ELEVATION-LIVE: covered by continuous centerline sampling,
+  the segment projector regression, and the existing race Playwright
+  authored-elevation smoke.
+- Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS remains open
+  under F-051.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §9, §10, §16, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: F-052 parallax horizon and roadside sprites
 
 **GDD sections touched:**

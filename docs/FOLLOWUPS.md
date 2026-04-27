@@ -13,7 +13,7 @@ or `obsolete` so the trail is preserved.
 ## F-054: Fix hill-bottom car stutter and repeated road collision bounce
 **Created:** 2026-04-27
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** Manual race observation: when the player reaches the bottom
 of a hill and starts climbing the next grade, the player car appears to
 stutter, bounce, or repeatedly collide with the road. This likely sits
@@ -25,6 +25,17 @@ player car does not receive repeated ground-collision impulses or
 visible vertical jitter. Inspect `src/road/segmentProjector.ts`,
 `src/game/physics.ts`, `src/game/raceSession.ts`, and the camera setup
 in `src/app/race/page.tsx`.
+
+Closed by `fix/f-054-hill-stutter`. The issue was in the renderer
+projection path, not the physics collision path: `project` restarted
+curve and grade accumulation from zero at the active camera segment, so
+the road could jump when the player crossed segment boundaries near a
+grade reversal. `src/road/segmentProjector.ts` now samples a continuous
+compiled centerline profile for strips and ghost cars, subtracting the
+camera's fractional centerline position before projection. The regression
+test in `src/road/__tests__/segmentProjector.test.ts` drives through a
+dip-to-climb transition and asserts the near road stays within a bounded
+screen-space delta.
 
 ---
 

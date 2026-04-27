@@ -21,6 +21,72 @@ export interface ProjectorOptions {
   drawDistance?: number;
 }
 
+interface CenterlineProfile {
+  readonly x: readonly number[];
+  readonly y: readonly number[];
+  readonly totalX: number;
+  readonly totalY: number;
+}
+
+interface CenterlineSample {
+  readonly x: number;
+  readonly y: number;
+}
+
+function buildCenterlineProfile(segments: readonly CompiledSegment[]): CenterlineProfile {
+  const x: number[] = new Array(segments.length);
+  const y: number[] = new Array(segments.length);
+  let dx = 0;
+  let worldX = 0;
+  let dy = 0;
+  let worldY = 0;
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    x[i] = worldX;
+    y[i] = worldY;
+    if (!segment) continue;
+    worldX += dx;
+    dx += segment.curve;
+    worldY += dy;
+    dy += segment.grade;
+  }
+
+  return { x, y, totalX: worldX, totalY: worldY };
+}
+
+function sampleCenterline(
+  profile: CenterlineProfile,
+  continuousIndex: number,
+): CenterlineSample {
+  const totalSegments = profile.x.length;
+  if (totalSegments === 0) return { x: 0, y: 0 };
+
+  const segmentIndex = Math.floor(continuousIndex);
+  const percent = continuousIndex - segmentIndex;
+  const wrappedIndex =
+    ((segmentIndex % totalSegments) + totalSegments) % totalSegments;
+  const lap = Math.floor(segmentIndex / totalSegments);
+  const nextSegmentIndex = segmentIndex + 1;
+  const wrappedNext =
+    ((nextSegmentIndex % totalSegments) + totalSegments) % totalSegments;
+  const nextLap = Math.floor(nextSegmentIndex / totalSegments);
+
+  const startX = (profile.x[wrappedIndex] ?? 0) + profile.totalX * lap;
+  const startY = (profile.y[wrappedIndex] ?? 0) + profile.totalY * lap;
+  const endX = (profile.x[wrappedNext] ?? 0) + profile.totalX * nextLap;
+  const endY = (profile.y[wrappedNext] ?? 0) + profile.totalY * nextLap;
+
+  return {
+    x: lerp(startX, endX, percent),
+    y: lerp(startY, endY, percent),
+  };
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
 /**
  * Project a compiled segment list to screen-space strips.
  *
@@ -53,25 +119,28 @@ export function project(
   const wrappedCameraZ =
     ((camera.z % trackLength) + trackLength) % trackLength;
   const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
+  const cameraContinuousIndex = wrappedCameraZ / SEGMENT_LENGTH;
+  const centerline = buildCenterlineProfile(segments);
+  const cameraCenterline = sampleCenterline(centerline, cameraContinuousIndex);
 
   const halfW = viewport.width / 2;
   const halfH = viewport.height / 2;
 
   // Pre-pass: per-segment curve and grade accumulation, then projection.
-  let dx = 0;
-  let x = 0;
-  let dy = 0;
-  let y = 0;
   const strips: Strip[] = new Array(drawDistance);
   for (let n = 0; n < drawDistance; n++) {
-    const segIndex = (baseSegmentIndex + n) % totalSegments;
+    const logicalIndex = baseSegmentIndex + n;
+    const segIndex = logicalIndex % totalSegments;
     const segment = segments[segIndex];
     if (!segment) continue;
 
-    // Camera-space world position. Curve and grade are pre-scaled in
-    // compiled units by the track compiler.
-    const worldX = x - camera.x;
-    const worldY = y - camera.y;
+    const stripCenterline = sampleCenterline(centerline, logicalIndex);
+    // Camera-space world position. The centerline profile keeps curve
+    // and grade continuous across fractional camera positions so the
+    // rendered road does not jump when the camera crosses a segment
+    // boundary at a hill bottom or crest.
+    const worldX = stripCenterline.x - cameraCenterline.x - camera.x;
+    const worldY = stripCenterline.y - cameraCenterline.y - camera.y;
     // Use the segment offset relative to the camera so wrap-around works.
     // `n * SEGMENT_LENGTH` is the segment's distance ahead of the camera
     // segment; subtract the fractional camera offset within its segment so
@@ -108,12 +177,6 @@ export function project(
       };
     }
     strips[n] = strip;
-
-    // Advance the curve and grade integrators for the *next* segment.
-    x += dx;
-    dx += segment.curve;
-    y += dy;
-    dy += segment.grade;
   }
 
   // Near-to-far maxY cull (Gordon's racer.js pattern).
@@ -302,11 +365,10 @@ const HIDDEN_GHOST_PROJECTION: Readonly<GhostCarProjection> = Object.freeze({
  *     near edge sits at `cameraDepth / (ghostZ - cameraZ)` scale, which
  *     is the same expression the strip loop uses.
  *
- * Walks segments forward from the camera up to (and including) the
- * segment containing the ghost, accumulating the same `dx` / `x` and
- * `dy` / `y` integrators the strip projector uses. The ghost's lateral
- * `ghostX` is added to the accumulated curve offset before the camera
- * subtraction, which mirrors how a live car at `(z, x)` would project.
+ * Samples the same continuous compiled centerline profile used by the
+ * strip projector. The ghost's lateral `ghostX` is added to the sampled
+ * centerline offset before camera subtraction, which mirrors how a live
+ * car at `(z, x)` would project.
  *
  * Edge cases:
  *
@@ -365,9 +427,6 @@ export function projectGhostCar(
     ((camera.z % trackLength) + trackLength) % trackLength;
   const wrappedGhostZ =
     ((ghostZ % trackLength) + trackLength) % trackLength;
-  const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
-  const cameraOffsetWithinSegment =
-    wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
 
   // Forward distance from the camera to the ghost. A ghost behind the
   // camera in lap-relative terms wraps to "one lap ahead" so a player
@@ -384,31 +443,17 @@ export function projectGhostCar(
     return HIDDEN_GHOST_PROJECTION;
   }
 
-  // Walk segments from the camera segment up to (but not including) the
-  // segment that contains the ghost, accumulating the same dx / x and
-  // dy / y the strip projector uses. The integrator must run before the
-  // ghost's segment so the `worldX` / `worldY` pair below sits at the
-  // ghost's near edge, identical to how the strip projector samples a
-  // strip's near edge.
-  const ghostSegmentOffset = Math.floor(
-    (forwardZ + cameraOffsetWithinSegment) / SEGMENT_LENGTH,
+  const centerline = buildCenterlineProfile(segments);
+  const cameraCenterline = sampleCenterline(
+    centerline,
+    wrappedCameraZ / SEGMENT_LENGTH,
   );
-  let dx = 0;
-  let x = 0;
-  let dy = 0;
-  let y = 0;
-  for (let n = 0; n < ghostSegmentOffset; n++) {
-    const segIndex = (baseSegmentIndex + n) % totalSegments;
-    const segment = segments[segIndex];
-    if (!segment) continue;
-    x += dx;
-    dx += segment.curve;
-    y += dy;
-    dy += segment.grade;
-  }
-
-  const worldX = x + ghostX - camera.x;
-  const worldY = y - camera.y;
+  const ghostCenterline = sampleCenterline(
+    centerline,
+    (wrappedCameraZ + forwardZ) / SEGMENT_LENGTH,
+  );
+  const worldX = ghostCenterline.x + ghostX - cameraCenterline.x - camera.x;
+  const worldY = ghostCenterline.y - cameraCenterline.y - camera.y;
   const sz = forwardZ;
   const scale = camera.depth / sz;
   const halfW = viewport.width / 2;
