@@ -79,7 +79,12 @@
         "docs/gdd/17-art-direction.md"
       ],
       "requirement": "Cars render wet spray and snow trail variants from weather-aware visual state.",
-      "coverage": ["open-followup"],
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": ["src/render/__tests__/pseudoRoadCanvas.test.ts"],
       "followupRefs": ["F-058"]
     },
     {

@@ -6,11 +6,64 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-058 weather car trails
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather visual
+effects,
+[§16](gdd/16-rendering-and-visual-design.md) car sprite weather
+variants,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer pipeline.
+**Branch / PR:** `feat/f-058-weather-car-trails`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added weather-aware live car trail
+  rendering. Clear, dusk, and night draw no trail; rain variants draw
+  blue-white spray; snow draws pale mist behind the car.
+- `src/app/race/page.tsx`: passes the active race weather from the
+  race config / compiled track into the live player car draw path.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covers clear, wet,
+  and snow trail behavior plus alpha restoration.
+- `docs/FOLLOWUPS.md`: closed F-058.
+- `docs/GDD_COVERAGE.json`: marked GDD-16-CAR-WEATHER-VARIANTS as
+  implemented with renderer test coverage.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 26 passed.
+- `npm run content-lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,174 unit tests passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+
+### Decisions and assumptions
+- Weather trails are renderer effects attached to the live player car,
+  not extra sprite atlas rows. This matches the current Canvas2D effect
+  stack and lets weather state drive the effect directly.
+- Dusk and night do not imply spray or snow by themselves, so they draw
+  no car trail until a later lighting slice adds glow or headlight VFX.
+
+### Coverage ledger
+- GDD-16-CAR-WEATHER-VARIANTS: covered by weather-aware live car trails
+  and renderer tests.
+- Uncovered adjacent requirements: rain streaks, road sheen, snowfall,
+  fog fade, night bloom, and weather physics remain broader §14 work.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §14, §16, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: F-060 car turn direction
 
 **GDD sections touched:**
 [§16](gdd/16-rendering-and-visual-design.md) car sprite direction.
-**Branch / PR:** `fix/f-060-car-turn-direction`, PR pending.
+**Branch / PR:** `fix/f-060-car-turn-direction`, PR #24.
 **Status:** Implemented.
 
 ### Done
