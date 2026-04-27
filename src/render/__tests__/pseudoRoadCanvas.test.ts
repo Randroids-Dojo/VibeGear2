@@ -26,6 +26,8 @@ import {
   GHOST_CAR_DEFAULT_FILL,
   PLAYER_CAR_DEFAULT_FILL,
   PLAYER_CAR_DEFAULT_SHADOW,
+  PLAYER_CAR_DEFAULT_TAIL_LIGHT,
+  PLAYER_CAR_DEFAULT_TIRE,
   PLAYER_CAR_DEFAULT_WINDSHIELD,
   PLAYER_CAR_HEIGHT_FRACTION,
   PLAYER_CAR_WIDTH_TO_HEIGHT,
@@ -306,23 +308,40 @@ describe("drawRoad player car overlay", () => {
     expect(height * PLAYER_CAR_WIDTH_TO_HEIGHT).toBeCloseTo(99.36, 2);
   });
 
-  it("paints two headlight rects after the body silhouette", () => {
+  it("paints tires, rear deck, and two tail-light rects", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: {} });
 
     const fillRects = spy.calls.filter(
       (c): c is FillRectCall => c.type === "fillRect",
     );
-    expect(fillRects).toHaveLength(3);
-    const headlightW = VIEWPORT.height *
+    expect(fillRects).toHaveLength(6);
+
+    const tireW = VIEWPORT.height *
       PLAYER_CAR_HEIGHT_FRACTION *
       PLAYER_CAR_WIDTH_TO_HEIGHT *
-      0.16;
-    const headlightH = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * 0.08;
-    expect(fillRects[1]!.w).toBeCloseTo(headlightW, 6);
-    expect(fillRects[1]!.h).toBeCloseTo(headlightH, 6);
-    expect(fillRects[2]!.w).toBeCloseTo(headlightW, 6);
-    expect(fillRects[2]!.h).toBeCloseTo(headlightH, 6);
+      0.18;
+    const tireH = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * 0.5;
+    expect(fillRects[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fillRects[1]!.w).toBeCloseTo(tireW, 6);
+    expect(fillRects[1]!.h).toBeCloseTo(tireH, 6);
+    expect(fillRects[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fillRects[2]!.w).toBeCloseTo(tireW, 6);
+    expect(fillRects[2]!.h).toBeCloseTo(tireH, 6);
+
+    expect(fillRects[3]!.fillStyle).toBe("#d7a91e");
+
+    const tailLightW = VIEWPORT.height *
+      PLAYER_CAR_HEIGHT_FRACTION *
+      PLAYER_CAR_WIDTH_TO_HEIGHT *
+      0.18;
+    const tailLightH = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * 0.08;
+    expect(fillRects[4]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
+    expect(fillRects[4]!.w).toBeCloseTo(tailLightW, 6);
+    expect(fillRects[4]!.h).toBeCloseTo(tailLightH, 6);
+    expect(fillRects[5]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
+    expect(fillRects[5]!.w).toBeCloseTo(tailLightW, 6);
+    expect(fillRects[5]!.h).toBeCloseTo(tailLightH, 6);
   });
 
   it("restores fillStyle after painting the player car", () => {
@@ -332,6 +351,8 @@ describe("drawRoad player car overlay", () => {
       playerCar: {
         fill: "#aa3300",
         shadow: "#001122",
+        tire: "#050505",
+        tailLight: "#ff0000",
         windshield: "#223344",
       },
     });

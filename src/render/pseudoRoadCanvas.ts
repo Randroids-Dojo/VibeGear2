@@ -56,6 +56,8 @@ export const GHOST_CAR_DEFAULT_FILL = "#5fb6ff";
 export const PLAYER_CAR_DEFAULT_FILL = "#f2c94c";
 export const PLAYER_CAR_DEFAULT_SHADOW = "rgba(0, 0, 0, 0.55)";
 export const PLAYER_CAR_DEFAULT_WINDSHIELD = "#18243d";
+export const PLAYER_CAR_DEFAULT_TIRE = "#10151f";
+export const PLAYER_CAR_DEFAULT_TAIL_LIGHT = "#ff3d38";
 
 /**
  * Standard player-car footprint. §16 pins the player car at 16 to 22
@@ -143,6 +145,8 @@ export interface DrawRoadOptions {
   playerCar?: {
     fill?: string;
     shadow?: string;
+    tire?: string;
+    tailLight?: string;
     windshield?: string;
   } | null;
 }
@@ -338,36 +342,45 @@ function drawPlayerCar(
 
   const prevFill = ctx.fillStyle;
   try {
+    ctx.fillStyle = car.tire ?? PLAYER_CAR_DEFAULT_TIRE;
+    ctx.fillRect(centerX - halfW * 0.72, topY + height * 0.38, width * 0.18, height * 0.5);
+    ctx.fillRect(centerX + halfW * 0.54, topY + height * 0.38, width * 0.18, height * 0.5);
+
     ctx.fillStyle = car.shadow ?? PLAYER_CAR_DEFAULT_SHADOW;
     ctx.beginPath();
-    ctx.moveTo(centerX - halfW * 0.78, bottomY);
-    ctx.lineTo(centerX + halfW * 0.78, bottomY);
-    ctx.lineTo(centerX + halfW * 0.48, topY + height * 0.1);
-    ctx.lineTo(centerX - halfW * 0.48, topY + height * 0.1);
+    ctx.moveTo(centerX - halfW * 0.82, bottomY);
+    ctx.lineTo(centerX + halfW * 0.82, bottomY);
+    ctx.lineTo(centerX + halfW * 0.56, topY + height * 0.12);
+    ctx.lineTo(centerX - halfW * 0.56, topY + height * 0.12);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = car.fill ?? PLAYER_CAR_DEFAULT_FILL;
     ctx.beginPath();
-    ctx.moveTo(centerX - halfW * 0.62, bottomY - height * 0.04);
-    ctx.lineTo(centerX + halfW * 0.62, bottomY - height * 0.04);
-    ctx.lineTo(centerX + halfW * 0.36, topY);
-    ctx.lineTo(centerX - halfW * 0.36, topY);
+    ctx.moveTo(centerX - halfW * 0.68, bottomY - height * 0.06);
+    ctx.lineTo(centerX + halfW * 0.68, bottomY - height * 0.06);
+    ctx.lineTo(centerX + halfW * 0.46, topY + height * 0.04);
+    ctx.lineTo(centerX + halfW * 0.24, topY);
+    ctx.lineTo(centerX - halfW * 0.24, topY);
+    ctx.lineTo(centerX - halfW * 0.46, topY + height * 0.04);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = car.windshield ?? PLAYER_CAR_DEFAULT_WINDSHIELD;
     ctx.beginPath();
-    ctx.moveTo(centerX - halfW * 0.28, topY + height * 0.18);
-    ctx.lineTo(centerX + halfW * 0.28, topY + height * 0.18);
-    ctx.lineTo(centerX + halfW * 0.18, topY + height * 0.5);
-    ctx.lineTo(centerX - halfW * 0.18, topY + height * 0.5);
+    ctx.moveTo(centerX - halfW * 0.28, topY + height * 0.2);
+    ctx.lineTo(centerX + halfW * 0.28, topY + height * 0.2);
+    ctx.lineTo(centerX + halfW * 0.18, topY + height * 0.48);
+    ctx.lineTo(centerX - halfW * 0.18, topY + height * 0.48);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = "#f7f7f7";
-    ctx.fillRect(centerX - halfW * 0.5, bottomY - height * 0.24, width * 0.16, height * 0.08);
-    ctx.fillRect(centerX + halfW * 0.34, bottomY - height * 0.24, width * 0.16, height * 0.08);
+    ctx.fillStyle = "#d7a91e";
+    ctx.fillRect(centerX - halfW * 0.42, topY + height * 0.54, width * 0.84, height * 0.09);
+
+    ctx.fillStyle = car.tailLight ?? PLAYER_CAR_DEFAULT_TAIL_LIGHT;
+    ctx.fillRect(centerX - halfW * 0.54, bottomY - height * 0.24, width * 0.18, height * 0.08);
+    ctx.fillRect(centerX + halfW * 0.36, bottomY - height * 0.24, width * 0.18, height * 0.08);
   } finally {
     ctx.fillStyle = prevFill;
   }

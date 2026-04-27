@@ -18,12 +18,18 @@ Correct them by adding a new entry that references the old one.
 - `src/render/pseudoRoadCanvas.ts`: added a live player-car overlay
   placeholder that paints after the road and dust layers, using the
   §16 standard camera footprint of 18 percent viewport height.
+- `src/render/pseudoRoadCanvas.ts`: refined the placeholder into a
+  rear chase-view silhouette with tires, rear deck, and tail lights so
+  it reads less like a flat UI icon.
 - `src/app/race/page.tsx`: passes the player-car overlay option to the
   road renderer every race frame so a fresh race has a visible car
   anchor at the bottom of the view.
+- `src/app/race/page.tsx`: lets the canvas scale up to a 1280 px
+  wide race viewport and clips the debug metrics out of sighted
+  layout while keeping the existing Playwright test IDs available.
 - `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered the player
-  car overlay footprint, default colours, custom colours, headlights,
-  and omitted / null behavior.
+  car overlay footprint, default colours, custom colours, tires,
+  tail lights, and omitted / null behavior.
 
 ### Verified
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
@@ -32,6 +38,9 @@ Correct them by adding a new entry that references the old one.
 - `npm run typecheck` clean.
 - Browser pixel check against `http://localhost:3000/race` found
   3,160 live-car pixels in the lower canvas during countdown.
+- Browser layout check at 2048x1240 confirmed a 1280x768 canvas,
+  a clipped 1x1 debug metrics box, 3,954 yellow car pixels, and
+  217 red tail-light pixels during countdown.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 1 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and
   content-lint all passed; 2,128 unit tests passed.
