@@ -41,7 +41,18 @@
         "docs/gdd/21-technical-design-for-web-implementation.md"
       ],
       "requirement": "The race renderer consumes region parallax layers and compiled roadside sprite ids at distinct depths.",
-      "coverage": ["open-followup"],
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/render/parallax.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/data/tracks/test-elevation.json"
+      ],
+      "testRefs": [
+        "src/render/__tests__/parallax.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
       "followupRefs": ["F-052"]
     },
     {

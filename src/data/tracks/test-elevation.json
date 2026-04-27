@@ -10,14 +10,14 @@
   "weatherOptions": ["clear"],
   "difficulty": 1,
   "segments": [
-    { "len": 72, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 156, "curve": 0, "grade": 0.09, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 132, "curve": 0.18, "grade": -0.08, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 120, "curve": 0, "grade": 0.04, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 120, "curve": -0.22, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 180, "curve": 0, "grade": -0.03, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 180, "curve": 0.14, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
-    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
+    { "len": 72, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 156, "curve": 0, "grade": 0.09, "roadsideLeft": "tree_pine", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 132, "curve": 0.18, "grade": -0.08, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 120, "curve": 0, "grade": 0.04, "roadsideLeft": "tree_pine", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 120, "curve": -0.22, "grade": 0, "roadsideLeft": "rock_boulder", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 180, "curve": 0, "grade": -0.03, "roadsideLeft": "light_pole", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 180, "curve": 0.14, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] }
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" },

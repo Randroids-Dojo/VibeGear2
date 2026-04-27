@@ -187,6 +187,29 @@ describe("drawParallax", () => {
     ]);
   });
 
+  it("uses a layer fallback fill when the image is null", () => {
+    const { ctx, calls } = makeSpy();
+    const layer: ParallaxLayer = {
+      id: "hills",
+      image: null,
+      scrollX: 0.6,
+      bandHeight: 80,
+      yAnchor: 1,
+      fallbackFill: "#123456",
+    };
+    drawParallax(ctx, [layer], { x: 0, z: 0 }, VIEWPORT);
+    expect(calls).toEqual([
+      {
+        type: "fillRect",
+        fillStyle: "#123456",
+        x: 0,
+        y: VIEWPORT.height - 80,
+        w: VIEWPORT.width,
+        h: 80,
+      },
+    ]);
+  });
+
   it("anchors yAnchor=1 layers flush with the viewport bottom", () => {
     const { ctx, calls } = makeSpy();
     const layer: ParallaxLayer = {

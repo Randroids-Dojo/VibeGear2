@@ -10,6 +10,24 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-054: Fix hill-bottom car stutter and repeated road collision bounce
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** open
+**Notes:** Manual race observation: when the player reaches the bottom
+of a hill and starts climbing the next grade, the player car appears to
+stutter, bounce, or repeatedly collide with the road. This likely sits
+at the seam between authored grade projection, camera road-height
+sampling, and physics / damage collision feedback. Reproduce on the
+default `/race` elevation track, then add a deterministic regression
+test that drives through the dip-to-climb transition and asserts the
+player car does not receive repeated ground-collision impulses or
+visible vertical jitter. Inspect `src/road/segmentProjector.ts`,
+`src/game/physics.ts`, `src/game/raceSession.ts`, and the camera setup
+in `src/app/race/page.tsx`.
+
+---
+
 ## F-053: Add a machine-checkable GDD coverage ledger
 **Created:** 2026-04-26
 **Priority:** blocks-release
@@ -33,13 +51,25 @@ refs, plus the latest progress-log entry's coverage-ledger section.
 ## F-052: Add parallax horizon and roadside sprites to the race renderer
 **Created:** 2026-04-26
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** §16 and §21 call for layered horizon art, parallax
 backgrounds, and roadside sprites drawn from compiled track segment
 content. The current race view renders flat sky, grass, and road strips
 only. Wire the race renderer to consume region background layers and
 roadside sprite ids from compiled track data, then verify that the
 assets move at distinct depths in a browser smoke.
+
+Closed by `feat/f-052-parallax-roadside`. The live race route now
+builds three procedural temperate parallax layers (sky, mountains,
+hills) and passes them to `drawRoad` with the live camera so each layer
+uses its own scroll depth. `drawRoad` now reads `roadsideLeftId` and
+`roadsideRightId` from compiled strips and paints original procedural
+billboards for sign, tree, fence, rock, and light-pole ids. The bundled
+`test/elevation` smoke track now authors non-default roadside ids so
+the default `/race` path proves both elevation and track-driven scenery.
+Unit tests cover parallax fallback fills and roadside id drawing; the
+race Playwright smoke samples canvas pixels for the horizon layer and
+roadside sign colour.
 
 ---
 

@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-052 parallax horizon and roadside sprites
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) roadside scenery,
+[§16](gdd/16-rendering-and-visual-design.md) parallax backgrounds and
+roadside objects,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer.
+**Branch / PR:** `feat/f-052-parallax-roadside`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/race/page.tsx`: builds three procedural temperate parallax
+  layers and passes them to `drawRoad` with the live camera.
+- `src/render/parallax.ts`: accepts canvas-backed layers and
+  per-layer fallback fills while preserving the existing missing-art
+  placeholder path.
+- `src/render/pseudoRoadCanvas.ts`: consumes compiled
+  `roadsideLeftId` and `roadsideRightId` values and paints procedural
+  sign, tree, fence, rock, and light-pole billboards at projected
+  roadside depth.
+- `src/data/tracks/test-elevation.json`: authors non-default roadside
+  ids so the default `/race` smoke path proves track-driven scenery.
+- `e2e/race-demo.spec.ts`: samples live canvas pixels for the horizon
+  layer and roadside sign colour.
+- `docs/FOLLOWUPS.md`: marked F-052 done.
+- `docs/GDD_COVERAGE.json`: changed GDD-16-PARALLAX-ROADSIDE from
+  open followup to implemented code plus automated tests.
+- `docs/WORKING_AGREEMENT.md`: added PR review-thread inspection and
+  response requirements to the merge process so Copilot and inline
+  feedback are handled during future loops.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/parallax.test.ts src/data/__tests__/tracks-content.test.ts`
+  green, 41 passed.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed; 2,158 unit tests passed.
+- `npm run test:e2e` green, 55 passed.
+- Copilot PR review thread on roadside vertical culling addressed with
+  a focused `pseudoRoadCanvas` regression test; the focused test file
+  and `npm run typecheck` are green after the fix.
+- Follow-up Copilot PR review thread on e2e pixel scanning addressed by
+  short-circuiting the helper after a small threshold.
+
+### Decisions and assumptions
+- Binary region art is not present in the repo yet, so this slice uses
+  original procedural Canvas2D layer art and billboard shapes. The draw
+  path is the same parallax and compiled-roadside contract later atlas
+  assets will use.
+- Roadside drawing skips the `default` id and maps existing legacy
+  fixture ids (`palms_sparse`, `marina_signs`, `guardrail`,
+  `water_wall`) to matching procedural categories so older content still
+  renders useful scenery.
+
+### Coverage ledger
+- GDD-16-PARALLAX-ROADSIDE: covered by live race wiring, procedural
+  parallax layers, compiled roadside id drawing, unit tests, and the
+  race Playwright canvas-pixel smoke.
+- Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS remains open
+  under F-051.
+
+### Followups created
+- F-054: hill-bottom car stutter / repeated road-collision bounce
+  observed on the live elevation track.
+
+### GDD edits
+None. This slice implements existing §9, §16, and §21 requirements.
+
+---
+
 ## 2026-04-27: Slice: F-014 key remapping UI and persistence
 
 **GDD sections touched:**
