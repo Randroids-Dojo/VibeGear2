@@ -48,8 +48,8 @@ renderer pipeline.
 - The screen-bottom foreground edge represents the camera-local road
   plane, not a distant projected curve sample. This keeps the bottom of
   the road stable while still letting the road ahead curve and crest.
-- The Sparrow atlas row uses right-leaning frames near the start of the
-  row and left-leaning frames near the end, so the runtime mapping must
+- The Sparrow atlas row uses left-leaning frames near the start of the
+  row and right-leaning frames near the end, so the runtime mapping must
   invert the previous F-051 sign choice.
 
 ### Coverage ledger
