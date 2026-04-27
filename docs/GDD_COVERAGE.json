@@ -70,7 +70,7 @@
         "src/render/__tests__/spriteAtlas.test.ts",
         "src/render/__tests__/carFrame.test.ts"
       ],
-      "followupRefs": ["F-051", "F-059"]
+      "followupRefs": ["F-051", "F-059", "F-060"]
     },
     {
       "id": "GDD-16-CAR-WEATHER-VARIANTS",

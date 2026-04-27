@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-060 car turn direction
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) car sprite direction.
+**Branch / PR:** `fix/f-060-car-turn-direction`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/carFrame.ts`: corrected the live car atlas frame mapper
+  so positive steering uses the Sparrow row's positive-skew right-turn
+  frames, and negative steering uses the row-end left-turn frames.
+- `src/render/__tests__/carFrame.test.ts`: updated right, left, and
+  curve-influenced frame selection regressions to match the actual
+  atlas direction.
+- `docs/FOLLOWUPS.md`: added and closed F-060.
+- `docs/GDD_COVERAGE.json`: linked F-060 to car sprite atlas coverage.
+
+### Verified
+- `npx vitest run src/render/__tests__/carFrame.test.ts` green, 4
+  passed.
+- `npm run content-lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,171 unit tests passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+
+### Decisions and assumptions
+- The visible turn direction is defined by the authored Sparrow atlas
+  row, not by the previous F-059 row-end assumption.
+
+### Coverage ledger
+- GDD-16-CAR-SPRITE-ATLAS: extended to cover live car left/right turn
+  direction against the atlas row.
+- Uncovered adjacent requirements: weather-specific spray and snow trail
+  variants remain tracked under F-058.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §16 intent.
+
+---
+
 ## 2026-04-27: Slice: F-059 turn crest road warp
 
 **GDD sections touched:**
