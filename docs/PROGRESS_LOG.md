@@ -48,6 +48,8 @@ renderer.
 - Copilot PR review thread on roadside vertical culling addressed with
   a focused `pseudoRoadCanvas` regression test; the focused test file
   and `npm run typecheck` are green after the fix.
+- Follow-up Copilot PR review thread on e2e pixel scanning addressed by
+  short-circuiting the helper after a small threshold.
 
 ### Decisions and assumptions
 - Binary region art is not present in the repo yet, so this slice uses

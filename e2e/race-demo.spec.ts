@@ -21,15 +21,16 @@ async function centerRoadTopY(canvas: Locator): Promise<number> {
   });
 }
 
-async function countCanvasColourNear(
+async function hasCanvasColourNear(
   canvas: Locator,
   target: { r: number; g: number; b: number },
   tolerance: number,
-): Promise<number> {
-  return canvas.evaluate((node, { colour, maxDelta }) => {
+  threshold: number,
+): Promise<boolean> {
+  return canvas.evaluate((node, { colour, maxDelta, threshold }) => {
     const canvasEl = node as HTMLCanvasElement;
     const ctx = canvasEl.getContext("2d");
-    if (!ctx) return 0;
+    if (!ctx) return false;
     const { data } = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
     let count = 0;
     for (let i = 0; i < data.length; i += 4) {
@@ -39,10 +40,11 @@ async function countCanvasColourNear(
         Math.abs((data[i + 2] ?? 0) - colour.b) <= maxDelta
       ) {
         count += 1;
+        if (count >= threshold) return true;
       }
     }
-    return count;
-  }, { colour: target, maxDelta: tolerance });
+    return false;
+  }, { colour: target, maxDelta: tolerance, threshold });
 }
 
 /**
@@ -123,17 +125,17 @@ test.describe("phase 1 race demo", () => {
       timeout: 10_000,
     });
 
-    const mountainPixels = await countCanvasColourNear(canvas, {
+    const hasMountainPixels = await hasCanvasColourNear(canvas, {
       r: 37,
       g: 58,
       b: 85,
-    }, 3);
-    const signPixels = await countCanvasColourNear(canvas, {
+    }, 3, 8);
+    const hasSignPixels = await hasCanvasColourNear(canvas, {
       r: 231,
       g: 210,
       b: 77,
-    }, 3);
-    expect(mountainPixels).toBeGreaterThan(0);
-    expect(signPixels).toBeGreaterThan(0);
+    }, 3, 8);
+    expect(hasMountainPixels).toBe(true);
+    expect(hasSignPixels).toBe(true);
   });
 });
