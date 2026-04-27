@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-057 turn foreground projection continuity
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) road curvature and readable edges,
+[§16](gdd/16-rendering-and-visual-design.md) segment-based projection
+and foreground speed cues,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer pipeline.
+**Branch / PR:** `fix/f-057-turn-foreground-shear`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/road/segmentProjector.ts`: changed the foreground endpoint to
+  extrapolate both centerline `screenX` and half-width from the nearest
+  two visible projected strips. Turning left or right no longer pins
+  the screen-bottom road center to a stale near-strip center.
+- `src/road/__tests__/segmentProjector.test.ts`: added a lateral-road
+  motion regression that proves the foreground endpoint follows the
+  projected centerline instead of shearing away from it.
+- `docs/FOLLOWUPS.md`: added and closed F-057 for the observed turn
+  foreground shear.
+- `docs/GDD_COVERAGE.json`: linked F-057 to GDD-09-ELEVATION-LIVE
+  because the same projection contract owns grade, curve, and
+  foreground road continuity.
+
+### Verified
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts` green,
+  36 passed.
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/road/__tests__/segmentProjector.test.ts`
+  green, 57 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,165 unit tests passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+
+### Decisions and assumptions
+- The fix stays in the projector rather than the Canvas2D renderer
+  because the renderer should consume a consistent strip-pair contract.
+  The bottom endpoint now follows the same projected centerline as the
+  visible road.
+
+### Coverage ledger
+- GDD-09-ELEVATION-LIVE: extended to cover foreground centerline
+  continuity while turning.
+- Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS remains open
+  under F-051.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §9, §16, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: F-056 uphill lane-marking duty cycle
 
 **GDD sections touched:**

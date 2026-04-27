@@ -10,6 +10,22 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-057: Fix turn-induced foreground road shear
+**Created:** 2026-04-27
+**Priority:** polish
+**Status:** done (2026-04-27)
+**Notes:** Manual race observation: steering left or right could make
+the foreground road edge shear diagonally across the lower viewport. The
+projector extended foreground road width to the screen bottom but kept
+the bottom centerline pinned to the closest visible strip's `screenX`.
+On turns or lateral camera offsets, that made the near edge follow a
+different centerline than the next strip pair. `src/road/segmentProjector.ts`
+now extrapolates the foreground centerline and half-width from the
+nearest two visible strips. `src/road/__tests__/segmentProjector.test.ts`
+pins the lateral-motion regression.
+
+---
+
 ## F-056: Shorten lane dash duty cycle during uphill texture-phase rendering
 **Created:** 2026-04-27
 **Priority:** polish

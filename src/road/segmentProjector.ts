@@ -200,16 +200,22 @@ function attachForegroundProjection(strips: Strip[], viewport: Viewport): void {
   if (near.screenY >= viewport.height) return;
 
   const far = strips.slice(nearIndex + 1).find((strip) => strip.visible);
-  const projectedHalfW =
+  const extrapolation =
     far && near.screenY > far.screenY
-      ? near.screenW +
-        ((near.screenW - far.screenW) * (viewport.height - near.screenY)) /
-          (near.screenY - far.screenY)
+      ? (viewport.height - near.screenY) / (near.screenY - far.screenY)
+      : 0;
+  const projectedX =
+    far && extrapolation > 0
+      ? near.screenX + (near.screenX - far.screenX) * extrapolation
+      : near.screenX;
+  const projectedHalfW =
+    far && extrapolation > 0
+      ? near.screenW + (near.screenW - far.screenW) * extrapolation
       : near.screenW;
   const screenW = Math.max(near.screenW, projectedHalfW);
 
   near.foreground = {
-    screenX: near.screenX,
+    screenX: projectedX,
     screenY: viewport.height,
     screenW,
   };
