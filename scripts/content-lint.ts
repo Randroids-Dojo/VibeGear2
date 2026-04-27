@@ -128,7 +128,9 @@ export interface LintHit {
     | "binary-without-manifest"
     | "track-real-circuit-name"
     | "car-manufacturer-name"
-    | "topgear-text";
+    | "topgear-text"
+    | "gdd-coverage-ledger"
+    | "progress-log-coverage";
   detail: string;
 }
 
@@ -385,6 +387,339 @@ function safeRead(abs: string): string | null {
   }
 }
 
+// GDD coverage ledger -------------------------------------------------------
+
+const GDD_COVERAGE_PATH = "docs/GDD_COVERAGE.json";
+
+const COVERAGE_KINDS = [
+  "implemented-code",
+  "automated-test",
+  "open-followup",
+  "open-question",
+] as const;
+
+type CoverageKind = (typeof COVERAGE_KINDS)[number];
+
+const COVERAGE_KIND_SET = new Set<string>(COVERAGE_KINDS);
+
+interface CoverageLedgerEntry {
+  id: string;
+  gddSections: string[];
+  requirement: string;
+  coverage: CoverageKind[];
+  implementationRefs?: string[];
+  testRefs?: string[];
+  followupRefs?: string[];
+  questionRefs?: string[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function stringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  if (!value.every((item) => typeof item === "string" && item.trim().length > 0)) {
+    return null;
+  }
+  return value;
+}
+
+function parseStatusEntries(markdown: string, prefix: "F" | "Q"): Map<string, string> {
+  const statuses = new Map<string, string>();
+  const re = new RegExp(
+    `^## (${prefix}-\\d+):[\\s\\S]*?^\\*\\*Status:\\*\\* ([^\\n]+)`,
+    "gmu",
+  );
+  for (const match of markdown.matchAll(re)) {
+    const id = match[1];
+    const status = match[2];
+    if (id && status) {
+      statuses.set(id, status.trim().toLowerCase());
+    }
+  }
+  return statuses;
+}
+
+function refPathExists(repoRoot: string, ref: string): boolean {
+  const pathOnly = ref.split("#")[0] ?? ref;
+  const abs = resolve(repoRoot, pathOnly);
+  return existsSync(abs);
+}
+
+function parseCoverageEntry(raw: unknown): CoverageLedgerEntry | string {
+  if (!isRecord(raw)) return "entry must be an object";
+  const id = typeof raw.id === "string" ? raw.id : "";
+  if (!/^GDD-\d{2}-[A-Z0-9-]+$/u.test(id)) {
+    return "entry id must match GDD-NN-SLUG";
+  }
+
+  const gddSections = stringArray(raw.gddSections);
+  if (!gddSections || gddSections.length === 0) {
+    return `${id}: gddSections must be a non-empty string array`;
+  }
+
+  const requirement =
+    typeof raw.requirement === "string" ? raw.requirement.trim() : "";
+  if (requirement.length === 0) {
+    return `${id}: requirement must be a non-empty string`;
+  }
+
+  const coverageRaw = stringArray(raw.coverage);
+  if (!coverageRaw || coverageRaw.length === 0) {
+    return `${id}: coverage must be a non-empty string array`;
+  }
+  const coverage: CoverageKind[] = [];
+  for (const item of coverageRaw) {
+    if (!COVERAGE_KIND_SET.has(item)) {
+      return `${id}: unknown coverage kind "${item}"`;
+    }
+    coverage.push(item as CoverageKind);
+  }
+
+  const parsed: CoverageLedgerEntry = {
+    id,
+    gddSections,
+    requirement,
+    coverage,
+  };
+  for (const key of [
+    "implementationRefs",
+    "testRefs",
+    "followupRefs",
+    "questionRefs",
+  ] as const) {
+    const value = raw[key];
+    if (value !== undefined) {
+      const parsedValue = stringArray(value);
+      if (!parsedValue) return `${id}: ${key} must be a string array`;
+      parsed[key] = parsedValue;
+    }
+  }
+  return parsed;
+}
+
+/**
+ * Validate the machine-checkable GDD coverage ledger. The ledger maps
+ * concrete requirements to code, tests, open followups, or open questions.
+ */
+export function lintGddCoverageLedger(input: LintInput): LintHit[] {
+  const docsDir = resolve(input.repoRoot, "docs");
+  if (!existsSync(docsDir)) return [];
+
+  const ledgerAbs = resolve(input.repoRoot, GDD_COVERAGE_PATH);
+  if (!existsSync(ledgerAbs)) {
+    return [
+      {
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: "missing GDD coverage ledger",
+      },
+    ];
+  }
+
+  const text = safeRead(ledgerAbs);
+  if (!text) {
+    return [
+      {
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: "ledger cannot be read",
+      },
+    ];
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    return [
+      {
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: `ledger JSON parse failed: ${(error as Error).message}`,
+      },
+    ];
+  }
+
+  if (!isRecord(raw) || raw.version !== 1 || !Array.isArray(raw.requirements)) {
+    return [
+      {
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: "ledger must contain version 1 and a requirements array",
+      },
+    ];
+  }
+
+  const followupStatuses = parseStatusEntries(
+    safeRead(resolve(input.repoRoot, "docs/FOLLOWUPS.md")) ?? "",
+    "F",
+  );
+  const questionStatuses = parseStatusEntries(
+    safeRead(resolve(input.repoRoot, "docs/OPEN_QUESTIONS.md")) ?? "",
+    "Q",
+  );
+
+  const hits: LintHit[] = [];
+  const seen = new Set<string>();
+  for (const rawEntry of raw.requirements) {
+    const parsed = parseCoverageEntry(rawEntry);
+    if (typeof parsed === "string") {
+      hits.push({
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: parsed,
+      });
+      continue;
+    }
+
+    if (seen.has(parsed.id)) {
+      hits.push({
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: `${parsed.id}: duplicate requirement id`,
+      });
+    }
+    seen.add(parsed.id);
+
+    for (const ref of parsed.gddSections) {
+      if (!refPathExists(input.repoRoot, ref)) {
+        hits.push({
+          path: GDD_COVERAGE_PATH,
+          rule: "gdd-coverage-ledger",
+          detail: `${parsed.id}: missing GDD section ref ${ref}`,
+        });
+      }
+    }
+
+    if (parsed.coverage.includes("implemented-code")) {
+      validatePathRefs(input, hits, parsed.id, "implementationRefs", parsed.implementationRefs);
+    }
+    if (parsed.coverage.includes("automated-test")) {
+      validatePathRefs(input, hits, parsed.id, "testRefs", parsed.testRefs);
+    }
+    if (parsed.coverage.includes("open-followup")) {
+      validateStatusRefs(hits, parsed.id, "followupRefs", parsed.followupRefs, followupStatuses, [
+        "open",
+        "in-progress",
+      ]);
+    }
+    if (parsed.coverage.includes("open-question")) {
+      validateStatusRefs(hits, parsed.id, "questionRefs", parsed.questionRefs, questionStatuses, [
+        "open",
+      ]);
+    }
+  }
+  return hits;
+}
+
+function validatePathRefs(
+  input: LintInput,
+  hits: LintHit[],
+  id: string,
+  key: "implementationRefs" | "testRefs",
+  refs: string[] | undefined,
+): void {
+  if (!refs || refs.length === 0) {
+    hits.push({
+      path: GDD_COVERAGE_PATH,
+      rule: "gdd-coverage-ledger",
+      detail: `${id}: ${key} is required`,
+    });
+    return;
+  }
+  for (const ref of refs) {
+    if (!refPathExists(input.repoRoot, ref)) {
+      hits.push({
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: `${id}: ${key} ref does not exist: ${ref}`,
+      });
+    }
+  }
+}
+
+function validateStatusRefs(
+  hits: LintHit[],
+  id: string,
+  key: "followupRefs" | "questionRefs",
+  refs: string[] | undefined,
+  statuses: Map<string, string>,
+  allowedPrefixes: readonly string[],
+): void {
+  if (!refs || refs.length === 0) {
+    hits.push({
+      path: GDD_COVERAGE_PATH,
+      rule: "gdd-coverage-ledger",
+      detail: `${id}: ${key} is required`,
+    });
+    return;
+  }
+  for (const ref of refs) {
+    const status = statuses.get(ref);
+    if (!status) {
+      hits.push({
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: `${id}: ${key} ref not found: ${ref}`,
+      });
+      continue;
+    }
+    if (!allowedPrefixes.some((prefix) => status.startsWith(prefix))) {
+      hits.push({
+        path: GDD_COVERAGE_PATH,
+        rule: "gdd-coverage-ledger",
+        detail: `${id}: ${ref} status is not open (${status})`,
+      });
+    }
+  }
+}
+
+/**
+ * Require the newest progress-log entry to name coverage ledger ids when
+ * it claims GDD coverage. This keeps the append-only log tied to the
+ * machine-checkable ledger without rewriting historical entries.
+ */
+export function lintLatestProgressLogCoverage(input: LintInput): LintHit[] {
+  const progressAbs = resolve(input.repoRoot, "docs/PROGRESS_LOG.md");
+  if (!existsSync(progressAbs)) return [];
+  const text = safeRead(progressAbs);
+  if (!text) return [];
+
+  const match = /^## \d{4}-\d{2}-\d{2}: Slice: .+$/mu.exec(text);
+  if (!match || match.index === undefined) return [];
+  const start = match.index;
+  const next = text.indexOf("\n## ", start + 1);
+  const block = next >= 0 ? text.slice(start, next) : text.slice(start);
+  if (!block.includes("**GDD sections touched:**")) return [];
+
+  const hits: LintHit[] = [];
+  const path = relative(input.repoRoot, progressAbs);
+  if (!block.includes("### Coverage ledger")) {
+    hits.push({
+      path,
+      rule: "progress-log-coverage",
+      detail: "latest GDD-touching entry must include a Coverage ledger section",
+    });
+  }
+  if (!/GDD-\d{2}-[A-Z0-9-]+/u.test(block)) {
+    hits.push({
+      path,
+      rule: "progress-log-coverage",
+      detail: "latest GDD-touching entry must cite at least one coverage ledger id",
+    });
+  }
+  if (!/Uncovered adjacent requirements:/u.test(block)) {
+    hits.push({
+      path,
+      rule: "progress-log-coverage",
+      detail: "latest GDD-touching entry must list uncovered adjacent requirements",
+    });
+  }
+  return hits;
+}
+
 /**
  * Run every pass and return the concatenated hit list. Order is stable:
  * binary-without-manifest first, then track / car / topgear. Tests rely
@@ -396,6 +731,8 @@ export function runContentLint(input: LintInput): LintHit[] {
     ...lintTrackNames(input),
     ...lintCarNames(input),
     ...lintTopGearText(input),
+    ...lintGddCoverageLedger(input),
+    ...lintLatestProgressLogCoverage(input),
   ];
 }
 

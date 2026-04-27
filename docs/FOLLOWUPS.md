@@ -13,7 +13,7 @@ or `obsolete` so the trail is preserved.
 ## F-053: Add a machine-checkable GDD coverage ledger
 **Created:** 2026-04-26
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-26)
 **Notes:** The current loop relies on each agent reading the relevant
 GDD sections and remembering to file followups for adjacent required
 behaviour. Add a coverage ledger that maps each concrete GDD requirement
@@ -22,6 +22,11 @@ question. Add a CI or content-lint check that fails when a progress log
 entry claims GDD coverage without listing the remaining uncovered
 requirements. This should catch gaps like road elevation proof before a
 visual slice reaches review.
+
+Closed by `feat/f-053-gdd-coverage-ledger`. `docs/GDD_COVERAGE.json`
+now records requirement-level coverage ids, and `content-lint` validates
+ledger shape, code refs, test refs, open followup refs, open question
+refs, plus the latest progress-log entry's coverage-ledger section.
 
 ---
 

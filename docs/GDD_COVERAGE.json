@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "requirements": [
+    {
+      "id": "GDD-09-ELEVATION-LIVE",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The live race view projects authored track grade so crests, dips, and plateaus are visible while driving.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/test-elevation.json",
+        "src/data/tracks/index.ts",
+        "src/app/race/page.tsx",
+        "src/road/segmentProjector.ts",
+        "src/road/trackCompiler.ts"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["F-050"]
+    },
+    {
+      "id": "GDD-16-CAR-SPRITE-ATLAS",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/17-art-direction.md"
+      ],
+      "requirement": "Live and ghost cars use original directional sprite atlas frames with damage, brake, nitro, and weather variants.",
+      "coverage": ["open-followup"],
+      "followupRefs": ["F-051"]
+    },
+    {
+      "id": "GDD-16-PARALLAX-ROADSIDE",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The race renderer consumes region parallax layers and compiled roadside sprite ids at distinct depths.",
+      "coverage": ["open-followup"],
+      "followupRefs": ["F-052"]
+    },
+    {
+      "id": "GDD-25-LOOP-COVERAGE-LEDGER",
+      "gddSections": [
+        "docs/IMPLEMENTATION_PLAN.md",
+        "docs/WORKING_AGREEMENT.md"
+      ],
+      "requirement": "Each GDD-touching slice ties its progress log entry to a machine-checkable coverage ledger and lists uncovered adjacent requirements.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "docs/GDD_COVERAGE.json",
+        "scripts/content-lint.ts",
+        "docs/IMPLEMENTATION_PLAN.md",
+        "docs/WORKING_AGREEMENT.md"
+      ],
+      "testRefs": ["scripts/__tests__/content-lint.test.ts"],
+      "followupRefs": ["F-053"]
+    }
+  ]
+}

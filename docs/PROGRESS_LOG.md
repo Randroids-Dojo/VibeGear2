@@ -6,6 +6,68 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: F-053 GDD coverage ledger
+
+**GDD sections touched:**
+[§25](gdd/25-development-roadmap.md) implementation governance,
+[§27](gdd/27-risks-and-mitigations.md) automated regression
+mitigation.
+**Branch / PR:** `feat/f-053-gdd-coverage-ledger`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `docs/GDD_COVERAGE.json`: added the initial machine-checkable
+  requirement ledger for live elevation proof, car sprite atlas work,
+  parallax / roadside rendering work, and the ledger process itself.
+- `scripts/content-lint.ts`: added GDD coverage ledger validation for
+  requirement ids, GDD section refs, code refs, test refs, open followup
+  refs, and open question refs.
+- `scripts/content-lint.ts`: added latest progress-log enforcement so a
+  GDD-touching entry must include a `Coverage ledger` section, cite at
+  least one `GDD-` id, and list uncovered adjacent requirements.
+- `scripts/__tests__/content-lint.test.ts`: added focused coverage for
+  valid and invalid ledger entries plus progress-log enforcement.
+- `docs/FOLLOWUPS.md`: marked F-053 done.
+
+### Verified
+- `npx vitest run scripts/__tests__/content-lint.test.ts` green,
+  54 passed.
+- `npm run content-lint` clean.
+- `npm run lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed; 2,143 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' docs/GDD_COVERAGE.json scripts/content-lint.ts scripts/__tests__/content-lint.test.ts docs/FOLLOWUPS.md docs/PROGRESS_LOG.md`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- The lint only enforces the newest progress-log entry so historical
+  entries do not need a noisy retrofit. Every future slice that prepends
+  a GDD-touching log entry must include the ledger section.
+- Seeded the ledger with the road-rendering requirements that produced
+  F-050, F-051, and F-052, plus the new process requirement. The ledger
+  should grow one requirement at a time as slices touch more GDD surface.
+
+### Coverage ledger
+- GDD-09-ELEVATION-LIVE: covered by code and browser/content tests.
+- GDD-16-CAR-SPRITE-ATLAS: uncovered adjacent requirement tracked by
+  F-051.
+- GDD-16-PARALLAX-ROADSIDE: uncovered adjacent requirement tracked by
+  F-052.
+- GDD-25-LOOP-COVERAGE-LEDGER: covered by `content-lint` code and unit
+  tests.
+- Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS,
+  GDD-16-PARALLAX-ROADSIDE.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice adds process enforcement around the existing GDD and
+backlog.
+
+---
+
 ## 2026-04-26: Slice: F-050 live elevation proof
 
 **GDD sections touched:**
