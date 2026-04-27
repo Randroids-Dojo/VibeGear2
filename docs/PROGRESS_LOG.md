@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 and foreground speed cues,
 [§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
 renderer pipeline.
-**Branch / PR:** `fix/f-057-turn-foreground-shear`, PR pending.
+**Branch / PR:** `fix/f-057-turn-foreground-shear`, PR #21.
 **Status:** Implemented.
 
 ### Done
