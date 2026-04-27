@@ -30,6 +30,8 @@ import {
   findDenylistHit,
   formatHit,
   isBinaryAssetPath,
+  lintGddCoverageLedger,
+  lintLatestProgressLogCoverage,
   lintBinaryManifest,
   lintCarNames,
   lintTopGearText,
@@ -391,6 +393,156 @@ describe("lintTopGearText", () => {
 
 // runContentLint ------------------------------------------------------------
 
+// GDD coverage ledger -------------------------------------------------------
+
+function writeBaseDocs(): void {
+  writeFile(
+    "docs/FOLLOWUPS.md",
+    [
+      "# Followups",
+      "",
+      "## F-001: Followup",
+      "**Status:** open",
+      "",
+      "## F-002: Closed followup",
+      "**Status:** done",
+      "",
+    ].join("\n"),
+  );
+  writeFile(
+    "docs/OPEN_QUESTIONS.md",
+    [
+      "# Open Questions",
+      "",
+      "## Q-001: Question",
+      "**Status:** open",
+      "",
+    ].join("\n"),
+  );
+  writeFile("docs/gdd/09-track-design.md", "# 9. Track design\n");
+  writeFile("src/game/sample.ts", "export const sample = true;\n");
+  writeFile("src/game/__tests__/sample.test.ts", "test('sample', () => {});\n");
+}
+
+function writeCoverageLedger(overrides: Record<string, unknown> = {}): void {
+  writeFile(
+    "docs/GDD_COVERAGE.json",
+    JSON.stringify(
+      {
+        version: 1,
+        requirements: [
+          {
+            id: "GDD-09-SAMPLE",
+            gddSections: ["docs/gdd/09-track-design.md"],
+            requirement: "Sample requirement.",
+            coverage: ["implemented-code", "automated-test"],
+            implementationRefs: ["src/game/sample.ts"],
+            testRefs: ["src/game/__tests__/sample.test.ts"],
+            ...overrides,
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+describe("lintGddCoverageLedger", () => {
+  it("returns no hits when docs/ does not exist", () => {
+    expect(lintGddCoverageLedger({ repoRoot })).toEqual([]);
+  });
+
+  it("flags a docs tree without a coverage ledger", () => {
+    writeFile("docs/FOLLOWUPS.md", "# Followups\n");
+    const hits = lintGddCoverageLedger({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.rule).toBe("gdd-coverage-ledger");
+    expect(hits[0]?.detail).toContain("missing");
+  });
+
+  it("passes a valid implemented and tested requirement", () => {
+    writeBaseDocs();
+    writeCoverageLedger();
+    expect(lintGddCoverageLedger({ repoRoot })).toEqual([]);
+  });
+
+  it("requires implemented-code entries to name existing implementation refs", () => {
+    writeBaseDocs();
+    writeCoverageLedger({ implementationRefs: ["src/game/missing.ts"] });
+    const hits = lintGddCoverageLedger({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.detail).toContain("implementationRefs ref does not exist");
+  });
+
+  it("requires open-followup refs to point at an open followup", () => {
+    writeBaseDocs();
+    writeCoverageLedger({
+      coverage: ["open-followup"],
+      followupRefs: ["F-002"],
+    });
+    const hits = lintGddCoverageLedger({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.detail).toContain("status is not open");
+  });
+
+  it("accepts open-question refs that point at open questions", () => {
+    writeBaseDocs();
+    writeCoverageLedger({
+      coverage: ["open-question"],
+      questionRefs: ["Q-001"],
+    });
+    expect(lintGddCoverageLedger({ repoRoot })).toEqual([]);
+  });
+});
+
+describe("lintLatestProgressLogCoverage", () => {
+  it("returns no hits when PROGRESS_LOG.md does not exist", () => {
+    expect(lintLatestProgressLogCoverage({ repoRoot })).toEqual([]);
+  });
+
+  it("flags a latest GDD-touching entry without coverage ledger fields", () => {
+    writeFile(
+      "docs/PROGRESS_LOG.md",
+      [
+        "# Progress Log",
+        "",
+        "## 2026-04-26: Slice: Missing coverage",
+        "",
+        "**GDD sections touched:** §9.",
+        "**Status:** Implemented.",
+        "",
+      ].join("\n"),
+    );
+    const hits = lintLatestProgressLogCoverage({ repoRoot });
+    expect(hits.map((hit) => hit.rule)).toEqual([
+      "progress-log-coverage",
+      "progress-log-coverage",
+      "progress-log-coverage",
+    ]);
+  });
+
+  it("passes a latest GDD-touching entry with ledger ids and uncovered list", () => {
+    writeFile(
+      "docs/PROGRESS_LOG.md",
+      [
+        "# Progress Log",
+        "",
+        "## 2026-04-26: Slice: Covered",
+        "",
+        "**GDD sections touched:** §9.",
+        "**Status:** Implemented.",
+        "",
+        "### Coverage ledger",
+        "- GDD-09-SAMPLE.",
+        "- Uncovered adjacent requirements: None.",
+        "",
+      ].join("\n"),
+    );
+    expect(lintLatestProgressLogCoverage({ repoRoot })).toEqual([]);
+  });
+});
+
 describe("runContentLint", () => {
   it("returns hits from every pass in stable order", () => {
     writeFile("public/assets/cars/orphan.png", "x");
@@ -463,4 +615,3 @@ describe("repository data is clean", () => {
     expect(TRACK_BODY_FRAGMENT.length).toBeGreaterThan(0);
   });
 });
-
