@@ -181,7 +181,7 @@ export function project(
     maxY = strip.screenY;
   }
 
-  attachForegroundProjection(strips, viewport);
+  attachForegroundProjection(strips, viewport, camera);
 
   return strips;
 }
@@ -192,32 +192,32 @@ export function project(
  * the rest of the strip list instead of patching the lower viewport with
  * hard-coded road geometry.
  */
-function attachForegroundProjection(strips: Strip[], viewport: Viewport): void {
+function attachForegroundProjection(
+  strips: Strip[],
+  viewport: Viewport,
+  camera: Camera,
+): void {
   const nearIndex = strips.findIndex((strip) => strip.visible);
   if (nearIndex < 0) return;
 
   const near = strips[nearIndex]!;
   if (near.screenY >= viewport.height) return;
 
-  const far = strips.slice(nearIndex + 1).find((strip) => strip.visible);
-  const extrapolation =
-    far && near.screenY > far.screenY
-      ? (viewport.height - near.screenY) / (near.screenY - far.screenY)
-      : 0;
-  const projectedX =
-    far && extrapolation > 0
-      ? near.screenX + (near.screenX - far.screenX) * extrapolation
-      : near.screenX;
-  const projectedHalfW =
-    far && extrapolation > 0
-      ? near.screenW + (near.screenW - far.screenW) * extrapolation
-      : near.screenW;
-  const screenW = Math.max(near.screenW, projectedHalfW);
+  const halfW = viewport.width / 2;
+  const halfH = viewport.height / 2;
+  const bottomDelta = viewport.height - halfH;
+  const cameraHeight = Number.isFinite(camera.y) && camera.y > 0 ? camera.y : 1;
+  const screenBottomZ =
+    bottomDelta > 0
+      ? (camera.depth * cameraHeight * halfH) / bottomDelta
+      : camera.depth;
+  const sz = Math.max(camera.depth, screenBottomZ);
+  const scale = camera.depth / sz;
 
   near.foreground = {
-    screenX: projectedX,
+    screenX: halfW + scale * -camera.x * halfW,
     screenY: viewport.height,
-    screenW,
+    screenW: Math.max(near.screenW, scale * ROAD_WIDTH * halfW),
   };
 }
 

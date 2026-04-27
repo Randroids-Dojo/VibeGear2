@@ -201,22 +201,24 @@ describe("project (pseudo-3D segment projector)", () => {
     expect(near.foreground!.screenW).toBeCloseTo(expected, 6);
   });
 
-  it("extrapolates the foreground centerline through lateral road motion", () => {
+  it("anchors the foreground endpoint to the camera-local road plane", () => {
     const segs = flatTrack(16, { curve: 0.02 });
-    const strips = project(segs, makeCamera({ x: 1.4 }), VIEWPORT, {
+    const camera = makeCamera({ x: 1.4 });
+    const strips = project(segs, camera, VIEWPORT, {
       drawDistance: 8,
     });
     const visible = strips.filter((s) => s.visible);
     expect(visible.length).toBeGreaterThan(1);
 
     const near = visible[0]!;
-    const far = visible[1]!;
     expect(near.foreground).toBeDefined();
 
-    const extrapolation =
-      (VIEWPORT.height - near.screenY) / (near.screenY - far.screenY);
-    const expectedX =
-      near.screenX + (near.screenX - far.screenX) * extrapolation;
+    const halfW = VIEWPORT.width / 2;
+    const halfH = VIEWPORT.height / 2;
+    const screenBottomZ =
+      (camera.depth * camera.y * halfH) / (VIEWPORT.height - halfH);
+    const expectedScale = camera.depth / screenBottomZ;
+    const expectedX = halfW + expectedScale * -camera.x * halfW;
 
     expect(Math.abs(expectedX - near.screenX)).toBeGreaterThan(5);
     expect(near.foreground!.screenX).toBeCloseTo(expectedX, 6);

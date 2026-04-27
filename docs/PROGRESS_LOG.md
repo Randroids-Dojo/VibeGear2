@@ -6,6 +6,68 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-059 turn crest road warp
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) road curvature and readable edges,
+[§16](gdd/16-rendering-and-visual-design.md) segment-based projection
+and car sprite direction,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer pipeline.
+**Branch / PR:** `fix/f-059-turn-crest-road-warp`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/road/segmentProjector.ts`: changed the foreground projection
+  endpoint to anchor to the camera-local road plane at the screen
+  bottom. The foreground road no longer extrapolates from farther curve
+  or crest strips.
+- `src/road/__tests__/segmentProjector.test.ts`: updated the foreground
+  regression to assert the camera-local bottom endpoint.
+- `src/render/carFrame.ts`: moved live car atlas frame selection into a
+  testable helper and reversed the left/right frame mapping so lateral
+  movement matches the sprite lean.
+- `src/app/race/page.tsx`: now imports the tested car frame helper for
+  live and ghost overlay frame selection.
+- `src/render/__tests__/carFrame.test.ts`: added frame-selection
+  regressions for neutral, left, right, and curve-influenced lean.
+- `docs/FOLLOWUPS.md`: added and closed F-059.
+- `docs/GDD_COVERAGE.json`: linked F-059 to elevation projection and
+  car sprite atlas coverage.
+
+### Verified
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts src/render/__tests__/carFrame.test.ts`
+  green, 40 passed.
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/carFrame.test.ts src/road/__tests__/segmentProjector.test.ts`
+  green, 63 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,171 unit tests passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+
+### Decisions and assumptions
+- The screen-bottom foreground edge represents the camera-local road
+  plane, not a distant projected curve sample. This keeps the bottom of
+  the road stable while still letting the road ahead curve and crest.
+- The Sparrow atlas row uses right-leaning frames near the start of the
+  row and left-leaning frames near the end, so the runtime mapping must
+  invert the previous F-051 sign choice.
+
+### Coverage ledger
+- GDD-09-ELEVATION-LIVE: extended to cover turn and crest foreground
+  stability.
+- GDD-16-CAR-SPRITE-ATLAS: extended to cover correct left/right atlas
+  frame direction.
+- Uncovered adjacent requirements: weather-specific spray and snow trail
+  variants remain tracked under F-058.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §9, §16, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: F-051 car atlas sprite overlays
 
 **GDD sections touched:**
