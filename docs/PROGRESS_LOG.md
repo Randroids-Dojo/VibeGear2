@@ -6,6 +6,44 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Licence files finalisation
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) "Suggested licenses",
+[§27](gdd/27-risks-and-mitigations.md) legal/IP safety risks.
+**Branch / PR:** `feat/licence-files-finalisation-loop`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `DATA-LICENSE`: added the CC BY-SA 4.0 data licence declaration for
+  track, championship, balancing, and community mod data.
+- `package.json`: added `"license": "MIT"`.
+- `README.md`: added a Licensing section linking `LICENSE`,
+  `ASSETS-LICENSE`, and `DATA-LICENSE`.
+- `docs/OPEN_QUESTIONS.md`: updated Q-002 resolution to cite the
+  completed root licence files and package metadata.
+- `docs/LEGAL_SAFETY.md`: replaced the temporary DATA-LICENSE note
+  with a direct link to the landed file.
+
+### Verified
+- `grep -rn $'\u2014\|\u2013' LICENSE ASSETS-LICENSE DATA-LICENSE README.md docs/OPEN_QUESTIONS.md docs/LEGAL_SAFETY.md docs/PROGRESS_LOG.md package.json`
+  returned no hits.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Preserved the existing Q-002 licence split: MIT for code, CC BY 4.0
+  for original media assets, and CC BY-SA 4.0 for structured game data.
+
+### Followups created
+None.
+
+### GDD edits
+None. The implementation matches the existing §26 licence table.
+
+---
+
 ## 2026-04-26: Slice: Main CI mobile browser fix
 
 **GDD sections touched:**

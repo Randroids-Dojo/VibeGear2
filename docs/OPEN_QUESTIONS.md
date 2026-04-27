@@ -418,17 +418,18 @@ CC-BY-4.0 for original assets (credit required, remix allowed). Add `LICENSE`
 and `ASSETS-LICENSE` files at repo root.
 
 **Resolution.** Adopted the recommended defaults. Code is licensed under
-MIT (`LICENSE` at repo root, sibling chore slice). Original art, sound
-effects, and music ship under CC-BY-4.0 by default. Track and community
-data ship under CC-BY-SA-4.0 per GDD section 26 ("Suggested licenses"
-table). Public-domain (`CC0-1.0` or `public-domain`) is permitted on a
-per-entry basis for contributed assets that arrive with that grant.
-Implemented by `feat/assets-license`: `ASSETS-LICENSE` at repo root with
-the CC BY 4.0 text and the per-entry licence taxonomy,
-`AssetEntry.license` required on every manifest entry,
-`assertManifestLicenses` runtime guard for the future mod loader,
-default licences encoded in `DEFAULT_ASSET_LICENSES` in
-`src/asset/manifest.ts`, and unit tests that pin the contract.
+MIT (`LICENSE` at repo root, `package.json` license field). Original art,
+sound effects, and music ship under CC-BY-4.0 by default via
+`ASSETS-LICENSE`. Track, championship, balancing, and community mod data
+ship under CC-BY-SA-4.0 via `DATA-LICENSE` per GDD section 26
+("Suggested licenses" table). Public-domain (`CC0-1.0` or
+`public-domain`) is permitted on a per-entry basis for contributed assets
+that arrive with that grant. Implemented by `feat/assets-license` and
+`feat/licence-files-finalisation-loop`: `AssetEntry.license` is required
+on every manifest entry, `assertManifestLicenses` guards future mod
+loading, default licences are encoded in `DEFAULT_ASSET_LICENSES` in
+`src/asset/manifest.ts`, README links the three root license files, and
+unit tests pin the manifest contract.
 
 **Blocking?** No for early implementation, yes before any public release.
 Resolved.

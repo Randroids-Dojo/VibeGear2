@@ -20,9 +20,8 @@ This document complements the licence files:
 - [`LICENSE`](../LICENSE) (MIT) for source code.
 - [`ASSETS-LICENSE`](../ASSETS-LICENSE) (CC BY 4.0 default) for original art,
   sprites, sound effects, and music.
-- `DATA-LICENSE` (CC BY-SA 4.0 default) for track and community data when
-  that file lands in the licence-files slice; until then, track JSON contributed
-  to this repository is licensed CC BY-SA 4.0 by convention per GDD section 26.
+- [`DATA-LICENSE`](../DATA-LICENSE) (CC BY-SA 4.0 default) for track,
+  championship, balancing, and community mod data.
 
 ## 2. The IP perimeter (binding)
 
