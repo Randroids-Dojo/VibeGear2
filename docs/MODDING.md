@@ -1,7 +1,7 @@
 # Modding
 
-The full modding guide is owned by the separate MODDING.md slice. Until that
-lands, the binding rules are:
+This file is intentionally a placeholder summary. The expanded modding guide is
+tracked in a separate followup. Until that lands, the binding rules are:
 
 - Data mods only for v1.0.
 - No executable plugins.

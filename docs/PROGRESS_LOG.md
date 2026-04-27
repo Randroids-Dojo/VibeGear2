@@ -19,25 +19,25 @@ guidance.
   contributor-facing workflow, verification, originality, licensing,
   asset-manifest, schema, issue-label, and maintainer-expectation guide.
 - `docs/MODDING.md`: added a small placeholder so contributor docs have a
-  resolving modding reference until the dedicated modding guide slice
-  expands it.
+  resolving modding reference until the dedicated modding followup expands
+  it.
 - `README.md`: linked the contributing guide from the project overview.
 - `docs/GDD_COVERAGE.json`: added GDD-26-CONTRIBUTING-GUIDE coverage.
 
 ### Verified
 - `npm run content-lint` clean.
-- `perl -ne 'print "$ARGV:$.:$_" if /[\x{2013}\x{2014}]/' docs/CONTRIBUTING.md docs/MODDING.md`
+- `perl -ne 'print "$ARGV:$.:$_" if /[\x{2013}\x{2014}]/' docs/*.md docs/gdd/*.md README.md`
   returned no matches.
 - Link targets for CONTRIBUTING.md and README.md were inspected.
 
 ### Decisions and assumptions
-- `docs/MODDING.md` stays intentionally small because the full modding
-  guide is a separate dot. The contributor guide links to the binding
+- `docs/MODDING.md` stays intentionally small because the expanded modding
+  guide is a separate followup. The contributor guide links to the binding
   legal and GDD rules without duplicating mod-loader specifics.
 
 ### Coverage ledger
 - GDD-26-CONTRIBUTING-GUIDE: covered by `docs/CONTRIBUTING.md`,
-  `README.md`, and content-lint coverage validation.
+  `README.md`, and the GDD coverage ledger.
 - Uncovered adjacent requirements: the full modding guide remains owned by
   `VibeGear2-implement-modding-md-efbf1c83`.
 

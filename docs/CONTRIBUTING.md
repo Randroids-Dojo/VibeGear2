@@ -38,17 +38,21 @@ Allowed types are `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, and
 
 ## 5. Verification Before Opening a PR
 
-Run the local checks before opening a PR:
+Run the baseline local check before opening a PR:
 
 ```sh
 npm run verify
-npm run test:e2e
 ```
 
 `npm run verify` covers lint, typecheck, unit tests, and content lint.
-`npm run test:e2e` runs Playwright against a production build. PRs that touch
-gameplay, UI, persistence, routing, rendering, or deployment should run both.
-CI reruns the same checks on every push.
+PRs that touch gameplay, UI, persistence, routing, rendering, or deployment
+should also run Playwright:
+
+```sh
+npm run test:e2e
+```
+
+CI reruns the matching checks on every push.
 
 ## 6. PR Confirmation Checklist
 
@@ -61,7 +65,7 @@ docs:
   trademark-risk content. See [`LEGAL_SAFETY.md`](LEGAL_SAFETY.md).
 - [ ] Any third-party source documented in the asset manifest.
 - [ ] All new content and data passes `npm run verify`.
-- [ ] No em-dashes or en-dashes in new files.
+- [ ] No em-dashes or en-dashes in any touched text.
 - [ ] `PROGRESS_LOG.md` entry added if the slice is structural.
 
 ## 7. Originality Requirement
@@ -180,7 +184,7 @@ Do not use em-dashes or en-dashes anywhere. Before committing docs or
 user-facing text, run:
 
 ```sh
-grep -P "[\x{2013}\x{2014}]" docs/CONTRIBUTING.md
+perl -ne 'print "$ARGV:$.:$_" if /[\x{2013}\x{2014}]/' docs/*.md docs/gdd/*.md README.md
 ```
 
 The command must return no matches.

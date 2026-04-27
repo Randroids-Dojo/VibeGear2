@@ -7,13 +7,10 @@
         "docs/gdd/26-open-source-project-guidance.md"
       ],
       "requirement": "Contributor documentation explains PR workflow, originality confirmation, licensing, asset manifest rules, schema checks, and issue labels.",
-      "coverage": ["implemented-code", "automated-test"],
+      "coverage": ["implemented-code"],
       "implementationRefs": [
         "docs/CONTRIBUTING.md",
         "README.md"
-      ],
-      "testRefs": [
-        "scripts/content-lint.ts"
       ]
     },
     {
