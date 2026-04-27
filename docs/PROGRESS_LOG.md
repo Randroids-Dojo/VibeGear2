@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§16](gdd/16-rendering-and-visual-design.md) "Sprite scaling",
 [§20](gdd/20-hud-and-ui-ux.md) race HUD.
-**Branch / PR:** `fix/race-start-view`, PR pending.
+**Branch / PR:** `fix/race-start-view`, PR #9.
 **Status:** Implemented.
 
 ### Done
@@ -70,7 +70,9 @@ Correct them by adding a new entry that references the old one.
   sprite atlas is wired into the live race renderer.
 
 ### Followups created
-None.
+- F-050: Prove authored elevation in the live race view.
+- F-051: Replace live and ghost car placeholders with atlas sprites.
+- F-052: Add parallax horizon and roadside sprites to the race renderer.
 
 ### GDD edits
 None. The implementation matches the existing §16 player-car footprint.
