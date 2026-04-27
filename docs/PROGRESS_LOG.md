@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-055 distance-phase road markings
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) road lanes and shoulders,
+[§16](gdd/16-rendering-and-visual-design.md) road-strip rendering,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer pipeline.
+**Branch / PR:** `fix/f-055-road-marking-phase`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: replaced whole-strip road marking
+  phase with road-distance phase rendering. Rumble, road shade, and lane
+  markings now split a projected strip when a phase boundary lands
+  inside it, so uphill frames move markings through the strip instead of
+  flipping an entire trapezoid.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: extended the Canvas2D
+  spy to capture path geometry and added a regression for an in-strip
+  lane dash boundary.
+- `docs/FOLLOWUPS.md`: marked F-055 done.
+- `docs/GDD_COVERAGE.json`: marked GDD-16-ROAD-MARKINGS as implemented
+  with automated test coverage.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/road/__tests__/segmentProjector.test.ts`
+  green, 55 passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,163 unit tests passed.
+- `npm run test:e2e` green, 55 passed.
+
+### Decisions and assumptions
+- The F-054 near-plane stabilizer reduced the visible marking pop but
+  kept the deeper problem: phase was still tied to strip boundaries.
+  This slice moves phase to road distance while keeping the existing
+  Canvas2D trapezoid renderer.
+
+### Coverage ledger
+- GDD-16-ROAD-MARKINGS: covered by distance-phase marking draws and
+  renderer unit tests.
+- Uncovered adjacent requirements: GDD-16-CAR-SPRITE-ATLAS remains open
+  under F-051.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §9, §16, and §21 intent.
+
+---
+
 ## 2026-04-27: Slice: F-054 hill-bottom projection continuity
 
 **GDD sections touched:**

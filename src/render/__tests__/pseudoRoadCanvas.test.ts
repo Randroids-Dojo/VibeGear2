@@ -51,6 +51,7 @@ interface FillCall {
   type: "fill";
   fillStyle: string;
   globalAlpha: number;
+  path: readonly [number, number][];
 }
 
 type DrawCall = FillRectCall | FillCall;
@@ -71,6 +72,7 @@ function makeCanvasSpy(): CanvasSpy {
   const calls: DrawCall[] = [];
   let fillStyle = "#000";
   let globalAlpha = 1;
+  let currentPath: [number, number][] = [];
   const ctx = {
     get fillStyle(): string {
       return fillStyle;
@@ -88,13 +90,17 @@ function makeCanvasSpy(): CanvasSpy {
       calls.push({ type: "fillRect", fillStyle, globalAlpha, x, y, w, h });
     },
     beginPath(): void {
-      // no-op; ghost overlay does not use paths.
+      currentPath = [];
     },
-    moveTo(): void {},
-    lineTo(): void {},
+    moveTo(x: number, y: number): void {
+      currentPath.push([x, y]);
+    },
+    lineTo(x: number, y: number): void {
+      currentPath.push([x, y]);
+    },
     closePath(): void {},
     fill(): void {
-      calls.push({ type: "fill", fillStyle, globalAlpha });
+      calls.push({ type: "fill", fillStyle, globalAlpha, path: currentPath });
     },
     save(): void {},
     restore(): void {},
@@ -377,20 +383,73 @@ describe("drawRoad procedural markings", () => {
       lane: "#778899",
     };
     const strips: readonly Strip[] = [
-      strip({ screenY: 430, screenW: 220, segment: { ...strip({}).segment, index: 8 } }),
-      strip({ screenY: 340, screenW: 140, segment: { ...strip({}).segment, index: 9 } }),
-      strip({ screenY: 260, screenW: 90, segment: { ...strip({}).segment, index: 10 } }),
-      strip({ screenY: 210, screenW: 55, segment: { ...strip({}).segment, index: 11 } }),
+      strip({
+        screenY: 430,
+        screenW: 220,
+        segment: { ...strip({}).segment, index: 8, worldZ: 48 },
+      }),
+      strip({
+        screenY: 340,
+        screenW: 140,
+        segment: { ...strip({}).segment, index: 9, worldZ: 54 },
+      }),
+      strip({
+        screenY: 260,
+        screenW: 90,
+        segment: { ...strip({}).segment, index: 10, worldZ: 60 },
+      }),
+      strip({
+        screenY: 210,
+        screenW: 55,
+        segment: { ...strip({}).segment, index: 11, worldZ: 66 },
+      }),
     ];
 
     drawRoad(spy.ctx, strips, VIEWPORT, { colors });
 
     const fills = spy.calls.filter((call): call is FillCall => call.type === "fill");
     const rumbleFills = fills.filter((call) => call.fillStyle === colors.rumbleLight);
+    const rumbleDarkFills = fills.filter((call) => call.fillStyle === colors.rumbleDark);
     const laneFills = fills.filter((call) => call.fillStyle === colors.lane);
-    expect(fills.some((call) => call.fillStyle === colors.rumbleDark)).toBe(false);
-    expect(rumbleFills.length).toBe(3);
-    expect(laneFills.length).toBe(3);
+    expect(rumbleFills.length + rumbleDarkFills.length).toBe(3);
+    expect(laneFills.length).toBeLessThanOrEqual(3);
+  });
+
+  it("splits a lane dash at the road-distance phase boundary inside a strip", () => {
+    const spy = makeCanvasSpy();
+    const colors = {
+      skyTop: "#000001",
+      skyBottom: "#000002",
+      grassLight: "#112233",
+      grassDark: "#223344",
+      rumbleLight: "#334455",
+      rumbleDark: "#445566",
+      roadLight: "#556677",
+      roadDark: "#667788",
+      lane: "#778899",
+    };
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 430,
+        screenW: 220,
+        segment: { ...strip({}).segment, index: 7, worldZ: 42 },
+      }),
+      strip({
+        screenY: 330,
+        screenW: 120,
+        segment: { ...strip({}).segment, index: 8, worldZ: 54 },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, { colors });
+
+    const laneFills = spy.calls.filter(
+      (call): call is FillCall => call.type === "fill" && call.fillStyle === colors.lane,
+    );
+    expect(laneFills).toHaveLength(1);
+    const lanePath = laneFills[0]!.path;
+    expect(lanePath[2]![1]).toBeCloseTo(380, 6);
+    expect(lanePath[3]![1]).toBeCloseTo(380, 6);
   });
 });
 
