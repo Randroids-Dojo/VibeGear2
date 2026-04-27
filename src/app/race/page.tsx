@@ -483,6 +483,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
       seed: raceSeed,
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
+    const activeWeather = config.weather ?? track.compiled.weatherOptions[0] ?? "clear";
 
     const resetTimeTrialRuntime = (): void => {
       ghostOverlayRef.current = null;
@@ -712,6 +713,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
           playerCar: {
             atlas: carAtlasRef.current,
             frameIndex: playerFrameIndex,
+            weather: activeWeather,
           },
         });
 

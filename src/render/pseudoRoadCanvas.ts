@@ -26,6 +26,7 @@ import {
   SPRITE_BASE_SCALE,
 } from "@/road/constants";
 import type { Camera, Strip, Viewport } from "@/road/types";
+import type { WeatherOption } from "@/data/schemas";
 
 import { drawDust, type DustState } from "./dust";
 import { drawParallax, type ParallaxLayer } from "./parallax";
@@ -166,6 +167,7 @@ export interface DrawRoadOptions {
     tire?: string;
     tailLight?: string;
     windshield?: string;
+    weather?: WeatherOption;
     atlas?: LoadedAtlas | null;
     spriteId?: string;
     frameIndex?: number;
@@ -563,6 +565,8 @@ function drawPlayerCar(
   const topY = bottomY - height;
   const halfW = width / 2;
 
+  drawCarWeatherTrail(ctx, centerX, bottomY, width, height, car.weather);
+
   if (car.atlas?.image) {
     const sprite = frame(
       car.atlas,
@@ -628,6 +632,58 @@ function drawPlayerCar(
     ctx.fillRect(centerX + halfW * 0.36, bottomY - height * 0.24, width * 0.16, height * 0.08);
   } finally {
     ctx.fillStyle = prevFill;
+  }
+}
+
+function drawCarWeatherTrail(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  bottomY: number,
+  width: number,
+  height: number,
+  weather: WeatherOption | undefined,
+): void {
+  if (!weather || weather === "clear" || weather === "dusk" || weather === "night") {
+    return;
+  }
+
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    if (weather === "snow") {
+      ctx.globalAlpha = 0.62;
+      ctx.fillStyle = "#edf7ff";
+      ctx.beginPath();
+      ctx.moveTo(centerX - width * 0.36, bottomY - height * 0.12);
+      ctx.lineTo(centerX + width * 0.36, bottomY - height * 0.12);
+      ctx.lineTo(centerX + width * 0.52, bottomY + height * 0.06);
+      ctx.lineTo(centerX - width * 0.52, bottomY + height * 0.06);
+      ctx.closePath();
+      ctx.fill();
+      return;
+    }
+
+    if (weather !== "light_rain" && weather !== "rain" && weather !== "heavy_rain") {
+      return;
+    }
+
+    ctx.globalAlpha = weather === "heavy_rain" ? 0.7 : 0.52;
+    ctx.fillStyle = "#d8f4ff";
+    ctx.beginPath();
+    ctx.moveTo(centerX - width * 0.56, bottomY - height * 0.08);
+    ctx.lineTo(centerX - width * 0.18, bottomY - height * 0.02);
+    ctx.lineTo(centerX - width * 0.62, bottomY + height * 0.14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(centerX + width * 0.56, bottomY - height * 0.08);
+    ctx.lineTo(centerX + width * 0.18, bottomY - height * 0.02);
+    ctx.lineTo(centerX + width * 0.62, bottomY + height * 0.14);
+    ctx.closePath();
+    ctx.fill();
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
   }
 }
 

@@ -735,6 +735,58 @@ describe("drawRoad player car overlay", () => {
     expect(spy.finalAlpha()).toBeCloseTo(1, 6);
   });
 
+  it("paints wet spray behind the live player car in rainy weather", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: { weather: "heavy_rain" },
+    });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills[0]!.fillStyle).toBe("#d8f4ff");
+    expect(fills[0]!.globalAlpha).toBeCloseTo(0.7, 6);
+    expect(fills[1]!.fillStyle).toBe("#d8f4ff");
+    expect(fills[1]!.globalAlpha).toBeCloseTo(0.7, 6);
+    expect(fills[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("paints snow mist behind the live player car in snow", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: { weather: "snow" },
+    });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills[0]!.fillStyle).toBe("#edf7ff");
+    expect(fills[0]!.globalAlpha).toBeCloseTo(0.62, 6);
+    expect(fills[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("does not paint weather trails in clear weather", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: { weather: "clear" },
+    });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills).toHaveLength(5);
+    expect(fills.some((call) => call.fillStyle === "#d8f4ff")).toBe(false);
+    expect(fills.some((call) => call.fillStyle === "#edf7ff")).toBe(false);
+  });
+
+  it("does not paint weather trails in fog", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: { weather: "fog" },
+    });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills).toHaveLength(5);
+    expect(fills.some((call) => call.fillStyle === "#d8f4ff")).toBe(false);
+    expect(fills.some((call) => call.fillStyle === "#edf7ff")).toBe(false);
+  });
+
   it("draws the live player car from the loaded atlas when available", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
