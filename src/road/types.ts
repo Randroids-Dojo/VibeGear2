@@ -136,6 +136,16 @@ export interface Strip {
   screenX: number;
   screenY: number;
   screenW: number;
+  /**
+   * Optional foreground endpoint for the closest visible strip. When
+   * present, the renderer uses this as the near edge of the first strip
+   * pair instead of inventing foreground geometry outside projection.
+   */
+  foreground?: {
+    screenX: number;
+    screenY: number;
+    screenW: number;
+  };
   scale: number;
   /** Camera-space world x after curve accumulation, before projection. */
   worldX: number;

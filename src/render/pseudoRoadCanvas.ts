@@ -48,6 +48,25 @@ export const GHOST_CAR_DEFAULT_ALPHA = 0.5;
  */
 export const GHOST_CAR_DEFAULT_FILL = "#5fb6ff";
 
+/**
+ * Default live player-car overlay colours. These are placeholder fills
+ * until the §16 / §17 atlas slice wires real directional sprites through
+ * the renderer.
+ */
+export const PLAYER_CAR_DEFAULT_FILL = "#f2c94c";
+export const PLAYER_CAR_DEFAULT_SHADOW = "rgba(0, 0, 0, 0.55)";
+export const PLAYER_CAR_DEFAULT_WINDSHIELD = "#18243d";
+export const PLAYER_CAR_DEFAULT_TIRE = "#10151f";
+export const PLAYER_CAR_DEFAULT_TAIL_LIGHT = "#ff3d38";
+
+/**
+ * Standard player-car footprint. §16 pins the player car at 16 to 22
+ * percent of screen height in the standard camera mode; 0.18 leaves
+ * headroom for the HUD and minimap while reading clearly at 800x480.
+ */
+export const PLAYER_CAR_HEIGHT_FRACTION = 0.18;
+export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
+
 export interface RoadColors {
   skyTop: string;
   skyBottom: string;
@@ -115,6 +134,20 @@ export interface DrawRoadOptions {
     screenW: number;
     alpha?: number;
     fill?: string;
+  } | null;
+  /**
+   * Optional live player car overlay. Pseudo-3D road strips represent the
+   * world moving under a chase camera, so the player car is drawn as a
+   * fixed bottom-screen overlay after the road and dust layers. The
+   * placeholder is intentionally simple until atlas sprites land, but it
+   * preserves the §16 standard camera footprint.
+   */
+  playerCar?: {
+    fill?: string;
+    shadow?: string;
+    tire?: string;
+    tailLight?: string;
+    windshield?: string;
   } | null;
 }
 
@@ -219,10 +252,14 @@ export function drawRoad(
     drawGhostCar(ctx, options.ghostCar, viewport);
   }
 
-  // Dust paints last so particles sit over the road / grass strips.
+  // Dust paints over the road / grass strips and under the live car.
   // The pool is owned by the caller; the drawer is read-only on it.
   if (options.dust) {
     drawDust(ctx, options.dust, viewport);
+  }
+
+  if (options.playerCar) {
+    drawPlayerCar(ctx, options.playerCar, viewport);
   }
 }
 
@@ -280,6 +317,87 @@ function drawGhostCar(
   }
 }
 
+/**
+ * Paint the live player car as a centered chase-camera overlay.
+ *
+ * The shape is a temporary original silhouette, not a substitute for the
+ * §17 directional sprite atlas. It gives the runtime view the correct
+ * readable player-car anchor at race start and keeps the visual footprint
+ * inside the §16 16 to 22 percent height band.
+ */
+function drawPlayerCar(
+  ctx: CanvasRenderingContext2D,
+  car: NonNullable<DrawRoadOptions["playerCar"]>,
+  viewport: Viewport,
+): void {
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+
+  const height = viewport.height * PLAYER_CAR_HEIGHT_FRACTION;
+  if (!Number.isFinite(height) || height <= 0) return;
+  const width = height * PLAYER_CAR_WIDTH_TO_HEIGHT;
+  const centerX = viewport.width / 2;
+  const bottomY = viewport.height - Math.max(14, viewport.height * 0.035);
+  const topY = bottomY - height;
+  const halfW = width / 2;
+
+  const prevFill = ctx.fillStyle;
+  try {
+    ctx.fillStyle = car.tire ?? PLAYER_CAR_DEFAULT_TIRE;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.68, bottomY - height * 0.12);
+    ctx.lineTo(centerX - halfW * 0.54, bottomY - height * 0.12);
+    ctx.lineTo(centerX - halfW * 0.48, topY + height * 0.42);
+    ctx.lineTo(centerX - halfW * 0.58, topY + height * 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(centerX + halfW * 0.54, bottomY - height * 0.12);
+    ctx.lineTo(centerX + halfW * 0.68, bottomY - height * 0.12);
+    ctx.lineTo(centerX + halfW * 0.58, topY + height * 0.42);
+    ctx.lineTo(centerX + halfW * 0.48, topY + height * 0.42);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = car.shadow ?? PLAYER_CAR_DEFAULT_SHADOW;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.82, bottomY);
+    ctx.lineTo(centerX + halfW * 0.82, bottomY);
+    ctx.lineTo(centerX + halfW * 0.56, topY + height * 0.12);
+    ctx.lineTo(centerX - halfW * 0.56, topY + height * 0.12);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = car.fill ?? PLAYER_CAR_DEFAULT_FILL;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.68, bottomY - height * 0.06);
+    ctx.lineTo(centerX + halfW * 0.68, bottomY - height * 0.06);
+    ctx.lineTo(centerX + halfW * 0.46, topY + height * 0.04);
+    ctx.lineTo(centerX + halfW * 0.24, topY);
+    ctx.lineTo(centerX - halfW * 0.24, topY);
+    ctx.lineTo(centerX - halfW * 0.46, topY + height * 0.04);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = car.windshield ?? PLAYER_CAR_DEFAULT_WINDSHIELD;
+    ctx.beginPath();
+    ctx.moveTo(centerX - halfW * 0.28, topY + height * 0.2);
+    ctx.lineTo(centerX + halfW * 0.28, topY + height * 0.2);
+    ctx.lineTo(centerX + halfW * 0.18, topY + height * 0.48);
+    ctx.lineTo(centerX - halfW * 0.18, topY + height * 0.48);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#d7a91e";
+    ctx.fillRect(centerX - halfW * 0.32, topY + height * 0.56, width * 0.64, height * 0.07);
+
+    ctx.fillStyle = car.tailLight ?? PLAYER_CAR_DEFAULT_TAIL_LIGHT;
+    ctx.fillRect(centerX - halfW * 0.52, bottomY - height * 0.24, width * 0.16, height * 0.08);
+    ctx.fillRect(centerX + halfW * 0.36, bottomY - height * 0.24, width * 0.16, height * 0.08);
+  } finally {
+    ctx.fillStyle = prevFill;
+  }
+}
+
 function drawStrips(
   ctx: CanvasRenderingContext2D,
   strips: readonly Strip[],
@@ -294,74 +412,101 @@ function drawStrips(
     const near = strips[n - 1];
     if (!far || !near) continue;
     if (!far.visible || !near.visible) continue;
+    drawStripPair(ctx, near, far, viewport, colors);
+  }
 
-    const segIndex = far.segment.index;
-
-    // Grass band: full-width fill behind the road on this strip slice.
-    const grassColor = pickAlternating(
-      segIndex,
-      GRASS_STRIPE_LEN,
-      colors.grassLight,
-      colors.grassDark,
+  const foregroundFar = strips.find((strip) => strip.visible && strip.foreground);
+  if (foregroundFar?.foreground) {
+    drawStripPair(
+      ctx,
+      {
+        segment: foregroundFar.segment,
+        screenX: foregroundFar.foreground.screenX,
+        screenY: foregroundFar.foreground.screenY,
+        screenW: foregroundFar.foreground.screenW,
+      },
+      foregroundFar,
+      viewport,
+      colors,
     );
-    ctx.fillStyle = grassColor;
-    const yTop = far.screenY;
-    const yBottom = near.screenY;
-    if (yBottom > yTop) {
-      ctx.fillRect(0, yTop, viewport.width, yBottom - yTop);
-    }
+  }
+}
 
-    // Rumble strips: trapezoid 15% wider than the road.
-    const rumbleColor = pickAlternating(
-      segIndex,
-      RUMBLE_STRIPE_LEN,
-      colors.rumbleLight,
-      colors.rumbleDark,
-    );
+interface StripEdge {
+  segment: Strip["segment"];
+  screenX: number;
+  screenY: number;
+  screenW: number;
+}
+
+function drawStripPair(
+  ctx: CanvasRenderingContext2D,
+  near: StripEdge,
+  far: StripEdge,
+  viewport: Viewport,
+  colors: RoadColors,
+): void {
+  const segIndex = far.segment.index;
+
+  const grassColor = pickAlternating(
+    segIndex,
+    GRASS_STRIPE_LEN,
+    colors.grassLight,
+    colors.grassDark,
+  );
+  ctx.fillStyle = grassColor;
+  const yTop = far.screenY;
+  const yBottom = near.screenY;
+  if (yBottom > yTop) {
+    ctx.fillRect(0, yTop, viewport.width, yBottom - yTop);
+  }
+
+  const rumbleColor = pickAlternating(
+    segIndex,
+    RUMBLE_STRIPE_LEN,
+    colors.rumbleLight,
+    colors.rumbleDark,
+  );
+  drawTrapezoid(
+    ctx,
+    rumbleColor,
+    near.screenX,
+    near.screenY,
+    near.screenW * 1.15,
+    far.screenX,
+    far.screenY,
+    far.screenW * 1.15,
+  );
+
+  const roadColor = pickAlternating(
+    segIndex,
+    RUMBLE_STRIPE_LEN,
+    colors.roadLight,
+    colors.roadDark,
+  );
+  drawTrapezoid(
+    ctx,
+    roadColor,
+    near.screenX,
+    near.screenY,
+    near.screenW,
+    far.screenX,
+    far.screenY,
+    far.screenW,
+  );
+
+  if (Math.floor(segIndex / LANE_STRIPE_LEN) % 2 === 0) {
+    const laneHalfNear = Math.max(1, near.screenW * 0.03);
+    const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
     drawTrapezoid(
       ctx,
-      rumbleColor,
+      colors.lane,
       near.screenX,
       near.screenY,
-      near.screenW * 1.15,
+      laneHalfNear,
       far.screenX,
       far.screenY,
-      far.screenW * 1.15,
+      laneHalfFar,
     );
-
-    // Road surface.
-    const roadColor = pickAlternating(
-      segIndex,
-      RUMBLE_STRIPE_LEN,
-      colors.roadLight,
-      colors.roadDark,
-    );
-    drawTrapezoid(
-      ctx,
-      roadColor,
-      near.screenX,
-      near.screenY,
-      near.screenW,
-      far.screenX,
-      far.screenY,
-      far.screenW,
-    );
-
-    // Lane markings: a narrow center stripe on alternating segments. Phase 1
-    // ships a single lane line down the middle; multi-lane comes in §9.
-    if (Math.floor(segIndex / LANE_STRIPE_LEN) % 2 === 0) {
-      const laneHalfNear = Math.max(1, near.screenW * 0.03);
-      const laneHalfFar = Math.max(0.5, far.screenW * 0.03);
-      drawTrapezoid(
-        ctx,
-        colors.lane,
-        near.screenX,
-        near.screenY,
-        laneHalfNear,
-        far.screenX,
-        far.screenY,
-        laneHalfFar,
-      );
-    }
   }
 }

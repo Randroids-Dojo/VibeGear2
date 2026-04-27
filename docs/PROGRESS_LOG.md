@@ -6,6 +6,83 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-26: Slice: Race start player car overlay
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) "Sprite scaling",
+[§20](gdd/20-hud-and-ui-ux.md) race HUD.
+**Branch / PR:** `fix/race-start-view`, PR #9.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added a live player-car overlay
+  placeholder that paints after the road and dust layers, using the
+  §16 standard camera footprint of 18 percent viewport height.
+- `src/render/pseudoRoadCanvas.ts`: refined the placeholder into a
+  rear chase-view silhouette with tires, rear deck, and tail lights so
+  it reads less like a flat UI icon.
+- `src/render/pseudoRoadCanvas.ts`: replaced protruding tire blocks and
+  the over-wide rear deck with contained path shapes.
+- `src/render/pseudoRoadCanvas.ts`: extends the closest visible road
+  strip down to the bottom of the viewport so the lower quarter no
+  longer shows the sky gradient under the car.
+- `src/road/segmentProjector.ts`: moved foreground coverage into the
+  projection contract by attaching a screen-bottom endpoint to the
+  closest visible strip. The renderer now draws that endpoint as a
+  normal strip pair instead of inventing foreground geometry.
+- `src/app/race/page.tsx`: passes the player-car overlay option to the
+  road renderer every race frame so a fresh race has a visible car
+  anchor at the bottom of the view.
+- `src/app/race/page.tsx`: lets the canvas scale up to a 1280 px
+  wide race viewport and clips the debug metrics out of sighted
+  layout while keeping the existing Playwright test IDs available.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered the player
+  car overlay footprint, default colours, custom colours, tires,
+  tail lights, and omitted / null behavior.
+- `docs/IMPLEMENTATION_PLAN.md` and `docs/WORKING_AGREEMENT.md`: added
+  an explicit requirement-inventory step so future agents must record
+  adjacent GDD requirements that a slice exposes but does not implement.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 14 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- Browser pixel check against `http://localhost:3000/race` found
+  3,160 live-car pixels in the lower canvas during countdown.
+- Browser layout check at 2048x1240 confirmed a 1280x768 canvas,
+  a clipped 1x1 debug metrics box, 3,954 yellow car pixels, and
+  217 red tail-light pixels during countdown.
+- Browser artifact check at 2048x1240 confirmed 3,841 yellow car
+  pixels, 193 red tail-light pixels, and only 38 dark pixels outside
+  the right side of the car footprint.
+- Browser foreground check at 2048x1240 confirmed the bottom quarter
+  is 0.55 percent blue and 79.78 percent road, with the player car
+  still visible.
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 48 passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 1 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed; 2,130 unit tests passed.
+- `grep -rn $'\u2014\|\u2013' src/render/pseudoRoadCanvas.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/app/race/page.tsx`
+  returned no hits.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Used an original Canvas2D placeholder silhouette until the §17 car
+  sprite atlas is wired into the live race renderer.
+
+### Followups created
+- F-050: Prove authored elevation in the live race view.
+- F-051: Replace live and ghost car placeholders with atlas sprites.
+- F-052: Add parallax horizon and roadside sprites to the race renderer.
+- F-053: Add a machine-checkable GDD coverage ledger.
+
+### GDD edits
+None. The implementation matches the existing §16 player-car footprint.
+
+---
+
 ## 2026-04-26: Slice: F-022 Time Trial ghost consumer
 
 **GDD sections touched:**

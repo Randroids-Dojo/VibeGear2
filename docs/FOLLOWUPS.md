@@ -10,6 +10,64 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-053: Add a machine-checkable GDD coverage ledger
+**Created:** 2026-04-26
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The current loop relies on each agent reading the relevant
+GDD sections and remembering to file followups for adjacent required
+behaviour. Add a coverage ledger that maps each concrete GDD requirement
+to one of: implemented code, automated test, open followup, or open
+question. Add a CI or content-lint check that fails when a progress log
+entry claims GDD coverage without listing the remaining uncovered
+requirements. This should catch gaps like road elevation proof before a
+visual slice reaches review.
+
+---
+
+## F-052: Add parallax horizon and roadside sprites to the race renderer
+**Created:** 2026-04-26
+**Priority:** polish
+**Status:** open
+**Notes:** §16 and §21 call for layered horizon art, parallax
+backgrounds, and roadside sprites drawn from compiled track segment
+content. The current race view renders flat sky, grass, and road strips
+only. Wire the race renderer to consume region background layers and
+roadside sprite ids from compiled track data, then verify that the
+assets move at distinct depths in a browser smoke.
+
+---
+
+## F-051: Replace live and ghost car placeholders with atlas sprites
+**Created:** 2026-04-26
+**Priority:** polish
+**Status:** open
+**Notes:** The live player car and Time Trial ghost still use original
+Canvas2D placeholder shapes. §16 expects 12 to 16 directional car
+frames, damage variants, brake lights, nitro effects, and weather
+variants. Replace the live `playerCar` overlay and the F-022 ghost
+rectangle with frames from the same loaded sprite atlas, selected from
+steering and road curve state. Keep the current Canvas2D shape only as
+a missing-asset fallback.
+
+---
+
+## F-050: Prove authored elevation in the live race view
+**Created:** 2026-04-26
+**Priority:** blocks-release
+**Status:** open
+**Notes:** §9 defines mild crests, aggressive crests, dips, and
+plateaus, while §16 and §21 say segment `grade` drives hills through
+the pseudo-3D projection pipeline. The bundled `/race` content used in
+the smoke path currently has zero grade everywhere, so the live view
+does not prove Top Gear-style elevation changes yet. Add or route to a
+small representative track with non-zero grade, validate it through the
+track schema and compiler, and add a browser smoke that confirms the
+projected road and horizon shift as the car advances through the
+grade-bearing segments.
+
+---
+
 ## F-049: Implement options reset persistence wiring
 **Created:** 2026-04-26
 **Priority:** nice-to-have

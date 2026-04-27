@@ -24,6 +24,13 @@ import type { Strip, Viewport } from "@/road/types";
 import {
   GHOST_CAR_DEFAULT_ALPHA,
   GHOST_CAR_DEFAULT_FILL,
+  PLAYER_CAR_DEFAULT_FILL,
+  PLAYER_CAR_DEFAULT_SHADOW,
+  PLAYER_CAR_DEFAULT_TAIL_LIGHT,
+  PLAYER_CAR_DEFAULT_TIRE,
+  PLAYER_CAR_DEFAULT_WINDSHIELD,
+  PLAYER_CAR_HEIGHT_FRACTION,
+  PLAYER_CAR_WIDTH_TO_HEIGHT,
   drawRoad,
   type DrawRoadOptions,
 } from "../pseudoRoadCanvas";
@@ -113,6 +120,29 @@ function makeCanvasSpy(): CanvasSpy {
  * because it is independent of the strip array.
  */
 const EMPTY_STRIPS: readonly Strip[] = [];
+
+function strip(overrides: Partial<Strip>): Strip {
+  return {
+    segment: {
+      index: 0,
+      worldZ: 0,
+      curve: 0,
+      grade: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
+    },
+    visible: true,
+    screenX: VIEWPORT.width / 2,
+    screenY: VIEWPORT.height / 2,
+    screenW: 80,
+    scale: 1,
+    worldX: 0,
+    worldY: 0,
+    ...overrides,
+  };
+}
 
 describe("drawRoad ghost car overlay", () => {
   it("paints a translucent rect at the projected ground point with the default alpha", () => {
@@ -281,5 +311,141 @@ describe("drawRoad ghost car overlay", () => {
         c.type === "fillRect" && c.w === 40 && c.h === 20,
     );
     expect(ghostRect).toBeUndefined();
+  });
+});
+
+describe("drawRoad foreground projection", () => {
+  it("draws the projector-supplied foreground endpoint as a normal strip pair", () => {
+    const spy = makeCanvasSpy();
+    const colors = {
+      skyTop: "#000001",
+      skyBottom: "#000002",
+      grassLight: "#112233",
+      grassDark: "#223344",
+      rumbleLight: "#334455",
+      rumbleDark: "#445566",
+      roadLight: "#556677",
+      roadDark: "#667788",
+      lane: "#778899",
+    };
+    const strips: readonly Strip[] = [
+      strip({ visible: false, screenY: VIEWPORT.height, screenW: 0 }),
+      strip({
+        screenY: 300,
+        screenW: 80,
+        foreground: {
+          screenX: VIEWPORT.width / 2,
+          screenY: VIEWPORT.height,
+          screenW: 240,
+        },
+        segment: { ...strip({}).segment, index: 0 },
+      }),
+      strip({ screenY: 240, screenW: 40, segment: { ...strip({}).segment, index: 1 } }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, { colors });
+
+    const foregroundGrass = spy.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" &&
+        c.fillStyle === colors.grassLight &&
+        c.x === 0 &&
+        c.y === 300 &&
+        c.w === VIEWPORT.width &&
+        c.h === VIEWPORT.height - 300,
+    );
+    expect(foregroundGrass).toBeDefined();
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === colors.roadLight)).toBe(true);
+    expect(fills.some((call) => call.fillStyle === colors.lane)).toBe(true);
+  });
+});
+
+describe("drawRoad player car overlay", () => {
+  it("paints the live player car at the §16 standard camera footprint", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: {} });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills).toHaveLength(5);
+    expect(fills[0]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_SHADOW);
+    expect(fills[3]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_FILL);
+    expect(fills[4]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_WINDSHIELD);
+
+    const height = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION;
+    expect(height / VIEWPORT.height).toBeGreaterThanOrEqual(0.16);
+    expect(height / VIEWPORT.height).toBeLessThanOrEqual(0.22);
+    expect(height * PLAYER_CAR_WIDTH_TO_HEIGHT).toBeCloseTo(99.36, 2);
+  });
+
+  it("paints contained tires, rear deck, and two tail-light rects", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: {} });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills).toHaveLength(5);
+    expect(fills[0]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[1]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TIRE);
+    expect(fills[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_SHADOW);
+    expect(fills[3]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_FILL);
+    expect(fills[4]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_WINDSHIELD);
+
+    const fillRects = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    expect(fillRects).toHaveLength(4);
+
+    expect(fillRects[1]!.fillStyle).toBe("#d7a91e");
+    expect(fillRects[1]!.w).toBeCloseTo(
+      VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * PLAYER_CAR_WIDTH_TO_HEIGHT * 0.64,
+      6,
+    );
+
+    const tailLightW = VIEWPORT.height *
+      PLAYER_CAR_HEIGHT_FRACTION *
+      PLAYER_CAR_WIDTH_TO_HEIGHT *
+      0.16;
+    const tailLightH = VIEWPORT.height * PLAYER_CAR_HEIGHT_FRACTION * 0.08;
+    expect(fillRects[2]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
+    expect(fillRects[2]!.w).toBeCloseTo(tailLightW, 6);
+    expect(fillRects[2]!.h).toBeCloseTo(tailLightH, 6);
+    expect(fillRects[3]!.fillStyle).toBe(PLAYER_CAR_DEFAULT_TAIL_LIGHT);
+    expect(fillRects[3]!.w).toBeCloseTo(tailLightW, 6);
+    expect(fillRects[3]!.h).toBeCloseTo(tailLightH, 6);
+  });
+
+  it("restores fillStyle after painting the player car", () => {
+    const spy = makeCanvasSpy();
+    spy.ctx.fillStyle = "#123456";
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: {
+        fill: "#aa3300",
+        shadow: "#001122",
+        tire: "#050505",
+        tailLight: "#ff0000",
+        windshield: "#223344",
+      },
+    });
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills[0]!.fillStyle).toBe("#050505");
+    expect(fills[1]!.fillStyle).toBe("#050505");
+    expect(fills[2]!.fillStyle).toBe("#001122");
+    expect(fills[3]!.fillStyle).toBe("#aa3300");
+    expect(fills[4]!.fillStyle).toBe("#223344");
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("does not paint the live player car when omitted or null", () => {
+    const omitted = makeCanvasSpy();
+    drawRoad(omitted.ctx, EMPTY_STRIPS, VIEWPORT, {});
+    expect(omitted.calls.filter((c) => c.type === "fill")).toHaveLength(0);
+
+    const nulled = makeCanvasSpy();
+    drawRoad(nulled.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: null });
+    expect(nulled.calls.filter((c) => c.type === "fill")).toHaveLength(0);
   });
 });

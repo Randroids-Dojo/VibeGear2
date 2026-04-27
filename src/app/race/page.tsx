@@ -601,7 +601,10 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
           ghostOverlayRef.current = null;
           ghostOverlayTickRef.current = null;
         }
-        drawRoad(ctx, strips, viewport, { ghostCar: ghostOverlayRef.current });
+        drawRoad(ctx, strips, viewport, {
+          ghostCar: ghostOverlayRef.current,
+          playerCar: {},
+        });
 
         const cars: RankedCar[] = [
           {
@@ -773,8 +776,9 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         tabIndex={0}
         style={{
           display: "block",
-          width: VIEWPORT_WIDTH,
-          height: VIEWPORT_HEIGHT,
+          width: "min(100%, 1280px, calc((100vh - 3rem) * 1.6667))",
+          height: "auto",
+          aspectRatio: `${VIEWPORT_WIDTH} / ${VIEWPORT_HEIGHT}`,
           maxWidth: "100%",
           background: "#000",
           imageRendering: "pixelated",
@@ -821,15 +825,18 @@ const shellStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: "1rem",
 };
 
 const metricsStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "max-content 1fr",
-  gap: "0.25rem 2rem",
-  maxWidth: "32rem",
-  width: "100%",
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
 };
 
 const resultStyle: CSSProperties = {

@@ -47,6 +47,8 @@ build*; this agreement wins for *how to operate*.
 - Each slice gets one PR. PR title mirrors the slice title.
 - PR body includes:
   - Link to the GDD section(s) implemented.
+  - Requirement inventory: the concrete GDD behaviours this PR handles, plus
+    any nearby required behaviours it leaves to a followup or open question.
   - Link to the matching `PROGRESS_LOG.md` entry.
   - Test plan checklist.
   - Any followups created and the ids they got in `FOLLOWUPS.md`.
@@ -73,6 +75,10 @@ build*; this agreement wins for *how to operate*.
 For every slice, before marking it done:
 
 - Run the project's lint, type-check, unit, and integration suites.
+- Compare the implemented behaviour against the relevant GDD section and
+  adjacent cross-references. If the slice exposes another required behaviour
+  that is not implemented yet, file it in `FOLLOWUPS.md` before the PR is
+  marked ready.
 - For features with a user-visible surface, run the dev server and exercise
   the feature in a real browser. If the agent's environment cannot drive a
   browser, say so explicitly in the log and request manual verification — do
