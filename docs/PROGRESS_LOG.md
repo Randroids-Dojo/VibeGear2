@@ -23,6 +23,9 @@ Correct them by adding a new entry that references the old one.
   it reads less like a flat UI icon.
 - `src/render/pseudoRoadCanvas.ts`: replaced protruding tire blocks and
   the over-wide rear deck with contained path shapes.
+- `src/render/pseudoRoadCanvas.ts`: extends the closest visible road
+  strip down to the bottom of the viewport so the lower quarter no
+  longer shows the sky gradient under the car.
 - `src/app/race/page.tsx`: passes the player-car overlay option to the
   road renderer every race frame so a fresh race has a visible car
   anchor at the bottom of the view.
@@ -46,6 +49,9 @@ Correct them by adding a new entry that references the old one.
 - Browser artifact check at 2048x1240 confirmed 3,841 yellow car
   pixels, 193 red tail-light pixels, and only 38 dark pixels outside
   the right side of the car footprint.
+- Browser foreground check at 2048x1240 confirmed the bottom quarter
+  is 0.55 percent blue and 79.78 percent road, with the player car
+  still visible.
 - `npm run test:e2e -- e2e/race-demo.spec.ts` green, 1 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and
   content-lint all passed; 2,128 unit tests passed.

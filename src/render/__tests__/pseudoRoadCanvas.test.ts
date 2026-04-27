@@ -121,6 +121,29 @@ function makeCanvasSpy(): CanvasSpy {
  */
 const EMPTY_STRIPS: readonly Strip[] = [];
 
+function strip(overrides: Partial<Strip>): Strip {
+  return {
+    segment: {
+      index: 0,
+      worldZ: 0,
+      curve: 0,
+      grade: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
+    },
+    visible: true,
+    screenX: VIEWPORT.width / 2,
+    screenY: VIEWPORT.height / 2,
+    screenW: 80,
+    scale: 1,
+    worldX: 0,
+    worldY: 0,
+    ...overrides,
+  };
+}
+
 describe("drawRoad ghost car overlay", () => {
   it("paints a translucent rect at the projected ground point with the default alpha", () => {
     const spy = makeCanvasSpy();
@@ -288,6 +311,45 @@ describe("drawRoad ghost car overlay", () => {
         c.type === "fillRect" && c.w === 40 && c.h === 20,
     );
     expect(ghostRect).toBeUndefined();
+  });
+});
+
+describe("drawRoad foreground road continuation", () => {
+  it("fills the near-plane gap from the closest visible strip to the bottom", () => {
+    const spy = makeCanvasSpy();
+    const colors = {
+      skyTop: "#000001",
+      skyBottom: "#000002",
+      grassLight: "#112233",
+      grassDark: "#223344",
+      rumbleLight: "#334455",
+      rumbleDark: "#445566",
+      roadLight: "#556677",
+      roadDark: "#667788",
+      lane: "#778899",
+    };
+    const strips: readonly Strip[] = [
+      strip({ visible: false, screenY: VIEWPORT.height, screenW: 0 }),
+      strip({ screenY: 300, screenW: 80, segment: { ...strip({}).segment, index: 0 } }),
+      strip({ screenY: 240, screenW: 40, segment: { ...strip({}).segment, index: 1 } }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, { colors });
+
+    const foregroundGrass = spy.calls.find(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" &&
+        c.fillStyle === colors.grassLight &&
+        c.x === 0 &&
+        c.y === 300 &&
+        c.w === VIEWPORT.width &&
+        c.h === VIEWPORT.height - 300,
+    );
+    expect(foregroundGrass).toBeDefined();
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === colors.roadLight)).toBe(true);
+    expect(fills.some((call) => call.fillStyle === colors.lane)).toBe(true);
   });
 });
 

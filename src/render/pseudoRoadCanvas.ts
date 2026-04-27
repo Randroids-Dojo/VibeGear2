@@ -482,4 +482,84 @@ function drawStrips(
       );
     }
   }
+  drawForegroundContinuation(ctx, strips, viewport, colors);
+}
+
+/**
+ * Fill the near-plane gap between the closest projected strip and the
+ * bottom of the viewport. The projector correctly hides strips behind
+ * the camera near plane; without this continuation the sky gradient
+ * remains visible in the foreground, which makes the lower quarter of
+ * the race screen look like empty blue space instead of road.
+ */
+function drawForegroundContinuation(
+  ctx: CanvasRenderingContext2D,
+  strips: readonly Strip[],
+  viewport: Viewport,
+  colors: RoadColors,
+): void {
+  const near = strips.find((strip) => strip.visible);
+  if (!near) return;
+  if (near.screenY >= viewport.height) return;
+
+  const grassColor = pickAlternating(
+    near.segment.index,
+    GRASS_STRIPE_LEN,
+    colors.grassLight,
+    colors.grassDark,
+  );
+  ctx.fillStyle = grassColor;
+  ctx.fillRect(0, near.screenY, viewport.width, viewport.height - near.screenY);
+
+  const bottomX = near.screenX;
+  const bottomY = viewport.height;
+  const roadBottomHalfW = Math.max(near.screenW * 2.8, viewport.width * 0.54);
+  const rumbleBottomHalfW = roadBottomHalfW * 1.15;
+
+  const rumbleColor = pickAlternating(
+    near.segment.index,
+    RUMBLE_STRIPE_LEN,
+    colors.rumbleLight,
+    colors.rumbleDark,
+  );
+  drawTrapezoid(
+    ctx,
+    rumbleColor,
+    bottomX,
+    bottomY,
+    rumbleBottomHalfW,
+    near.screenX,
+    near.screenY,
+    near.screenW * 1.15,
+  );
+
+  const roadColor = pickAlternating(
+    near.segment.index,
+    RUMBLE_STRIPE_LEN,
+    colors.roadLight,
+    colors.roadDark,
+  );
+  drawTrapezoid(
+    ctx,
+    roadColor,
+    bottomX,
+    bottomY,
+    roadBottomHalfW,
+    near.screenX,
+    near.screenY,
+    near.screenW,
+  );
+
+  if (Math.floor(near.segment.index / LANE_STRIPE_LEN) % 2 === 0) {
+    drawTrapezoid(
+      ctx,
+      colors.lane,
+      bottomX,
+      bottomY,
+      Math.max(2, roadBottomHalfW * 0.025),
+      near.screenX,
+      near.screenY,
+      Math.max(1, near.screenW * 0.03),
+    );
+  }
 }
