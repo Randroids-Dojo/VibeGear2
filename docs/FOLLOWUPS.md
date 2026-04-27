@@ -277,7 +277,7 @@ covers the full localStorage round-trip.
 ## F-048: Apply `CPU_DIFFICULTY_MODIFIERS` scalars in the AI runtime
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** in-progress
+**Status:** done (2026-04-27)
 **Notes:** `src/game/aiDifficulty.ts` exposes
 `CPU_DIFFICULTY_MODIFIERS` keyed by `PlayerDifficultyPreset` (Easy /
 Normal / Hard / Master). The runtime side of the §23 wiring needs
@@ -298,16 +298,22 @@ three call-sites; the `paceScalar` slice landed in
   ceiling. Tests cover Hard > Easy under matched inputs, the
   per-driver composition, the topSpeed clamp, and the
   identity-default byte-equivalence with the omitted-arg path.
-- `mistakeScalar`: **open.** Stack on `AIDriver.mistakeRate` once
-  the mistake-injection pipeline lands. Clean_line is currently
-  zero-randomness; the consumer arrives with `aggressive`,
-  `chaotic`, and `bully` archetypes (full-AI dot owns it).
-- `recoveryScalar`: **open.** Stack on the rubber-banding catch-up
-  term once it lands. §15 lists rubber-banding as deferred; no
-  consumer module exists yet.
+- `mistakeScalar`: **done.** Closed by
+  `feat/f-048-ai-difficulty-scalars`. `tickAI` now stacks
+  `cpuModifiers.mistakeScalar` on top of `AIDriver.mistakeRate` and
+  feeds a deterministic lane-target mistake hook from `AIState.seed`.
+  The hook is intentionally generic; archetype-specific mistake shapes
+  remain owned by the full-AI dot.
+- `recoveryScalar`: **done.** Closed by
+  `feat/f-048-ai-difficulty-scalars`. `tickAI` now stacks
+  `cpuModifiers.recoveryScalar` on a light trailing-gap pace lift when
+  the AI is behind the player. The term stays bounded and remains under
+  the chassis top-speed clamp so it cannot create impossible pace.
 
-Close this followup once `mistakeScalar` and `recoveryScalar`
-also consume their respective scalars at their consumer sites.
+F-048 is closed. Remaining broader AI work stays in
+`VibeGear2-implement-full-ai-fab57b84`: overtake / lane-shift
+behavior, archetype-specific mistakes, nitro usage, weather skill, and
+full grid behavior.
 
 ---
 

@@ -6,6 +6,65 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-27: Slice: F-048 AI difficulty scalars
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU difficulty tiers,
+[§23](gdd/23-balancing-tables.md) CPU difficulty modifiers,
+[§21](gdd/21-technical-design-for-web-implementation.md) deterministic
+runtime.
+**Branch / PR:** `feat/f-048-ai-difficulty-scalars`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/ai.ts`: consumes all three §23 CPU difficulty scalar
+  columns. `paceScalar` remains stacked on target speed,
+  `mistakeScalar` now stacks on `AIDriver.mistakeRate` for a
+  deterministic lane-target mistake hook, and `recoveryScalar` now
+  stacks on a bounded light trailing-gap pace lift.
+- `src/game/__tests__/ai.test.ts`: covers Easy producing more
+  deterministic mistakes than Hard, positive mistake-rate seed
+  advancement, and Master recovery being larger than Easy under a
+  matched trailing gap.
+- `src/game/aiDifficulty.ts` and
+  `src/data/__tests__/balancing.test.ts`: updated comments so the
+  §23 modifier docs match the runtime consumers.
+- `docs/FOLLOWUPS.md`: closed F-048.
+- `docs/GDD_COVERAGE.json`: added GDD-15-CPU-DIFFICULTY-RUNTIME.
+
+### Verified
+- `npx vitest run src/game/__tests__/ai.test.ts` green, 27 passed.
+- `npx vitest run src/game/__tests__/ai.test.ts src/game/__tests__/aiDifficulty.test.ts src/data/__tests__/balancing.test.ts`
+  green, 115 passed.
+- `npm run content-lint` clean.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,179 unit tests passed.
+- `npm run test:e2e -- e2e/race-demo.spec.ts` green, 3 passed.
+
+### Decisions and assumptions
+- The recovery hook is intentionally light and bounded under the
+  existing top-speed clamp. It makes the §23 scalar observable without
+  adding impossible pace or the full rubber-banding policy in this
+  slice.
+- The shared mistake hook perturbs the lane target only. Specific
+  miss-apex, early-brake, wasted-nitro, and weather-mismatch mistakes
+  remain part of the full-AI slice.
+
+### Coverage ledger
+- GDD-15-CPU-DIFFICULTY-RUNTIME: covered by runtime wiring and AI unit
+  tests.
+- Uncovered adjacent requirements: overtake / lane-shift behavior,
+  archetype-specific mistake shapes, nitro use, weather skill, and full
+  grid behavior remain under `VibeGear2-implement-full-ai-fab57b84`.
+
+### Followups created
+None.
+
+### GDD edits
+None. This slice implements existing §15, §21, and §23 intent.
+
+---
+
 ## 2026-04-27: Slice: F-058 weather car trails
 
 **GDD sections touched:**
