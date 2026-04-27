@@ -112,6 +112,9 @@ typically 1–3 days of agent work, never more than what fits in a single PR.
 │                                                         │
 ├─ clarify ───────────────────────────────────────────────┤
 │  read the relevant GDD section(s) end to end            │
+│  list the concrete GDD requirements touched by the      │
+│  slice, including adjacent required behaviour that will  │
+│  not be implemented in this PR                          │
 │  if anything is ambiguous, write the question into      │
 │  OPEN_QUESTIONS.md and either:                          │
 │    - block the slice and pick another, or               │
@@ -137,6 +140,8 @@ typically 1–3 days of agent work, never more than what fits in a single PR.
 │  mark resolved OPEN_QUESTIONS.md items answered or      │
 │  obsolete (do not delete; history is preserved)         │
 │  add any new followups to FOLLOWUPS.md                  │
+│  confirm every unmet GDD requirement noticed during     │
+│  the slice has a followup or open question              │
 │  if implementation forced a GDD change, edit the GDD    │
 │  in the same PR and call it out in the log              │
 │                                                         │
@@ -219,8 +224,12 @@ A slice is done when **all** of the following hold:
       the user-visible path.
 - [ ] If the slice changes UI/feel, the agent has either driven it in a browser
       or explicitly flagged that it needs human verification in the log.
+- [ ] The progress log names the concrete GDD requirements the slice touched
+      and any adjacent requirements deliberately left for later.
 - [ ] PROGRESS_LOG.md has a new entry.
 - [ ] OPEN_QUESTIONS.md and FOLLOWUPS.md reflect the new state.
+- [ ] Every unmet GDD requirement discovered while working has either a
+      `FOLLOWUPS.md` id or an `OPEN_QUESTIONS.md` id.
 - [ ] CI is green on the PR.
 - [ ] Auto-deploy succeeds on merge to `main` and the deployed build still
       boots to the title screen.

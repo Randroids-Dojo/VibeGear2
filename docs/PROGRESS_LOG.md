@@ -39,6 +39,9 @@ Correct them by adding a new entry that references the old one.
 - `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered the player
   car overlay footprint, default colours, custom colours, tires,
   tail lights, and omitted / null behavior.
+- `docs/IMPLEMENTATION_PLAN.md` and `docs/WORKING_AGREEMENT.md`: added
+  an explicit requirement-inventory step so future agents must record
+  adjacent GDD requirements that a slice exposes but does not implement.
 
 ### Verified
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
@@ -73,6 +76,7 @@ Correct them by adding a new entry that references the old one.
 - F-050: Prove authored elevation in the live race view.
 - F-051: Replace live and ghost car placeholders with atlas sprites.
 - F-052: Add parallax horizon and roadside sprites to the race renderer.
+- F-053: Add a machine-checkable GDD coverage ledger.
 
 ### GDD edits
 None. The implementation matches the existing §16 player-car footprint.

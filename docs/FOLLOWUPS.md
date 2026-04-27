@@ -10,6 +10,21 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-053: Add a machine-checkable GDD coverage ledger
+**Created:** 2026-04-26
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The current loop relies on each agent reading the relevant
+GDD sections and remembering to file followups for adjacent required
+behaviour. Add a coverage ledger that maps each concrete GDD requirement
+to one of: implemented code, automated test, open followup, or open
+question. Add a CI or content-lint check that fails when a progress log
+entry claims GDD coverage without listing the remaining uncovered
+requirements. This should catch gaps like road elevation proof before a
+visual slice reaches review.
+
+---
+
 ## F-052: Add parallax horizon and roadside sprites to the race renderer
 **Created:** 2026-04-26
 **Priority:** polish
