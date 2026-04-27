@@ -10,6 +10,27 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-059: Fix turn-at-crest road warp and reversed car sprite lean
+**Created:** 2026-04-27
+**Priority:** blocks-release
+**Status:** done (2026-04-27)
+**Notes:** Manual race observation after F-057 and F-051: while turning
+left or right near a crest, the foreground road could warp sideways as
+if the near road edge was being pulled by distant curve projection. The
+player car atlas also leaned the opposite direction from lateral input:
+rightward movement selected left-looking frames and leftward movement
+selected right-looking frames.
+
+Closed by `fix/f-059-turn-crest-road-warp`. The projector now anchors
+the foreground endpoint to the camera-local road plane at the bottom of
+the viewport instead of extrapolating that endpoint from farther visible
+strips. The live car frame mapper also reverses the Sparrow atlas
+left/right indices so positive steer selects right-leaning frames and
+negative steer selects left-leaning frames. Unit tests cover both
+regressions.
+
+---
+
 ## F-058: Add weather-specific car trail and spray variants
 **Created:** 2026-04-27
 **Priority:** polish

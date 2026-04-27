@@ -34,7 +34,7 @@
         "src/road/__tests__/segmentProjector.test.ts",
         "e2e/race-demo.spec.ts"
       ],
-      "followupRefs": ["F-050", "F-054", "F-057"]
+      "followupRefs": ["F-050", "F-054", "F-057", "F-059"]
     },
     {
       "id": "GDD-16-ROAD-MARKINGS",
@@ -67,9 +67,10 @@
       ],
       "testRefs": [
         "src/render/__tests__/pseudoRoadCanvas.test.ts",
-        "src/render/__tests__/spriteAtlas.test.ts"
+        "src/render/__tests__/spriteAtlas.test.ts",
+        "src/render/__tests__/carFrame.test.ts"
       ],
-      "followupRefs": ["F-051"]
+      "followupRefs": ["F-051", "F-059"]
     },
     {
       "id": "GDD-16-CAR-WEATHER-VARIANTS",

@@ -84,6 +84,7 @@ import {
   type Viewport,
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { playerCarFrameIndex } from "@/render/carFrame";
 import { loadAtlas, type LoadedAtlas } from "@/render/spriteAtlas";
 import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
 import type { ParallaxLayer } from "@/render/parallax";
@@ -113,15 +114,6 @@ const MINIMAP_BOX = Object.freeze({
   w: MINIMAP_SIZE,
   h: MINIMAP_SIZE,
 });
-
-function playerCarFrameIndex(steer: number, roadCurve: number): number {
-  const visualSteer = Math.max(-1, Math.min(1, steer + roadCurve * 0.35));
-  if (visualSteer <= -0.66) return 10;
-  if (visualSteer <= -0.25) return 11;
-  if (visualSteer >= 0.66) return 2;
-  if (visualSteer >= 0.25) return 1;
-  return 0;
-}
 
 function createLayerCanvas(
   width: number,
