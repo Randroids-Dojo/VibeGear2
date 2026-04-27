@@ -19,9 +19,21 @@
       ],
       "testRefs": [
         "src/data/__tests__/tracks-content.test.ts",
+        "src/road/__tests__/segmentProjector.test.ts",
         "e2e/race-demo.spec.ts"
       ],
-      "followupRefs": ["F-050"]
+      "followupRefs": ["F-050", "F-054"]
+    },
+    {
+      "id": "GDD-16-ROAD-MARKINGS",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Road edge and lane markings remain visually stable across camera motion, grade changes, and segment boundaries.",
+      "coverage": ["open-followup"],
+      "followupRefs": ["F-055"]
     },
     {
       "id": "GDD-16-CAR-SPRITE-ATLAS",

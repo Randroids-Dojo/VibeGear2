@@ -200,6 +200,56 @@ describe("project (pseudo-3D segment projector)", () => {
         (near.screenY - far.screenY);
     expect(near.foreground!.screenW).toBeCloseTo(expected, 6);
   });
+
+  it("keeps an ahead marker continuous through a dip-to-climb transition", () => {
+    const segs = flatTrack(96);
+    for (let i = 0; i < 16; i++) {
+      segs[i] = { ...segs[i]!, grade: -0.35 };
+    }
+    for (let i = 16; i < 32; i++) {
+      segs[i] = { ...segs[i]!, grade: 0.35 };
+    }
+
+    let previousY: number | null = null;
+    let maxDelta = 0;
+    for (
+      let cameraZ = 14 * SEGMENT_LENGTH;
+      cameraZ <= 18 * SEGMENT_LENGTH;
+      cameraZ += 0.5
+    ) {
+      const marker = projectGhostCar(
+        segs,
+        makeCamera({ z: cameraZ }),
+        VIEWPORT,
+        cameraZ + 48,
+        0,
+        { drawDistance: 64 },
+      );
+      if (!marker.visible) continue;
+      if (previousY !== null) {
+        maxDelta = Math.max(maxDelta, Math.abs(marker.screenY - previousY));
+      }
+      previousY = marker.screenY;
+    }
+
+    expect(previousY).not.toBeNull();
+    expect(maxDelta).toBeLessThan(20);
+  });
+
+  it("keeps long climbs from accumulating into a full-screen road wall", () => {
+    const segs = flatTrack(96);
+    for (let i = 12; i < 38; i++) {
+      segs[i] = { ...segs[i]!, grade: 0.54 };
+    }
+
+    const strips = project(segs, makeCamera({ z: 220 }), VIEWPORT, {
+      drawDistance: 64,
+    });
+    const visible = strips.filter((strip) => strip.visible);
+
+    expect(visible.length).toBeGreaterThan(2);
+    expect(visible[0]!.screenY).toBeGreaterThan(VIEWPORT.height * 0.35);
+  });
 });
 
 describe("upcomingCurvature", () => {

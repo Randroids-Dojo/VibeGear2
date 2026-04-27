@@ -10,10 +10,27 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-055: Replace temporary procedural road markings with texture-phase markings
+**Created:** 2026-04-27
+**Priority:** polish
+**Status:** open
+**Notes:** The F-054 hill-stutter slice stabilized uphill frames by
+removing segment-index phase gates from the temporary procedural
+centerline and rumble markings. That prevents visible snapping while the
+projection fix is validated, but it is not the final road-art model.
+Implement camera-phase-stable road markings driven by road distance,
+not by the currently visible strip index. The solution should support
+dashed lane lines, alternating rumble bands, grade changes, and segment
+boundaries without popping from one uphill frame to the next. Add a
+renderer regression that advances the camera through a climb and asserts
+the marking phase changes smoothly rather than snapping.
+
+---
+
 ## F-054: Fix hill-bottom car stutter and repeated road collision bounce
 **Created:** 2026-04-27
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-27)
 **Notes:** Manual race observation: when the player reaches the bottom
 of a hill and starts climbing the next grade, the player car appears to
 stutter, bounce, or repeatedly collide with the road. This likely sits
@@ -25,6 +42,18 @@ player car does not receive repeated ground-collision impulses or
 visible vertical jitter. Inspect `src/road/segmentProjector.ts`,
 `src/game/physics.ts`, `src/game/raceSession.ts`, and the camera setup
 in `src/app/race/page.tsx`.
+
+Closed by `fix/f-054-hill-stutter`. The issue was in the renderer
+projection path, not the physics collision path: `project` restarted
+curve and grade accumulation from zero at the active camera segment, so
+the road could jump when the player crossed segment boundaries near a
+grade reversal. `src/road/segmentProjector.ts` now blends the bounded
+local projection window toward the next segment window as the camera
+approaches a segment boundary, preserving the existing hill scale while
+removing boundary pops. The regression tests in
+`src/road/__tests__/segmentProjector.test.ts` drive through a
+dip-to-climb transition and assert long climbs do not accumulate into a
+full-screen road wall.
 
 ---
 

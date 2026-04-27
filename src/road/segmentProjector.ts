@@ -21,6 +21,44 @@ export interface ProjectorOptions {
   drawDistance?: number;
 }
 
+interface LocalProjectionOffset {
+  readonly x: number;
+  readonly y: number;
+}
+
+function buildLocalProjectionOffsets(
+  segments: readonly CompiledSegment[],
+  baseSegmentIndex: number,
+  count: number,
+): LocalProjectionOffset[] {
+  const offsets: LocalProjectionOffset[] = new Array(count);
+  let dx = 0;
+  let x = 0;
+  let dy = 0;
+  let y = 0;
+  const totalSegments = segments.length;
+
+  for (let n = 0; n < count; n++) {
+    offsets[n] = { x, y };
+    const segment = segments[(baseSegmentIndex + n) % totalSegments];
+    if (!segment) continue;
+    x += dx;
+    dx += segment.curve;
+    y += dy;
+    dy += segment.grade;
+  }
+
+  return offsets;
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function smoothStep(t: number): number {
+  return t * t * (3 - 2 * t);
+}
+
 /**
  * Project a compiled segment list to screen-space strips.
  *
@@ -53,30 +91,45 @@ export function project(
   const wrappedCameraZ =
     ((camera.z % trackLength) + trackLength) % trackLength;
   const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
+  const cameraOffsetWithinSegment =
+    wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
+  const segmentProgress = cameraOffsetWithinSegment / SEGMENT_LENGTH;
+  const boundaryBlend = smoothStep(segmentProgress);
+  const currentOffsets = buildLocalProjectionOffsets(
+    segments,
+    baseSegmentIndex,
+    drawDistance,
+  );
+  const nextOffsets = buildLocalProjectionOffsets(
+    segments,
+    (baseSegmentIndex + 1) % totalSegments,
+    drawDistance,
+  );
 
   const halfW = viewport.width / 2;
   const halfH = viewport.height / 2;
 
   // Pre-pass: per-segment curve and grade accumulation, then projection.
-  let dx = 0;
-  let x = 0;
-  let dy = 0;
-  let y = 0;
   const strips: Strip[] = new Array(drawDistance);
   for (let n = 0; n < drawDistance; n++) {
-    const segIndex = (baseSegmentIndex + n) % totalSegments;
+    const logicalIndex = baseSegmentIndex + n;
+    const segIndex = logicalIndex % totalSegments;
     const segment = segments[segIndex];
     if (!segment) continue;
 
-    // Camera-space world position. Curve and grade are pre-scaled in
-    // compiled units by the track compiler.
-    const worldX = x - camera.x;
-    const worldY = y - camera.y;
+    const current = currentOffsets[n] ?? { x: 0, y: 0 };
+    const next = n > 0 ? nextOffsets[n - 1] ?? current : current;
+    // Camera-space world position. The projection remains a bounded
+    // local hill window, matching the existing pseudo-3D scale, but
+    // blends toward the next segment's local window as the camera
+    // approaches a segment boundary. That removes grade-reversal pops
+    // without accumulating the whole track's elevation into the view.
+    const worldX = lerp(current.x, next.x, boundaryBlend) - camera.x;
+    const worldY = lerp(current.y, next.y, boundaryBlend) - camera.y;
     // Use the segment offset relative to the camera so wrap-around works.
     // `n * SEGMENT_LENGTH` is the segment's distance ahead of the camera
     // segment; subtract the fractional camera offset within its segment so
     // the closest strip sits exactly at the camera.
-    const cameraOffsetWithinSegment = wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
     const sz = n * SEGMENT_LENGTH - cameraOffsetWithinSegment;
 
     let strip: Strip;
@@ -108,12 +161,6 @@ export function project(
       };
     }
     strips[n] = strip;
-
-    // Advance the curve and grade integrators for the *next* segment.
-    x += dx;
-    dx += segment.curve;
-    y += dy;
-    dy += segment.grade;
   }
 
   // Near-to-far maxY cull (Gordon's racer.js pattern).
@@ -302,11 +349,10 @@ const HIDDEN_GHOST_PROJECTION: Readonly<GhostCarProjection> = Object.freeze({
  *     near edge sits at `cameraDepth / (ghostZ - cameraZ)` scale, which
  *     is the same expression the strip loop uses.
  *
- * Walks segments forward from the camera up to (and including) the
- * segment containing the ghost, accumulating the same `dx` / `x` and
- * `dy` / `y` integrators the strip projector uses. The ghost's lateral
- * `ghostX` is added to the accumulated curve offset before the camera
- * subtraction, which mirrors how a live car at `(z, x)` would project.
+ * Samples the same bounded local hill window used by the strip projector.
+ * The ghost's lateral `ghostX` is added to the sampled curve offset
+ * before camera subtraction, which mirrors how a live car at `(z, x)`
+ * would project.
  *
  * Edge cases:
  *
@@ -368,6 +414,8 @@ export function projectGhostCar(
   const baseSegmentIndex = Math.floor(wrappedCameraZ / SEGMENT_LENGTH);
   const cameraOffsetWithinSegment =
     wrappedCameraZ - baseSegmentIndex * SEGMENT_LENGTH;
+  const segmentProgress = cameraOffsetWithinSegment / SEGMENT_LENGTH;
+  const boundaryBlend = smoothStep(segmentProgress);
 
   // Forward distance from the camera to the ghost. A ghost behind the
   // camera in lap-relative terms wraps to "one lap ahead" so a player
@@ -384,31 +432,26 @@ export function projectGhostCar(
     return HIDDEN_GHOST_PROJECTION;
   }
 
-  // Walk segments from the camera segment up to (but not including) the
-  // segment that contains the ghost, accumulating the same dx / x and
-  // dy / y the strip projector uses. The integrator must run before the
-  // ghost's segment so the `worldX` / `worldY` pair below sits at the
-  // ghost's near edge, identical to how the strip projector samples a
-  // strip's near edge.
   const ghostSegmentOffset = Math.floor(
     (forwardZ + cameraOffsetWithinSegment) / SEGMENT_LENGTH,
   );
-  let dx = 0;
-  let x = 0;
-  let dy = 0;
-  let y = 0;
-  for (let n = 0; n < ghostSegmentOffset; n++) {
-    const segIndex = (baseSegmentIndex + n) % totalSegments;
-    const segment = segments[segIndex];
-    if (!segment) continue;
-    x += dx;
-    dx += segment.curve;
-    y += dy;
-    dy += segment.grade;
-  }
-
-  const worldX = x + ghostX - camera.x;
-  const worldY = y - camera.y;
+  const currentOffsets = buildLocalProjectionOffsets(
+    segments,
+    baseSegmentIndex,
+    ghostSegmentOffset + 1,
+  );
+  const nextOffsets = buildLocalProjectionOffsets(
+    segments,
+    (baseSegmentIndex + 1) % totalSegments,
+    ghostSegmentOffset + 1,
+  );
+  const current = currentOffsets[ghostSegmentOffset] ?? { x: 0, y: 0 };
+  const next =
+    ghostSegmentOffset > 0
+      ? nextOffsets[ghostSegmentOffset - 1] ?? current
+      : current;
+  const worldX = lerp(current.x, next.x, boundaryBlend) + ghostX - camera.x;
+  const worldY = lerp(current.y, next.y, boundaryBlend) - camera.y;
   const sz = forwardZ;
   const scale = camera.depth / sz;
   const halfW = viewport.width / 2;
