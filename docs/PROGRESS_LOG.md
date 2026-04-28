@@ -13,7 +13,7 @@ Correct them by adding a new entry that references the old one.
 [§12](gdd/12-upgrade-and-economy-system.md) garage upgrade entry,
 [§13](gdd/13-damage-repairs-and-risk.md) between-race repair entry,
 [§20](gdd/20-hud-and-ui-ux.md) results default action.
-**Branch / PR:** `fix/garage-results-handoff`, PR pending.
+**Branch / PR:** `fix/garage-results-handoff`, #33.
 **Status:** Implemented.
 
 ### Done
