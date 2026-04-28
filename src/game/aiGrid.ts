@@ -2,7 +2,7 @@ import type { AIDriver, CarBaseStats, TrackSpawn } from "@/data/schemas";
 import { ROAD_WIDTH } from "@/road/constants";
 
 import type { CarUpgradeTiers, RaceSessionAI } from "./raceSession";
-import { createRng } from "./rng";
+import { createRng, serializeRng, splitRng } from "./rng";
 
 export interface AIGridDriver {
   readonly driver: Readonly<AIDriver>;
@@ -62,7 +62,7 @@ function shuffleDrivers(
   seed: number,
 ): AIGridDriver[] {
   const next = drivers.slice();
-  const rng = createRng(seed);
+  const rng = splitRng(createRng(seed), "ai-grid-roster");
   for (let i = next.length - 1; i > 0; i -= 1) {
     const j = rng.nextInt(0, i + 1);
     const tmp = next[i]!;
@@ -88,5 +88,5 @@ function xForLane(lane: number, laneCount: number): number {
 }
 
 function seedForGridSlot(seed: number, gridSlot: number): number {
-  return (Math.imul(seed >>> 0, 1664525) + Math.imul(gridSlot, 1013904223)) >>> 0;
+  return serializeRng(splitRng(createRng(seed), `ai-grid-slot:${gridSlot}`));
 }

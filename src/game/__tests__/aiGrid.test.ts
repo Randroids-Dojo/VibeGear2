@@ -73,6 +73,22 @@ describe("spawnGrid", () => {
     expect(new Set(b).size).toBe(b.length);
   });
 
+  it("derives stable per-slot AI seeds from the grid seed", () => {
+    const input = {
+      trackSpawn: { gridSlots: 6 },
+      laneCount: 3,
+      aiDrivers: roster(5),
+      seed: 9,
+    };
+    const first = spawnGrid(input).map((entry) => entry.seed);
+    const repeat = spawnGrid(input).map((entry) => entry.seed);
+    const different = spawnGrid({ ...input, seed: 10 }).map((entry) => entry.seed);
+
+    expect(first).toEqual(repeat);
+    expect(new Set(first).size).toBe(first.length);
+    expect(first).not.toEqual(different);
+  });
+
   it("spreads lanes within each row and preserves unique slots", () => {
     const grid = spawnGrid({
       trackSpawn: { gridSlots: 12 },

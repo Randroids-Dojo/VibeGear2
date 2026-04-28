@@ -92,6 +92,7 @@ import {
   tickNitro,
   type NitroState,
 } from "./nitro";
+import { createRng, serializeRng, splitRng } from "./rng";
 import {
   createTransmissionForCar,
   gearAccelMultiplier,
@@ -545,6 +546,8 @@ export const COLLISION_REFERENCE_TOP_SPEED_M_PER_S = 60;
 export const COLLISION_CAR_HIT_BASE_MAGNITUDE =
   (HIT_MAGNITUDE_RANGES.carHit.min + HIT_MAGNITUDE_RANGES.carHit.max) / 2;
 
+const DEFAULT_RACE_SESSION_SEED = 1;
+
 /**
  * True iff the two car snapshots are within the §13 contact box
  * (`|dz| < CAR_LENGTH_M && |dx| < CAR_WIDTH_M`). Pure: no allocation,
@@ -621,8 +624,9 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     damage: config.player.initialDamage ?? PRISTINE_DAMAGE_STATE,
   };
 
+  const raceSeed = config.seed ?? DEFAULT_RACE_SESSION_SEED;
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
-    const seed = entry.seed ?? INITIAL_AI_STATE.seed + index + 1;
+    const seed = entry.seed ?? seedForAiIndex(raceSeed, index);
     const initialZ =
       -(AI_GRID_OFFSET_BEHIND_PLAYER_M + index * AI_GRID_SPACING_M);
     return {
@@ -1693,6 +1697,10 @@ function withHazardGrip(
     ...scalars,
     gripScalar: scalars.gripScalar * Math.max(0, gripMultiplier),
   };
+}
+
+function seedForAiIndex(raceSeed: number, index: number): number {
+  return serializeRng(splitRng(createRng(raceSeed), `ai:${index}`));
 }
 
 function clonePlayerCar(

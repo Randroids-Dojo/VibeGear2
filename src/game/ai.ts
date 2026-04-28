@@ -59,7 +59,7 @@ import {
 import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
-import { createRng } from "./rng";
+import { deserializeRng } from "./rng";
 
 /**
  * Identity §23 CPU modifiers row used as the default when a caller does
@@ -266,7 +266,7 @@ export function tickAI(
   let nextSeed = aiState.seed;
   let mistakeOffset = 0;
   if (race.phase === "racing" && effectiveMistakeRate > 0) {
-    const mistakeRng = createRng(aiState.seed);
+    const mistakeRng = deserializeRng(aiState.seed);
     const mistakeActive = mistakeRng.nextBool(effectiveMistakeRate);
     const mistakeDirection = mistakeRng.next() < 0.5 ? -1 : 1;
     mistakeOffset = mistakeActive
