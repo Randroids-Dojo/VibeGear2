@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Audio context lifecycle primitives
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) sound and music design,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline.
+**Branch / PR:** `feat/audio-context-lifecycle`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/audio/context.ts`: added a shared Web Audio context controller
+  with lazy creation, resume, suspend, unavailable-Web-Audio no-op
+  behavior, closed-context replacement, and hidden-page suspension.
+- `src/audio/context.test.ts`: pinned deferred creation, first-resume
+  creation, no duplicate resumes, unavailable Web Audio, visibility
+  suspension, already-hidden binding, and no create-on-hidden behavior.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-AUDIO-CONTEXT-LIFECYCLE.
+
+### Verified
+- `npx vitest run src/audio/context.test.ts` green, 7 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2431 passed.
+
+### Decisions and assumptions
+- This slice lands the lifecycle primitive only. It does not start
+  engine, SFX, or music playback, and it does not add audio assets.
+- Visibility hidden suspends an existing running context, but visibility
+  visible does not auto-resume because browser resume still needs an
+  explicit user gesture.
+- Binding visibility suspension while the page is already hidden
+  immediately suspends an existing running context without creating a
+  new one.
+- If Web Audio is unavailable, the controller returns `null` and callers
+  can treat audio as a no-op.
+
+### Coverage ledger
+- GDD-18-AUDIO-CONTEXT-LIFECYCLE covers lazy shared context creation,
+  resume, suspension, unavailable-Web-Audio no-op behavior, and hidden
+  page suspension.
+- Uncovered adjacent requirements: engine playback, SFX playback, music
+  playback, region stem metadata, placeholder audio assets, and settings
+  UI sliders remain under the §18 audio parent dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Audio engine and mixer primitives
 
 **GDD sections touched:**

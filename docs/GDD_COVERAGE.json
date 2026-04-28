@@ -62,6 +62,18 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-AUDIO-CONTEXT-LIFECYCLE",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The audio layer can lazily create, resume, and suspend a shared Web Audio context while treating unavailable Web Audio as a no-op and suspending audio when the page is hidden.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/audio/context.ts"],
+      "testRefs": ["src/audio/context.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
