@@ -19,6 +19,7 @@
 
 import { describe, expect, it } from "vitest";
 
+import { visibilityForWeather } from "@/game/weather";
 import type { Strip, Viewport } from "@/road/types";
 import type { LoadedAtlas } from "../spriteAtlas";
 
@@ -882,7 +883,10 @@ describe("drawRoad weather effects", () => {
     expect(fogRects[0]!.y).toBe(0);
     expect(fogRects[0]!.w).toBe(VIEWPORT.width);
     expect(fogRects[0]!.h).toBeCloseTo(VIEWPORT.height * 0.72, 6);
-    expect(fogRects[0]!.globalAlpha).toBeCloseTo(0.36, 6);
+    expect(fogRects[0]!.globalAlpha).toBeCloseTo(
+      Math.min(0.5, (1 - visibilityForWeather("fog")) * 0.72),
+      6,
+    );
 
     const clear = makeCanvasSpy();
     drawRoad(clear.ctx, EMPTY_STRIPS, VIEWPORT, {
