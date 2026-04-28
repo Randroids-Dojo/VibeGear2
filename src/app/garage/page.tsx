@@ -44,11 +44,15 @@ export default function GaragePage() {
   );
 
   const persist = useCallback((next: SaveGame, message: string) => {
-    setSave(next);
     const result = saveSave(next);
     if (result.kind === "ok") {
+      setSave({
+        ...next,
+        writeCounter: (next.writeCounter ?? 0) + 1,
+      });
       setStatus({ kind: "info", message });
     } else {
+      setSave(next);
       setStatus({
         kind: "error",
         message: `Save failed (${result.reason}); change kept in memory only.`,
