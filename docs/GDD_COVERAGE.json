@@ -2,6 +2,29 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-21-RNG-CONSUMERS",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "Game-runtime randomness consumers use the owned deterministic PRNG surface so replay-relevant AI seeding and mistake rolls are reproducible from stable seeds.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/rng.ts",
+        "src/game/aiGrid.ts",
+        "src/game/ai.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/rng.test.ts",
+        "src/game/__tests__/no-math-random.test.ts",
+        "src/game/__tests__/aiGrid.test.ts",
+        "src/game/__tests__/ai.test.ts",
+        "src/game/__tests__/raceSession.test.ts"
+      ]
+    },
+    {
       "id": "GDD-09-HAZARDS-RUNTIME",
       "gddSections": [
         "docs/gdd/09-track-design.md",

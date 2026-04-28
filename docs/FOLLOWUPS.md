@@ -1114,7 +1114,7 @@ will read it from there when it lands.
 ## F-024: Migrate `src/game/` randomness to `createRng` / `splitRng`
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The PRNG slice (`feat(game): seeded deterministic PRNG
 module`, `2fcc7be`) ships `src/game/rng.ts` with `createRng`,
 `splitRng`, `serialiseRng`, `deserialiseRng`, and bans `Math.random`
@@ -1138,6 +1138,17 @@ seed advances reproducibly. Until those slices wire up there is no
 code that exercises `splitRng` end-to-end; the unit tests cover the
 algorithm but not the integration. Track this so the PRNG does not
 sit unused indefinitely.
+
+Closed by `feat/f-024-rng-consumers`. Current production consumers now
+use the owned PRNG surface: `src/game/aiGrid.ts` splits roster shuffle
+and per-slot seed derivation from labelled streams, `src/game/ai.ts`
+resumes the AI mistake stream with `deserializeRng`, and
+`src/game/raceSession.ts` derives default per-AI streams from the
+race-level seed unless a grid entry supplies an explicit seed. Hazards
+and weather remain deterministic without random draws today; any future
+debris scatter, splash variation, wind gust schedule, or damage
+magnitude roll must add its own labelled `splitRng` consumer in that
+feature slice.
 
 ## F-023: Time Trial UI wiring for the ghost recorder
 **Created:** 2026-04-26

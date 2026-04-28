@@ -135,6 +135,26 @@ describe("createRaceSession", () => {
     expect(() => createRaceSession(buildConfig({ totalLaps: 2.5 }))).toThrow(RangeError);
     expect(() => createRaceSession(buildConfig({ countdownSec: -1 }))).toThrow(RangeError);
   });
+
+  it("derives default AI seeds from the race seed", () => {
+    const first = createRaceSession(buildConfig({ seed: 7 }));
+    const repeat = createRaceSession(buildConfig({ seed: 7 }));
+    const different = createRaceSession(buildConfig({ seed: 8 }));
+
+    expect(first.ai[0]?.state.seed).toBe(repeat.ai[0]?.state.seed);
+    expect(first.ai[0]?.state.seed).not.toBe(different.ai[0]?.state.seed);
+  });
+
+  it("preserves explicit AI seeds over race-level seed derivation", () => {
+    const session = createRaceSession(
+      buildConfig({
+        seed: 7,
+        ai: [{ driver: TEST_DRIVER, stats: STARTER_STATS, seed: 1234 }],
+      }),
+    );
+
+    expect(session.ai[0]?.state.seed).toBe(1234);
+  });
 });
 
 describe("stepRaceSession (countdown)", () => {

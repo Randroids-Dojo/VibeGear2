@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: F-024 RNG consumers
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) deterministic AI contract,
+[§21](gdd/21-technical-design-for-web-implementation.md) deterministic replay tests,
+[§27](gdd/27-risks-and-mitigations.md) physics feel and replay risk mitigation.
+**Branch / PR:** `feat/f-024-rng-consumers`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/aiGrid.ts`: switched roster shuffling and per-slot AI seed
+  derivation to labelled `splitRng` streams from the grid seed.
+- `src/game/ai.ts`: resumes the persisted AI mistake stream with
+  `deserializeRng` instead of treating the saved state as a fresh seed.
+- `src/game/raceSession.ts`: derives default per-AI seeds from the
+  race-level seed through labelled streams while preserving explicit
+  grid-provided seeds.
+- `src/game/__tests__/aiGrid.test.ts` and `src/game/__tests__/raceSession.test.ts`:
+  added coverage for stable, distinct PRNG-derived AI seeds.
+- `docs/FOLLOWUPS.md`: marked F-024 done for the consumers that exist
+  today.
+- `docs/GDD_COVERAGE.json`: added GDD-21-RNG-CONSUMERS.
+
+### Verified
+- `npx vitest run src/game/__tests__/aiGrid.test.ts src/game/__tests__/ai.test.ts src/game/__tests__/raceSession.test.ts src/game/__tests__/rng.test.ts src/game/__tests__/no-math-random.test.ts`
+  green, 172 passed.
+- `npm run typecheck` clean.
+- `npm run verify` green, 2261 passed.
+- `npm run test:e2e` green, 69 passed.
+
+### Decisions and assumptions
+- Hazards and weather do not draw random values in production today, so
+  this slice does not add placeholder RNG state to them. Future splash,
+  scatter, gust, or hit-magnitude variation must add a labelled stream
+  in the owning feature slice.
+- Explicit AI seeds from `spawnGrid` remain authoritative over the
+  race-level fallback seed so campaign grids keep their per-slot streams.
+
+### Coverage ledger
+- GDD-21-RNG-CONSUMERS covers current runtime PRNG consumers and the
+  static `Math.random` guard.
+- Uncovered adjacent requirements: seeded damage magnitude variation,
+  hazard VFX variation, and weather gust schedules remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Hazards runtime
 
 **GDD sections touched:**
