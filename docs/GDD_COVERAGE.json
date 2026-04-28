@@ -87,6 +87,28 @@
       ]
     },
     {
+      "id": "GDD-08-WORLD-TOUR-HUB",
+      "gddSections": [
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The world hub renders the canonical World Tour as four-race tour cards, unlocks the first tour for fresh saves, disables locked tours with the gating tour named, persists tour entry, and hands the chosen tour's first race to the race route.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/world/page.tsx",
+        "src/components/world/worldTourState.ts",
+        "src/data/championships/world-tour-standard.json",
+        "src/game/championship.ts"
+      ],
+      "testRefs": [
+        "src/components/world/__tests__/worldTourState.test.ts",
+        "e2e/world-tour.spec.ts",
+        "e2e/title-screen.spec.ts"
+      ],
+      "followupRefs": ["F-065"]
+    },
+    {
       "id": "GDD-12-GARAGE-UPGRADE-PURCHASE",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",

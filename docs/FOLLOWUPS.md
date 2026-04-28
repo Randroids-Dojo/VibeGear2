@@ -10,6 +10,19 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-065: Persist active tour race progression through the four-race World Tour loop
+**Created:** 2026-04-28
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The `/world` hub now renders the canonical championship,
+normalizes a fresh save so Velvet Coast is enterable, persists tour
+entry, and sends the selected tour's first track id to `/race`. The
+active tour cursor still lives in memory inside `src/game/championship.ts`.
+Wire the results screen to carry active tour state between races,
+record each race result, show aggregate standings after race four,
+call `unlockNextTour` on pass, and add `e2e/tour-flow.spec.ts` for the
+full Velvet Coast to Iron Borough unlock path.
+
 ## F-064: Persist race damage into the garage repair queue
 **Created:** 2026-04-28
 **Priority:** blocks-release
