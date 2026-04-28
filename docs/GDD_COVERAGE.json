@@ -23,6 +23,26 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-06-TIME-TRIAL-PB-RECORDS",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Finished Time Trial runs persist personal-best lap and race records without awarding campaign credits or persisting race damage.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/game/raceResult.ts",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceResult.test.ts",
+        "e2e/race-finish.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

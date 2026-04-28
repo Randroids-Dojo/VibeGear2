@@ -503,13 +503,16 @@ export function applyRaceResultRecords(save: SaveGame, result: RaceResult): Save
     existing === null
       ? currentRaceMs
       : Math.min(existing.bestRaceMs, currentRaceMs);
+  const bestLapMs =
+    existing === null ? patch.bestLapMs : Math.min(existing.bestLapMs, patch.bestLapMs);
 
   return {
     ...save,
     records: {
       ...save.records,
       [patch.trackId]: {
-        bestLapMs: patch.bestLapMs,
+        ...(existing ?? {}),
+        bestLapMs,
         bestRaceMs,
       },
     },

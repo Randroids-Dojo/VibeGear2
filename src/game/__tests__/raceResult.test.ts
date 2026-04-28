@@ -818,6 +818,35 @@ describe("buildRaceResult + awardCredits: F-034 race-finish wiring", () => {
       bestRaceMs: 90_000,
     });
   });
+
+  it("preserves an existing faster lap when a stale PB patch is merged", () => {
+    const save = {
+      ...defaultSave(),
+      records: {
+        "test-circuit": {
+          bestLapMs: 25_000,
+          bestRaceMs: 88_000,
+          bestSplitsMs: [12_000, 18_000],
+        },
+      },
+    };
+    const result = buildRaceResult(
+      makeInput({
+        save: defaultSave(),
+      }),
+    );
+    expect(result.recordsUpdated).toEqual({
+      trackId: "test-circuit",
+      bestLapMs: 30_000,
+    });
+
+    const committed = applyRaceResultRecords(save, result);
+    expect(committed.records["test-circuit"]).toEqual({
+      bestLapMs: 25_000,
+      bestRaceMs: 88_000,
+      bestSplitsMs: [12_000, 18_000],
+    });
+  });
 });
 
 /**
