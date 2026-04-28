@@ -20,6 +20,7 @@ import {
   summarizeHudDamage,
   summarizeHudGear,
   summarizeHudNitro,
+  summarizeHudCashDelta,
   summarizeHudWeather,
   speedToDisplayUnit,
   weatherIconForHud,
@@ -441,6 +442,37 @@ describe("HUD gear and nitro summaries", () => {
     const state = deriveHudState(input());
     expect(state.nitro).toBeUndefined();
     expect(state.gear).toBeUndefined();
+  });
+});
+
+describe("HUD cash delta summary", () => {
+  it("formats positive cash with an explicit plus sign", () => {
+    expect(summarizeHudCashDelta(1250)).toEqual({
+      credits: 1250,
+      label: "+1,250 cr",
+    });
+  });
+
+  it("formats negative cash with a minus sign", () => {
+    expect(summarizeHudCashDelta(-375)).toEqual({
+      credits: -375,
+      label: "-375 cr",
+    });
+  });
+
+  it("collapses non-finite cash to zero", () => {
+    expect(summarizeHudCashDelta(Number.NaN)).toEqual({
+      credits: 0,
+      label: "0 cr",
+    });
+  });
+
+  it("surfaces cash delta only when the caller supplies it", () => {
+    expect(deriveHudState(input({ cashDelta: 999 })).cashDelta).toEqual({
+      credits: 999,
+      label: "+999 cr",
+    });
+    expect(deriveHudState(input()).cashDelta).toBeUndefined();
   });
 });
 

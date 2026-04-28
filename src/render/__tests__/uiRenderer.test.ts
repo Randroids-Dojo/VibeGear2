@@ -640,3 +640,35 @@ describe("drawHud lap-timer widget", () => {
     expect(fillRect?.y).toBe(16 + 64);
   });
 });
+
+describe("drawHud cash delta widget", () => {
+  it("draws no cash row when cashDelta is absent", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(ctx, BASE_HUD, VIEWPORT);
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels.some((label) => label.startsWith("CASH"))).toBe(false);
+  });
+
+  it("draws the cash row under the timer stack when supplied", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        currentLapElapsedMs: 1_000,
+        bestLapMs: 2_000,
+        cashDelta: { credits: 1250, label: "+1,250 cr" },
+      },
+      VIEWPORT,
+    );
+    const cashCalls = calls
+      .filter((c) => c.type === "fillText")
+      .filter((c) => c.text === "CASH +1,250 cr");
+    expect(cashCalls).toHaveLength(2);
+    const textCall = cashCalls.find((c) => c.fillStyle === "#cfd6e4");
+    expect(textCall?.x).toBe(16);
+    expect(textCall?.y).toBe(16 + 84);
+  });
+});

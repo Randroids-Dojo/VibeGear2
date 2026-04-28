@@ -136,6 +136,25 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-20-HUD-CASH-DELTA",
+      "gddSections": [
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race HUD shows a guarded cash delta row from the current projected race payout.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/hudState.ts",
+        "src/render/uiRenderer.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/hudState.test.ts",
+        "src/render/__tests__/uiRenderer.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-GRIP-RUNTIME",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

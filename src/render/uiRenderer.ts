@@ -116,6 +116,7 @@ const LAP_TIMER_TOP_OFFSET = 44;
  * y = padding + 64 lines up directly under it.
  */
 const BEST_LAP_TOP_OFFSET = 64;
+const CASH_DELTA_TOP_OFFSET = 84;
 /** Badge pill horizontal padding around the label text. */
 const ASSIST_BADGE_PADDING_X = 8;
 /** Badge pill vertical padding around the label text. */
@@ -219,6 +220,17 @@ export function drawHud(
       bestLabel,
       padding,
       padding + BEST_LAP_TOP_OFFSET,
+      colors.shadow,
+      colors.textMuted,
+    );
+  }
+  if (state.cashDelta !== undefined) {
+    ctx.font = `600 12px ${fontFamily}`;
+    drawShadowedText(
+      ctx,
+      `CASH ${state.cashDelta.label}`,
+      padding,
+      padding + CASH_DELTA_TOP_OFFSET,
       colors.shadow,
       colors.textMuted,
     );

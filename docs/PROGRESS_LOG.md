@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: HUD cash delta
+
+**GDD sections touched:**
+[§12](gdd/12-upgrade-and-economy-system.md) race reward formula,
+[§20](gdd/20-hud-and-ui-ux.md) race HUD.
+**Branch / PR:** `feat/hud-cash-delta`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/hudState.ts`: added an optional cash delta summary with
+  signed credit formatting.
+- `src/render/uiRenderer.ts`: draws a guarded §20 CASH row under the
+  top-left HUD timer stack when cash data is supplied.
+- `src/app/race/page.tsx`: wires live projected race payout from current
+  player position, track difficulty, and difficulty preset into
+  `deriveHudState` for economy modes.
+- `docs/GDD_COVERAGE.json`: added GDD-20-HUD-CASH-DELTA.
+
+### Verified
+- `npx vitest run src/game/__tests__/hudState.test.ts src/render/__tests__/uiRenderer.test.ts`
+  green, 85 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2398 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- The live race HUD uses the current-position projected base payout,
+  excluding bonuses because §5 bonuses are only finalized by the results
+  builder after finish conditions are known.
+- Time Trial omits the cash row because that mode does not commit
+  wallet rewards.
+
+### Coverage ledger
+- GDD-20-HUD-CASH-DELTA covers the live HUD cash delta requirement.
+- Uncovered adjacent requirements: full pause action polish, results
+  styling, and resize reflow verification remain future §20 slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: HUD gear and nitro meter
 
 **GDD sections touched:**
