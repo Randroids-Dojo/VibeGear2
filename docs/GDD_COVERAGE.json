@@ -181,6 +181,22 @@
       ]
     },
     {
+      "id": "GDD-14-RAIN-ROAD-SHEEN",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md"
+      ],
+      "requirement": "Rain weather paints deterministic wet-road sheen alongside rain streaks, with accessibility weather intensity controls scaling the effect.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-21-RNG-CONSUMERS",
       "gddSections": [
         "docs/gdd/15-cpu-opponents-and-ai.md",

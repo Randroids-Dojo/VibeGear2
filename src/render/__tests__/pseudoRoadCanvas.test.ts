@@ -37,6 +37,8 @@ import {
   PLAYER_CAR_DEFAULT_WINDSHIELD,
   PLAYER_CAR_HEIGHT_FRACTION,
   PLAYER_CAR_WIDTH_TO_HEIGHT,
+  RAIN_ROAD_SHEEN_FILL,
+  RAIN_ROAD_SHEEN_MAX_ALPHA,
   TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
   TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA,
   TUNNEL_ADAPTATION_MAX_ALPHA,
@@ -1061,6 +1063,16 @@ describe("drawRoad weather effects", () => {
       (c): c is FillRectCall =>
         c.type === "fillRect" && c.fillStyle === "#cfefff",
     );
+    const sheen = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === RAIN_ROAD_SHEEN_FILL,
+    );
+    expect(sheen).toHaveLength(2);
+    expect(sheen[0]!.globalAlpha).toBeCloseTo(RAIN_ROAD_SHEEN_MAX_ALPHA, 6);
+    expect(sheen[0]!.x).toBeCloseTo(VIEWPORT.width * 0.08, 6);
+    expect(sheen[0]!.y).toBeCloseTo(VIEWPORT.height * 0.62, 6);
+    expect(sheen[0]!.w).toBeCloseTo(VIEWPORT.width * 0.84, 6);
+    expect(sheen[1]!.globalAlpha).toBeCloseTo(RAIN_ROAD_SHEEN_MAX_ALPHA * 0.55, 6);
     expect(streaks).toHaveLength(92);
     expect(streaks[0]!.globalAlpha).toBeCloseTo(0.34, 6);
     expect(streaks[0]!.w).toBe(2);
@@ -1077,6 +1089,15 @@ describe("drawRoad weather effects", () => {
     const streaks = spy.calls.filter(
       (c): c is FillRectCall =>
         c.type === "fillRect" && c.fillStyle === "#cfefff",
+    );
+    const sheen = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === RAIN_ROAD_SHEEN_FILL,
+    );
+    expect(sheen).toHaveLength(2);
+    expect(sheen[0]!.globalAlpha).toBeCloseTo(
+      RAIN_ROAD_SHEEN_MAX_ALPHA * WEATHER_EFFECT_REDUCTION_SCALE,
+      6,
     );
     expect(streaks).toHaveLength(Math.round(92 * WEATHER_EFFECT_REDUCTION_SCALE));
     expect(streaks[0]!.globalAlpha).toBeCloseTo(
@@ -1095,6 +1116,12 @@ describe("drawRoad weather effects", () => {
       (c): c is FillRectCall =>
         c.type === "fillRect" && c.fillStyle === "#cfefff",
     );
+    const sheen = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === RAIN_ROAD_SHEEN_FILL,
+    );
+    expect(sheen).toHaveLength(2);
+    expect(sheen[0]!.globalAlpha).toBeCloseTo(RAIN_ROAD_SHEEN_MAX_ALPHA * 0.5, 6);
     expect(streaks).toHaveLength(Math.round(92 * 0.5));
     expect(streaks[0]!.globalAlpha).toBeCloseTo(0.34 * 0.5, 6);
   });
@@ -1109,6 +1136,26 @@ describe("drawRoad weather effects", () => {
       spy.calls.some(
         (c): c is FillRectCall =>
           c.type === "fillRect" && c.fillStyle === "#f4fbff",
+      ),
+    ).toBe(false);
+  });
+
+  it("allows rain streaks and sheen to be disabled", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "heavy_rain", particleIntensity: 0 },
+    });
+
+    expect(
+      spy.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === "#cfefff",
+      ),
+    ).toBe(false);
+    expect(
+      spy.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === RAIN_ROAD_SHEEN_FILL,
       ),
     ).toBe(false);
   });
