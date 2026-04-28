@@ -1117,7 +1117,7 @@ will read it from there when it lands.
 **Status:** done (2026-04-28)
 **Notes:** The PRNG slice (`feat(game): seeded deterministic PRNG
 module`, `2fcc7be`) ships `src/game/rng.ts` with `createRng`,
-`splitRng`, `serialiseRng`, `deserialiseRng`, and bans `Math.random`
+`splitRng`, `serializeRng`, `deserializeRng`, and bans `Math.random`
 inside `src/game/` via an ESLint `no-restricted-syntax` override plus
 the `no-math-random.test.ts` static guard. As of this commit no
 production module in `src/game/` imports the PRNG: comments in
