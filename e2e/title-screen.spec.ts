@@ -25,6 +25,11 @@ test.describe("title screen", () => {
     await expect(timeTrial).toHaveText("Time Trial");
     await expect(timeTrial).toHaveAttribute("href", "/time-trial");
 
+    const daily = page.getByTestId("menu-daily");
+    await expect(daily).toBeVisible();
+    await expect(daily).toHaveText("Daily Challenge");
+    await expect(daily).toHaveAttribute("href", "/daily");
+
     const garage = page.getByTestId("menu-garage");
     await expect(garage).toBeVisible();
     await expect(garage).toHaveText("Garage");
@@ -64,6 +69,17 @@ test.describe("title screen", () => {
     await expect(page.getByTestId("race-canvas")).toHaveAttribute(
       "data-mode",
       "timeTrial",
+    );
+  });
+
+  test("Daily Challenge link navigates to /daily", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-daily").click();
+    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page.getByTestId("daily-page")).toBeVisible();
+    await expect(page.getByTestId("daily-start")).toHaveAttribute(
+      "href",
+      /\/race\?mode=timeTrial&track=.+&weather=.+/,
     );
   });
 
