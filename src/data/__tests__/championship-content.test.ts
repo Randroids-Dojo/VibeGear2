@@ -133,7 +133,9 @@ describe("world-tour-standard track id cross-references", () => {
   const wt = getChampionship(WORLD_TOUR_ID);
   const allTrackIds = wt.tours.flatMap((t) => t.tracks);
   const mvpTrackIds = wt.tours.slice(0, 2).flatMap((t) => t.tracks);
-  const unresolved = allTrackIds.filter((id) => !(id in TRACK_RAW));
+  const hasBundledTrack = (id: string) =>
+    Object.prototype.hasOwnProperty.call(TRACK_RAW, id);
+  const unresolved = allTrackIds.filter((id) => !hasBundledTrack(id));
 
   if (STRICT_TRACK_RESOLUTION) {
     it("resolves every referenced track id in TRACK_RAW (strict mode)", () => {
@@ -141,7 +143,7 @@ describe("world-tour-standard track id cross-references", () => {
     });
   } else {
     it("resolves every §24 MVP track id for the first two tours", () => {
-      expect(mvpTrackIds.filter((id) => !(id in TRACK_RAW))).toEqual([]);
+      expect(mvpTrackIds.filter((id) => !hasBundledTrack(id))).toEqual([]);
     });
 
     it("permits unresolved track ids during the MVP content window", () => {

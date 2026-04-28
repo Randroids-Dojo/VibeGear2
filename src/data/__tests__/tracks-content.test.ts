@@ -42,7 +42,7 @@ const EXPECTED_IDS = [
 ];
 
 describe("track catalogue", () => {
-  it("registers every expected MVP track id", () => {
+  it("registers every expected bundled track id", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
