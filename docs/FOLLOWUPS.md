@@ -10,6 +10,18 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-064: Persist race damage into the garage repair queue
+**Created:** 2026-04-28
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The F-061 repair shop consumes `garage.pendingDamage` and
+persists full or essential repairs, but the live race finish path still
+credits cash and records PBs without writing the player's final
+`RaceSessionState.player.damage` into that queue. Wire the natural-finish
+and retire paths in `src/app/race/page.tsx` so finished races store the
+active car's pending damage and `lastRaceCashEarned`, then cover the
+race to results to garage repair path in Playwright.
+
 ## F-063: Align starter selection content with the three §11 starter examples
 **Created:** 2026-04-27
 **Priority:** blocks-release
@@ -45,11 +57,20 @@ updates through `saveSave`; Playwright covers purchase and reload.
 ## F-061: Implement garage repair purchase surface
 **Created:** 2026-04-27
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The garage summary surface links to `/garage/repair`, but the
 route is only a placeholder until the repair economy slice lands. Build
 the §13 repair purchase flow once race damage persistence exists, then
 show pending damage and repair cost in the garage summary.
+
+Closed by `feat/f-061-garage-repairs`. `/garage/repair` now loads the
+active save, reads `garage.pendingDamage` for the active car, shows
+per-zone damage and full-service costs, quotes full and essential
+repairs through `applyRepairCost`, applies the §12 essential-repair cap
+from `lastRaceCashEarned`, debits credits, and persists the repaired
+damage state. The garage hub now reflects active-car pending damage.
+Race-finish production of `pendingDamage` is tracked separately as
+F-064 so the purchase surface and the race handoff stay PR-sized.
 
 ## F-060: Correct live car turn sprite direction
 **Created:** 2026-04-27

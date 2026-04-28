@@ -200,7 +200,19 @@ the new `ghosts` map is filled with `{}`.
         "cooling": 0,
         "aero": 0
       }
-    }
+    },
+    "pendingDamage": {
+      "sparrow-gt": {
+        "zones": {
+          "engine": 0.2,
+          "tires": 0.1,
+          "body": 0.25
+        },
+        "total": 0.1975,
+        "offRoadAccumSeconds": 0
+      }
+    },
+    "lastRaceCashEarned": 2200
   },
   "progress": {
     "unlockedTours": ["velvet-coast", "iron-borough"],
@@ -222,6 +234,14 @@ optional in the runtime schema so a v1 save mid-migration still validates.
 Consumers that read settings should default missing fields to the documented
 v2 defaults; the v1 -> v2 migration always populates them, so a fully
 migrated save will never have them missing in practice.
+
+`garage.pendingDamage` is the repair queue keyed by car id. It stores
+per-zone damage values in `[0, 1]`, a weighted `total`, and the
+off-road accumulator used by the §13 damage model. It is optional so
+older v3 saves still validate; a fully fresh save seeds it to `{}`.
+`garage.lastRaceCashEarned` is the previous credited race payout used by
+the §12 essential-repair cap. It is optional for older saves and seeded
+to `0` on fresh saves.
 
 `writeCounter` is the cross-tab last-write-wins advisory described in
 `docs/gdd/21-technical-design-for-web-implementation.md` "Cross-tab

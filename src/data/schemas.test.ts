@@ -180,6 +180,51 @@ describe("SaveGameSchema", () => {
     expect(SaveGameSchema.safeParse(broken).success).toBe(false);
   });
 
+  it("accepts optional garage repair state", () => {
+    const withRepairState = {
+      ...saveGameExample,
+      garage: {
+        ...saveGameExample.garage,
+        pendingDamage: {
+          "sparrow-gt": {
+            zones: {
+              engine: 0.5,
+              tires: 0.25,
+              body: 0.5,
+            },
+            total: 0.45,
+            offRoadAccumSeconds: 2,
+          },
+        },
+        lastRaceCashEarned: 2000,
+      },
+    };
+
+    expect(SaveGameSchema.safeParse(withRepairState).success).toBe(true);
+  });
+
+  it("rejects garage repair damage outside the unit interval", () => {
+    const broken = {
+      ...saveGameExample,
+      garage: {
+        ...saveGameExample.garage,
+        pendingDamage: {
+          "sparrow-gt": {
+            zones: {
+              engine: 1.5,
+              tires: 0,
+              body: 0,
+            },
+            total: 1.5,
+            offRoadAccumSeconds: 0,
+          },
+        },
+      },
+    };
+
+    expect(SaveGameSchema.safeParse(broken).success).toBe(false);
+  });
+
   it("accepts a record with optional bestSplitsMs (sector splits)", () => {
     const withSplits = {
       ...saveGameExample,

@@ -18,9 +18,58 @@ describe("buildGarageSummaryView", () => {
     expect(view.activeCarId).toBe("sparrow-gt");
     expect(view.credits).toBe(0);
     expect(view.ownedCount).toBe(1);
+    expect(view.damagePercent).toBe(0);
     expect(view.needsStarterPick).toBe(false);
     expect(view.installedTiers).toHaveLength(8);
     expect(view.installedTiers.every((row) => row.tier === 0)).toBe(true);
+  });
+
+  it("summarises pending active-car damage", () => {
+    const save: SaveGame = {
+      ...defaultSave(),
+      garage: {
+        ...defaultSave().garage,
+        pendingDamage: {
+          "sparrow-gt": {
+            zones: {
+              engine: 0.25,
+              tires: 0.1,
+              body: 0.5,
+            },
+            total: 0.31,
+            offRoadAccumSeconds: 0,
+          },
+        },
+      },
+    };
+
+    const view = buildGarageSummaryView(save);
+
+    expect(view.damagePercent).toBe(31);
+  });
+
+  it("derives pending damage from zones instead of trusting stored total", () => {
+    const save: SaveGame = {
+      ...defaultSave(),
+      garage: {
+        ...defaultSave().garage,
+        pendingDamage: {
+          "sparrow-gt": {
+            zones: {
+              engine: 0.5,
+              tires: 0,
+              body: 0,
+            },
+            total: 0,
+            offRoadAccumSeconds: 0,
+          },
+        },
+      },
+    };
+
+    const view = buildGarageSummaryView(save);
+
+    expect(view.damagePercent).toBe(23);
   });
 
   it("asks for a starter pick when the active car id is not owned", () => {

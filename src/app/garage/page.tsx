@@ -166,7 +166,11 @@ export default function GaragePage() {
               </div>
               <div style={summaryRowStyle}>
                 <dt>Damage</dt>
-                <dd data-testid="garage-damage-summary">No race damage pending</dd>
+                <dd data-testid="garage-damage-summary">
+                  {view.damagePercent > 0
+                    ? `${view.damagePercent}% pending`
+                    : "No race damage pending"}
+                </dd>
               </div>
             </dl>
           </section>
