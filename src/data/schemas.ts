@@ -37,6 +37,7 @@ const unitInterval = z.number().min(0).max(1);
 
 export const WeatherOptionSchema = z.enum([
   "clear",
+  "overcast",
   "light_rain",
   "rain",
   "heavy_rain",

@@ -42,6 +42,10 @@
 }
 ```
 
+`weatherOptions` entries are the §14 weather ids:
+`clear`, `overcast`, `light_rain`, `rain`, `heavy_rain`, `fog`, `snow`,
+`dusk`, and `night`.
+
 ## Car JSON schema
 
 ```

@@ -124,6 +124,7 @@ export function recommendTire(weather: WeatherOption): TireKind {
     case "snow":
       return "wet";
     case "clear":
+    case "overcast":
     case "fog":
     case "dusk":
     case "night":
@@ -143,6 +144,8 @@ export function weatherLabel(weather: WeatherOption): string {
   switch (weather) {
     case "clear":
       return "Clear";
+    case "overcast":
+      return "Overcast";
     case "light_rain":
       return "Light rain";
     case "rain":
@@ -178,6 +181,7 @@ function surfaceTemperatureBand(weather: WeatherOption): string {
     case "fog":
       return "Cool";
     case "clear":
+    case "overcast":
       return "Warm";
     case "light_rain":
     case "rain":

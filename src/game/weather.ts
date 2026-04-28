@@ -52,15 +52,15 @@
  * `src/data/__tests__/balancing.test.ts`).
  *
  * Schema coverage. `WeatherOption` (the `TrackSchema`-validated enum
- * authored in `src/data/schemas.ts`) declares eight weather values:
- * `clear`, `light_rain`, `rain`, `heavy_rain`, `fog`, `snow`, `dusk`,
- * `night`. §23 only specifies five of them. The lookup here is
+ * authored in `src/data/schemas.ts`) declares nine weather values:
+ * `clear`, `overcast`, `light_rain`, `rain`, `heavy_rain`, `fog`,
+ * `snow`, `dusk`, `night`. §23 only specifies five of them. The lookup here is
  * intentionally typed as a `Partial<Record<WeatherOption, ...>>` so a
- * caller asking for `light_rain`, `dusk`, or `night` gets a typed
- * `undefined` rather than a fabricated row. Runtime consumers use
+ * caller asking for `overcast`, `light_rain`, `dusk`, or `night` gets
+ * a typed `undefined` rather than a fabricated row. Runtime consumers use
  * `WEATHER_TIRE_MODIFIER_ALIASES` to map the full enum onto §23 rows:
- * light rain maps to Rain, dusk maps to Clear, and night maps to Clear.
- * Q-008 records that decision.
+ * overcast, dusk, and night map to Clear, and light rain maps to Rain.
+ * Q-008 records the original uncovered-weather decision.
  */
 
 import type { AIDriver, CarBaseStats, WeatherOption } from "@/data/schemas";
@@ -68,7 +68,7 @@ import type { AIDriver, CarBaseStats, WeatherOption } from "@/data/schemas";
 /**
  * §23 rows that pin a tire-modifier cell. Five entries, exactly the
  * five rows in `docs/gdd/23-balancing-tables.md` "Weather modifiers".
- * Subset of `WeatherOption` (the schema enum has eight entries; §23
+ * Subset of `WeatherOption` (the schema enum has nine entries; §23
  * specifies five). Exported so callers can constrain to the §23 set
  * at their site.
  */
@@ -146,6 +146,7 @@ export const WEATHER_TIRE_MODIFIER_ALIASES: Readonly<
   Record<WeatherOption, WeatherTireModifierKey>
 > = Object.freeze({
   clear: "clear",
+  overcast: "clear",
   light_rain: "rain",
   rain: "rain",
   heavy_rain: "heavy_rain",
@@ -163,6 +164,7 @@ export const WEATHER_TIRE_MODIFIER_ALIASES: Readonly<
 export const WEATHER_VISIBILITY: Readonly<Record<WeatherOption, number>> =
   Object.freeze({
     clear: 1,
+    overcast: 0.95,
     light_rain: 0.9,
     rain: 0.8,
     heavy_rain: 0.7,
@@ -194,7 +196,7 @@ export function isWeatherTireModifierKey(
  * frozen object reference every call so callers can lean on identity
  * comparison without a deep-clone allocation per tick. Returns
  * `undefined` for any `WeatherOption` value that §23 does not pin
- * (currently `light_rain`, `dusk`, `night`); see Q-008. Callers must
+ * (currently `overcast`, `light_rain`, `dusk`, `night`); see Q-008. Callers must
  * decide their fallback at the call site rather than have this module
  * fabricate a row that drifts from §23.
  */
@@ -273,6 +275,7 @@ export function weatherSkillFor(
 ): number {
   switch (weather) {
     case "clear":
+    case "overcast":
     case "dusk":
     case "night":
       return driver.weatherSkill.clear;

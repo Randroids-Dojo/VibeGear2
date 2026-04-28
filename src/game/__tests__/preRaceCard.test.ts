@@ -69,6 +69,7 @@ describe("pre-race card", () => {
 
   it.each([
     ["clear", "dry"],
+    ["overcast", "dry"],
     ["light_rain", "wet"],
     ["rain", "wet"],
     ["heavy_rain", "wet"],
@@ -100,6 +101,25 @@ describe("pre-race card", () => {
 
     expect(card.recommendedTire).toBe("wet");
     expect(card.selectedTireWarning).toContain("wet tires");
+  });
+
+  it("surfaces overcast as a clear-adjacent forecast", () => {
+    const rawTrack = TRACK_RAW["velvet-coast/harbor-run"];
+    if (!rawTrack) throw new Error("expected Harbor Run fixture");
+    const overcastTrack = TrackSchema.parse({
+      ...rawTrack,
+      weatherOptions: ["clear", "overcast"],
+    });
+    const card = buildPreRaceCard({
+      track: overcastTrack,
+      save: defaultSave(),
+      weatherSelection: "overcast",
+    });
+
+    expect(card.forecast.condition).toBe("Overcast");
+    expect(card.forecast.surfaceTemperatureBand).toBe("Warm");
+    expect(card.forecast.visibilityRating).toBe("High");
+    expect(card.recommendedTire).toBe("dry");
   });
 
   it.each([

@@ -512,13 +512,14 @@ export const NITRO_ACCEL_MULTIPLIER_MAX = 2;
 export type NitroWeatherRisk = "low" | "medium" | "high";
 
 /**
- * §10 weather to risk-tier mapping. The §22 schema's 8 weather values
- * are mapped onto the §10 narrative's 6 buckets here; `rain` maps to
- * `medium`, `dusk` and `night` both map to the `low` tier.
+ * §10 weather to risk-tier mapping. The §22 schema's weather values
+ * are mapped onto the §10 narrative's 9 buckets here; `rain` maps to
+ * `medium`, while overcast, dusk, and night map to the `low` tier.
  */
 export const NITRO_WEATHER_RISK: Readonly<Record<WeatherOption, NitroWeatherRisk>> =
   Object.freeze({
     clear: "low",
+    overcast: "low",
     light_rain: "medium",
     rain: "medium",
     heavy_rain: "high",

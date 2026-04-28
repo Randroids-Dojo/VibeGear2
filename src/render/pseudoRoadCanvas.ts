@@ -515,6 +515,7 @@ function drawWeatherEffects(
       drawNightBloom(ctx, viewport, effects.weather, settings.bloomScale);
       return;
     case "clear":
+    case "overcast":
       return;
   }
 }
@@ -815,7 +816,13 @@ function drawCarWeatherTrail(
   height: number,
   weather: WeatherOption | undefined,
 ): void {
-  if (!weather || weather === "clear" || weather === "dusk" || weather === "night") {
+  if (
+    !weather ||
+    weather === "clear" ||
+    weather === "overcast" ||
+    weather === "dusk" ||
+    weather === "night"
+  ) {
     return;
   }
 

@@ -460,8 +460,8 @@ describe("§23 Damage formula targets", () => {
  *
  * The §23 row labels ("Clear", "Rain", "Heavy rain", "Snow", "Fog")
  * map onto the `WeatherOption` schema enum values (`clear`, `rain`,
- * `heavy_rain`, `snow`, `fog`). The other three `WeatherOption`
- * values (`light_rain`, `dusk`, `night`) are not part of §23 and are
+ * `heavy_rain`, `snow`, `fog`). The other four `WeatherOption`
+ * values (`overcast`, `light_rain`, `dusk`, `night`) are not part of §23 and are
  * deliberately not pinned here. See Q-008.
  */
 const WEATHER_MODIFIER_TARGETS: Readonly<

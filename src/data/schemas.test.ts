@@ -45,6 +45,11 @@ describe("TrackSchema", () => {
     expect(TrackSchema.safeParse(broken).success).toBe(false);
   });
 
+  it("accepts overcast as a §14 weather option", () => {
+    const ok = { ...trackExample, weatherOptions: ["clear", "overcast"] };
+    expect(TrackSchema.safeParse(ok).success).toBe(true);
+  });
+
   it("accepts an authored minimapPoints override of length 2 or more", () => {
     const ok = {
       ...trackExample,

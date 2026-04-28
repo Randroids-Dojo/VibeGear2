@@ -457,6 +457,7 @@ describe("getInstabilityMultiplier", () => {
   const SURFACES: ReadonlyArray<Surface> = ["road", "rumble", "grass"];
   const WEATHERS: ReadonlyArray<WeatherOption> = [
     "clear",
+    "overcast",
     "light_rain",
     "rain",
     "heavy_rain",
@@ -534,7 +535,8 @@ describe("getInstabilityMultiplier", () => {
     expect(moderate).toBeGreaterThan(light);
   });
 
-  it("dusk and night both map to the §10 Low risk tier", () => {
+  it("overcast, dusk, and night map to the §10 Low risk tier", () => {
+    expect(NITRO_WEATHER_RISK.overcast).toBe("low");
     expect(NITRO_WEATHER_RISK.dusk).toBe("low");
     expect(NITRO_WEATHER_RISK.night).toBe("low");
   });
