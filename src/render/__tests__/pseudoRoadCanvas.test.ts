@@ -39,6 +39,8 @@ import {
   PLAYER_CAR_WIDTH_TO_HEIGHT,
   RAIN_ROAD_SHEEN_FILL,
   RAIN_ROAD_SHEEN_MAX_ALPHA,
+  SNOW_ROADSIDE_WHITENING_FILL,
+  SNOW_ROADSIDE_WHITENING_MAX_ALPHA,
   TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
   TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA,
   TUNNEL_ADAPTATION_MAX_ALPHA,
@@ -1174,6 +1176,12 @@ describe("drawRoad weather effects", () => {
           c.type === "fillRect" && c.fillStyle === "#f4fbff",
       ),
     ).toBe(false);
+    expect(
+      spy.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === SNOW_ROADSIDE_WHITENING_FILL,
+      ),
+    ).toBe(false);
   });
 
   it("allows rain streaks and sheen to be disabled", () => {
@@ -1196,11 +1204,30 @@ describe("drawRoad weather effects", () => {
     ).toBe(false);
   });
 
-  it("paints snow particles with reduced square sizes", () => {
+  it("paints snow particles and roadside whitening", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "snow" },
     });
+
+    const roadsideWhitening = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === SNOW_ROADSIDE_WHITENING_FILL,
+    );
+    expect(roadsideWhitening).toHaveLength(3);
+    expect(roadsideWhitening[0]!.x).toBe(0);
+    expect(roadsideWhitening[0]!.y).toBeCloseTo(VIEWPORT.height * 0.42, 6);
+    expect(roadsideWhitening[0]!.w).toBe(VIEWPORT.width);
+    expect(roadsideWhitening[0]!.globalAlpha).toBeCloseTo(
+      SNOW_ROADSIDE_WHITENING_MAX_ALPHA * 0.65,
+      6,
+    );
+    expect(roadsideWhitening[1]!.w).toBeCloseTo(VIEWPORT.width * 0.2, 6);
+    expect(roadsideWhitening[2]!.x).toBeCloseTo(VIEWPORT.width * 0.8, 6);
+    expect(roadsideWhitening[1]!.globalAlpha).toBeCloseTo(
+      SNOW_ROADSIDE_WHITENING_MAX_ALPHA,
+      6,
+    );
 
     const flakes = spy.calls.filter(
       (c): c is FillRectCall =>
@@ -1210,6 +1237,23 @@ describe("drawRoad weather effects", () => {
     expect(flakes[0]!.w).toBe(3);
     expect(flakes[1]!.w).toBe(2);
     expect(flakes[0]!.globalAlpha).toBeCloseTo(0.72, 6);
+  });
+
+  it("reduces snow roadside whitening with visual weather reduction", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "snow", visualReduction: true },
+    });
+
+    const roadsideWhitening = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === SNOW_ROADSIDE_WHITENING_FILL,
+    );
+    expect(roadsideWhitening).toHaveLength(3);
+    expect(roadsideWhitening[1]!.globalAlpha).toBeCloseTo(
+      SNOW_ROADSIDE_WHITENING_MAX_ALPHA * WEATHER_EFFECT_REDUCTION_SCALE,
+      6,
+    );
   });
 
   it("paints fog as a draw-distance fade without changing clear weather", () => {

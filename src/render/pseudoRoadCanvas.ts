@@ -85,6 +85,8 @@ export const HEAT_SHIMMER_MAX_ALPHA = 0.16;
 export const HEAT_SHIMMER_BAND_COUNT = 6;
 export const RAIN_ROAD_SHEEN_FILL = "#d8f4ff";
 export const RAIN_ROAD_SHEEN_MAX_ALPHA = 0.16;
+export const SNOW_ROADSIDE_WHITENING_FILL = "#edf7ff";
+export const SNOW_ROADSIDE_WHITENING_MAX_ALPHA = 0.2;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
 const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
@@ -559,7 +561,7 @@ function drawWeatherEffects(
       drawRainEffects(ctx, viewport, effects.weather, settings.particleIntensity);
       return;
     case "snow":
-      drawSnowParticles(ctx, viewport, settings.particleIntensity);
+      drawSnowEffects(ctx, viewport, settings.particleIntensity);
       return;
     case "fog":
       drawFogFade(ctx, viewport, settings.alphaScale, settings.fogFloorClamp);
@@ -765,6 +767,44 @@ function drawSnowParticles(
       const y = (i * 53) % Math.max(1, viewport.height);
       ctx.fillRect(x, y, size, size);
     }
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
+}
+
+function drawSnowEffects(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  intensity: number,
+): void {
+  if (intensity <= 0) return;
+  drawSnowRoadsideWhitening(ctx, viewport, intensity);
+  drawSnowParticles(ctx, viewport, intensity);
+}
+
+function drawSnowRoadsideWhitening(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  intensity: number,
+): void {
+  const alpha = SNOW_ROADSIDE_WHITENING_MAX_ALPHA * intensity;
+  if (alpha <= 0) return;
+
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.fillStyle = SNOW_ROADSIDE_WHITENING_FILL;
+    ctx.globalAlpha = alpha * 0.65;
+    ctx.fillRect(0, viewport.height * 0.42, viewport.width, viewport.height * 0.08);
+    ctx.globalAlpha = alpha;
+    ctx.fillRect(0, viewport.height * 0.62, viewport.width * 0.2, viewport.height * 0.28);
+    ctx.fillRect(
+      viewport.width * 0.8,
+      viewport.height * 0.62,
+      viewport.width * 0.2,
+      viewport.height * 0.28,
+    );
   } finally {
     ctx.fillStyle = prevFill;
     ctx.globalAlpha = prevAlpha;

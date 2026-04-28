@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Snow roadside whitening renderer
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) snow particles and
+soft roadside whitening,
+[§16](gdd/16-rendering-and-visual-design.md) weather visual feedback.
+**Branch / PR:** `feat/snow-roadside-whitening`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added deterministic soft roadside
+  whitening for snow weather and kept it scaled by the existing weather
+  visual intensity controls.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered whitening
+  geometry, snow alpha, accessibility reduction, and disabled snow
+  visuals.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-14-SNOW-ROADSIDE-WHITENING.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts` green,
+  48 passed.
+- `npm run verify` initially failed on a stale live `.next` source-map
+  scrub check. After `npm run test:e2e` rebuilt and scrubbed `.next`,
+  the rerun was green.
+- `npm run verify` green, 2363 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- Roadside whitening is visual only. It shares the snow effect intensity
+  so weather accessibility controls reduce both flakes and roadside
+  whitening together.
+- The whitening pass uses a distinct fill from snow flakes so tests can
+  assert both effects independently.
+
+### Coverage ledger
+- GDD-14-SNOW-ROADSIDE-WHITENING covers the roadside whitening portion
+  of snow weather presentation.
+- Uncovered adjacent requirements: weather collision-risk tuning,
+  surface-temperature display, and full region art packages remain future
+  slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Rain road sheen renderer
 
 **GDD sections touched:**
