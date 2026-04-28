@@ -15,6 +15,8 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("touch input", () => {
+  test.describe.configure({ mode: "serial" });
+
   test("holding the accelerator zone drives throttle to 1", async ({ page }) => {
     await page.goto("/dev/touch");
 

@@ -37,6 +37,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { PauseOverlay } from "@/components/pause/PauseOverlay";
+import { TouchControls } from "@/components/touch/TouchControls";
 import { readKeyBindings } from "@/components/options/controlsPaneState";
 import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
@@ -72,6 +73,7 @@ import {
   type GhostOverlay,
   type TimeTrialRecorder,
 } from "@/game";
+import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
 import { FIXED_STEP_SECONDS } from "@/game/loop";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import {
@@ -115,12 +117,40 @@ const CARS_ATLAS_META = AtlasMetaSchema.parse(carsAtlasFixture);
  */
 const MINIMAP_PADDING = 16;
 const MINIMAP_SIZE = 120;
-const MINIMAP_BOX = Object.freeze({
-  x: MINIMAP_PADDING,
-  y: VIEWPORT_HEIGHT - MINIMAP_PADDING - MINIMAP_SIZE,
-  w: MINIMAP_SIZE,
-  h: MINIMAP_SIZE,
-});
+
+function minimapBoxFor(viewport: Viewport): { x: number; y: number; w: number; h: number } {
+  return {
+    x: MINIMAP_PADDING,
+    y: Math.max(MINIMAP_PADDING, viewport.height - MINIMAP_PADDING - MINIMAP_SIZE),
+    w: MINIMAP_SIZE,
+    h: MINIMAP_SIZE,
+  };
+}
+
+function resizeCanvasBackingStore(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+): Viewport {
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rect.width || VIEWPORT_WIDTH));
+  const height = Math.max(1, Math.round(rect.height || VIEWPORT_HEIGHT));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const backingWidth = Math.max(1, Math.round(width * dpr));
+  const backingHeight = Math.max(1, Math.round(height * dpr));
+  if (canvas.width !== backingWidth) canvas.width = backingWidth;
+  if (canvas.height !== backingHeight) canvas.height = backingHeight;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  return { width, height };
+}
+
+function touchLayoutFor(viewport: Viewport): TouchLayout {
+  return {
+    ...DEFAULT_TOUCH_LAYOUT,
+    width: viewport.width,
+    height: viewport.height,
+  };
+}
 
 function createLayerCanvas(
   width: number,
@@ -474,6 +504,7 @@ function RaceCanvas({
   const ghostOverlayTickRef = useRef<number | null>(null);
   const timeTrialRecorderRef = useRef<TimeTrialRecorder | null>(null);
   const lastSteerRef = useRef<number>(0);
+  const pauseInputHeldRef = useRef<boolean>(false);
   const carAtlasRef = useRef<LoadedAtlas | null>(null);
   // Imperative pause-menu effects, populated inside the loop effect
   // below so the hook layer can stay decoupled from the loop / session
@@ -501,6 +532,13 @@ function RaceCanvas({
     totalLaps: number;
     position: number;
   }>(() => ({ speed: 0, lap: 1, totalLaps: initialTotalLaps, position: 1 }));
+  const [inputSnapshot, setInputSnapshot] = useState<{
+    steer: number;
+    touchActive: boolean;
+  }>(() => ({ steer: 0, touchActive: false }));
+  const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
+    touchLayoutFor({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }),
+  );
   const [resultMs, setResultMs] = useState<number | null>(null);
 
   useEffect(() => {
@@ -514,6 +552,7 @@ function RaceCanvas({
   }, []);
 
   const pause = usePauseToggle({ loop: () => handleRef.current });
+  const { openMenu: openPauseMenu } = pause;
 
   // §20 pause-menu actions. Each impl is a thin wrapper around the
   // matching ref so the hook always sees stable callbacks; the refs
@@ -636,21 +675,37 @@ function RaceCanvas({
       z: 0,
       depth: CAMERA_DEPTH,
     };
-    const viewport: Viewport = { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT };
-    const parallaxLayers = createTemperateParallaxLayers(viewport);
+    let viewport = resizeCanvasBackingStore(canvas, ctx);
+    setTouchLayout(touchLayoutFor(viewport));
+    let parallaxLayers = createTemperateParallaxLayers(viewport);
 
     // Refit the unit-square minimap polyline into the §20 layout box once
     // per track so the per-frame draw loop only pays for `projectCar`. The
     // compiled polyline is frozen and never changes during a session.
-    const minimapPoints: readonly MinimapPoint[] = fitToBox(
+    let minimapBox = minimapBoxFor(viewport);
+    let minimapPoints: readonly MinimapPoint[] = fitToBox(
       track.compiled.minimapPoints,
-      MINIMAP_BOX,
+      minimapBox,
     ) as readonly MinimapPoint[];
     const totalSegments = track.compiled.totalCompiledSegments;
     const totalLength = track.compiled.totalLengthMeters;
 
+    const resize = (): void => {
+      viewport = resizeCanvasBackingStore(canvas, ctx);
+      setTouchLayout(touchLayoutFor(viewport));
+      parallaxLayers = createTemperateParallaxLayers(viewport);
+      minimapBox = minimapBoxFor(viewport);
+      minimapPoints = fitToBox(
+        track.compiled.minimapPoints,
+        minimapBox,
+      ) as readonly MinimapPoint[];
+    };
+    window.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("resize", resize);
+
     const inputManager = createInputManager({
       bindings: persistedKeyBindings,
+      touchTarget: canvas,
     });
 
     // Wire the §20 pause-menu imperative actions. Each callback closes
@@ -778,6 +833,10 @@ function RaceCanvas({
         const session = sessionRef.current;
         if (!session) return;
         const input = inputManager.sample();
+        if (input.pause && !pauseInputHeldRef.current) {
+          openPauseMenu();
+        }
+        pauseInputHeldRef.current = input.pause;
         lastSteerRef.current = input.steer;
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
@@ -885,7 +944,7 @@ function RaceCanvas({
             );
           }
         }
-        drawMinimap(ctx, minimapPoints, minimapCars, { box: MINIMAP_BOX });
+        drawMinimap(ctx, minimapPoints, minimapCars, { box: minimapBox });
 
         // §20 splits / ghost-delta widget. Lap-timer derives from `elapsed`
         // (seconds since the green light), so the widget reads the same
@@ -993,16 +1052,22 @@ function RaceCanvas({
           totalLaps: hud.totalLaps,
           position: hud.position,
         });
+        setInputSnapshot({
+          steer: lastSteerRef.current,
+          touchActive: inputManager.hasTouch(),
+        });
       },
     });
 
     return () => {
+      window.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("resize", resize);
       handleRef.current?.stop();
       handleRef.current = null;
       sessionRef.current = null;
       inputManager.dispose();
     };
-  }, [track, router, lapsOverride, initialTotalLaps, mode, tourContext]);
+  }, [track, router, lapsOverride, initialTotalLaps, mode, tourContext, openPauseMenu]);
 
   return (
     <main
@@ -1017,16 +1082,9 @@ function RaceCanvas({
         height={VIEWPORT_HEIGHT}
         data-testid="race-canvas-element"
         tabIndex={0}
-        style={{
-          display: "block",
-          width: "min(100%, 1280px, calc((100vh - 3rem) * 1.6667))",
-          height: "auto",
-          aspectRatio: `${VIEWPORT_WIDTH} / ${VIEWPORT_HEIGHT}`,
-          maxWidth: "100%",
-          background: "#000",
-          imageRendering: "pixelated",
-        }}
+        style={canvasStyle}
       />
+      <TouchControls layout={touchLayout} />
       <dl
         style={metricsStyle}
         data-testid="race-metrics"
@@ -1048,6 +1106,12 @@ function RaceCanvas({
         </dd>
         <dt>Position:</dt>
         <dd data-testid="hud-position">{hudSnapshot.position}</dd>
+        <dt>Touch active:</dt>
+        <dd data-testid="race-touch-active">
+          {inputSnapshot.touchActive ? "yes" : "no"}
+        </dd>
+        <dt>Steer:</dt>
+        <dd data-testid="race-last-steer">{inputSnapshot.steer.toFixed(3)}</dd>
       </dl>
       {phase === "finished" && resultMs !== null ? (
         <div data-testid="race-finished" style={resultStyle}>
@@ -1060,14 +1124,24 @@ function RaceCanvas({
 }
 
 const shellStyle: CSSProperties = {
-  padding: "1.5rem",
+  position: "fixed",
+  inset: 0,
+  overflow: "hidden",
+  padding: 0,
   fontFamily: "system-ui, sans-serif",
   color: "var(--fg, #ddd)",
   background: "var(--bg, #111)",
-  minHeight: "100vh",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
+  touchAction: "none",
+  userSelect: "none",
+};
+
+const canvasStyle: CSSProperties = {
+  display: "block",
+  width: "100%",
+  height: "100%",
+  background: "#000",
+  imageRendering: "pixelated",
+  touchAction: "none",
 };
 
 const metricsStyle: CSSProperties = {

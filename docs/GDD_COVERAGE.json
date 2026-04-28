@@ -2,6 +2,27 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-19-MOBILE-RACE-INPUT",
+      "gddSections": [
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The live race route fills mobile viewports without page scroll and mounts touch controls that feed steering, throttle, brake, nitro, and pause into the race input pipeline.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/components/touch/TouchControls.tsx",
+        "src/game/inputTouch.ts",
+        "src/game/input.ts"
+      ],
+      "testRefs": [
+        "src/game/inputTouch.test.ts",
+        "e2e/touch-input.spec.ts",
+        "e2e/race-mobile.spec.ts"
+      ]
+    },
+    {
       "id": "GDD-26-CONTRIBUTING-GUIDE",
       "gddSections": [
         "docs/gdd/26-open-source-project-guidance.md"

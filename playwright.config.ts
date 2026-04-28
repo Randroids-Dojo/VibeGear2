@@ -33,7 +33,7 @@ export default defineConfig({
       // The mobile-chromium project owns the touch-input spec; exclude
       // it from desktop runs so a desktop pointer profile does not try
       // to drive the on-screen overlay.
-      testIgnore: /touch-input\.spec\.ts/,
+      testIgnore: /(touch-input|race-mobile)\.spec\.ts/,
     },
     {
       // Mobile profile for the touch-input spec (closes F-017). Reports
@@ -43,7 +43,7 @@ export default defineConfig({
       // Chromium browsers for the e2e job.
       name: "mobile-chromium",
       use: { ...devices["iPhone 13"], browserName: "chromium" },
-      testMatch: /touch-input\.spec\.ts/,
+      testMatch: /(touch-input|race-mobile)\.spec\.ts/,
     },
   ],
   webServer: {
