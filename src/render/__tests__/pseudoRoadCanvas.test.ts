@@ -1080,6 +1080,42 @@ describe("drawRoad weather effects", () => {
     expect(spy.finalAlpha()).toBeCloseTo(1, 6);
   });
 
+  it("scales road sheen for standard rain", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "rain" },
+    });
+
+    const sheen = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === RAIN_ROAD_SHEEN_FILL,
+    );
+    expect(sheen).toHaveLength(2);
+    expect(sheen[0]!.globalAlpha).toBeCloseTo(RAIN_ROAD_SHEEN_MAX_ALPHA * 0.72, 6);
+    expect(sheen[1]!.globalAlpha).toBeCloseTo(
+      RAIN_ROAD_SHEEN_MAX_ALPHA * 0.72 * 0.55,
+      6,
+    );
+  });
+
+  it("scales road sheen for light rain", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "light_rain" },
+    });
+
+    const sheen = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === RAIN_ROAD_SHEEN_FILL,
+    );
+    expect(sheen).toHaveLength(2);
+    expect(sheen[0]!.globalAlpha).toBeCloseTo(RAIN_ROAD_SHEEN_MAX_ALPHA * 0.45, 6);
+    expect(sheen[1]!.globalAlpha).toBeCloseTo(
+      RAIN_ROAD_SHEEN_MAX_ALPHA * 0.45 * 0.55,
+      6,
+    );
+  });
+
   it("reduces rain density when visual weather reduction is enabled", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {

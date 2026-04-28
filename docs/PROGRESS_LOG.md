@@ -26,11 +26,11 @@ road sheen,
 
 ### Verified
 - `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts` green,
-  45 passed.
+  47 passed.
 - `npm run typecheck` clean.
 - `npm run lint` clean.
 - `npm run content-lint` clean.
-- `npm run verify` green, 2360 passed.
+- `npm run verify` green, 2362 passed.
 - `npm run test:e2e` green, 71 passed.
 
 ### Decisions and assumptions
