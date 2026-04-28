@@ -7,7 +7,7 @@
         "docs/gdd/06-game-modes.md",
         "docs/gdd/21-technical-design-for-web-implementation.md"
       ],
-      "requirement": "The daily challenge mode derives a deterministic UTC-day seed, selects a fixed bundled track, authored weather option, and car class for that day, and exposes a shareable entry route.",
+      "requirement": "The daily challenge mode derives a deterministic UTC-day seed, selects a fixed bundled track and authored weather option, recommends a car class for that day, and exposes a shareable entry route.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "src/game/modes/dailyChallenge.ts",

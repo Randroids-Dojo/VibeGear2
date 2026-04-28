@@ -33,7 +33,8 @@ export default function DailyChallengePage() {
             {challenge.dateKey}
           </h1>
           <p className={styles.summary}>
-            Fixed track, fixed weather, and fixed car class for one UTC day.
+            Fixed track and weather for one UTC day, with a daily car class
+            recommendation.
           </p>
         </header>
 
@@ -50,7 +51,7 @@ export default function DailyChallengePage() {
               </dd>
             </div>
             <div className={styles.stat}>
-              <dt>Car class</dt>
+              <dt>Recommended class</dt>
               <dd data-testid="daily-car-class">
                 {formatCarClass(challenge.carClass)}
               </dd>

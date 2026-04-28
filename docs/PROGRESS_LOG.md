@@ -17,8 +17,8 @@ runtime conventions.
 
 ### Done
 - `src/game/modes/dailyChallenge.ts`: added deterministic UTC-day seed
-  generation, fixed daily track / weather / car-class selection, race
-  link construction, and share-text formatting.
+  generation, fixed daily track / weather selection, car-class
+  recommendation, race-link construction, and share-text formatting.
 - `src/app/daily/page.tsx`: added the Daily Challenge entry route with
   today's fixed challenge, a time-trial race link, and copyable share
   text fallback.
@@ -27,22 +27,24 @@ runtime conventions.
 
 ### Verified
 - `npx vitest run src/game/modes/__tests__/dailyChallenge.test.ts src/app/__tests__/page.test.tsx`
-  green, 21 passed.
+  green, 22 passed.
 - `npm run typecheck` green.
 - `npx playwright test e2e/title-screen.spec.ts` green, 7 passed.
-- `npm run verify` green, 2410 passed.
+- `npm run verify` green, 2411 passed.
 - `npm run test:e2e` green, 72 passed.
 
 ### Decisions and assumptions
 - Daily selection uses UTC date keys so the challenge is stable across
   local time zones and browser sessions.
 - The first Daily Challenge race link reuses Time Trial mode with a
-  fixed track and weather. Dedicated daily result persistence and
-  actual run-time share strings remain adjacent work.
+  fixed track and weather. Car class is a recommendation until `/race`
+  can enforce or temporarily loan eligible cars. Dedicated daily result
+  persistence and actual run-time share strings remain adjacent work.
 
 ### Coverage ledger
 - GDD-06-DAILY-CHALLENGE-SELECTION covers deterministic daily seed,
-  selection, title navigation, and the entry route.
+  fixed track / weather selection, car-class recommendation, title
+  navigation, and the entry route.
 - Uncovered adjacent requirements: result-backed Daily Challenge share
   text, UTC-midnight fake-clock e2e, and full Time Trial PB save button
   remain under the §6 modes parent dot.

@@ -74,6 +74,26 @@ describe("selectDailyChallenge", () => {
     expect(track?.weatherOptions).toContain(challenge.weather);
   });
 
+  it("is independent from authored weather option order", () => {
+    const reordered = TRACKS.map((track) => ({
+      ...track,
+      weatherOptions: [...track.weatherOptions].reverse(),
+    }));
+    expect(
+      selectDailyChallenge(
+        new Date("2026-04-26T03:00:00Z"),
+        reordered,
+        ["balance", "power"],
+      ),
+    ).toEqual(
+      selectDailyChallenge(
+        new Date("2026-04-26T03:00:00Z"),
+        TRACKS,
+        ["balance", "power"],
+      ),
+    );
+  });
+
   it("filters duplicate car classes into schema order", () => {
     const challenge = selectDailyChallenge(
       new Date("2026-04-26T03:00:00Z"),

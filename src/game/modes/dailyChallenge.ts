@@ -1,5 +1,5 @@
 import type { CarClass, WeatherOption } from "@/data/schemas";
-import { CarClassSchema } from "@/data/schemas";
+import { CarClassSchema, WeatherOptionSchema } from "@/data/schemas";
 import { createRng } from "@/game/rng";
 
 export interface DailyChallengeTrack {
@@ -52,8 +52,8 @@ export function selectDailyChallenge(
   if (track === undefined) {
     throw new Error("selectDailyChallenge failed to choose a track");
   }
-  const weather =
-    track.weatherOptions[rng.nextInt(0, track.weatherOptions.length)];
+  const weatherOptions = uniqueWeatherOptions(track.weatherOptions);
+  const weather = weatherOptions[rng.nextInt(0, weatherOptions.length)];
   if (weather === undefined) {
     throw new Error("selectDailyChallenge failed to choose weather");
   }
@@ -102,6 +102,13 @@ export function formatDailyChallengeShareText(
 function uniqueCarClasses(carClasses: readonly CarClass[]): CarClass[] {
   const allowed = new Set<CarClass>(carClasses);
   return CarClassSchema.options.filter((carClass) => allowed.has(carClass));
+}
+
+function uniqueWeatherOptions(
+  weatherOptions: readonly WeatherOption[],
+): WeatherOption[] {
+  const allowed = new Set<WeatherOption>(weatherOptions);
+  return WeatherOptionSchema.options.filter((weather) => allowed.has(weather));
 }
 
 function formatResultTime(ms: number): string {
