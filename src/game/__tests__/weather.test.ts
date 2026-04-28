@@ -17,20 +17,28 @@
 import { describe, expect, it } from "vitest";
 
 import type { WeatherOption } from "@/data/schemas";
+import { createRng, serializeRng } from "@/game/rng";
 
 import {
+  activeWeatherForState,
+  createWeatherState,
   effectiveWeatherGrip,
   getWeatherTireModifier,
   getResolvedWeatherTireModifier,
   isWeatherTireModifierKey,
   resolveWeatherTireModifierKey,
+  stepWeatherState,
   visibilityForWeather,
+  visibilityForWeatherState,
   weatherGripScalar,
+  weatherGripScalarForState,
   weatherSkillFor,
+  WEATHER_TRANSITION_SECONDS,
   WEATHER_TIRE_MODIFIER_ALIASES,
   WEATHER_TIRE_MODIFIER_KEYS,
   WEATHER_TIRE_MODIFIERS,
   WEATHER_VISIBILITY,
+  type WeatherState,
   type WeatherTireModifier,
   type WeatherTireModifierKey,
 } from "../weather";
@@ -282,6 +290,96 @@ describe("weatherSkillFor", () => {
       expect(weatherSkillFor(DRIVER, weather)).toBeCloseTo(expected, 9);
     },
   );
+});
+
+describe("WeatherState transitions", () => {
+  it("creates a stable fixed-weather state from a track option", () => {
+    expect(createWeatherState("rain", ["clear", "rain"])).toEqual<WeatherState>({
+      current: "rain",
+      transitioning: null,
+    });
+  });
+
+  it("rejects empty allowed states and weather outside the track set", () => {
+    expect(() => createWeatherState("clear", [])).toThrow(RangeError);
+    expect(() => createWeatherState("snow", ["clear", "rain"])).toThrow(
+      RangeError,
+    );
+  });
+
+  it("does not consume RNG when transition chance is disabled", () => {
+    const rng = createRng(7);
+    const before = serializeRng(rng);
+    const next = stepWeatherState(
+      createWeatherState("clear", ["clear", "rain"]),
+      1,
+      rng,
+      { allowedStates: ["clear", "rain"] },
+    );
+    expect(next).toEqual({ current: "clear", transitioning: null });
+    expect(serializeRng(rng)).toBe(before);
+  });
+
+  it("never leaves a single-weather track", () => {
+    const rng = createRng(11);
+    const next = stepWeatherState(createWeatherState("clear", ["clear"]), 5, rng, {
+      allowedStates: ["clear"],
+      changeChancePerSecond: 1,
+    });
+    expect(next).toEqual({ current: "clear", transitioning: null });
+  });
+
+  it("starts a deterministic transition to another allowed state", () => {
+    const a = stepWeatherState(
+      createWeatherState("clear", ["clear", "rain", "snow"]),
+      1,
+      createRng(42),
+      { allowedStates: ["clear", "rain", "snow"], changeChancePerSecond: 1 },
+    );
+    const b = stepWeatherState(
+      createWeatherState("clear", ["clear", "rain", "snow"]),
+      1,
+      createRng(42),
+      { allowedStates: ["clear", "rain", "snow"], changeChancePerSecond: 1 },
+    );
+    expect(a).toEqual(b);
+    expect(a.transitioning?.from).toBe("clear");
+    expect(["rain", "snow"]).toContain(a.transitioning?.to);
+    expect(a.transitioning?.progress).toBe(0);
+  });
+
+  it("advances transition progress over the default two-second window", () => {
+    const initial: WeatherState = {
+      current: "clear",
+      transitioning: { from: "clear", to: "rain", progress: 0 },
+    };
+    const half = stepWeatherState(initial, WEATHER_TRANSITION_SECONDS / 2, createRng(1), {
+      allowedStates: ["clear", "rain"],
+    });
+    expect(half.transitioning?.progress).toBeCloseTo(0.5, 9);
+    const done = stepWeatherState(half, WEATHER_TRANSITION_SECONDS / 2, createRng(1), {
+      allowedStates: ["clear", "rain"],
+    });
+    expect(done).toEqual({ current: "rain", transitioning: null });
+  });
+
+  it("interpolates grip and visibility during a transition", () => {
+    const mid: WeatherState = {
+      current: "clear",
+      transitioning: { from: "clear", to: "rain", progress: 0.5 },
+    };
+    const clearGrip = weatherGripScalar(STATS, "clear", "dry");
+    const rainGrip = weatherGripScalar(STATS, "rain", "dry");
+    expect(weatherGripScalarForState(STATS, mid, "dry")).toBeCloseTo(
+      (clearGrip + rainGrip) / 2,
+      9,
+    );
+    expect(visibilityForWeatherState(mid)).toBeCloseTo(
+      (visibilityForWeather("clear") + visibilityForWeather("rain")) / 2,
+      9,
+    );
+    expect(activeWeatherForState(mid)).toBe("rain");
+  });
 });
 
 describe("§23 table monotonicity (sanity)", () => {

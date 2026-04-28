@@ -52,7 +52,7 @@ import {
   DNF_NO_PROGRESS_TIMEOUT_SEC,
   DNF_OFF_TRACK_TIMEOUT_SEC,
 } from "@/game/raceRules";
-import type { AIDriver, CarBaseStats } from "@/data/schemas";
+import type { AIDriver, CarBaseStats, WeatherOption } from "@/data/schemas";
 
 const STARTER_STATS: CarBaseStats = Object.freeze({
   topSpeed: 61.0,
@@ -91,6 +91,12 @@ function buildConfig(overrides: Partial<RaceSessionConfig> = {}): RaceSessionCon
     seed: 42,
     ...overrides,
   };
+}
+
+function trackWithWeather(
+  weatherOptions: ReadonlyArray<WeatherOption>,
+): RaceSessionConfig["track"] {
+  return { ...loadTrack("test/curve"), weatherOptions };
 }
 
 function rollForward(
@@ -219,11 +225,13 @@ describe("stepRaceSession (racing)", () => {
     const clearConfig = buildConfig({
       countdownSec: 0,
       weather: "clear",
+      track: trackWithWeather(["clear", "rain"]),
       player: { stats: STARTER_STATS, initial: { speed: 30 } },
     });
     const rainConfig = buildConfig({
       countdownSec: 0,
       weather: "rain",
+      track: trackWithWeather(["clear", "rain"]),
       player: { stats: STARTER_STATS, initial: { speed: 30 } },
     });
     const clear = stepRaceSession(
@@ -243,17 +251,79 @@ describe("stepRaceSession (racing)", () => {
     );
   });
 
+  it("initializes weather state from the active race weather", () => {
+    const track = loadTrack("velvet-coast/harbor-run");
+    const config = buildConfig({
+      track,
+      weather: "rain",
+      countdownSec: 0,
+    });
+    const session = createRaceSession(config);
+    expect(session.weather).toEqual({ current: "rain", transitioning: null });
+    expect(Number.isInteger(session.weatherRngState)).toBe(true);
+  });
+
+  it("rejects a session weather outside the track weather options", () => {
+    expect(() =>
+      createRaceSession(
+        buildConfig({
+          track: loadTrack("test/curve"),
+          weather: "rain",
+        }),
+      ),
+    ).toThrow(RangeError);
+  });
+
+  it("keeps weather fixed when transitions are not configured", () => {
+    const track = loadTrack("velvet-coast/harbor-run");
+    const config = buildConfig({
+      track,
+      weather: "clear",
+      countdownSec: 0,
+    });
+    const first = createRaceSession(config);
+    const next = stepRaceSession(first, NEUTRAL_INPUT, config, DT);
+    expect(next.weather).toEqual(first.weather);
+    expect(next.weatherRngState).toBe(first.weatherRngState);
+  });
+
+  it("advances weather transitions when the caller opts in", () => {
+    const track = loadTrack("velvet-coast/harbor-run");
+    const config = buildConfig({
+      track,
+      weather: "clear",
+      countdownSec: 0,
+      weatherTransitions: {
+        changeChancePerSecond: 1,
+        transitionSeconds: DT,
+      },
+    });
+    const first = stepRaceSession(
+      createRaceSession(config),
+      NEUTRAL_INPUT,
+      config,
+      DT,
+    );
+    expect(first.weather.transitioning?.from).toBe("clear");
+    expect(["rain", "fog"]).toContain(first.weather.transitioning?.to);
+    const target = first.weather.transitioning?.to;
+    const second = stepRaceSession(first, NEUTRAL_INPUT, config, DT);
+    expect(second.weather).toEqual({ current: target, transitioning: null });
+  });
+
   it("applies the selected player tire channel to weather grip", () => {
     const steer = { ...NEUTRAL_INPUT, steer: 1 };
     const dryConfig = buildConfig({
       countdownSec: 0,
       weather: "rain",
+      track: trackWithWeather(["clear", "rain"]),
       playerTire: "dry",
       player: { stats: STARTER_STATS, initial: { speed: 30 } },
     });
     const wetConfig = buildConfig({
       countdownSec: 0,
       weather: "rain",
+      track: trackWithWeather(["clear", "rain"]),
       playerTire: "wet",
       player: { stats: STARTER_STATS, initial: { speed: 30 } },
     });
@@ -282,11 +352,13 @@ describe("stepRaceSession (racing)", () => {
     const rainConfig = buildConfig({
       countdownSec: 0,
       weather: "heavy_rain",
+      track: trackWithWeather(["clear", "heavy_rain"]),
       ai: [{ driver: wetSpecialist, stats: STARTER_STATS }],
     });
     const clearConfig = buildConfig({
       countdownSec: 0,
       weather: "clear",
+      track: trackWithWeather(["clear", "heavy_rain"]),
       ai: [{ driver: wetSpecialist, stats: STARTER_STATS }],
     });
     const rain = stepRaceSession(

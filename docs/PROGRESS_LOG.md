@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Weather state transitions
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather types and
+track-specific weather,
+[§21](gdd/21-technical-design-for-web-implementation.md) deterministic
+runtime state,
+[§22](gdd/22-data-schemas.md) track weather options.
+**Branch / PR:** `feat/weather-state-transitions`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/weather.ts`: added `WeatherState`, deterministic transition
+  stepping, active-weather selection, and interpolated grip and
+  visibility helpers.
+- `src/game/raceSession.ts`: initialized per-session weather state from
+  the selected race weather, reserved a seeded weather RNG stream, and
+  applied weather-state grip to player and AI physics.
+- `src/game/raceSessionActions.ts`: preserved the weather state through
+  retire-session cloning.
+- `src/app/race/page.tsx`: renders weather effects and car trails from
+  the live session weather state.
+- `docs/GDD_COVERAGE.json`: added GDD-14-WEATHER-STATE-MACHINE.
+
+### Verified
+- `npx vitest run src/game/__tests__/weather.test.ts src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts`
+  green, 197 passed.
+- `npm run typecheck` clean.
+- `npm run verify` green, 2353 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- Runtime transitions are opt-in with `changeChancePerSecond`. The
+  default is 0 so existing races keep the forecast chosen in pre-race
+  setup while future modes can enable deterministic mid-race changes.
+- The state machine rejects a weather option not listed by the active
+  track, matching §14's authored 1 to 3 weather-set constraint.
+
+### Coverage ledger
+- GDD-14-WEATHER-STATE-MACHINE covers deterministic state storage,
+  track-constrained transitions, and smooth grip or visibility
+  interpolation.
+- Uncovered adjacent requirements: heat shimmer and tunnel adaptation
+  remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: High-contrast roadside signs
 
 **GDD sections touched:**

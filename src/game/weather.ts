@@ -41,12 +41,12 @@
  * `getWeatherTireModifier(weather)` returns the same frozen object
  * reference every call so callers can lean on identity comparison.
  *
- * Scope. This slice deliberately does **not** add active tire selection
- * or a weather state machine. Per
- * `docs/AGENTS.md` RULE 9 (scope discipline) the table itself is the
- * smallest shippable cell: future work adds tire-selection UI and the
- * state-machine on top of this binding. Adding a new §23 weather row,
- * renaming a column, or moving a number
+ * Scope. The module owns tire modifiers and the pure weather state
+ * machine. Runtime callers opt into mid-race transitions explicitly;
+ * a missing transition config keeps the race weather fixed. Per
+ * `docs/AGENTS.md` RULE 9 (scope discipline) the state machine still
+ * avoids picking live transition odds for production races. Adding a
+ * new §23 weather row, renaming a column, or moving a number
  * requires updating both the table here and the unit pin in
  * `src/game/__tests__/weather.test.ts` (and the §23 cross-check in
  * `src/data/__tests__/balancing.test.ts`).
@@ -64,6 +64,7 @@
  */
 
 import type { AIDriver, CarBaseStats, WeatherOption } from "@/data/schemas";
+import type { Rng } from "./rng";
 
 /**
  * §23 rows that pin a tire-modifier cell. Five entries, exactly the
@@ -99,6 +100,23 @@ export interface WeatherTireModifier {
 }
 
 export type TireKind = "dry" | "wet";
+
+export const WEATHER_TRANSITION_SECONDS = 2;
+
+export interface WeatherState {
+  readonly current: WeatherOption;
+  readonly transitioning: {
+    readonly from: WeatherOption;
+    readonly to: WeatherOption;
+    readonly progress: number;
+  } | null;
+}
+
+export interface WeatherTransitionOptions {
+  readonly allowedStates: ReadonlyArray<WeatherOption>;
+  readonly transitionSeconds?: number;
+  readonly changeChancePerSecond?: number;
+}
 
 /**
  * Frozen scalar table, copied verbatim from §23 "Weather modifiers"
@@ -265,6 +283,91 @@ export function visibilityForWeather(weather: WeatherOption): number {
   return WEATHER_VISIBILITY[weather];
 }
 
+export function createWeatherState(
+  initial: WeatherOption,
+  allowedStates: ReadonlyArray<WeatherOption>,
+): WeatherState {
+  const allowed = normalizeAllowedStates(allowedStates);
+  ensureWeatherAllowed(initial, allowed);
+  return { current: initial, transitioning: null };
+}
+
+export function activeWeatherForState(state: Readonly<WeatherState>): WeatherOption {
+  return state.transitioning?.to ?? state.current;
+}
+
+export function stepWeatherState(
+  state: Readonly<WeatherState>,
+  dt: number,
+  rng: Rng,
+  options: Readonly<WeatherTransitionOptions>,
+): WeatherState {
+  if (!Number.isFinite(dt) || dt <= 0) {
+    return cloneWeatherState(state);
+  }
+
+  const allowed = normalizeAllowedStates(options.allowedStates);
+  ensureWeatherAllowed(state.current, allowed);
+  if (state.transitioning) {
+    ensureWeatherAllowed(state.transitioning.from, allowed);
+    ensureWeatherAllowed(state.transitioning.to, allowed);
+    const transitionSeconds = Math.max(
+      Number.EPSILON,
+      options.transitionSeconds ?? WEATHER_TRANSITION_SECONDS,
+    );
+    const progress = clamp(
+      state.transitioning.progress + dt / transitionSeconds,
+      0,
+      1,
+    );
+    if (progress >= 1) {
+      return { current: state.transitioning.to, transitioning: null };
+    }
+    return {
+      current: state.current,
+      transitioning: {
+        from: state.transitioning.from,
+        to: state.transitioning.to,
+        progress,
+      },
+    };
+  }
+
+  if (allowed.length < 2) return cloneWeatherState(state);
+  const chancePerSecond = clamp(options.changeChancePerSecond ?? 0, 0, 1);
+  if (chancePerSecond <= 0) return cloneWeatherState(state);
+
+  const probability = 1 - Math.pow(1 - chancePerSecond, dt);
+  if (!rng.nextBool(probability)) return cloneWeatherState(state);
+
+  const candidates = allowed.filter((weather) => weather !== state.current);
+  const next = candidates[rng.nextInt(0, candidates.length)]!;
+  return {
+    current: state.current,
+    transitioning: { from: state.current, to: next, progress: 0 },
+  };
+}
+
+export function visibilityForWeatherState(
+  state: Readonly<WeatherState>,
+): number {
+  if (!state.transitioning) return visibilityForWeather(state.current);
+  const from = visibilityForWeather(state.transitioning.from);
+  const to = visibilityForWeather(state.transitioning.to);
+  return lerp(from, to, state.transitioning.progress);
+}
+
+export function weatherGripScalarForState(
+  stats: Readonly<CarBaseStats>,
+  state: Readonly<WeatherState>,
+  tire: TireKind = "dry",
+): number {
+  if (!state.transitioning) return weatherGripScalar(stats, state.current, tire);
+  const from = weatherGripScalar(stats, state.transitioning.from, tire);
+  const to = weatherGripScalar(stats, state.transitioning.to, tire);
+  return lerp(from, to, state.transitioning.progress);
+}
+
 /**
  * Map the full weather enum onto the four-key AI weather-skill schema.
  * The AI data stays compact while runtime callers can remain exhaustive.
@@ -295,4 +398,45 @@ function clamp(value: number, min: number, max: number): number {
   if (value < min) return min;
   if (value > max) return max;
   return value;
+}
+
+function normalizeAllowedStates(
+  allowedStates: ReadonlyArray<WeatherOption>,
+): ReadonlyArray<WeatherOption> {
+  const unique: WeatherOption[] = [];
+  for (const weather of allowedStates) {
+    if (!unique.includes(weather)) unique.push(weather);
+  }
+  if (unique.length === 0) {
+    throw new RangeError("Weather transition allowedStates must not be empty");
+  }
+  return unique;
+}
+
+function ensureWeatherAllowed(
+  weather: WeatherOption,
+  allowedStates: ReadonlyArray<WeatherOption>,
+): void {
+  if (!allowedStates.includes(weather)) {
+    throw new RangeError(
+      `Weather state ${weather} is not allowed by this track`,
+    );
+  }
+}
+
+function cloneWeatherState(state: Readonly<WeatherState>): WeatherState {
+  return {
+    current: state.current,
+    transitioning: state.transitioning
+      ? {
+          from: state.transitioning.from,
+          to: state.transitioning.to,
+          progress: state.transitioning.progress,
+        }
+      : null,
+  };
+}
+
+function lerp(from: number, to: number, progress: number): number {
+  return from + (to - from) * clamp(progress, 0, 1);
 }

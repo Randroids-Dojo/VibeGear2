@@ -92,7 +92,7 @@ import {
   tickNitro,
   type NitroState,
 } from "./nitro";
-import { createRng, serializeRng, splitRng } from "./rng";
+import { createRng, deserializeRng, serializeRng, splitRng } from "./rng";
 import {
   createTransmissionForCar,
   gearAccelMultiplier,
@@ -100,7 +100,15 @@ import {
   tickTransmission,
   type TransmissionState,
 } from "./transmission";
-import { weatherGripScalar, weatherSkillFor, type TireKind } from "./weather";
+import {
+  activeWeatherForState,
+  createWeatherState,
+  stepWeatherState,
+  weatherGripScalarForState,
+  weatherSkillFor,
+  type TireKind,
+  type WeatherState,
+} from "./weather";
 import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
@@ -230,15 +238,21 @@ export interface RaceSessionConfig {
    */
   seed?: number;
   /**
-   * Active weather option for the session, read by the §19 accessibility
+   * Initial weather option for the session, read by the §19 accessibility
    * assist pipeline (`AssistContext.weather`) so visual-only-weather
    * mode can flag the runtime. Defaults to the first entry in
-   * `track.weatherOptions` when the host does not pin one. Held on
-   * config (rather than a per-tick parameter) because weather is
-   * decided at race-start time and never flips mid-race in current
-   * builds.
+   * `track.weatherOptions` when the host does not pin one.
    */
   weather?: WeatherOption;
+  /**
+   * Optional §14 weather-state-machine knobs. The default change chance
+   * is 0 so existing races keep a fixed forecast unless a caller opts
+   * into mid-race transitions.
+   */
+  weatherTransitions?: {
+    readonly changeChancePerSecond?: number;
+    readonly transitionSeconds?: number;
+  };
   /**
    * Active player tire channel chosen in the pre-race surface. Defaults
    * to dry so existing direct race links preserve their old behavior.
@@ -502,6 +516,10 @@ export interface RaceSessionState {
   draftWindows: Readonly<Record<string, DraftWindowState>>;
   /** Breakable track hazards consumed during this race, keyed by segment and id. */
   brokenHazards: ReadonlyArray<string>;
+  /** §14 weather runtime state, constrained to this track's authored options. */
+  weather: WeatherState;
+  /** Serialized deterministic PRNG state reserved for weather transitions. */
+  weatherRngState: number;
 }
 
 /**
@@ -674,6 +692,9 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
   };
 
   const sectorTimer = createSectorState(config.track.checkpoints);
+  const initialWeather = config.weather ?? config.track.weatherOptions[0] ?? "clear";
+  const weather = createWeatherState(initialWeather, config.track.weatherOptions);
+  const weatherRng = splitRng(createRng(raceSeed), "weather");
 
   return {
     race,
@@ -684,6 +705,8 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     baselineSplitsMs: null,
     draftWindows: {},
     brokenHazards: [],
+    weather,
+    weatherRngState: serializeRng(weatherRng),
   };
 }
 
@@ -846,6 +869,8 @@ export function stepRaceSession(
         baselineSplitsMs: state.baselineSplitsMs,
         draftWindows: state.draftWindows,
         brokenHazards: state.brokenHazards,
+        weather: cloneWeatherState(state.weather),
+        weatherRngState: state.weatherRngState,
       };
     }
     // Lights out. Flip to racing, zero the tick clock, reset the sector
@@ -871,6 +896,8 @@ export function stepRaceSession(
       baselineSplitsMs: state.baselineSplitsMs,
       draftWindows: state.draftWindows,
       brokenHazards: state.brokenHazards,
+      weather: cloneWeatherState(state.weather),
+      weatherRngState: state.weatherRngState,
     };
     return stepRaceSession(promoted, playerInput, config, dt);
   }
@@ -923,11 +950,18 @@ export function stepRaceSession(
   // forced to neutral so any downstream reducer that still reads it
   // sees zero throttle / brake / nitro.
   const assistSettings = config.player.assists ?? {};
-  const trackWeather =
-    config.weather ?? config.track.weatherOptions[0] ?? "clear";
-  const playerWeatherGripScalar = weatherGripScalar(
+  const weatherRng = deserializeRng(state.weatherRngState);
+  const nextWeather = stepWeatherState(state.weather, dt, weatherRng, {
+    allowedStates: config.track.weatherOptions,
+    changeChancePerSecond:
+      config.weatherTransitions?.changeChancePerSecond ?? 0,
+    transitionSeconds: config.weatherTransitions?.transitionSeconds,
+  });
+  const nextWeatherRngState = serializeRng(weatherRng);
+  const trackWeather = activeWeatherForState(nextWeather);
+  const playerWeatherGripScalar = weatherGripScalarForState(
     playerStats,
-    trackWeather,
+    nextWeather,
     config.playerTire ?? "dry",
   );
   const assistResult = playerIsRacing
@@ -1260,7 +1294,10 @@ export function stepRaceSession(
       getDamageScalars(entry.damage.total * 100),
       aiHazards.gripMultiplier,
     );
-    const aiWeatherGripScalar = weatherGripScalar(aiConfig.stats, trackWeather);
+    const aiWeatherGripScalar = weatherGripScalarForState(
+      aiConfig.stats,
+      nextWeather,
+    );
     const nextCar = step(
       entry.car,
       tick.input,
@@ -1639,6 +1676,8 @@ export function stepRaceSession(
       nextBrokenHazards === initialBrokenHazards
         ? state.brokenHazards
         : Array.from(nextBrokenHazards),
+    weather: nextWeather,
+    weatherRngState: nextWeatherRngState,
   };
 }
 
@@ -1680,6 +1719,8 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
     brokenHazards: state.brokenHazards.slice(),
+    weather: cloneWeatherState(state.weather),
+    weatherRngState: state.weatherRngState,
   };
 }
 
@@ -1717,6 +1758,19 @@ function withHazardGrip(
 
 function seedForAiIndex(raceSeed: number, index: number): number {
   return serializeRng(splitRng(createRng(raceSeed), `ai:${index}`));
+}
+
+function cloneWeatherState(state: Readonly<WeatherState>): WeatherState {
+  return {
+    current: state.current,
+    transitioning: state.transitioning
+      ? {
+          from: state.transitioning.from,
+          to: state.transitioning.to,
+          progress: state.transitioning.progress,
+        }
+      : null,
+  };
 }
 
 function clonePlayerCar(

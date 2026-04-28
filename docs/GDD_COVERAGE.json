@@ -118,6 +118,28 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-14-WEATHER-STATE-MACHINE",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Race sessions carry deterministic weather state constrained to the track's authored weather options, with smooth opt-in transitions between allowed states.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/weather.ts",
+        "src/game/raceSession.ts",
+        "src/game/raceSessionActions.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "src/game/__tests__/raceSessionActions.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-21-RNG-CONSUMERS",
       "gddSections": [
         "docs/gdd/15-cpu-opponents-and-ai.md",

@@ -114,7 +114,7 @@ import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
 import type { SaveGame } from "@/data/schemas";
 import type { RaceResult } from "@/game/raceResult";
 import { PRISTINE_DAMAGE_STATE, type DamageState } from "@/game/damage";
-import type { TireKind } from "@/game/weather";
+import { activeWeatherForState, type TireKind } from "@/game/weather";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -679,7 +679,6 @@ function RaceCanvas({
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
     setFieldSize(1 + config.ai.length);
-    const activeWeather = config.weather ?? track.compiled.weatherOptions[0] ?? "clear";
 
     const resetTimeTrialRuntime = (): void => {
       ghostOverlayRef.current = null;
@@ -910,6 +909,7 @@ function RaceCanvas({
         if (!session) return;
         camera.z = session.player.car.z;
         camera.x = session.player.car.x;
+        const renderWeather = activeWeatherForState(session.weather);
 
         const strips = project(track.compiled.segments, camera, viewport);
         const playerFrameIndex = playerCarFrameIndex(
@@ -937,7 +937,7 @@ function RaceCanvas({
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
           weatherEffects: {
-            weather: activeWeather,
+            weather: renderWeather,
             visualReduction: persistedAssists.weatherVisualReduction,
             particleIntensity:
               persistedSettings.accessibility?.weatherParticleIntensity,
@@ -958,7 +958,7 @@ function RaceCanvas({
           playerCar: {
             atlas: carAtlasRef.current,
             frameIndex: playerFrameIndex,
-            weather: activeWeather,
+            weather: renderWeather,
           },
         });
 
