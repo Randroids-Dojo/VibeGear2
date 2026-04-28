@@ -30,11 +30,17 @@ tests pin the three-choice roster.
 ## F-062: Implement garage upgrade purchase surface
 **Created:** 2026-04-27
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The garage summary surface shows installed upgrade tiers and
 links to `/garage/upgrade`, but the route is only a placeholder. Build
 the §12 upgrade purchase flow with tier costs, eligibility checks,
 credits persistence, installed tier updates, and save reload coverage.
+
+Closed by `feat/f-062-garage-upgrades`. `/garage/upgrade` now loads the
+active save, lists each §12 upgrade category with current tier, next
+tier, cap, cost, and effect summary, and buys the next eligible tier via
+`purchaseAndInstall`. The route persists wallet and installed tier
+updates through `saveSave`; Playwright covers purchase and reload.
 
 ## F-061: Implement garage repair purchase surface
 **Created:** 2026-04-27

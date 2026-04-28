@@ -35,7 +35,28 @@
         "e2e/garage-summary.spec.ts",
         "e2e/title-screen.spec.ts"
       ],
-      "followupRefs": ["F-061", "F-062"]
+      "followupRefs": ["F-061"]
+    },
+    {
+      "id": "GDD-12-GARAGE-UPGRADE-PURCHASE",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The garage upgrade shop shows current versus next tier for each upgrade category, enforces sequential install and car caps, debits credits, persists installed tiers, and explains lockouts inline.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/garage/upgrade/page.tsx",
+        "src/components/garage/garageUpgradeState.ts",
+        "src/game/economy.ts"
+      ],
+      "testRefs": [
+        "src/components/garage/__tests__/garageUpgradeState.test.ts",
+        "e2e/garage-upgrades.spec.ts",
+        "src/game/__tests__/economy.test.ts"
+      ],
+      "followupRefs": ["F-062"]
     },
     {
       "id": "GDD-09-ELEVATION-LIVE",
