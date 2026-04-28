@@ -35,13 +35,13 @@ Correct them by adding a new entry that references the old one.
 
 ### Verified
 - `npx vitest run src/components/world/__tests__/worldTourState.test.ts src/app/__tests__/page.test.tsx`
-  green, 15 passed.
+  green, 16 passed.
 - `npm run typecheck` clean.
 - `npm run lint` clean.
 - `npm run test:e2e -- e2e/world-tour.spec.ts e2e/title-screen.spec.ts e2e/garage-flow.spec.ts`
   green, 8 passed.
 - `npm run verify` green: lint, typecheck, unit tests, and
-  content-lint all passed; 2,214 unit tests passed.
+  content-lint all passed; 2,215 unit tests passed.
 
 ### Decisions and assumptions
 - A fresh save treats the first championship tour as unlocked at the

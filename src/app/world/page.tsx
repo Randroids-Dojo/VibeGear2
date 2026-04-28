@@ -118,6 +118,8 @@ export default function WorldPage() {
       {status.kind !== "idle" ? (
         <p
           data-testid="world-status"
+          role="status"
+          aria-live="polite"
           style={{
             ...statusStyle,
             color: status.kind === "error" ? "#ff9a9a" : "#9bd2ff",

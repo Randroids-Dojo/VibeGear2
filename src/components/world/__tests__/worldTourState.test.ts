@@ -104,6 +104,18 @@ describe("enterWorldTour", () => {
     expect(save).toEqual(before);
   });
 
+  it("rejects a malformed tour with no first track instead of routing to a fallback", () => {
+    const save = freshSave();
+    const malformed: Championship = {
+      ...CHAMPIONSHIP,
+      tours: [{ ...CHAMPIONSHIP.tours[0]!, tracks: [] }],
+    };
+
+    const result = enterWorldTour(save, malformed, "velvet-coast");
+
+    expect(result).toEqual({ ok: false, code: "unknown_tour" });
+  });
+
   it("does not duplicate the first tour in an already-unlocked save", () => {
     const save = freshSave();
     save.progress.unlockedTours = ["velvet-coast"];
