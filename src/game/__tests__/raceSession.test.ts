@@ -1649,6 +1649,19 @@ describe("stepRaceSession (§13 damage wiring, F-047)", () => {
     expect(session.ai[0]?.damage).toBe(PRISTINE_DAMAGE_STATE);
   });
 
+  it("can seed the player with active garage damage at session creation", () => {
+    const initialDamage = createDamageState({ engine: 0.2, tires: 0.1, body: 0.3 });
+    const config = buildConfig({
+      countdownSec: 0,
+      player: { stats: STARTER_STATS, initialDamage },
+    });
+
+    const session = createRaceSession(config);
+
+    expect(session.player.damage).toBe(initialDamage);
+    expect(session.ai[0]?.damage).toBe(PRISTINE_DAMAGE_STATE);
+  });
+
   it("leaves damage at PRISTINE when the player races a clean lap with no contact", () => {
     // Single-lap straight track, no AI: a full-throttle clean run never
     // touches the grass and never makes contact, so the §13 damage path

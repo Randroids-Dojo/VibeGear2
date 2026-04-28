@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const SAVE_KEY = "vibegear2:save:v3";
+
 /**
  * Natural race-finish e2e per F-038. Drives a single-lap race on
  * `test/straight` with the throttle held down so the player reaches the
@@ -80,6 +82,63 @@ test.describe("race-finish wiring (F-038)", () => {
       const creditsRow = page.getByTestId("results-credits-awarded");
       await expect(creditsRow).toBeVisible();
       await expect(creditsRow).not.toHaveText(/^0 cr$/);
+    },
+  );
+
+  test(
+    "natural finish persists active car damage for the repair shop",
+    async ({ page }) => {
+      test.setTimeout(70_000);
+
+      await page.goto("/");
+      await page.evaluate(
+        ({ key, save }) => window.localStorage.setItem(key, JSON.stringify(save)),
+        { key: SAVE_KEY, save: buildRaceDamageSave() },
+      );
+
+      await page.goto("/race?track=test/straight");
+
+      const canvas = page.getByTestId("race-canvas-element");
+      await expect(canvas).toBeVisible();
+      await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+        timeout: 10_000,
+      });
+
+      await canvas.focus();
+      await page.keyboard.down("ArrowUp");
+      await expect(page).toHaveURL(/\/race\/results/, { timeout: 45_000 });
+      await page.keyboard.up("ArrowUp");
+
+      const persisted = await page.evaluate((key) => {
+        const raw = window.localStorage.getItem(key);
+        return raw
+          ? (JSON.parse(raw) as {
+              garage?: {
+                credits?: number;
+                lastRaceCashEarned?: number;
+                pendingDamage?: Record<
+                  string,
+                  { zones?: { engine?: number; tires?: number; body?: number } }
+                >;
+              };
+            })
+          : null;
+      }, SAVE_KEY);
+
+      expect(persisted?.garage?.credits).toBeGreaterThan(1000);
+      expect(persisted?.garage?.lastRaceCashEarned).toBeGreaterThan(0);
+      const bodyDamage =
+        persisted?.garage?.pendingDamage?.["sparrow-gt"]?.zones?.body ?? 0;
+      expect(bodyDamage).toBeGreaterThanOrEqual(0.33);
+
+      await page.getByTestId("results-cta-continue").click();
+      await expect(page).toHaveURL(/\/garage\/cars/);
+      await page.goto("/garage/repair");
+
+      await expect(page.getByTestId("garage-repair-page")).toBeVisible();
+      await expect(page.getByTestId("garage-repair-damage-body")).toContainText(
+        `${Math.round(bodyDamage * 100)}% damage`,
+      );
     },
   );
 });
@@ -163,3 +222,56 @@ test.describe("race-finish wiring (F-029 multi-lap)", () => {
     },
   );
 });
+
+function buildRaceDamageSave() {
+  return {
+    version: 3,
+    profileName: "RaceDamageTester",
+    settings: {
+      displaySpeedUnit: "kph",
+      assists: {
+        steeringAssist: false,
+        autoNitro: false,
+        weatherVisualReduction: false,
+      },
+      difficultyPreset: "normal",
+      transmissionMode: "auto",
+      audio: { master: 1, music: 1, sfx: 1 },
+      accessibility: {
+        colorBlindMode: "off",
+        reducedMotion: false,
+        largeUiText: false,
+        screenShakeScale: 1,
+      },
+    },
+    garage: {
+      credits: 1000,
+      ownedCars: ["sparrow-gt"],
+      activeCarId: "sparrow-gt",
+      installedUpgrades: {
+        "sparrow-gt": {
+          engine: 0,
+          gearbox: 0,
+          dryTires: 0,
+          wetTires: 0,
+          nitro: 0,
+          armor: 0,
+          cooling: 0,
+          aero: 0,
+        },
+      },
+      pendingDamage: {
+        "sparrow-gt": {
+          zones: { engine: 0, tires: 0, body: 0.33 },
+          total: 0.1155,
+          offRoadAccumSeconds: 0,
+        },
+      },
+      lastRaceCashEarned: 0,
+    },
+    progress: { unlockedTours: [], completedTours: [] },
+    records: {},
+    ghosts: {},
+    writeCounter: 0,
+  };
+}

@@ -13,7 +13,7 @@ or `obsolete` so the trail is preserved.
 ## F-064: Persist race damage into the garage repair queue
 **Created:** 2026-04-28
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The F-061 repair shop consumes `garage.pendingDamage` and
 persists full or essential repairs, but the live race finish path still
 credits cash and records PBs without writing the player's final
@@ -21,6 +21,12 @@ credits cash and records PBs without writing the player's final
 and retire paths in `src/app/race/page.tsx` so finished races store the
 active car's pending damage and `lastRaceCashEarned`, then cover the
 race to results to garage repair path in Playwright.
+
+Closed by `feat/f-064-race-damage-persistence`. Race sessions now start
+from the active car's queued garage damage, and both natural-finish and
+retire paths write final player damage plus the actual credited payout
+back into `garage.pendingDamage` and `lastRaceCashEarned`. Playwright
+covers race finish to results to garage repair.
 
 ## F-063: Align starter selection content with the three §11 starter examples
 **Created:** 2026-04-27

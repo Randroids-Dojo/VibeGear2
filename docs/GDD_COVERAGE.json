@@ -62,8 +62,28 @@
         "e2e/garage-repairs.spec.ts",
         "e2e/garage-summary.spec.ts",
         "src/game/__tests__/economy.test.ts"
+      ]
+    },
+    {
+      "id": "GDD-13-RACE-DAMAGE-PERSISTENCE",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/22-data-schemas.md"
       ],
-      "followupRefs": ["F-061", "F-064"]
+      "requirement": "Race finish and retire paths persist the active car's final damage into the garage repair queue, record the credited race payout for the essential-repair cap, and seed the next race from queued active-car damage.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/game/raceDamagePersistence.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceDamagePersistence.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "e2e/race-finish.spec.ts"
+      ]
     },
     {
       "id": "GDD-12-GARAGE-UPGRADE-PURCHASE",
