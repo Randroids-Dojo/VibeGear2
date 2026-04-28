@@ -142,6 +142,8 @@ export function defaultSave(): SaveGame {
           aero: 0,
         },
       },
+      pendingDamage: {},
+      lastRaceCashEarned: 0,
     },
     progress: {
       unlockedTours: [],

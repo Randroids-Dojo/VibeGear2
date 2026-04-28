@@ -14,6 +14,7 @@ export interface GarageSummaryView {
   readonly activeCarId: string;
   readonly credits: number;
   readonly ownedCount: number;
+  readonly damagePercent: number;
   readonly needsStarterPick: boolean;
   readonly starterCars: ReadonlyArray<Car>;
   readonly installedTiers: ReadonlyArray<GarageUpgradeTier>;
@@ -31,12 +32,14 @@ export function buildGarageSummaryView(
   const activeCar = getCar(save.garage.activeCarId) ?? null;
   const ownsActive = save.garage.ownedCars.includes(save.garage.activeCarId);
   const installed = save.garage.installedUpgrades[save.garage.activeCarId];
+  const pendingDamage = save.garage.pendingDamage?.[save.garage.activeCarId];
 
   return {
     activeCar,
     activeCarId: save.garage.activeCarId,
     credits: save.garage.credits,
     ownedCount: save.garage.ownedCars.length,
+    damagePercent: Math.round((pendingDamage?.total ?? 0) * 100),
     needsStarterPick: activeCar === null || !ownsActive,
     starterCars: starterCars(),
     installedTiers: UPGRADE_CATEGORIES.map((category) => ({

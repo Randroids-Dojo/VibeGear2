@@ -599,11 +599,25 @@ const installedUpgradesObject = z.object(
   ) as Record<UpgradeCategory, typeof nonNegInt>,
 );
 
+const saveDamageZonesObject = z.object({
+  engine: unitInterval,
+  tires: unitInterval,
+  body: unitInterval,
+});
+
+const saveDamageStateObject = z.object({
+  zones: saveDamageZonesObject,
+  total: unitInterval,
+  offRoadAccumSeconds: z.number().nonnegative(),
+});
+
 export const SaveGameGarageSchema = z.object({
   credits: nonNegInt,
   ownedCars: z.array(slug).min(1),
   activeCarId: slug,
   installedUpgrades: z.record(slug, installedUpgradesObject),
+  pendingDamage: z.record(slug, saveDamageStateObject).optional(),
+  lastRaceCashEarned: nonNegInt.optional(),
 });
 export type SaveGameGarage = z.infer<typeof SaveGameGarageSchema>;
 

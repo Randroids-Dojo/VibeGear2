@@ -35,15 +35,16 @@ interface SeededSave {
         offRoadAccumSeconds: number;
       }
     >;
+    lastRaceCashEarned?: number;
   };
   progress: { unlockedTours: string[]; completedTours: string[] };
   records: Record<string, unknown>;
 }
 
-function buildGarageSave(overrides: Partial<SeededSave["garage"]> = {}): SeededSave {
+function buildGarageSave(): SeededSave {
   return {
     version: 3,
-    profileName: "GarageSummaryTester",
+    profileName: "GarageRepairTester",
     settings: {
       displaySpeedUnit: "kph",
       assists: {
@@ -62,29 +63,24 @@ function buildGarageSave(overrides: Partial<SeededSave["garage"]> = {}): SeededS
       },
     },
     garage: {
-      credits: 2400,
-      ownedCars: ["sparrow-gt", "breaker-s"],
-      activeCarId: "breaker-s",
+      credits: 5000,
+      ownedCars: ["sparrow-gt"],
+      activeCarId: "sparrow-gt",
       installedUpgrades: {
         "sparrow-gt": defaultUpgradeTiers(),
-        "breaker-s": {
-          ...defaultUpgradeTiers(),
-          engine: 2,
-          wetTires: 1,
-        },
       },
       pendingDamage: {
-        "breaker-s": {
+        "sparrow-gt": {
           zones: {
-            engine: 0.25,
-            tires: 0.1,
+            engine: 0.5,
+            tires: 0.25,
             body: 0.5,
           },
-          total: 0.31,
-          offRoadAccumSeconds: 0,
+          total: 0.45,
+          offRoadAccumSeconds: 2,
         },
       },
-      ...overrides,
+      lastRaceCashEarned: 2000,
     },
     progress: { unlockedTours: [], completedTours: [] },
     records: {},
@@ -104,7 +100,7 @@ function defaultUpgradeTiers(): Record<string, number> {
   };
 }
 
-test.describe("garage summary", () => {
+test.describe("garage repair shop", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     const hasStorage = await page.evaluate(
@@ -113,7 +109,7 @@ test.describe("garage summary", () => {
     test.skip(!hasStorage, "localStorage unavailable in this browser context");
   });
 
-  test("shows the active car, credits, upgrades, and action links", async ({
+  test("buys an essential repair and persists remaining damage", async ({
     page,
   }) => {
     await page.evaluate(
@@ -121,67 +117,64 @@ test.describe("garage summary", () => {
       { key: SAVE_KEY, save: buildGarageSave() },
     );
 
-    await page.goto("/garage");
+    await page.goto("/garage/repair");
 
-    await expect(page.getByTestId("garage-page")).toBeVisible();
-    await expect(page.getByTestId("garage-credits")).toHaveText("2400");
-    await expect(page.getByTestId("garage-active-car")).toHaveText("Breaker S");
-    await expect(page.getByTestId("garage-owned-count")).toHaveText("2");
-    await expect(page.getByTestId("garage-damage-summary")).toHaveText(
-      "31% pending",
-    );
-    await expect(page.getByTestId("garage-upgrade-engine")).toHaveText("Tier 2");
-    await expect(page.getByTestId("garage-upgrade-wetTires")).toHaveText("Tier 1");
-
-    await page.getByTestId("garage-repair-link").click();
-    await expect(page).toHaveURL(/\/garage\/repair$/);
     await expect(page.getByTestId("garage-repair-page")).toBeVisible();
-
-    await page.getByTestId("garage-repair-back").click();
-    await page.getByTestId("garage-upgrade-link").click();
-    await expect(page).toHaveURL(/\/garage\/upgrade$/);
-    await expect(page.getByTestId("garage-upgrade-page")).toBeVisible();
-  });
-
-  test("recovers a save with a missing active car through starter selection", async ({
-    page,
-  }) => {
-    await page.evaluate(
-      ({ key, save }) => window.localStorage.setItem(key, JSON.stringify(save)),
-      {
-        key: SAVE_KEY,
-        save: buildGarageSave({
-          activeCarId: "missing-car",
-          ownedCars: ["sparrow-gt"],
-          installedUpgrades: {},
-        }),
-      },
+    await expect(page.getByTestId("garage-repair-credits")).toHaveText("5000");
+    await expect(page.getByTestId("garage-repair-damage-engine")).toContainText(
+      "50% damage",
+    );
+    await expect(page.getByTestId("garage-repair-cost-essential")).toHaveText(
+      "800",
+    );
+    await expect(page.getByTestId("garage-repair-saved-essential")).toContainText(
+      "saved 100",
     );
 
-    await page.goto("/garage");
+    await page.getByTestId("garage-repair-button-essential").click();
 
-    await expect(page.getByTestId("garage-starter-pick")).toBeVisible();
-    await expect(page.getByTestId("starter-sparrow-gt")).toBeVisible();
-    await expect(page.getByTestId("starter-breaker-s")).toBeVisible();
-    await expect(page.getByTestId("starter-vanta-xr")).toBeVisible();
-    await page.getByTestId("pick-starter-sparrow-gt").click();
-    await expect(page.getByTestId("garage-status")).toContainText(
-      "Starter car selected",
+    await expect(page.getByTestId("garage-repair-status")).toContainText(
+      "Essential repair complete",
     );
-    await expect(page.getByTestId("garage-active-car")).toHaveText("Sparrow GT");
+    await expect(page.getByTestId("garage-repair-credits")).toHaveText("4200");
+    await expect(page.getByTestId("garage-repair-damage-engine")).toContainText(
+      "0% damage",
+    );
+    await expect(page.getByTestId("garage-repair-damage-body")).toContainText(
+      "50% damage",
+    );
 
     const persisted = await page.evaluate((key) => {
       const raw = window.localStorage.getItem(key);
       return raw
         ? (JSON.parse(raw) as {
             garage?: {
-              activeCarId?: string;
-              installedUpgrades?: Record<string, Record<string, number>>;
+              credits?: number;
+              pendingDamage?: Record<
+                string,
+                { zones?: { engine?: number; tires?: number; body?: number } }
+              >;
             };
           })
         : null;
     }, SAVE_KEY);
-    expect(persisted?.garage?.activeCarId).toBe("sparrow-gt");
-    expect(persisted?.garage?.installedUpgrades?.["sparrow-gt"]?.engine).toBe(0);
+
+    expect(persisted?.garage?.credits).toBe(4200);
+    expect(
+      persisted?.garage?.pendingDamage?.["sparrow-gt"]?.zones?.engine,
+    ).toBe(0);
+    expect(
+      persisted?.garage?.pendingDamage?.["sparrow-gt"]?.zones?.tires,
+    ).toBe(0);
+    expect(
+      persisted?.garage?.pendingDamage?.["sparrow-gt"]?.zones?.body,
+    ).toBe(0.5);
+
+    await page.reload();
+
+    await expect(page.getByTestId("garage-repair-credits")).toHaveText("4200");
+    await expect(page.getByTestId("garage-repair-damage-body")).toContainText(
+      "50% damage",
+    );
   });
 });

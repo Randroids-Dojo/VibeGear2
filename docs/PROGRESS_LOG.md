@@ -6,6 +6,75 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: F-061 garage repair purchase surface
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) garage repair loop,
+[§12](gdd/12-upgrade-and-economy-system.md) repair costs and
+essential repair cap,
+[§13](gdd/13-damage-repairs-and-risk.md) full service and quick patch,
+[§22](gdd/22-data-schemas.md) save repair queue.
+**Branch / PR:** `feat/f-061-garage-repairs`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts` and `src/persistence/save.ts`: added optional
+  `garage.pendingDamage` plus `lastRaceCashEarned` so the garage can
+  persist per-car damage and seed fresh saves without breaking older
+  v3 saves.
+- `src/components/garage/garageRepairState.ts`: builds repair quotes
+  from the active save, calls `applyRepairCost` for full service and
+  essential repair, surfaces cap savings, and stores post-repair damage
+  back into the save.
+- `src/app/garage/repair/page.tsx`: replaced the placeholder with a
+  localStorage-backed repair shop that shows per-zone damage, debits
+  credits, persists repairs, and handles missing active-car saves.
+- `src/components/garage/garageSummaryState.ts` and
+  `src/app/garage/page.tsx`: show active-car pending damage on the
+  garage hub instead of the old static placeholder.
+- `e2e/garage-repairs.spec.ts`: seeds damage, buys an essential repair,
+  checks cap savings, verifies credits and remaining body damage, and
+  reloads to prove persistence.
+- `docs/FOLLOWUPS.md`: closed F-061 and opened F-064 for the remaining
+  race-finish damage producer.
+- `docs/GDD_COVERAGE.json`: added
+  `GDD-13-GARAGE-REPAIR-PURCHASE` and removed F-061 from the garage
+  summary open followups.
+
+### Verified
+- `npx vitest run src/components/garage/__tests__/garageRepairState.test.ts src/components/garage/__tests__/garageSummaryState.test.ts src/data/schemas.test.ts src/persistence/save.test.ts`
+  green, 88 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/garage-repairs.spec.ts e2e/garage-summary.spec.ts`
+  green, 3 passed.
+
+### Decisions and assumptions
+- Full service maps to all current damage zones (`engine`, `tires`,
+  `body`). Essential repair maps to the performance-critical zones
+  (`engine`, `tires`) so it can leave body damage as the §13 quick-patch
+  tradeoff.
+- The repair surface consumes `garage.pendingDamage` now. Race-finish
+  production of that queue remains a separate slice because it touches
+  the race result commit path and needs its own browser flow.
+
+### Coverage ledger
+- Added GDD-13-GARAGE-REPAIR-PURCHASE with code and automated test
+  coverage.
+- GDD-05-GARAGE-SUMMARY no longer tracks F-061.
+- Uncovered adjacent requirements: race-finish damage persistence,
+  standings, weather fit, ghost status, leaderboard status, and full
+  next-race tournament data remain future garage slices.
+
+### Followups created
+- F-064: Persist race damage into the garage repair queue.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: documented `garage.pendingDamage` and
+  `garage.lastRaceCashEarned` in the SaveGame example and notes.
+
+---
+
 ## 2026-04-28: Slice: F-062 garage upgrade purchase surface
 
 **GDD sections touched:**

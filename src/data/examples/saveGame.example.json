@@ -48,7 +48,19 @@
         "cooling": 0,
         "aero": 0
       }
-    }
+    },
+    "pendingDamage": {
+      "sparrow-gt": {
+        "zones": {
+          "engine": 0.2,
+          "tires": 0.1,
+          "body": 0.25
+        },
+        "total": 0.1975,
+        "offRoadAccumSeconds": 0
+      }
+    },
+    "lastRaceCashEarned": 2200
   },
   "progress": {
     "unlockedTours": ["velvet-coast", "iron-borough"],
