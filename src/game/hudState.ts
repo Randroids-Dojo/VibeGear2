@@ -117,6 +117,11 @@ export interface HudStateInput {
   nitroChargeDurationSec?: number;
   /** Optional live §10 transmission snapshot for the §20 gear label. */
   transmission?: Readonly<TransmissionState>;
+  /**
+   * Optional signed wallet delta or projected race payout in credits.
+   * Callers omit it when a mode should not surface economy progress.
+   */
+  cashDelta?: number;
 }
 
 /** Optional minimap snapshot derived from the compiled track + car field. */
@@ -187,6 +192,8 @@ export interface HudState {
   nitro?: HudNitroSummary;
   /** Optional §20 gear HUD summary. */
   gear?: HudGearSummary;
+  /** Optional §20 cash delta in credits. */
+  cashDelta?: HudCashDeltaSummary;
 }
 
 export interface HudDamageSummary {
@@ -215,6 +222,11 @@ export interface HudGearSummary {
   gear: number;
   rpmPercent: number;
   mode: "auto" | "manual";
+}
+
+export interface HudCashDeltaSummary {
+  credits: number;
+  label: string;
 }
 
 /** Conversion factors. SI base is m/s. */
@@ -334,6 +346,15 @@ export function summarizeHudGear(
     gear,
     rpmPercent: percentFromUnit(transmission.rpm),
     mode: transmission.mode,
+  };
+}
+
+export function summarizeHudCashDelta(credits: number): HudCashDeltaSummary {
+  const clean = Number.isFinite(credits) ? Math.trunc(credits) : 0;
+  const sign = clean > 0 ? "+" : clean < 0 ? "-" : "";
+  return {
+    credits: clean,
+    label: `${sign}${Math.abs(clean).toLocaleString("en-US")} cr`,
   };
 }
 
@@ -467,6 +488,9 @@ export function deriveHudState(input: HudStateInput): HudState {
   }
   if (input.transmission !== undefined) {
     result.gear = summarizeHudGear(input.transmission);
+  }
+  if (input.cashDelta !== undefined) {
+    result.cashDelta = summarizeHudCashDelta(input.cashDelta);
   }
   return result;
 }

@@ -69,6 +69,7 @@ import {
   applyRaceDamageToGarage,
   applyRaceResultRecords,
   applyTourRaceResult,
+  rankPosition,
   retireRaceSession,
   spawnGrid,
   startLoop,
@@ -115,7 +116,11 @@ import type { ParallaxLayer } from "@/render/parallax";
 import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
 import { defaultSave, loadSave, saveSave } from "@/persistence/save";
-import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
+import {
+  awardCredits,
+  baseRewardForTrackDifficulty,
+  computeRaceReward,
+} from "@/game/economy";
 import type { SaveGame } from "@/data/schemas";
 import type { RaceResult } from "@/game/raceResult";
 import { PRISTINE_DAMAGE_STATE, type DamageState } from "@/game/damage";
@@ -1003,6 +1008,16 @@ function RaceCanvas({
         const nitroUpgradeTier = nitroUpgradeTierForUpgrades(
           config.player.upgrades ?? null,
         );
+        const projectedCashDelta = timeTrialEnabled
+          ? undefined
+          : computeRaceReward({
+              place: rankPosition(PLAYER_ID, cars),
+              status: "finished",
+              baseTrackReward: baseRewardForTrackDifficulty(
+                track.compiled.difficulty,
+              ),
+              difficulty: persistedDifficulty ?? "normal",
+            });
         const hud = deriveHudState({
           race: session.race,
           playerSpeedMetersPerSecond: session.player.car.speed,
@@ -1022,6 +1037,7 @@ function RaceCanvas({
             DEFAULT_NITRO_CHARGES + nitroUpgradeTier.chargesBonus,
           nitroChargeDurationSec: nitroDurationForTier(nitroUpgradeTier),
           transmission: session.player.transmission,
+          cashDelta: projectedCashDelta,
         });
         drawHud(ctx, hud, viewport);
 
