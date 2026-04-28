@@ -481,6 +481,25 @@ function commitRaceCredits(input: {
   return transformed.result;
 }
 
+function commitTimeTrialRecords(input: {
+  result: RaceResult;
+  fallbackSave: SaveGame;
+}): { result: RaceResult; save: SaveGame } {
+  const result = { ...input.result, creditsAwarded: 0 };
+  if (result.recordsUpdated === null) {
+    return { result, save: input.fallbackSave };
+  }
+
+  const latest = loadSave();
+  const baseSave = latest.kind === "loaded" ? latest.save : input.fallbackSave;
+  const nextSave = applyRaceResultRecords(baseSave, result);
+  const write = saveSave(nextSave);
+  return {
+    result,
+    save: write.kind === "ok" ? nextSave : baseSave,
+  };
+}
+
 export default function RacePage(): ReactElement {
   return (
     <ErrorBoundary>
@@ -856,8 +875,14 @@ function RaceCanvas({
       // F-034: credit the wallet (DNF cars receive the §12 participation
       // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
       // the §20 results screen renders the actual wallet change.
-      const committed = timeTrialEnabled
-        ? { ...result, creditsAwarded: 0 }
+      const timeTrialCommit = timeTrialEnabled
+        ? commitTimeTrialRecords({ result, fallbackSave: save })
+        : null;
+      if (timeTrialCommit !== null) {
+        timeTrialSaveSnapshot = timeTrialCommit.save;
+      }
+      const committed = timeTrialCommit
+        ? timeTrialCommit.result
         : commitRaceCredits({
             result,
             save,
@@ -1126,8 +1151,14 @@ function RaceCanvas({
             // results screen will render. The `commitRaceCredits`
             // helper persists the merged save and mirrors the
             // wallet delta onto `RaceResult.creditsAwarded`.
-            const committed = timeTrialEnabled
-              ? { ...result, creditsAwarded: 0 }
+            const timeTrialCommit = timeTrialEnabled
+              ? commitTimeTrialRecords({ result, fallbackSave: save })
+              : null;
+            if (timeTrialCommit !== null) {
+              timeTrialSaveSnapshot = timeTrialCommit.save;
+            }
+            const committed = timeTrialCommit
+              ? timeTrialCommit.result
               : commitRaceCredits({
                   result,
                   save,

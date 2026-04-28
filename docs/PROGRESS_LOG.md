@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Time Trial PB records
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Time trial,
+[§21](gdd/21-technical-design-for-web-implementation.md) local save runtime,
+[§22](gdd/22-data-schemas.md) save records.
+**Branch / PR:** `feat/time-trial-pb-records`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/race/page.tsx`: commits Time Trial result PB patches to the
+  local save while keeping `creditsAwarded` at zero and leaving garage
+  damage untouched.
+- `src/game/raceResult.ts`: preserves an existing faster saved lap when
+  a stale result patch is merged after another tab or run has already
+  improved the record.
+- `e2e/race-finish.spec.ts`: added a real Time Trial finish smoke that
+  asserts PB records persist, credits stay unchanged, and pending
+  garage damage stays unchanged.
+- `docs/GDD_COVERAGE.json`: added GDD-06-TIME-TRIAL-PB-RECORDS.
+
+### Verified
+- `npx vitest run src/game/__tests__/raceResult.test.ts` green, 58 passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/race-finish.spec.ts --project=chromium -g "time trial PB persistence"`
+  green, 1 passed.
+- `npm run verify` green, 2415 passed.
+- `npm run test:e2e` green, 74 passed.
+
+### Decisions and assumptions
+- Time Trial remains a non-economy mode: it can update records and PB
+  ghosts, but it never awards campaign credits or persists race damage.
+
+### Coverage ledger
+- GDD-06-TIME-TRIAL-PB-RECORDS covers Time Trial PB record persistence
+  from a finished run.
+- Uncovered adjacent requirements: developer benchmark display,
+  downloaded ghost selection, result-backed Daily Challenge share text,
+  and UTC-midnight fake-clock e2e remain under the §6 modes parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Mobile touch controls
 
 **GDD sections touched:**
