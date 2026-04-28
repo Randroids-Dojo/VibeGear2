@@ -20,6 +20,13 @@ export const DEFAULT_ENGINE_PITCH: EnginePitchConfig = Object.freeze({
 
 export function engineSpeedRatio(input: EnginePitchInput): number {
   const config = resolveEnginePitchConfig(input.config);
+  return engineSpeedRatioForConfig(input, config);
+}
+
+function engineSpeedRatioForConfig(
+  input: EnginePitchInput,
+  config: EnginePitchConfig,
+): number {
   if (!Number.isFinite(input.speed) || !Number.isFinite(input.topSpeed)) {
     return 0;
   }
@@ -31,7 +38,7 @@ export function engineSpeedRatio(input: EnginePitchInput): number {
 
 export function enginePitchHz(input: EnginePitchInput): number {
   const config = resolveEnginePitchConfig(input.config);
-  const ratio = engineSpeedRatio({ ...input, config });
+  const ratio = engineSpeedRatioForConfig(input, config);
   const spread = config.redlineHz - config.idleHz;
   const raised = config.idleHz + spread * (1 - Math.exp(-config.riseCurve * ratio));
   return clamp(raised, config.idleHz, config.redlineHz);
