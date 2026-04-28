@@ -214,6 +214,67 @@ describe("stepRaceSession (racing)", () => {
     expect(second.player.car).not.toBe(first.player.car);
   });
 
+  it("applies active weather grip to player steering", () => {
+    const steer = { ...NEUTRAL_INPUT, steer: 1 };
+    const clearConfig = buildConfig({
+      countdownSec: 0,
+      weather: "clear",
+      player: { stats: STARTER_STATS, initial: { speed: 30 } },
+    });
+    const rainConfig = buildConfig({
+      countdownSec: 0,
+      weather: "rain",
+      player: { stats: STARTER_STATS, initial: { speed: 30 } },
+    });
+    const clear = stepRaceSession(
+      createRaceSession(clearConfig),
+      steer,
+      clearConfig,
+      DT,
+    );
+    const rain = stepRaceSession(
+      createRaceSession(rainConfig),
+      steer,
+      rainConfig,
+      DT,
+    );
+    expect(Math.abs(rain.player.car.x)).toBeLessThan(
+      Math.abs(clear.player.car.x),
+    );
+  });
+
+  it("maps active weather through AI weather skill", () => {
+    const wetSpecialist = {
+      ...TEST_DRIVER,
+      weatherSkill: { clear: 1, rain: 0.8, fog: 1, snow: 1 },
+    };
+    const rainConfig = buildConfig({
+      countdownSec: 0,
+      weather: "heavy_rain",
+      ai: [{ driver: wetSpecialist, stats: STARTER_STATS }],
+    });
+    const clearConfig = buildConfig({
+      countdownSec: 0,
+      weather: "clear",
+      ai: [{ driver: wetSpecialist, stats: STARTER_STATS }],
+    });
+    const rain = stepRaceSession(
+      createRaceSession(rainConfig),
+      NEUTRAL_INPUT,
+      rainConfig,
+      DT,
+    );
+    const clear = stepRaceSession(
+      createRaceSession(clearConfig),
+      NEUTRAL_INPUT,
+      clearConfig,
+      DT,
+    );
+    expect(rain.ai[0]?.state.targetSpeed).toBeLessThan(
+      clear.ai[0]?.state.targetSpeed ?? 0,
+    );
+  });
+
   it("applies breakable track hazard damage once", () => {
     const track = loadTrack("iron-borough/freightline-ring");
     const config = buildConfig({

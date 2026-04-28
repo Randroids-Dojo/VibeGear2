@@ -25,25 +25,28 @@
  * (§14 calls out fog as a visibility hazard, not a grip hazard); the
  * row exists in §23 only as a documentation anchor.
  *
- * The runtime consumers of these modifiers (per the parent dot
- * `VibeGear2-implement-weather-38d61fc2`) have not landed yet:
+ * Runtime consumers now read these modifiers through
+ * `weatherGripScalar`:
  *
- *   - `src/game/physics.ts` will read the resolved grip in its lateral
- *     friction term so a heavy-rain track on dry tires demonstrably
- *     under-steers compared to clear.
+ *   - `src/game/physics.ts` reads the resolved scalar in its lateral
+ *     friction term so a heavy-rain track under-steers compared to
+ *     clear under identical input.
+ *   - `src/game/raceSession.ts` forwards the active race weather to
+ *     the player and AI physics paths, and maps it through compact AI
+ *     weather-skill rows for AI pace.
  *   - The pre-race UI (§14) will surface "current condition / grip
- *     rating" using these numbers as the input to the rating pill.
+ *     rating" using these numbers as a future input to the rating pill.
  *
  * Determinism: no `Math.random`, no `Date.now`, no globals.
  * `getWeatherTireModifier(weather)` returns the same frozen object
  * reference every call so callers can lean on identity comparison.
  *
- * Scope. This slice deliberately does **not** add a tire-type concept,
- * a weather state machine, or a physics integration. Per
+ * Scope. This slice deliberately does **not** add active tire selection
+ * or a weather state machine. Per
  * `docs/AGENTS.md` RULE 9 (scope discipline) the table itself is the
- * smallest shippable cell: future work in the parent dot wires the
- * consumers and adds the state-machine on top of this binding. Adding
- * a new §23 weather row, renaming a column, or moving a number
+ * smallest shippable cell: future work adds tire-selection UI and the
+ * state-machine on top of this binding. Adding a new §23 weather row,
+ * renaming a column, or moving a number
  * requires updating both the table here and the unit pin in
  * `src/game/__tests__/weather.test.ts` (and the §23 cross-check in
  * `src/data/__tests__/balancing.test.ts`).
@@ -54,15 +57,13 @@
  * `night`. §23 only specifies five of them. The lookup here is
  * intentionally typed as a `Partial<Record<WeatherOption, ...>>` so a
  * caller asking for `light_rain`, `dusk`, or `night` gets a typed
- * `undefined` rather than a fabricated row. The convention matches
- * `AIWeatherSkillSchema`, which also collapses light / medium rain
- * into a single `rain` key. Filed as `Q-008` to track whether the
- * three uncovered weathers should pin to identity, alias to the §23
- * row that fits, or block the parent weather slice; no decision is
- * needed until a runtime consumer lands.
+ * `undefined` rather than a fabricated row. Runtime consumers use
+ * `WEATHER_TIRE_MODIFIER_ALIASES` to map the full enum onto §23 rows:
+ * light rain maps to Rain, dusk maps to Clear, and night maps to Clear.
+ * Q-008 records that decision.
  */
 
-import type { WeatherOption } from "@/data/schemas";
+import type { AIDriver, CarBaseStats, WeatherOption } from "@/data/schemas";
 
 /**
  * §23 rows that pin a tire-modifier cell. Five entries, exactly the
@@ -96,6 +97,8 @@ export interface WeatherTireModifier {
    */
   readonly wetTireMod: number;
 }
+
+export type TireKind = "dry" | "wet";
 
 /**
  * Frozen scalar table, copied verbatim from §23 "Weather modifiers"
@@ -134,6 +137,42 @@ export const WEATHER_TIRE_MODIFIER_KEYS: ReadonlyArray<WeatherTireModifierKey> =
   Object.freeze(["clear", "rain", "heavy_rain", "snow", "fog"]);
 
 /**
+ * Runtime aliases for weather options that §14 exposes but §23 has not
+ * given separate tire rows. This avoids fabricating new balancing
+ * numbers while still letting runtime consumers handle every
+ * `WeatherOption` exhaustively.
+ */
+export const WEATHER_TIRE_MODIFIER_ALIASES: Readonly<
+  Record<WeatherOption, WeatherTireModifierKey>
+> = Object.freeze({
+  clear: "clear",
+  light_rain: "rain",
+  rain: "rain",
+  heavy_rain: "heavy_rain",
+  fog: "fog",
+  snow: "snow",
+  dusk: "clear",
+  night: "clear",
+});
+
+/**
+ * §14 visibility scalar. `1` means full read distance. Lower values
+ * mean the renderer, AI, or pre-race forecast can communicate reduced
+ * read distance without changing grip.
+ */
+export const WEATHER_VISIBILITY: Readonly<Record<WeatherOption, number>> =
+  Object.freeze({
+    clear: 1,
+    light_rain: 0.9,
+    rain: 0.8,
+    heavy_rain: 0.7,
+    fog: 0.5,
+    snow: 0.6,
+    dusk: 0.85,
+    night: 0.65,
+  });
+
+/**
  * Type guard for the §23-row subset of `WeatherOption`. Useful at
  * call sites that have a generic `WeatherOption` and need to branch
  * on whether the §23 lookup applies.
@@ -164,4 +203,93 @@ export function getWeatherTireModifier(
 ): WeatherTireModifier | undefined {
   if (!isWeatherTireModifierKey(weather)) return undefined;
   return WEATHER_TIRE_MODIFIERS[weather];
+}
+
+/** Resolve any `WeatherOption` to the §23 tire row it uses at runtime. */
+export function resolveWeatherTireModifierKey(
+  weather: WeatherOption,
+): WeatherTireModifierKey {
+  return WEATHER_TIRE_MODIFIER_ALIASES[weather];
+}
+
+/**
+ * Runtime tire modifier lookup for every weather. Unlike
+ * `getWeatherTireModifier`, this always returns a row by applying the
+ * alias table above.
+ */
+export function getResolvedWeatherTireModifier(
+  weather: WeatherOption,
+): WeatherTireModifier {
+  return WEATHER_TIRE_MODIFIERS[resolveWeatherTireModifierKey(weather)];
+}
+
+/**
+ * Effective grip for a car under a weather condition and tire channel.
+ * Current race sessions do not expose tire selection yet, so callers use
+ * `"dry"` to preserve the existing default handling path. The pre-race
+ * tire-choice slice can pass `"wet"` once the player can actually pick it.
+ */
+export function effectiveWeatherGrip(
+  stats: Readonly<CarBaseStats>,
+  weather: WeatherOption,
+  tire: TireKind = "dry",
+): number {
+  const modifier = getResolvedWeatherTireModifier(weather);
+  const base =
+    tire === "wet"
+      ? clamp(stats.gripWet, 0, 2)
+      : clamp(stats.gripDry, 0, 2);
+  const offset =
+    tire === "wet" ? modifier.wetTireMod : modifier.dryTireMod;
+  return Math.max(0.05, base + offset);
+}
+
+/**
+ * Convert weather grip into a scalar the physics step can compose with
+ * damage and hazard grip multipliers. The scalar is relative to the dry
+ * baseline because the current physics step was dry-grip-only before
+ * this slice.
+ */
+export function weatherGripScalar(
+  stats: Readonly<CarBaseStats>,
+  weather: WeatherOption,
+  tire: TireKind = "dry",
+): number {
+  const dryBaseline = clamp(stats.gripDry, 0.05, 2);
+  return effectiveWeatherGrip(stats, weather, tire) / dryBaseline;
+}
+
+export function visibilityForWeather(weather: WeatherOption): number {
+  return WEATHER_VISIBILITY[weather];
+}
+
+/**
+ * Map the full weather enum onto the four-key AI weather-skill schema.
+ * The AI data stays compact while runtime callers can remain exhaustive.
+ */
+export function weatherSkillFor(
+  driver: Readonly<AIDriver>,
+  weather: WeatherOption,
+): number {
+  switch (weather) {
+    case "clear":
+    case "dusk":
+    case "night":
+      return driver.weatherSkill.clear;
+    case "light_rain":
+    case "rain":
+    case "heavy_rain":
+      return driver.weatherSkill.rain;
+    case "fog":
+      return driver.weatherSkill.fog;
+    case "snow":
+      return driver.weatherSkill.snow;
+  }
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
 }

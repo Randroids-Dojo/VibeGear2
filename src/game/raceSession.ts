@@ -100,6 +100,7 @@ import {
   tickTransmission,
   type TransmissionState,
 } from "./transmission";
+import { weatherGripScalar, weatherSkillFor } from "./weather";
 import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
@@ -918,6 +919,7 @@ export function stepRaceSession(
   const assistSettings = config.player.assists ?? {};
   const trackWeather =
     config.weather ?? config.track.weatherOptions[0] ?? "clear";
+  const playerWeatherGripScalar = weatherGripScalar(playerStats, trackWeather);
   const assistResult = playerIsRacing
     ? applyAssists(
         playerInput,
@@ -1019,6 +1021,14 @@ export function stepRaceSession(
   const aiTickResults = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
     if (!aiConfig) return null;
+    const aiWeatherSkill = weatherSkillFor(aiConfig.driver, trackWeather);
+    const aiCpuModifiers =
+      aiWeatherSkill === 1
+        ? cpuModifiers
+        : {
+            ...cpuModifiers,
+            paceScalar: cpuModifiers.paceScalar * aiWeatherSkill,
+          };
     return tickAI(
       aiConfig.driver,
       entry.state,
@@ -1029,7 +1039,7 @@ export function stepRaceSession(
       aiConfig.stats,
       aiContext,
       dt,
-      cpuModifiers,
+      aiCpuModifiers,
     );
   });
 
@@ -1167,6 +1177,7 @@ export function stepRaceSession(
           draftBonus: playerDraftBonus,
           assistScalars: playerAssistScalars,
           damageScalars: playerDamageScalars,
+          weatherGripScalar: playerWeatherGripScalar,
         },
       )
     : { ...state.player.car };
@@ -1246,6 +1257,7 @@ export function stepRaceSession(
       getDamageScalars(entry.damage.total * 100),
       aiHazards.gripMultiplier,
     );
+    const aiWeatherGripScalar = weatherGripScalar(aiConfig.stats, trackWeather);
     const nextCar = step(
       entry.car,
       tick.input,
@@ -1256,6 +1268,7 @@ export function stepRaceSession(
         accelMultiplier: aiAccelMultiplier,
         draftBonus: aiDraftBonus,
         damageScalars: aiDamageScalars,
+        weatherGripScalar: aiWeatherGripScalar,
       },
     );
     return {

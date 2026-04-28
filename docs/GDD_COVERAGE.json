@@ -2,6 +2,27 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-14-WEATHER-GRIP-RUNTIME",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "Live race sessions apply active weather to player and AI grip, expose read-distance scalars, and map full weather options onto compact AI weather-skill rows.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/weather.ts",
+        "src/game/physics.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/physics.test.ts",
+        "src/game/__tests__/raceSession.test.ts"
+      ],
+      "followupRefs": ["F-066"]
+    },
+    {
       "id": "GDD-21-RNG-CONSUMERS",
       "gddSections": [
         "docs/gdd/15-cpu-opponents-and-ai.md",

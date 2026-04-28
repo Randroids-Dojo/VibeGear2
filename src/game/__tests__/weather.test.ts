@@ -19,13 +19,43 @@ import { describe, expect, it } from "vitest";
 import type { WeatherOption } from "@/data/schemas";
 
 import {
+  effectiveWeatherGrip,
   getWeatherTireModifier,
+  getResolvedWeatherTireModifier,
   isWeatherTireModifierKey,
+  resolveWeatherTireModifierKey,
+  visibilityForWeather,
+  weatherGripScalar,
+  weatherSkillFor,
+  WEATHER_TIRE_MODIFIER_ALIASES,
   WEATHER_TIRE_MODIFIER_KEYS,
   WEATHER_TIRE_MODIFIERS,
+  WEATHER_VISIBILITY,
   type WeatherTireModifier,
   type WeatherTireModifierKey,
 } from "../weather";
+
+const STATS = Object.freeze({
+  topSpeed: 61,
+  accel: 16,
+  brake: 28,
+  gripDry: 1,
+  gripWet: 0.82,
+  stability: 1,
+  durability: 0.95,
+  nitroEfficiency: 1,
+});
+
+const DRIVER = Object.freeze({
+  id: "ai_weather",
+  displayName: "AI Weather",
+  archetype: "clean_line" as const,
+  paceScalar: 1,
+  mistakeRate: 0,
+  aggression: 0,
+  weatherSkill: { clear: 1, rain: 1.04, fog: 0.98, snow: 1.06 },
+  nitroUsage: { launchBias: 0.5, straightBias: 0.5, panicBias: 0.1 },
+});
 
 describe("WEATHER_TIRE_MODIFIER_KEYS", () => {
   it("lists the §23 rows in §23 order (Clear, Rain, Heavy rain, Snow, Fog)", () => {
@@ -152,6 +182,96 @@ describe("getWeatherTireModifier", () => {
     expect(first).toBe(second);
     expect(first && Object.isFrozen(first)).toBe(true);
   });
+});
+
+describe("runtime weather aliases", () => {
+  it("is frozen so runtime alias policy cannot drift by mutation", () => {
+    expect(Object.isFrozen(WEATHER_TIRE_MODIFIER_ALIASES)).toBe(true);
+  });
+
+  it.each([
+    ["clear", "clear"],
+    ["light_rain", "rain"],
+    ["rain", "rain"],
+    ["heavy_rain", "heavy_rain"],
+    ["fog", "fog"],
+    ["snow", "snow"],
+    ["dusk", "clear"],
+    ["night", "clear"],
+  ] as ReadonlyArray<readonly [WeatherOption, WeatherTireModifierKey]>)(
+    "maps %s to the %s §23 row",
+    (weather, expected) => {
+      expect(resolveWeatherTireModifierKey(weather)).toBe(expected);
+      expect(getResolvedWeatherTireModifier(weather)).toBe(
+        WEATHER_TIRE_MODIFIERS[expected],
+      );
+    },
+  );
+});
+
+describe("effectiveWeatherGrip", () => {
+  it("applies dry-tire §23 offsets to the dry grip baseline", () => {
+    expect(effectiveWeatherGrip(STATS, "clear", "dry")).toBeCloseTo(1.08, 9);
+    expect(effectiveWeatherGrip(STATS, "rain", "dry")).toBeCloseTo(0.88, 9);
+    expect(effectiveWeatherGrip(STATS, "heavy_rain", "dry")).toBeCloseTo(0.8, 9);
+  });
+
+  it("can resolve the wet tire channel once tire selection exists", () => {
+    expect(effectiveWeatherGrip(STATS, "rain", "wet")).toBeCloseTo(0.92, 9);
+    expect(effectiveWeatherGrip(STATS, "snow", "wet")).toBeCloseTo(0.96, 9);
+  });
+
+  it("converts effective grip into a scalar relative to dry baseline", () => {
+    expect(weatherGripScalar(STATS, "clear", "dry")).toBeCloseTo(1.08, 9);
+    expect(weatherGripScalar(STATS, "rain", "dry")).toBeCloseTo(0.88, 9);
+  });
+
+  it("uses the runtime alias for light rain instead of returning identity", () => {
+    expect(effectiveWeatherGrip(STATS, "light_rain", "dry")).toBeCloseTo(
+      effectiveWeatherGrip(STATS, "rain", "dry"),
+      9,
+    );
+  });
+});
+
+describe("visibilityForWeather", () => {
+  it("is frozen so forecast/read-distance scalars cannot drift by mutation", () => {
+    expect(Object.isFrozen(WEATHER_VISIBILITY)).toBe(true);
+  });
+
+  it.each([
+    ["clear", 1],
+    ["light_rain", 0.9],
+    ["rain", 0.8],
+    ["heavy_rain", 0.7],
+    ["fog", 0.5],
+    ["snow", 0.6],
+    ["dusk", 0.85],
+    ["night", 0.65],
+  ] as ReadonlyArray<readonly [WeatherOption, number]>)(
+    "returns %s visibility",
+    (weather, expected) => {
+      expect(visibilityForWeather(weather)).toBeCloseTo(expected, 9);
+    },
+  );
+});
+
+describe("weatherSkillFor", () => {
+  it.each([
+    ["clear", 1],
+    ["dusk", 1],
+    ["night", 1],
+    ["light_rain", 1.04],
+    ["rain", 1.04],
+    ["heavy_rain", 1.04],
+    ["fog", 0.98],
+    ["snow", 1.06],
+  ] as ReadonlyArray<readonly [WeatherOption, number]>)(
+    "maps %s to the compact AI weather skill row",
+    (weather, expected) => {
+      expect(weatherSkillFor(DRIVER, weather)).toBeCloseTo(expected, 9);
+    },
+  );
 });
 
 describe("§23 table monotonicity (sanity)", () => {
