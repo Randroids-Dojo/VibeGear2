@@ -140,6 +140,27 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-14-TUNNEL-LIGHT-ADAPTATION",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Projected tunnel hazard metadata drives a visual light-adaptation shift in the live road renderer without making tunnel hazards collide with the car.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "src/game/__tests__/hazards.test.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-sound-music-1611f9dd"
+      ]
+    },
+    {
       "id": "GDD-21-RNG-CONSUMERS",
       "gddSections": [
         "docs/gdd/15-cpu-opponents-and-ai.md",

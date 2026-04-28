@@ -76,6 +76,10 @@ export const PLAYER_CAR_DEFAULT_SPRITE_ID = "sparrow_clean";
 export const ROADSIDE_DRAW_PERIOD = 10;
 export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.22;
 export const WEATHER_EFFECT_REDUCTION_SCALE = 0.35;
+export const TUNNEL_ADAPTATION_OVERLAY_FILL = "#05070d";
+export const TUNNEL_ADAPTATION_HIGHLIGHT_FILL = "#f2e18a";
+export const TUNNEL_ADAPTATION_MAX_ALPHA = 0.38;
+export const TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA = 0.24;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
 const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
@@ -141,6 +145,17 @@ export interface DrawRoadOptions {
     highContrastRoadsideSigns?: boolean;
     fogFloorClamp?: number;
     flashReduction?: boolean;
+  };
+  /**
+   * Optional tunnel light-adaptation pass. Authored tunnel hazard IDs are
+   * compiled onto strips, and the renderer darkens the world view when a
+   * visible tunnel strip is in the projected road. This keeps tunnel
+   * metadata visual-only while collision logic continues to ignore tunnel
+   * hazards.
+   */
+  tunnelAdaptation?: {
+    enabled?: boolean;
+    intensityScale?: number;
   };
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
@@ -314,6 +329,8 @@ export function drawRoad(
       );
     }
   }
+
+  drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
 
   // Ghost car paints over the road strips so the player sees their best
   // line, but BEFORE the dust pool so off-road dust the live car kicks
@@ -539,6 +556,46 @@ function drawWeatherEffects(
     case "overcast":
       return;
   }
+}
+
+function drawTunnelAdaptation(
+  ctx: CanvasRenderingContext2D,
+  strips: readonly Strip[],
+  viewport: Viewport,
+  options: DrawRoadOptions["tunnelAdaptation"],
+): void {
+  if (options?.enabled === false) return;
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+  const intensity = tunnelAdaptationIntensity(strips) * clampUnit(options?.intensityScale ?? 1);
+  if (intensity <= 0) return;
+
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = TUNNEL_ADAPTATION_MAX_ALPHA * intensity;
+    ctx.fillStyle = TUNNEL_ADAPTATION_OVERLAY_FILL;
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+    ctx.globalAlpha = TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA * intensity;
+    ctx.fillStyle = TUNNEL_ADAPTATION_HIGHLIGHT_FILL;
+    const bandHeight = Math.max(2, viewport.height * 0.018);
+    ctx.fillRect(0, viewport.height * 0.22, viewport.width, bandHeight);
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
+}
+
+function tunnelAdaptationIntensity(strips: readonly Strip[]): number {
+  let visible = 0;
+  let tunnel = 0;
+  for (const strip of strips) {
+    if (!strip.visible) continue;
+    visible += 1;
+    if (strip.segment.hazardIds.includes("tunnel")) tunnel += 1;
+  }
+  if (visible === 0 || tunnel === 0) return 0;
+  return 0.55 + Math.min(0.45, tunnel / visible);
 }
 
 interface ResolvedWeatherEffectSettings {
