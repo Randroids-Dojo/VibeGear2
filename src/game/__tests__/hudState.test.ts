@@ -18,6 +18,8 @@ import {
   gripHintForHud,
   rankPosition,
   summarizeHudDamage,
+  summarizeHudGear,
+  summarizeHudNitro,
   summarizeHudWeather,
   speedToDisplayUnit,
   weatherIconForHud,
@@ -379,6 +381,66 @@ describe("HUD damage and weather summaries", () => {
     const state = deriveHudState(input());
     expect(state.damage).toBeUndefined();
     expect(state.weather).toBeUndefined();
+  });
+});
+
+describe("HUD gear and nitro summaries", () => {
+  it("summarizes idle nitro as full stock charges", () => {
+    expect(
+      summarizeHudNitro({ charges: 3, activeRemainingSec: 0 }, 3, 1.1),
+    ).toEqual({
+      current: 3,
+      max: 3,
+      active: false,
+      percent: 100,
+    });
+  });
+
+  it("includes the active charge fraction in the nitro meter", () => {
+    expect(
+      summarizeHudNitro({ charges: 2, activeRemainingSec: 0.55 }, 3, 1.1),
+    ).toEqual({
+      current: 2.5,
+      max: 3,
+      active: true,
+      percent: 83,
+    });
+  });
+
+  it("summarizes transmission gear, RPM, and mode", () => {
+    expect(summarizeHudGear({ mode: "manual", gear: 4, rpm: 0.876 })).toEqual({
+      gear: 4,
+      rpmPercent: 88,
+      mode: "manual",
+    });
+  });
+
+  it("surfaces nitro and gear when callers supply runtime state", () => {
+    const state = deriveHudState(
+      input({
+        nitro: { charges: 1, activeRemainingSec: 0.25 },
+        nitroMaxCharges: 3,
+        nitroChargeDurationSec: 1,
+        transmission: { mode: "auto", gear: 2, rpm: 0.42 },
+      }),
+    );
+    expect(state.nitro).toEqual({
+      current: 1.25,
+      max: 3,
+      active: true,
+      percent: 42,
+    });
+    expect(state.gear).toEqual({
+      gear: 2,
+      rpmPercent: 42,
+      mode: "auto",
+    });
+  });
+
+  it("omits nitro and gear for minimal HUD callers", () => {
+    const state = deriveHudState(input());
+    expect(state.nitro).toBeUndefined();
+    expect(state.gear).toBeUndefined();
   });
 });
 

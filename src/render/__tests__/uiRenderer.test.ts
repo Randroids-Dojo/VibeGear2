@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 import type { AssistBadge, AssistBadgeLabel } from "@/game/assists";
 import type { HudState } from "@/game/hudState";
 
-import { drawHud, formatAssistBadgeLabel } from "../uiRenderer";
+import { drawHud, formatAssistBadgeLabel, type HudColors } from "../uiRenderer";
 
 type Call =
   | {
@@ -110,6 +110,21 @@ const BASE_HUD: HudState = {
   totalLaps: 3,
   position: 1,
   totalCars: 4,
+};
+
+const CUSTOM_COLORS: HudColors = {
+  text: "#fff",
+  textMuted: "#ccc",
+  shadow: "rgba(0,0,0,0.5)",
+  assistBadgeFill: "#aabbcc",
+  assistBadgeText: "#112233",
+  statusPanelFill: "#010203",
+  damageGood: "#00aa00",
+  damageWarn: "#aaaa00",
+  damageBad: "#aa0000",
+  weatherChipFill: "#002244",
+  nitroFill: "#0044aa",
+  nitroActiveFill: "#aa7700",
 };
 
 function badge(
@@ -271,18 +286,7 @@ describe("drawHud assist badge", () => {
       { ...BASE_HUD, assistBadge: badge("brake-assist") },
       VIEWPORT,
       {
-        colors: {
-          text: "#fff",
-          textMuted: "#ccc",
-          shadow: "rgba(0,0,0,0.5)",
-          assistBadgeFill: "#aabbcc",
-          assistBadgeText: "#112233",
-          statusPanelFill: "#010203",
-          damageGood: "#00aa00",
-          damageWarn: "#aaaa00",
-          damageBad: "#aa0000",
-          weatherChipFill: "#002244",
-        },
+        colors: CUSTOM_COLORS,
       },
     );
     const fillRect = calls.find((c) => c.type === "fillRect");
@@ -428,6 +432,98 @@ describe("drawHud damage and weather cluster", () => {
       .map((c) => c.text);
     expect(labels).toContain("F");
     expect(labels).toContain("GRIP 91% LOW-VIS");
+  });
+});
+
+describe("drawHud gear and nitro widgets", () => {
+  it("draws no nitro or gear primitives when fields are absent", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(ctx, BASE_HUD, VIEWPORT);
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels.some((label) => label.startsWith("NITRO"))).toBe(false);
+    expect(labels.some((label) => label.startsWith("G"))).toBe(false);
+  });
+
+  it("draws the bottom-center nitro meter with idle fill", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        nitro: { current: 1.5, max: 3, active: false, percent: 50 },
+      },
+      VIEWPORT,
+    );
+    const fillRects = calls.filter((c) => c.type === "fillRect");
+    expect(fillRects).toHaveLength(2);
+    expect(fillRects[0]).toMatchObject({
+      type: "fillRect",
+      fillStyle: "rgba(7, 14, 28, 0.72)",
+      x: 320,
+      w: 160,
+    });
+    expect(fillRects[1]).toMatchObject({
+      type: "fillRect",
+      fillStyle: "#5ba7ff",
+      x: 320,
+      w: 80,
+    });
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels).toContain("NITRO 1.5 / 3");
+  });
+
+  it("uses the active nitro fill while a charge is burning", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        nitro: { current: 2.25, max: 3, active: true, percent: 75 },
+      },
+      VIEWPORT,
+    );
+    const fillRects = calls.filter((c) => c.type === "fillRect");
+    expect(fillRects.at(-1)?.fillStyle).toBe("#f4d24a");
+    expect(fillRects.at(-1)?.w).toBe(120);
+  });
+
+  it("uses the status panel color for the nitro meter background", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        nitro: { current: 1, max: 3, active: false, percent: 33 },
+      },
+      VIEWPORT,
+      { colors: CUSTOM_COLORS },
+    );
+    const fillRects = calls.filter((c) => c.type === "fillRect");
+    expect(fillRects[0]?.fillStyle).toBe("#010203");
+    expect(fillRects[1]?.fillStyle).toBe("#0044aa");
+  });
+
+  it("draws the gear and RPM label above the speedometer", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        gear: { gear: 3, rpmPercent: 68, mode: "auto" },
+      },
+      VIEWPORT,
+    );
+    const gearCalls = calls
+      .filter((c) => c.type === "fillText")
+      .filter((c) => c.text === "G3 68%");
+    expect(gearCalls).toHaveLength(2);
+    const textCall = gearCalls.find((c) => c.fillStyle === "#cfd6e4");
+    expect(textCall?.align).toBe("right");
+    expect(textCall?.x).toBe(VIEWPORT.width - 16);
   });
 });
 

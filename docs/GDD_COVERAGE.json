@@ -117,6 +117,25 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-20-HUD-GEAR-NITRO",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race HUD shows the current gear, RPM, and nitro charge meter from the runtime transmission and nitro state.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/hudState.ts",
+        "src/render/uiRenderer.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/hudState.test.ts",
+        "src/render/__tests__/uiRenderer.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-GRIP-RUNTIME",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
