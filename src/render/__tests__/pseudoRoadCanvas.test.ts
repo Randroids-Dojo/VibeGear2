@@ -26,6 +26,9 @@ import type { LoadedAtlas } from "../spriteAtlas";
 import {
   GHOST_CAR_DEFAULT_ALPHA,
   GHOST_CAR_DEFAULT_FILL,
+  HEAT_SHIMMER_BAND_COUNT,
+  HEAT_SHIMMER_FILL,
+  HEAT_SHIMMER_MAX_ALPHA,
   PLAYER_CAR_DEFAULT_FILL,
   PLAYER_CAR_DEFAULT_SHADOW,
   PLAYER_CAR_DEFAULT_SPRITE_ID,
@@ -824,6 +827,67 @@ describe("drawRoad tunnel adaptation", () => {
         (call) =>
           call.type === "fillRect" &&
           call.fillStyle === TUNNEL_ADAPTATION_OVERLAY_FILL,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("drawRoad heat shimmer", () => {
+  it("paints deterministic horizon bands when the desert shimmer pass is enabled", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      heatShimmer: { enabled: true, phaseMeters: 120 },
+    });
+
+    const shimmerRects = spy.calls.filter(
+      (call): call is FillRectCall =>
+        call.type === "fillRect" && call.fillStyle === HEAT_SHIMMER_FILL,
+    );
+    expect(shimmerRects.length).toBeGreaterThanOrEqual(HEAT_SHIMMER_BAND_COUNT);
+    expect(shimmerRects[0]!.globalAlpha).toBeCloseTo(HEAT_SHIMMER_MAX_ALPHA, 6);
+    expect(shimmerRects[0]!.y).toBeCloseTo(VIEWPORT.height * 0.24, 6);
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("drifts shimmer bands from the deterministic camera-z phase", () => {
+    const first = makeCanvasSpy();
+    const second = makeCanvasSpy();
+    drawRoad(first.ctx, EMPTY_STRIPS, VIEWPORT, {
+      heatShimmer: { enabled: true, phaseMeters: 0 },
+    });
+    drawRoad(second.ctx, EMPTY_STRIPS, VIEWPORT, {
+      heatShimmer: { enabled: true, phaseMeters: 240 },
+    });
+
+    const firstBand = first.calls.find(
+      (call): call is FillRectCall =>
+        call.type === "fillRect" && call.fillStyle === HEAT_SHIMMER_FILL,
+    );
+    const secondBand = second.calls.find(
+      (call): call is FillRectCall =>
+        call.type === "fillRect" && call.fillStyle === HEAT_SHIMMER_FILL,
+    );
+    expect(firstBand).toBeDefined();
+    expect(secondBand).toBeDefined();
+    expect(firstBand!.x).not.toBeCloseTo(secondBand!.x, 6);
+  });
+
+  it("skips heat shimmer when the pass is omitted or disabled", () => {
+    const omitted = makeCanvasSpy();
+    const disabled = makeCanvasSpy();
+    drawRoad(omitted.ctx, EMPTY_STRIPS, VIEWPORT, {});
+    drawRoad(disabled.ctx, EMPTY_STRIPS, VIEWPORT, {
+      heatShimmer: { enabled: false, phaseMeters: 120 },
+    });
+
+    expect(
+      omitted.calls.some(
+        (call) => call.type === "fillRect" && call.fillStyle === HEAT_SHIMMER_FILL,
+      ),
+    ).toBe(false);
+    expect(
+      disabled.calls.some(
+        (call) => call.type === "fillRect" && call.fillStyle === HEAT_SHIMMER_FILL,
       ),
     ).toBe(false);
   });

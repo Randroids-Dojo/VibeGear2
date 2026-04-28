@@ -161,6 +161,26 @@
       ]
     },
     {
+      "id": "GDD-14-HEAT-SHIMMER",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "Desert tour races can enable a deterministic heat shimmer visual pass without consuming random state or changing gameplay physics.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-region-art-43d6f582"
+      ]
+    },
+    {
       "id": "GDD-21-RNG-CONSUMERS",
       "gddSections": [
         "docs/gdd/15-cpu-opponents-and-ai.md",

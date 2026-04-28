@@ -6,6 +6,53 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Heat shimmer renderer
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) heat shimmer in
+desert tours,
+[§17](gdd/17-art-direction.md) region visual packages,
+[§24](gdd/24-content-plan.md) Ember Steppe desert tour.
+**Branch / PR:** `feat/heat-shimmer-renderer`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added a deterministic heat shimmer
+  screen-space pass controlled by `DrawRoadOptions.heatShimmer`.
+- `src/app/race/page.tsx`: enables the pass for the authored
+  `ember-steppe` tour hook using camera z as the phase source.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered enabled,
+  phase-drifting, and disabled shimmer behavior.
+- `docs/GDD_COVERAGE.json`: added GDD-14-HEAT-SHIMMER.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts` green,
+  44 passed.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run content-lint` clean.
+- `npm run verify` green, 2359 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- The shimmer pass is visual only and does not consume RNG or alter
+  physics. It uses camera z for deterministic drift.
+- Full Ember Steppe art assets remain under the region art backlog; this
+  slice only ships the §14 effect hook and renderer behavior.
+
+### Coverage ledger
+- GDD-14-HEAT-SHIMMER covers the heat shimmer effect path for desert
+  tours.
+- Uncovered adjacent requirements: snow roadside whitening, road sheen,
+  weather collision-risk tuning, surface-temperature display, and full
+  region art packages remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Tunnel light adaptation
 
 **GDD sections touched:**
