@@ -504,6 +504,7 @@ function RaceCanvas({
   const ghostOverlayTickRef = useRef<number | null>(null);
   const timeTrialRecorderRef = useRef<TimeTrialRecorder | null>(null);
   const lastSteerRef = useRef<number>(0);
+  const pauseInputHeldRef = useRef<boolean>(false);
   const carAtlasRef = useRef<LoadedAtlas | null>(null);
   // Imperative pause-menu effects, populated inside the loop effect
   // below so the hook layer can stay decoupled from the loop / session
@@ -832,9 +833,10 @@ function RaceCanvas({
         const session = sessionRef.current;
         if (!session) return;
         const input = inputManager.sample();
-        if (input.pause) {
+        if (input.pause && !pauseInputHeldRef.current) {
           openPauseMenu();
         }
+        pauseInputHeldRef.current = input.pause;
         lastSteerRef.current = input.steer;
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
