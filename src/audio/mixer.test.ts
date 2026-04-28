@@ -42,7 +42,7 @@ describe("resolveMixerGains", () => {
 });
 
 describe("isMixerSilent", () => {
-  it("treats disabled or fully zero gains as silent", () => {
+  it("treats disabled or inaudible gain paths as silent", () => {
     expect(isMixerSilent(null)).toBe(true);
     expect(isMixerSilent({ master: 0, music: 0, sfx: 0 })).toBe(true);
     expect(isMixerSilent({ master: 0, music: 0.5, sfx: 0 })).toBe(true);
