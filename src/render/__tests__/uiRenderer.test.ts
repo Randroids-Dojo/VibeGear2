@@ -376,6 +376,26 @@ describe("drawHud damage and weather cluster", () => {
     expect(labels).toContain("GRIP 72% SLICK");
   });
 
+  it("omits the grip row when weather has no grip data", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        weather: {
+          icon: "clear",
+          label: "CLEAR",
+        },
+      },
+      VIEWPORT,
+    );
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels).toContain("CLEAR");
+    expect(labels.some((label) => label.startsWith("GRIP"))).toBe(false);
+  });
+
   it("draws combined damage and weather inside one bottom-left panel", () => {
     const { ctx, calls } = makeSpy();
     drawHud(

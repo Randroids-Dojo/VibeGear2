@@ -260,8 +260,13 @@ function drawStatusCluster(
   fontFamily: string,
   colors: HudColors,
 ): void {
+  const hasGripRow =
+    state.weather !== undefined &&
+    (state.weather.gripHint !== undefined || state.weather.gripPercent !== undefined);
   const rows =
-    (state.damage !== undefined ? 2 : 0) + (state.weather !== undefined ? 2 : 0);
+    (state.damage !== undefined ? 2 : 0) +
+    (state.weather !== undefined ? 1 : 0) +
+    (hasGripRow ? 1 : 0);
   const panelHeight = rows * STATUS_CLUSTER_ROW_HEIGHT + 14;
   const x = padding;
   const y = Math.max(
@@ -329,19 +334,21 @@ function drawStatusCluster(
       colors.shadow,
       colors.text,
     );
-    rowY += STATUS_CLUSTER_ROW_HEIGHT;
-    const gripLabel =
-      state.weather.gripPercent === undefined
-        ? `GRIP ${state.weather.gripHint ?? "dry"}`
-        : `GRIP ${state.weather.gripPercent}% ${state.weather.gripHint ?? ""}`.trim();
-    drawShadowedText(
-      ctx,
-      gripLabel.toUpperCase(),
-      x + 8,
-      rowY,
-      colors.shadow,
-      colors.textMuted,
-    );
+    if (hasGripRow) {
+      rowY += STATUS_CLUSTER_ROW_HEIGHT;
+      const gripLabel =
+        state.weather.gripPercent === undefined
+          ? `GRIP ${state.weather.gripHint ?? ""}`
+          : `GRIP ${state.weather.gripPercent}% ${state.weather.gripHint ?? ""}`.trim();
+      drawShadowedText(
+        ctx,
+        gripLabel.toUpperCase(),
+        x + 8,
+        rowY,
+        colors.shadow,
+        colors.textMuted,
+      );
+    }
   }
 }
 

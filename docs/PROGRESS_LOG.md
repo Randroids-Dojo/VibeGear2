@@ -30,7 +30,7 @@ Correct them by adding a new entry that references the old one.
 - `npx vitest run src/game/__tests__/hudState.test.ts src/render/__tests__/uiRenderer.test.ts`
   green, 68 passed.
 - `npm run typecheck` green.
-- `npm run verify` green, 2381 passed.
+- `npm run verify` green, 2382 passed.
 - `npm run test:e2e` green, 71 passed.
 
 ### Decisions and assumptions
