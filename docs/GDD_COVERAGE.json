@@ -118,6 +118,25 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-14-VISIBILITY-AI-RISK",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/15-cpu-opponents-and-ai.md"
+      ],
+      "requirement": "Low-visibility weather increases deterministic AI lane-mistake pressure, with weather skill mitigating the extra risk.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/weather.ts",
+        "src/game/ai.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/ai.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-STATE-MACHINE",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

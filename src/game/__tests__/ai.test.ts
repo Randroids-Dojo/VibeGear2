@@ -578,6 +578,36 @@ describe("tickAI (§23 CPU difficulty mistakeScalar and recoveryScalar)", () => 
     expect(withMistakeRate.nextAiState.seed).not.toBe(7);
   });
 
+  it("low visibility produces more deterministic lane-target mistakes", () => {
+    const mistakeDriver: AIDriver = {
+      ...CLEAN_LINE_DRIVER,
+      mistakeRate: 0.2,
+    };
+    const countMistakes = (visibilityRiskScalar: number): number => {
+      let count = 0;
+      for (let seed = 1; seed <= 120; seed += 1) {
+        const result = tickAI(
+          mistakeDriver,
+          freshAi({ seed }),
+          freshCar({ speed: 20, z: seed * 6 }),
+          PLAYER_FAR_BEHIND,
+          STRAIGHT_TRACK,
+          RACING,
+          STARTER_STATS,
+          DEFAULT_AI_TRACK_CONTEXT,
+          0,
+          IDENTITY_CPU_MODIFIERS,
+          1,
+          visibilityRiskScalar,
+        );
+        if (result.input.steer !== 0) count += 1;
+      }
+      return count;
+    };
+
+    expect(countMistakes(2)).toBeGreaterThan(countMistakes(1));
+  });
+
   it("Master recovery term is larger than Easy under matched trailing gap", () => {
     const easyRecoveryOnly = {
       ...getCpuModifiers("easy"),

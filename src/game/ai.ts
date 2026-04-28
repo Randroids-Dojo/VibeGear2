@@ -41,6 +41,11 @@
  * a number rather than an adjusted modifiers object so the 60 Hz race
  * loop does not allocate one object per AI per tick.
  *
+ * Visibility-risk wiring: callers may pass a §14 low-visibility risk
+ * scalar resolved from active weather. It multiplies deterministic
+ * lane-target mistake odds so heavy weather and fog raise collision
+ * risk through poorer read distance without changing hit geometry.
+ *
  * Out of scope for this slice (deferred to follow-up AI dots):
  * - Overtake / lane-shift behaviour. §15 lists it; the clean_line single
  *   AI may collide with the player. Collision avoidance lands with the
@@ -240,6 +245,7 @@ export function tickAI(
   _dt: number = 0,
   cpuModifiers: Readonly<CpuDifficultyModifiers> = IDENTITY_CPU_MODIFIERS,
   weatherSkillScalar: number = 1,
+  visibilityRiskScalar: number = 1,
 ): AITickResult {
   const segment = currentSegment(track, aiCar.z);
   // `segment.curve` is the per-compiled-segment dx contribution, already
@@ -264,7 +270,9 @@ export function tickAI(
     context.roadHalfWidth,
   );
   const effectiveMistakeRate = clamp(
-    driver.mistakeRate * cpuModifiers.mistakeScalar,
+    driver.mistakeRate *
+      cpuModifiers.mistakeScalar *
+      clamp(visibilityRiskScalar, 1, 3),
     0,
     1,
   );

@@ -193,6 +193,14 @@ export const WEATHER_VISIBILITY: Readonly<Record<WeatherOption, number>> =
   });
 
 /**
+ * Upper bound for §14 low-visibility AI risk. Fog at unit weather skill
+ * reaches 2x mistake pressure because its visibility row is 0.5.
+ * Lower skill can push worse conditions above 2x, but the scalar stays
+ * capped so a poor weather driver cannot become fully random.
+ */
+export const WEATHER_VISIBILITY_RISK_MAX_SCALAR = 3;
+
+/**
  * Type guard for the §23-row subset of `WeatherOption`. Useful at
  * call sites that have a generic `WeatherOption` and need to branch
  * on whether the §23 lookup applies.
@@ -281,6 +289,21 @@ export function weatherGripScalar(
 
 export function visibilityForWeather(weather: WeatherOption): number {
   return WEATHER_VISIBILITY[weather];
+}
+
+/**
+ * Convert §14 visibility loss into deterministic AI mistake pressure.
+ * `weatherSkillScalar` mitigates the extra risk: a driver with 2x skill
+ * takes half the extra pressure, while a weak 0.5x skill doubles it.
+ */
+export function weatherVisibilityRiskScalar(
+  weather: WeatherOption,
+  weatherSkillScalar: number = 1,
+): number {
+  const visibility = clamp(visibilityForWeather(weather), 0.01, 1);
+  const baseExtra = 1 / visibility - 1;
+  const skill = clamp(weatherSkillScalar, 0.25, 2);
+  return clamp(1 + baseExtra / skill, 1, WEATHER_VISIBILITY_RISK_MAX_SCALAR);
 }
 
 export function createWeatherState(
