@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Tunnel light adaptation
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) tunnel light adaptation and tunnel
+segments,
+[§14](gdd/14-weather-and-environmental-systems.md) tunnel adaptation
+shifts,
+[§16](gdd/16-rendering-and-visual-design.md) environmental visual
+feedback,
+[§22](gdd/22-data-schemas.md) authored hazard metadata.
+**Branch / PR:** `feat/tunnel-light-adaptation`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added a data-driven tunnel
+  light-adaptation pass that reads visible strip `hazardIds` and darkens
+  the world view when tunnel metadata is projected.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered visible
+  tunnel activation, non-tunnel skip behavior, and debug disable
+  behavior.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-14-TUNNEL-LIGHT-ADAPTATION and linked the remaining audio portion
+  to the sound backlog.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts` green,
+  41 passed.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run content-lint` clean.
+- `npm run verify` green, 2356 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- Tunnel hazards remain non-colliding game metadata. Gameplay hazard
+  evaluation still ignores `kind: "tunnel"` while the renderer consumes
+  the compiled strip metadata for the visual adaptation.
+- Tunnel audio shift is left to the §18 sound parent because this slice
+  is limited to the §14 visual adaptation requirement.
+
+### Coverage ledger
+- GDD-14-TUNNEL-LIGHT-ADAPTATION covers projected visual adaptation from
+  authored tunnel hazard metadata.
+- Uncovered adjacent requirements: heat shimmer remains a future weather
+  slice, and tunnel audio remains under the sound backlog.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Weather state transitions
 
 **GDD sections touched:**

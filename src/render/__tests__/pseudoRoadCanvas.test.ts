@@ -34,6 +34,10 @@ import {
   PLAYER_CAR_DEFAULT_WINDSHIELD,
   PLAYER_CAR_HEIGHT_FRACTION,
   PLAYER_CAR_WIDTH_TO_HEIGHT,
+  TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
+  TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA,
+  TUNNEL_ADAPTATION_MAX_ALPHA,
+  TUNNEL_ADAPTATION_OVERLAY_FILL,
   WEATHER_EFFECT_REDUCTION_SCALE,
   drawRoad,
   type DrawRoadOptions,
@@ -711,6 +715,117 @@ describe("drawRoad roadside sprites", () => {
     const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
     expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(false);
     expect(fills.some((call) => call.fillStyle === "#2f7a3a")).toBe(false);
+  });
+});
+
+describe("drawRoad tunnel adaptation", () => {
+  it("darkens the world view when projected strips include a visible tunnel hazard", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 430,
+        screenW: 220,
+        segment: { ...strip({}).segment, index: 0, hazardIds: ["tunnel"] },
+      }),
+      strip({
+        screenY: 330,
+        screenW: 120,
+        segment: { ...strip({}).segment, index: 1, hazardIds: ["tunnel"] },
+      }),
+      strip({
+        screenY: 250,
+        screenW: 70,
+        segment: { ...strip({}).segment, index: 2, hazardIds: [] },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {});
+
+    const overlay = spy.calls.find(
+      (call): call is FillRectCall =>
+        call.type === "fillRect" &&
+        call.fillStyle === TUNNEL_ADAPTATION_OVERLAY_FILL,
+    );
+    expect(overlay).toBeDefined();
+    expect(overlay!.x).toBe(0);
+    expect(overlay!.y).toBe(0);
+    expect(overlay!.w).toBe(VIEWPORT.width);
+    expect(overlay!.h).toBe(VIEWPORT.height);
+    expect(overlay!.globalAlpha).toBeCloseTo(TUNNEL_ADAPTATION_MAX_ALPHA, 6);
+
+    const highlight = spy.calls.find(
+      (call): call is FillRectCall =>
+        call.type === "fillRect" &&
+        call.fillStyle === TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
+    );
+    expect(highlight).toBeDefined();
+    expect(highlight!.globalAlpha).toBeCloseTo(
+      TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA,
+      6,
+    );
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("skips tunnel adaptation when no visible tunnel strip is projected", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 430,
+        screenW: 220,
+        segment: { ...strip({}).segment, index: 0, hazardIds: ["tunnel"] },
+        visible: false,
+      }),
+      strip({
+        screenY: 330,
+        screenW: 120,
+        segment: { ...strip({}).segment, index: 1, hazardIds: [] },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {});
+
+    expect(
+      spy.calls.some(
+        (call) =>
+          call.type === "fillRect" &&
+          call.fillStyle === TUNNEL_ADAPTATION_OVERLAY_FILL,
+      ),
+    ).toBe(false);
+    expect(
+      spy.calls.some(
+        (call) =>
+          call.type === "fillRect" &&
+          call.fillStyle === TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
+      ),
+    ).toBe(false);
+  });
+
+  it("can be disabled by the caller for debug captures", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 430,
+        screenW: 220,
+        segment: { ...strip({}).segment, index: 0, hazardIds: ["tunnel"] },
+      }),
+      strip({
+        screenY: 330,
+        screenW: 120,
+        segment: { ...strip({}).segment, index: 1, hazardIds: ["tunnel"] },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {
+      tunnelAdaptation: { enabled: false },
+    });
+
+    expect(
+      spy.calls.some(
+        (call) =>
+          call.type === "fillRect" &&
+          call.fillStyle === TUNNEL_ADAPTATION_OVERLAY_FILL,
+      ),
+    ).toBe(false);
   });
 });
 
