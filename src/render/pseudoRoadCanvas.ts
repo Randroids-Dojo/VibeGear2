@@ -83,6 +83,8 @@ export const TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA = 0.24;
 export const HEAT_SHIMMER_FILL = "#f4ddb0";
 export const HEAT_SHIMMER_MAX_ALPHA = 0.16;
 export const HEAT_SHIMMER_BAND_COUNT = 6;
+export const RAIN_ROAD_SHEEN_FILL = "#d8f4ff";
+export const RAIN_ROAD_SHEEN_MAX_ALPHA = 0.16;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
 const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
@@ -554,7 +556,7 @@ function drawWeatherEffects(
     case "light_rain":
     case "rain":
     case "heavy_rain":
-      drawRainStreaks(ctx, viewport, effects.weather, settings.particleIntensity);
+      drawRainEffects(ctx, viewport, effects.weather, settings.particleIntensity);
       return;
     case "snow":
       drawSnowParticles(ctx, viewport, settings.particleIntensity);
@@ -671,6 +673,51 @@ function resolveWeatherEffectSettings(
     fogFloorClamp: clampUnit(effects.fogFloorClamp ?? 0),
     bloomScale: reductionScale * glareScale * flashScale,
   };
+}
+
+function drawRainEffects(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  weather: Extract<WeatherOption, "light_rain" | "rain" | "heavy_rain">,
+  intensity: number,
+): void {
+  if (intensity <= 0) return;
+  drawRainRoadSheen(ctx, viewport, weather, intensity);
+  drawRainStreaks(ctx, viewport, weather, intensity);
+}
+
+function drawRainRoadSheen(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  weather: Extract<WeatherOption, "light_rain" | "rain" | "heavy_rain">,
+  intensity: number,
+): void {
+  const weatherScale = weather === "heavy_rain" ? 1 : weather === "rain" ? 0.72 : 0.45;
+  const alpha = RAIN_ROAD_SHEEN_MAX_ALPHA * weatherScale * intensity;
+  if (alpha <= 0) return;
+
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.fillStyle = RAIN_ROAD_SHEEN_FILL;
+    ctx.globalAlpha = alpha;
+    ctx.fillRect(
+      viewport.width * 0.08,
+      viewport.height * 0.62,
+      viewport.width * 0.84,
+      viewport.height * 0.075,
+    );
+    ctx.globalAlpha = alpha * 0.55;
+    ctx.fillRect(
+      viewport.width * 0.18,
+      viewport.height * 0.78,
+      viewport.width * 0.64,
+      viewport.height * 0.045,
+    );
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
 }
 
 function drawRainStreaks(

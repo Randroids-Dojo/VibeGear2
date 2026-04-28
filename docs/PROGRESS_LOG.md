@@ -6,6 +6,53 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Rain road sheen renderer
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) rain streaks and
+road sheen,
+[§16](gdd/16-rendering-and-visual-design.md) weather visual feedback.
+**Branch / PR:** `feat/rain-road-sheen`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added deterministic wet-road sheen
+  for rain weather and kept it scaled by the existing weather visual
+  intensity controls.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: covered sheen
+  geometry, heavy-rain alpha, accessibility reduction, particle-intensity
+  reduction, and disabled rain visuals.
+- `docs/GDD_COVERAGE.json`: added GDD-14-RAIN-ROAD-SHEEN.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts` green,
+  47 passed.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run content-lint` clean.
+- `npm run verify` green, 2362 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- Road sheen is visual only. It shares the rain effect intensity so the
+  weather accessibility controls reduce both streaks and wet-road glare
+  together.
+- The sheen pass uses a distinct fill from rain streaks so tests can
+  assert both effects independently.
+
+### Coverage ledger
+- GDD-14-RAIN-ROAD-SHEEN covers the road-sheen portion of rainy weather
+  presentation.
+- Uncovered adjacent requirements: snow roadside whitening, weather
+  collision-risk tuning, surface-temperature display, and full region art
+  packages remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Heat shimmer renderer
 
 **GDD sections touched:**
