@@ -1,8 +1,25 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const SAVE_KEY = "vibegear2:save:v3";
 
 test.describe("World Tour race progression", () => {
+  test("entering Velvet Coast from the world hub completes all four races", async ({
+    page,
+  }) => {
+    test.setTimeout(420_000);
+
+    const first = await runFullTourFromWorld(page);
+    const second = await runFullTourFromWorld(page);
+
+    expect(first.completedTracks).toEqual([
+      "velvet-coast/harbor-run",
+      "velvet-coast/sunpier-loop",
+      "velvet-coast/cliffline-arc",
+      "velvet-coast/lighthouse-fall",
+    ]);
+    expect(second).toEqual(first);
+  });
+
   test("final Velvet Coast race unlocks Iron Borough", async ({ page }) => {
     test.setTimeout(70_000);
 
@@ -61,6 +78,75 @@ test.describe("World Tour race progression", () => {
     );
   });
 });
+
+interface FullTourResult {
+  completedTracks: string[];
+  completionText: string;
+}
+
+async function runFullTourFromWorld(page: Page): Promise<FullTourResult> {
+  await page.goto("/");
+  await page.evaluate(
+    ({ key, save }) => window.localStorage.setItem(key, JSON.stringify(save)),
+    { key: SAVE_KEY, save: buildFreshTourSave() },
+  );
+
+  await page.goto("/world");
+  await page.getByTestId("world-tour-enter-velvet-coast").click();
+  await expect(page).toHaveURL(
+    /\/race\?track=velvet-coast%2Fharbor-run&tour=velvet-coast&raceIndex=0$/,
+  );
+
+  const completedTracks: string[] = [];
+  for (let raceIndex = 0; raceIndex < 4; raceIndex += 1) {
+    completedTracks.push(await finishCurrentRace(page));
+    if (raceIndex < 3) {
+      await expect(page.getByTestId("results-cta-continue-tour")).toBeVisible();
+      await page.getByTestId("results-cta-continue-tour").click();
+      await expect(page).toHaveURL(new RegExp(`raceIndex=${raceIndex + 1}$`));
+    }
+  }
+
+  const completion = page.getByTestId("results-tour-complete");
+  await expect(completion).toContainText("Tour complete");
+  await expect(completion).toContainText("Iron Borough");
+  const completionText = (await completion.textContent()) ?? "";
+
+  await page.goto("/world");
+  await expect(page.getByTestId("world-tour-status-iron-borough")).toHaveText(
+    "Available",
+  );
+
+  return { completedTracks, completionText };
+}
+
+async function finishCurrentRace(page: Page): Promise<string> {
+  const canvas = page.getByTestId("race-canvas-element");
+  await expect(canvas).toBeVisible();
+  await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+    timeout: 10_000,
+  });
+
+  await canvas.focus();
+  await page.keyboard.down("ArrowUp");
+  await expect(page).toHaveURL(/\/race\/results/, { timeout: 45_000 });
+  await page.keyboard.up("ArrowUp");
+  const root = page.getByTestId("race-results");
+  await expect(root).toBeVisible();
+  const track = await root.getAttribute("data-track");
+  expect(track).not.toBeNull();
+  return track ?? "";
+}
+
+function buildFreshTourSave() {
+  return {
+    ...buildFinalRaceSave(),
+    progress: {
+      unlockedTours: [],
+      completedTours: [],
+    },
+  };
+}
 
 function buildFinalRaceSave() {
   return {
