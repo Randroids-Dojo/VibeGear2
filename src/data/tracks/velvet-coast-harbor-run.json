@@ -1,0 +1,26 @@
+{
+  "id": "velvet-coast/harbor-run",
+  "name": "Harbor Run",
+  "tourId": "velvet-coast",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1500,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "rain", "fog"],
+  "difficulty": 1,
+  "segments": [
+    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 180, "curve": 0.08, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 240, "curve": 0, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 180, "curve": -0.08, "grade": -0.01, "roadsideLeft": "tree_pine", "roadsideRight": "light_pole", "hazards": ["puddle"] },
+    { "len": 300, "curve": 0.04, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "marina" },
+    { "segmentIndex": 4, "label": "warehouse" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

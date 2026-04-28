@@ -132,19 +132,26 @@ describe("world-tour-standard structure", () => {
 describe("world-tour-standard track id cross-references", () => {
   const wt = getChampionship(WORLD_TOUR_ID);
   const allTrackIds = wt.tours.flatMap((t) => t.tracks);
-  const unresolved = allTrackIds.filter((id) => !(id in TRACK_RAW));
+  const mvpTrackIds = wt.tours.slice(0, 2).flatMap((t) => t.tracks);
+  const hasBundledTrack = (id: string) =>
+    Object.prototype.hasOwnProperty.call(TRACK_RAW, id);
+  const unresolved = allTrackIds.filter((id) => !hasBundledTrack(id));
 
   if (STRICT_TRACK_RESOLUTION) {
     it("resolves every referenced track id in TRACK_RAW (strict mode)", () => {
       expect(unresolved).toEqual([]);
     });
   } else {
+    it("resolves every §24 MVP track id for the first two tours", () => {
+      expect(mvpTrackIds.filter((id) => !hasBundledTrack(id))).toEqual([]);
+    });
+
     it("permits unresolved track ids during the MVP content window", () => {
       // Phase guard: full 32-track set is authored in sibling slices.
       // The presence of unresolved ids is expected; this assertion still
       // runs to catch regressions that drop already-authored tracks.
       const resolvedCount = allTrackIds.length - unresolved.length;
-      expect(resolvedCount).toBeGreaterThanOrEqual(0);
+      expect(resolvedCount).toBeGreaterThanOrEqual(mvpTrackIds.length);
       expect(allTrackIds.length).toBe(32);
     });
   }

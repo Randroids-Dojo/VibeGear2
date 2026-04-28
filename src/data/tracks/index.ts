@@ -14,11 +14,27 @@
 import testCurve from "./test-curve.json";
 import testElevation from "./test-elevation.json";
 import testStraight from "./test-straight.json";
+import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
+import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
+import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
+import ironBoroughRivetTunnel from "./iron-borough-rivet-tunnel.json";
+import velvetCoastClifflineArc from "./velvet-coast-cliffline-arc.json";
+import velvetCoastHarborRun from "./velvet-coast-harbor-run.json";
+import velvetCoastLighthouseFall from "./velvet-coast-lighthouse-fall.json";
+import velvetCoastSunpierLoop from "./velvet-coast-sunpier-loop.json";
 
 export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "test/straight": testStraight,
   "test/curve": testCurve,
   "test/elevation": testElevation,
+  "velvet-coast/harbor-run": velvetCoastHarborRun,
+  "velvet-coast/sunpier-loop": velvetCoastSunpierLoop,
+  "velvet-coast/cliffline-arc": velvetCoastClifflineArc,
+  "velvet-coast/lighthouse-fall": velvetCoastLighthouseFall,
+  "iron-borough/freightline-ring": ironBoroughFreightlineRing,
+  "iron-borough/rivet-tunnel": ironBoroughRivetTunnel,
+  "iron-borough/foundry-mile": ironBoroughFoundryMile,
+  "iron-borough/outer-exchange": ironBoroughOuterExchange,
 });
 
 /** Sorted list of available track slugs for menu builders. */
