@@ -15,6 +15,11 @@ test.describe("title screen", () => {
     await expect(startRace).toHaveText("Start Race");
     await expect(startRace).toHaveAttribute("href", "/race");
 
+    const worldTour = page.getByTestId("menu-world");
+    await expect(worldTour).toBeVisible();
+    await expect(worldTour).toHaveText("World Tour");
+    await expect(worldTour).toHaveAttribute("href", "/world");
+
     const timeTrial = page.getByTestId("menu-time-trial");
     await expect(timeTrial).toBeVisible();
     await expect(timeTrial).toHaveText("Time Trial");
@@ -43,6 +48,13 @@ test.describe("title screen", () => {
     await page.goto("/");
     await page.getByTestId("menu-garage").click();
     await expect(page).toHaveURL(/\/garage$/);
+  });
+
+  test("World Tour link navigates to /world", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-world").click();
+    await expect(page).toHaveURL(/\/world$/);
+    await expect(page.getByTestId("world-page")).toBeVisible();
   });
 
   test("Time Trial link navigates to time-trial race mode", async ({ page }) => {

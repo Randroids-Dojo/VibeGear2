@@ -104,7 +104,7 @@ export default function GaragePage() {
           <Link href="/garage/upgrade" style={linkStyle} data-testid="garage-upgrade-link">
             Upgrades
           </Link>
-          <Link href="/race" style={primaryLinkStyle} data-testid="garage-next-race-link">
+          <Link href="/world" style={primaryLinkStyle} data-testid="garage-next-race-link">
             Next race
           </Link>
         </nav>
@@ -192,11 +192,11 @@ export default function GaragePage() {
           <aside style={panelStyle} data-testid="garage-next-card">
             <h2 style={sectionTitleStyle}>Next race</h2>
             <p style={mutedTextStyle}>
-              Use the race entry for the current smoke track until the
-              tour structure lands.
+              Pick the next World Tour event, then return here for repairs and
+              upgrades between races.
             </p>
-            <Link href="/race" style={primaryLinkStyle}>
-              Start race
+            <Link href="/world" style={primaryLinkStyle}>
+              Open world tour
             </Link>
           </aside>
         </div>

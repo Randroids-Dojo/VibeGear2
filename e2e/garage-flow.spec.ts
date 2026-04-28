@@ -131,8 +131,8 @@ test.describe("garage flow", () => {
 
     await page.getByTestId("garage-upgrade-back").click();
     await page.getByTestId("garage-next-race-link").click();
-    await expect(page).toHaveURL(/\/race$/);
-    await expect(page.getByTestId("race-canvas-element")).toBeVisible();
+    await expect(page).toHaveURL(/\/world$/);
+    await expect(page.getByTestId("world-page")).toBeVisible();
   });
 });
 

@@ -6,6 +6,65 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: World tour entry hub
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) race and garage loop entry,
+[§8](gdd/08-world-and-progression-design.md) tour unlock structure,
+[§22](gdd/22-data-schemas.md) championship and save progress fields,
+[§24](gdd/24-content-plan.md) eight-tour championship content.
+**Branch / PR:** `feat/world-tour-entry-hub`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/world/worldTourState.ts`: added the testable tour
+  card builder, first-tour fresh-save normalization, and `enterWorldTour`
+  wrapper around the existing pure `enterTour` primitive.
+- `src/app/world/page.tsx`: added a localStorage-backed World Tour hub
+  that renders every tour, shows locked and completed state, names the
+  previous-tour gate, persists tour entry, and routes the selected
+  tour's first track id to `/race`.
+- `src/app/page.tsx`: exposed World Tour from the title menu.
+- `src/app/garage/page.tsx`: sends the garage Next race action through
+  `/world` now that the tour entry surface exists.
+- `e2e/world-tour.spec.ts`: covers the fresh-save tour hub, locked Iron
+  Borough gate, Velvet Coast entry, and persisted first-tour unlock.
+- `docs/FOLLOWUPS.md`: added F-065 for the remaining four-race active
+  tour progression and unlock flow.
+- `docs/GDD_COVERAGE.json`: added GDD-08-WORLD-TOUR-HUB coverage.
+
+### Verified
+- `npx vitest run src/components/world/__tests__/worldTourState.test.ts src/app/__tests__/page.test.tsx`
+  green, 16 passed.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test:e2e -- e2e/world-tour.spec.ts e2e/title-screen.spec.ts e2e/garage-flow.spec.ts`
+  green, 8 passed.
+- `npm run verify` green: lint, typecheck, unit tests, and
+  content-lint all passed; 2,215 unit tests passed.
+
+### Decisions and assumptions
+- A fresh save treats the first championship tour as unlocked at the
+  world hub. The helper persists that unlock when the player enters
+  Velvet Coast so the save agrees with the displayed state.
+- The hub passes the planned championship track id to `/race` even while
+  the full 32-track content set is still being authored. The race route
+  keeps its current fallback behavior until those track JSON files land.
+
+### Coverage ledger
+- Added GDD-08-WORLD-TOUR-HUB with code and automated test coverage.
+- Uncovered adjacent requirements: four-race active tour persistence,
+  aggregate standings, tour failure retry, tour completion unlocks, and
+  deterministic full tour e2e remain open under F-065 and the parent
+  tour-region dot.
+
+### Followups created
+- F-065: Persist active tour race progression through the four-race
+  World Tour loop.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Garage results handoff
 
 **GDD sections touched:**
