@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Weather AI allocation hotfix
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) AI weather skill,
+[§21](gdd/21-technical-design-for-web-implementation.md) runtime performance.
+**Branch / PR:** `fix/weather-ai-allocation`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/ai.ts`: accepts the active weather-skill scalar directly in
+  `tickAI`, composes it into the AI pace scalar, and documents why this
+  stays numeric in the 60 Hz loop.
+- `src/game/raceSession.ts`: reuses the existing `cpuModifiers` reference
+  for AI ticks and passes each driver's resolved weather skill as a scalar
+  instead of allocating adjusted modifier objects per AI per tick.
+- Copilot PR #44 review thread was answered and resolved, but PR #44 had
+  already merged before the fix commit landed on `main`; this hotfix
+  carries that verified fix forward.
+
+### Verified
+- `npx vitest run src/game/__tests__/ai.test.ts src/game/__tests__/weather.test.ts src/game/__tests__/raceSession.test.ts`
+  green, 197 passed.
+- `npm run typecheck` clean.
+- `npm run verify` green, 2295 passed.
+- `grep -rn $'\u2014\|\u2013' src/game/ai.ts src/game/raceSession.ts || true`
+  clean.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- The weather-skill value remains race-session static for this slice,
+  matching PR #44. Mid-race weather transitions remain future work.
+
+### Coverage ledger
+- No new GDD coverage ID. This hotfix preserves the runtime performance
+  contract for the existing GDD-14-WEATHER-GRIP-RUNTIME coverage.
+- Uncovered adjacent requirements: tire selection, weather VFX particles,
+  fog draw-distance rendering, weather intensity settings, and mid-race
+  weather transitions remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Weather grip runtime
 
 **GDD sections touched:**

@@ -1021,14 +1021,6 @@ export function stepRaceSession(
   const aiTickResults = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
     if (!aiConfig) return null;
-    const aiWeatherSkill = weatherSkillFor(aiConfig.driver, trackWeather);
-    const aiCpuModifiers =
-      aiWeatherSkill === 1
-        ? cpuModifiers
-        : {
-            ...cpuModifiers,
-            paceScalar: cpuModifiers.paceScalar * aiWeatherSkill,
-          };
     return tickAI(
       aiConfig.driver,
       entry.state,
@@ -1039,7 +1031,8 @@ export function stepRaceSession(
       aiConfig.stats,
       aiContext,
       dt,
-      aiCpuModifiers,
+      cpuModifiers,
+      weatherSkillFor(aiConfig.driver, trackWeather),
     );
   });
 
