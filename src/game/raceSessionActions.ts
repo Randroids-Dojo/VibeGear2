@@ -107,6 +107,7 @@ export function retireRaceSession(
     sectorTimer: state.sectorTimer,
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
+    brokenHazards: state.brokenHazards.slice(),
   };
 }
 
@@ -153,6 +154,7 @@ function clonePure(state: Readonly<RaceSessionState>): RaceSessionState {
     sectorTimer: state.sectorTimer,
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
+    brokenHazards: state.brokenHazards.slice(),
   };
 }
 

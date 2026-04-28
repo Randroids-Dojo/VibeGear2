@@ -146,6 +146,27 @@
 }
 ```
 
+## Hazard registry JSON schema
+
+```
+{
+  "id": "traffic_cone",
+  "kind": "traffic_cone",
+  "displayName": "Traffic Cone",
+  "defaultWidth": 1.8,
+  "defaultLength": 8,
+  "laneOffset": 0,
+  "gripMultiplier": 1.0,
+  "damageKind": "offRoadObject",
+  "damageMagnitude": 6,
+  "breakable": true
+}
+```
+
+`Track.segments[].hazards` entries reference these hazard ids. Tunnel
+entries are valid registry metadata but their light and audio transition
+effects are owned by the tunnel segment slice.
+
 ## Save-game JSON schema
 
 Current schema major: **v3**. v1 saves migrate forward additively via

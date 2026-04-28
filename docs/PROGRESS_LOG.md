@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Hazards runtime
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) authored track hazards,
+[§13](gdd/13-damage-repairs-and-risk.md) off-road object damage,
+[§22](gdd/22-data-schemas.md) hazard registry schema,
+[§23](gdd/23-balancing-tables.md) damage formula targets.
+**Branch / PR:** `feat/hazards-runtime`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/hazards.json` and `src/data/hazards.ts`: added a typed hazard
+  registry for puddles, slick paint, cones, signs, gravel bands, snow
+  buildup, and tunnel metadata.
+- `src/game/hazards.ts`: added a pure evaluator that maps a car position
+  and compiled segment to hazard events, grip multipliers, damage hits,
+  and breakable hazard state.
+- `src/game/raceSession.ts`: threads active hazard grip into the physics
+  step, forwards physical hazard hits through `applyHit`, and persists
+  breakable hazard keys in race state.
+- `src/app/race/page.tsx`: passes the bundled hazard registry into live
+  race sessions.
+- `src/data/__tests__/hazards-content.test.ts`, `src/game/__tests__/hazards.test.ts`,
+  and `src/game/__tests__/raceSession.test.ts`: pin registry validity,
+  hazard overlap behavior, tunnel no-op behavior, and one-shot breakable
+  cone damage.
+- `docs/FOLLOWUPS.md`: marked F-019 done now that the hazard damage emitter
+  exists.
+- `docs/GDD_COVERAGE.json`: added GDD-09-HAZARDS-RUNTIME.
+
+### Verified
+- `npx vitest run src/game/__tests__/hazards.test.ts src/data/__tests__/hazards-content.test.ts src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts`
+  green, 118 passed.
+- `npm run typecheck` clean.
+- `npm run verify` green, 2256 passed.
+- `npm run test:e2e` green, 69 passed.
+
+### Decisions and assumptions
+- Segment-authored hazards occupy the compiled segment where they are
+  referenced and use registry default widths and lengths until the track
+  schema grows per-instance hazard placement.
+- Tunnel hazards are registered and validated now, but tunnel light and
+  audio effects stay out of this PR because the tunnel segment slice owns
+  that behavior.
+- Breakable hazards are tracked per compiled segment and id for the current
+  race only. Nothing persists into the save file.
+
+### Coverage ledger
+- GDD-09-HAZARDS-RUNTIME covers physical hazard registry validation and live
+  race-session grip and damage effects.
+- Uncovered adjacent requirements: rendered hazard sprites, puddle splash
+  VFX, snow buildup visuals, tunnel light adaptation, and seeded magnitude
+  rolls remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: added the hazard registry JSON example and
+  clarified `Track.segments[].hazards` references.
+
 ## 2026-04-28: Slice: AI grid spawner
 
 **GDD sections touched:**

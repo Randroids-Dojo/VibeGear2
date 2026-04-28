@@ -47,13 +47,38 @@ export const WeatherOptionSchema = z.enum([
 ]);
 export type WeatherOption = z.infer<typeof WeatherOptionSchema>;
 
+export const HazardKindSchema = z.enum([
+  "puddle",
+  "slick_paint",
+  "traffic_cone",
+  "sign",
+  "gravel_band",
+  "snow_buildup",
+  "tunnel",
+]);
+export type HazardKind = z.infer<typeof HazardKindSchema>;
+
+export const HazardRegistryEntrySchema = z.object({
+  id: slug,
+  kind: HazardKindSchema,
+  displayName: z.string().min(1),
+  defaultWidth: positiveNumber,
+  defaultLength: positiveNumber,
+  laneOffset: z.number().optional(),
+  gripMultiplier: positiveNumber.optional(),
+  damageKind: z.enum(["rub", "offRoadObject"]).nullable().optional(),
+  damageMagnitude: positiveNumber.nullable().optional(),
+  breakable: z.boolean(),
+});
+export type HazardRegistryEntry = z.infer<typeof HazardRegistryEntrySchema>;
+
 export const TrackSegmentSchema = z.object({
   len: positiveNumber,
   curve: z.number().min(-1).max(1),
   grade: z.number().min(-0.3).max(0.3),
   roadsideLeft: z.string().min(1),
   roadsideRight: z.string().min(1),
-  hazards: z.array(z.string().min(1)),
+  hazards: z.array(slug),
 });
 export type TrackSegment = z.infer<typeof TrackSegmentSchema>;
 

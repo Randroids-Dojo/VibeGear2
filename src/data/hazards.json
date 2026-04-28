@@ -1,0 +1,86 @@
+[
+  {
+    "id": "puddle",
+    "kind": "puddle",
+    "displayName": "Puddle",
+    "defaultWidth": 14,
+    "defaultLength": 24,
+    "laneOffset": 0,
+    "gripMultiplier": 0.65,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false
+  },
+  {
+    "id": "slick_paint",
+    "kind": "slick_paint",
+    "displayName": "Slick Paint",
+    "defaultWidth": 10,
+    "defaultLength": 18,
+    "laneOffset": 0,
+    "gripMultiplier": 0.8,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false
+  },
+  {
+    "id": "traffic_cone",
+    "kind": "traffic_cone",
+    "displayName": "Traffic Cone",
+    "defaultWidth": 1.8,
+    "defaultLength": 8,
+    "laneOffset": 0,
+    "gripMultiplier": 1,
+    "damageKind": "offRoadObject",
+    "damageMagnitude": 6,
+    "breakable": true
+  },
+  {
+    "id": "sign_marker",
+    "kind": "sign",
+    "displayName": "Sign Marker",
+    "defaultWidth": 2.2,
+    "defaultLength": 8,
+    "laneOffset": 0,
+    "gripMultiplier": 1,
+    "damageKind": "offRoadObject",
+    "damageMagnitude": 13,
+    "breakable": true
+  },
+  {
+    "id": "gravel_band",
+    "kind": "gravel_band",
+    "displayName": "Gravel Band",
+    "defaultWidth": 14,
+    "defaultLength": 30,
+    "laneOffset": 0,
+    "gripMultiplier": 0.55,
+    "damageKind": "rub",
+    "damageMagnitude": 3,
+    "breakable": false
+  },
+  {
+    "id": "snow_buildup",
+    "kind": "snow_buildup",
+    "displayName": "Snow Buildup",
+    "defaultWidth": 14,
+    "defaultLength": 30,
+    "laneOffset": 0,
+    "gripMultiplier": 0.45,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false
+  },
+  {
+    "id": "tunnel",
+    "kind": "tunnel",
+    "displayName": "Tunnel",
+    "defaultWidth": 14,
+    "defaultLength": 48,
+    "laneOffset": 0,
+    "gripMultiplier": 1,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false
+  }
+]

@@ -1361,7 +1361,7 @@ asserts zero hits.
 ## F-019: Race session integration of the §13 damage model
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** in-progress
+**Status:** done (2026-04-28)
 **Notes:** The `feat/damage-model` slice ships `src/game/damage.ts` as a
 pure module: `applyHit`, `applyOffRoadDamage`, `performanceMultiplier`,
 `isWrecked`, `repairCostFor`, `totalRepairCost` and the constants
@@ -1392,13 +1392,12 @@ tick reads the new band). PRISTINE damage collapses the multipliers
 to identity, so an undamaged car's behaviour is bit-for-bit
 identical to the pre-binding pipeline.
 
-The remaining open consumer is the hazard-runtime damage emitter
-(per-tick puddle / cone / debris hits feeding `applyHit` with the
-matching `HitKind`) owned by the hazards-runtime dot
-(`VibeGear2-implement-hazards-runtime-6085799c`); F-047 did not
-bundle it because the hazards module does not yet exist.
-
-Close F-019 once the hazards-runtime path lands.
+Closed by `feat/hazards-runtime`. The hazards runtime now resolves
+authored track hazard ids through `src/data/hazards.json`, evaluates
+overlap per compiled segment, applies grip multipliers to the physics
+step, forwards hazard damage through `applyHit`, and records breakable
+hazards in race state so a cone or sign damages only once per race.
+Tunnel entries remain registry metadata for the dedicated tunnel slice.
 
 ## F-018: Playwright e2e spec for the loading screen / preload gate
 **Created:** 2026-04-26

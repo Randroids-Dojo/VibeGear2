@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { loadTrack } from "@/data";
+import { HAZARDS_BY_ID, loadTrack } from "@/data";
 import {
   AI_GRID_OFFSET_BEHIND_PLAYER_M,
   CAR_LENGTH_M,
@@ -192,6 +192,27 @@ describe("stepRaceSession (racing)", () => {
     expect(second).not.toBe(first);
     expect(second.player).not.toBe(first.player);
     expect(second.player.car).not.toBe(first.player.car);
+  });
+
+  it("applies breakable track hazard damage once", () => {
+    const track = loadTrack("iron-borough/freightline-ring");
+    const config = buildConfig({
+      track,
+      player: {
+        stats: STARTER_STATS,
+        initial: { z: 245, speed: 30 },
+      },
+      ai: [],
+      countdownSec: 0,
+      hazardsById: HAZARDS_BY_ID,
+    });
+    const first = stepRaceSession(createRaceSession(config), NEUTRAL_INPUT, config, DT);
+    const afterFirstHit = first.player.damage.total;
+    expect(afterFirstHit).toBeGreaterThan(0);
+    expect(first.brokenHazards).toContain("40:traffic_cone");
+
+    const second = stepRaceSession(first, NEUTRAL_INPUT, config, DT);
+    expect(second.player.damage.total).toBe(afterFirstHit);
   });
 });
 

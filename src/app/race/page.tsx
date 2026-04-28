@@ -44,6 +44,7 @@ import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
 import {
   AI_DRIVERS,
+  HAZARDS_BY_ID,
   TRACK_IDS,
   TRACK_RAW,
   getAIDriver,
@@ -640,6 +641,7 @@ function RaceCanvas({
         initialDamage: initialPlayerDamage,
       },
       ai: spawnedAi,
+      hazardsById: HAZARDS_BY_ID,
       seed: raceSeed,
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };

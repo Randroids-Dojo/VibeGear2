@@ -2,6 +2,29 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-09-HAZARDS-RUNTIME",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "Authored track hazard ids resolve through a typed registry, and live races evaluate physical hazards for grip, breakable objects, and damage events.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/hazards.json",
+        "src/data/hazards.ts",
+        "src/game/hazards.ts",
+        "src/game/raceSession.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/data/__tests__/hazards-content.test.ts",
+        "src/game/__tests__/hazards.test.ts",
+        "src/game/__tests__/raceSession.test.ts"
+      ]
+    },
+    {
       "id": "GDD-15-AI-GRID-SPAWNER",
       "gddSections": [
         "docs/gdd/15-cpu-opponents-and-ai.md",
