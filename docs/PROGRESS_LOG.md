@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: F-062 garage upgrade purchase surface
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) garage loop,
+[§12](gdd/12-upgrade-and-economy-system.md) upgrade categories and
+sequential tiers,
+[§20](gdd/20-hud-and-ui-ux.md) upgrade shop.
+**Branch / PR:** `feat/f-062-garage-upgrades`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/garage/garageUpgradeState.ts`: builds the upgrade
+  shop view from the active save, including current tier, next tier,
+  per-car cap, cost, effects, and disabled reason.
+- `src/app/garage/upgrade/page.tsx`: replaced the placeholder route
+  with a localStorage-backed purchase surface that calls
+  `purchaseAndInstall`, persists via `saveSave`, and reports economy
+  failures inline.
+- `src/components/garage/__tests__/garageUpgradeState.test.ts`:
+  covers next-tier eligibility, insufficient credits, caps, missing
+  active car state, and failure-message formatting.
+- `e2e/garage-upgrades.spec.ts`: seeds a garage save, buys Street
+  Engine, verifies credits and installed tier, and reloads to prove the
+  persisted state survives.
+- `docs/FOLLOWUPS.md`: closed F-062.
+- `docs/GDD_COVERAGE.json`: added
+  `GDD-12-GARAGE-UPGRADE-PURCHASE` and removed F-062 from the garage
+  summary open followups.
+
+### Verified
+- `npx vitest run src/components/garage/__tests__/garageUpgradeState.test.ts src/components/garage/__tests__/garageSummaryState.test.ts`
+  green, 10 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/garage-upgrades.spec.ts e2e/garage-summary.spec.ts`
+  green, 3 passed.
+
+### Decisions and assumptions
+- Purchase and install remain folded into one action for MVP because
+  `purchaseAndInstall` is the current canonical economy surface.
+- The upgrade shop stays tied to the active owned car. Missing or
+  unowned active car saves route the player back to garage recovery
+  rather than allowing detached purchases.
+
+### Coverage ledger
+- Added GDD-12-GARAGE-UPGRADE-PURCHASE with code and automated test
+  coverage.
+- GDD-05-GARAGE-SUMMARY now only tracks F-061 for the remaining
+  placeholder repair route.
+- Uncovered adjacent requirements: real repair purchasing, standings,
+  weather fit, ghost status, leaderboard status, and full next-race
+  tournament data remain future garage slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-28: Slice: F-063 starter eligibility
 
 **GDD sections touched:**
