@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Audio engine and mixer primitives
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) sound and music design,
+[§20](gdd/20-hud-and-ui-ux.md) settings,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline.
+**Branch / PR:** `feat/audio-engine-mixer`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/audio/engine.ts`: added a pure speed-to-engine-pitch model with
+  idle, redline, exponential rise, and overrun clamps.
+- `src/audio/mixer.ts`: added master, music, and SFX gain resolution
+  from persisted audio settings, plus a disabled-audio null path for
+  later Web Audio callers.
+- `src/audio/engine.test.ts` and `src/audio/mixer.test.ts`: pinned
+  monotonic pitch, pure repeatability, defensive clamps, gain products,
+  disabled audio, and silence detection.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES.
+
+### Verified
+- `npx vitest run src/audio/engine.test.ts src/audio/mixer.test.ts`
+  green, 10 passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2425 passed.
+
+### Decisions and assumptions
+- This slice does not create an `AudioContext`, play sounds, or add
+  placeholder audio files. It only lands the pure math contracts that
+  the later runtime and asset slices will consume.
+- `resolveMixerGains` returns `null` when audio is disabled so future
+  engine, SFX, and music callers can short-circuit before creating
+  Web Audio nodes.
+
+### Coverage ledger
+- GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES covers engine pitch and mix-bus
+  gain primitives.
+- Uncovered adjacent requirements: AudioContext lifecycle, engine
+  playback, SFX playback, music playback, region stem metadata,
+  placeholder audio assets, visibility suspension, and settings UI
+  sliders remain under the §18 audio parent dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Time Trial PB records
 
 **GDD sections touched:**

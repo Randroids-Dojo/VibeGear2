@@ -43,6 +43,25 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The audio layer has pure primitives for speed-driven engine pitch and metadata-driven master, music, and SFX bus gain resolution.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/engine.ts",
+        "src/audio/mixer.ts"
+      ],
+      "testRefs": [
+        "src/audio/engine.test.ts",
+        "src/audio/mixer.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
