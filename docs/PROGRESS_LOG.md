@@ -23,6 +23,8 @@ Correct them by adding a new entry that references the old one.
   race actions.
 - `e2e/race-finish.spec.ts`: updated the race-finish repair handoff
   expectation to match the garage hub route.
+- `e2e/results-screen.spec.ts`: updated the seeded results-screen CTA
+  expectation and test name to match the garage hub route.
 - `e2e/garage-flow.spec.ts`: added the missing full garage-flow walk:
   finish a race, continue to `/garage`, open repairs, complete a full
   service, buy the first engine upgrade, and start the next race from
@@ -33,6 +35,7 @@ Correct them by adding a new entry that references the old one.
 ### Verified
 - `npm run test:e2e -- e2e/garage-flow.spec.ts e2e/race-finish.spec.ts e2e/garage-summary.spec.ts`
   green, 6 passed.
+- `npm run test:e2e -- e2e/results-screen.spec.ts` green, 4 passed.
 - `npm run verify` green: lint, typecheck, unit tests, and
   content-lint all passed; 2,207 unit tests passed.
 

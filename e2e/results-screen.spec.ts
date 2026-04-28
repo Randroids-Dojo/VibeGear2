@@ -12,7 +12,7 @@ import { expect, test } from "@playwright/test";
  * Coverage:
  *   - Renders finishing order (one row per car), points, cash, bonuses,
  *     damage bars, fastest lap, and the next-race card.
- *   - "Continue to Garage" CTA navigates to /garage/cars.
+ *   - "Continue to Garage" CTA navigates to /garage.
  *   - Direct nav to /race/results with no seed renders the empty fallback.
  *   - Default focus lands on the Continue CTA.
  */
@@ -143,7 +143,7 @@ test.describe("race results screen", () => {
     await expect(cont).toBeFocused();
   });
 
-  test("Continue to Garage CTA routes to /garage/cars", async ({ page }) => {
+  test("Continue to Garage CTA routes to /garage", async ({ page }) => {
     await page.goto("/race/results");
     await page.evaluate(
       ([key, payload]) => {
@@ -155,7 +155,7 @@ test.describe("race results screen", () => {
 
     await expect(page.getByTestId("results-cta-continue")).toBeVisible();
     await page.getByTestId("results-cta-continue").click();
-    await expect(page).toHaveURL(/\/garage\/cars/);
+    await expect(page).toHaveURL(/\/garage$/);
   });
 
   test("direct nav with no result renders the empty fallback", async ({
