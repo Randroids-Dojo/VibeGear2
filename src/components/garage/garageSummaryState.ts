@@ -1,4 +1,4 @@
-import { CARS, getCar, STARTER_CAR_ID } from "@/data/cars";
+import { STARTER_CAR_IDS, getCar } from "@/data/cars";
 import type {
   Car,
   SaveGame,
@@ -52,7 +52,7 @@ export function selectStarterCar(
   carId: string,
 ): SaveGame | null {
   const car = getCar(carId);
-  if (!car || car.purchasePrice !== 0) return null;
+  if (!car || !isStarterCarId(carId)) return null;
   const ownedCars = save.garage.ownedCars.includes(carId)
     ? save.garage.ownedCars
     : [...save.garage.ownedCars, carId];
@@ -72,10 +72,22 @@ export function selectStarterCar(
 }
 
 export function starterCars(): ReadonlyArray<Car> {
-  const freeCars = CARS.filter((car) => car.purchasePrice === 0);
-  if (freeCars.length > 0) return freeCars;
-  const fallback = getCar(STARTER_CAR_ID);
-  return fallback ? [fallback] : [];
+  const cars = STARTER_CAR_IDS.flatMap((carId) => {
+    const car = getCar(carId);
+    return car ? [car] : [];
+  });
+
+  if (cars.length === 0) {
+    throw new Error(
+      `No configured starter cars could be resolved from STARTER_CAR_IDS: ${STARTER_CAR_IDS.join(", ")}`,
+    );
+  }
+
+  return cars;
+}
+
+function isStarterCarId(carId: string): boolean {
+  return STARTER_CAR_IDS.some((starterId) => starterId === carId);
 }
 
 function defaultUpgradeTiers(): Record<UpgradeCategory, number> {

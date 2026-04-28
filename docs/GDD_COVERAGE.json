@@ -35,7 +35,7 @@
         "e2e/garage-summary.spec.ts",
         "e2e/title-screen.spec.ts"
       ],
-      "followupRefs": ["F-061", "F-062", "F-063"]
+      "followupRefs": ["F-061", "F-062"]
     },
     {
       "id": "GDD-09-ELEVATION-LIVE",

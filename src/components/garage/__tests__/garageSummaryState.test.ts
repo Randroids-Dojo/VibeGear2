@@ -41,7 +41,7 @@ describe("buildGarageSummaryView", () => {
 });
 
 describe("selectStarterCar", () => {
-  it("sets a free starter as active and seeds its upgrades", () => {
+  it("sets a starter-choice car as active and seeds its upgrades", () => {
     const save: SaveGame = {
       ...defaultSave(),
       garage: {
@@ -52,20 +52,24 @@ describe("selectStarterCar", () => {
       },
     };
 
-    const next = selectStarterCar(save, "sparrow-gt");
+    const next = selectStarterCar(save, "vanta-xr");
 
-    expect(next?.garage.activeCarId).toBe("sparrow-gt");
-    expect(next?.garage.ownedCars).toContain("sparrow-gt");
-    expect(next?.garage.installedUpgrades["sparrow-gt"]?.engine).toBe(0);
+    expect(next?.garage.activeCarId).toBe("vanta-xr");
+    expect(next?.garage.ownedCars).toContain("vanta-xr");
+    expect(next?.garage.installedUpgrades["vanta-xr"]?.engine).toBe(0);
   });
 
-  it("rejects paid cars for starter selection", () => {
-    expect(selectStarterCar(defaultSave(), "vanta-xr")).toBeNull();
+  it("rejects non-starter cars for starter selection", () => {
+    expect(selectStarterCar(defaultSave(), "bastion-lm")).toBeNull();
   });
 });
 
 describe("starterCars", () => {
-  it("returns the currently free starter catalogue entries", () => {
-    expect(starterCars().map((car) => car.id)).toEqual(["sparrow-gt"]);
+  it("returns the §11 starter-choice catalogue entries", () => {
+    expect(starterCars().map((car) => car.id)).toEqual([
+      "sparrow-gt",
+      "breaker-s",
+      "vanta-xr",
+    ]);
   });
 });

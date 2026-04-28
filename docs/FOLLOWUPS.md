@@ -13,13 +13,19 @@ or `obsolete` so the trail is preserved.
 ## F-063: Align starter selection content with the three §11 starter examples
 **Created:** 2026-04-27
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The garage summary starter recovery screen can pick from cars
 with `purchasePrice: 0`, but the current catalogue only has Sparrow GT
 as a free starter. §11 names Sparrow GT, Breaker S, and Vanta XR as the
 starter examples. Decide whether all three should be free championship
 starters or whether the GDD examples should be revised, then align the
 catalogue, starter picker, save defaults, and tests in one slice.
+
+Closed by `feat/f-063-starter-eligibility`. The car registry now exports
+the three §11 starter-choice ids separately from `purchasePrice`, so
+Breaker S and Vanta XR can appear in starter recovery without becoming
+free purchases in the car shop. Content, garage state, and Playwright
+tests pin the three-choice roster.
 
 ## F-062: Implement garage upgrade purchase surface
 **Created:** 2026-04-27
