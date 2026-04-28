@@ -26,7 +26,13 @@ import type { SpeedUnit } from "@/data/schemas";
 import type { WeatherOption } from "@/data/schemas";
 import type { AssistBadge } from "./assists";
 import type { DamageState, DamageZone } from "./damage";
+import {
+  BASE_NITRO_DURATION_SEC,
+  DEFAULT_NITRO_CHARGES,
+  type NitroState,
+} from "./nitro";
 import type { RaceState } from "./raceState";
+import type { TransmissionState } from "./transmission";
 
 /** Forward-distance pair used to rank cars on the track. */
 export interface RankedCar {
@@ -97,6 +103,20 @@ export interface HudStateInput {
    * Used only for the §20 grip hint. Omit to hide the hint.
    */
   weatherGripScalar?: number;
+  /** Optional live §10 nitro snapshot for the §20 bottom-center meter. */
+  nitro?: Readonly<NitroState>;
+  /**
+   * Race-start maximum nitro charges. Defaults to the stock §10 value.
+   * Used only to size the meter.
+   */
+  nitroMaxCharges?: number;
+  /**
+   * Full burn duration for one active charge. Defaults to the stock §10
+   * duration so callers can omit it until upgrade-aware HUD sizing lands.
+   */
+  nitroChargeDurationSec?: number;
+  /** Optional live §10 transmission snapshot for the §20 gear label. */
+  transmission?: Readonly<TransmissionState>;
 }
 
 /** Optional minimap snapshot derived from the compiled track + car field. */
@@ -163,6 +183,10 @@ export interface HudState {
   damage?: HudDamageSummary;
   /** Optional §20 weather HUD summary. */
   weather?: HudWeatherSummary;
+  /** Optional §20 nitro HUD summary. */
+  nitro?: HudNitroSummary;
+  /** Optional §20 gear HUD summary. */
+  gear?: HudGearSummary;
 }
 
 export interface HudDamageSummary {
@@ -178,6 +202,19 @@ export interface HudWeatherSummary {
   label: string;
   gripHint?: HudGripHint;
   gripPercent?: number;
+}
+
+export interface HudNitroSummary {
+  current: number;
+  max: number;
+  active: boolean;
+  percent: number;
+}
+
+export interface HudGearSummary {
+  gear: number;
+  rpmPercent: number;
+  mode: "auto" | "manual";
 }
 
 /** Conversion factors. SI base is m/s. */
@@ -262,6 +299,41 @@ export function summarizeHudWeather(
     label: weatherLabelForHud(weather),
     ...(gripHint !== undefined ? { gripHint } : {}),
     ...(gripPercent !== undefined ? { gripPercent } : {}),
+  };
+}
+
+export function summarizeHudNitro(
+  nitro: Readonly<NitroState>,
+  maxCharges: number = DEFAULT_NITRO_CHARGES,
+  chargeDurationSec: number = BASE_NITRO_DURATION_SEC,
+): HudNitroSummary {
+  const max = Math.max(1, Math.round(maxCharges));
+  const activeFraction =
+    chargeDurationSec > 0
+      ? clampUnit(nitro.activeRemainingSec / chargeDurationSec)
+      : 0;
+  const current = Math.max(
+    0,
+    Math.min(max, nitro.charges + activeFraction),
+  );
+  return {
+    current,
+    max,
+    active: activeFraction > 0,
+    percent: percentFromUnit(current / max),
+  };
+}
+
+export function summarizeHudGear(
+  transmission: Readonly<TransmissionState>,
+): HudGearSummary {
+  const gear = Number.isFinite(transmission.gear)
+    ? Math.max(1, Math.trunc(transmission.gear))
+    : 1;
+  return {
+    gear,
+    rpmPercent: percentFromUnit(transmission.rpm),
+    mode: transmission.mode,
   };
 }
 
@@ -385,6 +457,16 @@ export function deriveHudState(input: HudStateInput): HudState {
   }
   if (input.weather !== undefined) {
     result.weather = summarizeHudWeather(input.weather, input.weatherGripScalar);
+  }
+  if (input.nitro !== undefined) {
+    result.nitro = summarizeHudNitro(
+      input.nitro,
+      input.nitroMaxCharges,
+      input.nitroChargeDurationSec,
+    );
+  }
+  if (input.transmission !== undefined) {
+    result.gear = summarizeHudGear(input.transmission);
   }
   return result;
 }

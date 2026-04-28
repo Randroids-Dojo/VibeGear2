@@ -85,6 +85,11 @@ import {
 import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
 import { FIXED_STEP_SECONDS } from "@/game/loop";
 import {
+  DEFAULT_NITRO_CHARGES,
+  nitroDurationForTier,
+  nitroUpgradeTierForUpgrades,
+} from "@/game/nitro";
+import {
   WeatherOptionSchema,
   type AIDriver,
   type CarBaseStats,
@@ -995,6 +1000,9 @@ function RaceCanvas({
           }),
         ];
 
+        const nitroUpgradeTier = nitroUpgradeTierForUpgrades(
+          config.player.upgrades ?? null,
+        );
         const hud = deriveHudState({
           race: session.race,
           playerSpeedMetersPerSecond: session.player.car.speed,
@@ -1009,6 +1017,11 @@ function RaceCanvas({
             session.weather,
             config.playerTire ?? "dry",
           ),
+          nitro: session.player.nitro,
+          nitroMaxCharges:
+            DEFAULT_NITRO_CHARGES + nitroUpgradeTier.chargesBonus,
+          nitroChargeDurationSec: nitroDurationForTier(nitroUpgradeTier),
+          transmission: session.player.transmission,
         });
         drawHud(ctx, hud, viewport);
 

@@ -56,6 +56,10 @@ export interface HudColors {
   damageBad: string;
   /** Weather icon chip fill. */
   weatherChipFill: string;
+  /** Nitro meter fill when idle. */
+  nitroFill: string;
+  /** Nitro meter fill while a charge is active. */
+  nitroActiveFill: string;
 }
 
 export interface DrawHudOptions {
@@ -84,6 +88,8 @@ const DEFAULT_COLORS: HudColors = {
   damageWarn: "#f3c84b",
   damageBad: "#ef4b4b",
   weatherChipFill: "rgba(104, 160, 220, 0.78)",
+  nitroFill: "#5ba7ff",
+  nitroActiveFill: "#f4d24a",
 };
 
 const DEFAULT_PADDING = 16;
@@ -123,6 +129,9 @@ const STATUS_CLUSTER_ROW_HEIGHT = 16;
 const STATUS_CLUSTER_BOTTOM_OFFSET = 156;
 const DAMAGE_BAR_WIDTH = 74;
 const DAMAGE_BAR_HEIGHT = 5;
+const NITRO_METER_WIDTH = 160;
+const NITRO_METER_HEIGHT = 10;
+const NITRO_METER_BOTTOM = 18;
 
 /**
  * Draw a string with a one-pixel drop shadow underlay so it reads over
@@ -239,6 +248,22 @@ export function drawHud(
     colors.textMuted,
   );
 
+  if (state.gear !== undefined) {
+    ctx.font = `600 12px ${fontFamily}`;
+    drawShadowedText(
+      ctx,
+      `G${state.gear.gear} ${state.gear.rpmPercent}%`,
+      speedX,
+      viewport.height - padding - 54,
+      colors.shadow,
+      colors.textMuted,
+    );
+  }
+
+  if (state.nitro !== undefined) {
+    drawNitroMeter(ctx, state, viewport, padding, fontFamily, colors);
+  }
+
   // Top-right (below the splits widget): accessibility-assist badge.
   // Drawer is a no-op when the badge is missing or inactive so the §19
   // assists-off case never paints a phantom pill.
@@ -250,6 +275,46 @@ export function drawHud(
   ctx.font = prevFont;
   ctx.textAlign = prevAlign;
   ctx.textBaseline = prevBaseline;
+}
+
+function drawNitroMeter(
+  ctx: CanvasRenderingContext2D,
+  state: HudState,
+  viewport: Viewport,
+  padding: number,
+  fontFamily: string,
+  colors: HudColors,
+): void {
+  const nitro = state.nitro;
+  if (nitro === undefined) return;
+  const x = Math.round((viewport.width - NITRO_METER_WIDTH) / 2);
+  const y = viewport.height - padding - NITRO_METER_BOTTOM;
+  ctx.fillStyle = "rgba(7, 14, 28, 0.72)";
+  ctx.fillRect(x, y, NITRO_METER_WIDTH, NITRO_METER_HEIGHT);
+  ctx.fillStyle = nitro.active ? colors.nitroActiveFill : colors.nitroFill;
+  ctx.fillRect(
+    x,
+    y,
+    Math.round((NITRO_METER_WIDTH * Math.max(0, Math.min(100, nitro.percent))) / 100),
+    NITRO_METER_HEIGHT,
+  );
+
+  ctx.font = `600 11px ${fontFamily}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  drawShadowedText(
+    ctx,
+    `NITRO ${formatNitroCharges(nitro.current)} / ${nitro.max}`,
+    viewport.width / 2,
+    y - 3,
+    colors.shadow,
+    colors.textMuted,
+  );
+}
+
+function formatNitroCharges(value: number): string {
+  if (!Number.isFinite(value)) return "0.0";
+  return value.toFixed(1);
 }
 
 function drawStatusCluster(

@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: HUD gear and nitro meter
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) nitro and transmission state,
+[§20](gdd/20-hud-and-ui-ux.md) race HUD.
+**Branch / PR:** `feat/hud-gear-nitro`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/hudState.ts`: added optional gear and nitro summaries derived
+  from live transmission and nitro snapshots.
+- `src/render/uiRenderer.ts`: draws the §20 bottom-center nitro meter and
+  bottom-right gear / RPM label only when those fields are supplied.
+- `src/app/race/page.tsx`: wires live player nitro, upgrade-aware nitro
+  duration, maximum charges, and transmission state into `deriveHudState`.
+- `docs/GDD_COVERAGE.json`: added GDD-20-HUD-GEAR-NITRO.
+
+### Verified
+- `npx vitest run src/game/__tests__/hudState.test.ts src/render/__tests__/uiRenderer.test.ts`
+  green, 78 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2391 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- The nitro meter displays charge-equivalent fuel: unused full charges
+  plus the active charge fraction. This keeps a single meter readable
+  while matching the §10 tap-or-hold burn model.
+- The gear label includes RPM percentage beside the current gear, giving
+  the §20 gear widget useful transmission context without adding a new
+  large gauge.
+
+### Coverage ledger
+- GDD-20-HUD-GEAR-NITRO covers the live HUD gear and nitro meter
+  requirements.
+- Uncovered adjacent requirements: cash delta, full pause action polish,
+  results styling, and resize reflow verification remain future §20
+  slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: HUD damage and weather grip indicators
 
 **GDD sections touched:**
