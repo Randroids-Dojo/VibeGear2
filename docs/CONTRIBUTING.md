@@ -100,12 +100,15 @@ contributor consent.
 ## 9. Asset Manifest Rules
 
 Every art contribution must update [`public/art.manifest.json`](../public/art.manifest.json)
-with author, source, licence, and originality statement metadata. Audio,
-track, championship, balancing, and mod-data contributions must include the
-same metadata in the matching manifest once that content loader exists. Until
-then, include the metadata beside the data change in the PR description and
-ask for `legal-review` if the source is not fully original. A PR that ships
-binary assets or third-party data without manifest metadata will not merge.
+with the required manifest fields: `id`, `path`, `kind`, `license`,
+`source`, `originality`, and `date`. Follow
+[`LEGAL_SAFETY.md`](LEGAL_SAFETY.md) section 6 for the canonical field
+requirements. Audio, track, championship, balancing, and mod-data
+contributions must include the corresponding required manifest metadata in
+the matching manifest once that content loader exists. Until then, include
+the metadata beside the data change in the PR description and ask for
+`legal-review` if the source is not fully original. A PR that ships binary
+assets or third-party data without manifest metadata will not merge.
 
 ## 10. Schema and Lint Expectations
 
