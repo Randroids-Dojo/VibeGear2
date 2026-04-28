@@ -3,9 +3,9 @@
 /**
  * Visual overlay for the touch input source (closes F-013).
  *
- * Renders a translucent SVG over the canvas: a left-side virtual stick
- * (anchor circle plus a knob that follows the most recent steer pointer),
- * a right-side accelerator and brake button, plus thumb-zone nitro and
+ * Renders a translucent SVG over the canvas: a transient left-side
+ * virtual stick anchored at the current thumb-down position, a
+ * lower-right accelerator and brake pair, plus thumb-zone nitro and
  * pause buttons. Layout matches `DEFAULT_TOUCH_LAYOUT` in
  * `src/game/inputTouch.ts` so the overlay and the input source agree
  * out of the box.
@@ -26,7 +26,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 
-import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
+import { DEFAULT_TOUCH_LAYOUT, thumbButtonLayout, type TouchLayout } from "@/game/inputTouch";
 
 export interface TouchControlsProps {
   /**
@@ -107,9 +107,10 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [knob, setKnob] = useState<KnobState>(NEUTRAL_KNOB);
 
-  // Subscribe to pointer events on the SVG so the knob can mirror the
-  // underlying input source visually. The actual input is read by the
-  // touch input source; this listener only drives the visual knob.
+  // Observe pointer events at the document level so the overlay can
+  // stay `pointer-events: none` and never intercept the canvas input
+  // source. The actual input is read by the touch input source; this
+  // listener only drives the visual knob.
   useEffect(() => {
     if (!visible) return;
     const el = svgRef.current;
@@ -134,15 +135,15 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
       setKnob((prev) => (prev.pointerId === ev.pointerId ? NEUTRAL_KNOB : prev));
     };
 
-    el.addEventListener("pointerdown", onDown);
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerup", onRelease);
-    el.addEventListener("pointercancel", onRelease);
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("pointermove", onMove, true);
+    document.addEventListener("pointerup", onRelease, true);
+    document.addEventListener("pointercancel", onRelease, true);
     return () => {
-      el.removeEventListener("pointerdown", onDown);
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerup", onRelease);
-      el.removeEventListener("pointercancel", onRelease);
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointermove", onMove, true);
+      document.removeEventListener("pointerup", onRelease, true);
+      document.removeEventListener("pointercancel", onRelease, true);
     };
   }, [visible, layout.width, layout.steerZoneRatio]);
 
@@ -154,18 +155,17 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
 
   if (!visible) return null;
 
-  const stickAnchorX = layout.width * 0.18;
-  const stickAnchorY = layout.height * 0.7;
   const stickRadius = layout.stickMaxRadius;
-  const knobX = knob.pointerId !== null ? knob.originX : stickAnchorX;
-  const knobY = knob.pointerId !== null ? knob.originY : stickAnchorY;
+  const knobX = knob.originX;
+  const knobY = knob.originY;
   const knobDrawnX = knobX + knobOffset.dx;
   const knobDrawnY = knobY + knobOffset.dy;
 
-  const accelX = layout.width - layout.width * 0.15;
-  const accelY = layout.height * 0.4;
-  const brakeX = accelX;
-  const brakeY = layout.height - layout.height * 0.18;
+  const thumbButtons = thumbButtonLayout(layout);
+  const accelX = thumbButtons.accelerate.centerX;
+  const accelY = thumbButtons.accelerate.centerY;
+  const brakeX = thumbButtons.brake.centerX;
+  const brakeY = thumbButtons.brake.centerY;
   const nitroX = layout.width - layout.nitroCornerSize / 2;
   const nitroY = layout.nitroCornerSize / 2;
   const pauseX = layout.width - layout.nitroCornerSize - layout.pauseCornerSize / 2;
@@ -194,32 +194,36 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
         ...props.style,
       }}
     >
-      {/* Stick anchor (the dimmer outer ring shows the rest position). */}
-      <circle
-        cx={stickAnchorX}
-        cy={stickAnchorY}
-        r={stickRadius}
-        fill="rgba(255, 255, 255, 0.05)"
-        stroke="rgba(255, 255, 255, 0.25)"
-        strokeWidth={2}
-      />
-      {/* Knob (the brighter inner disc; tracks the dragged finger). */}
-      <circle
-        data-testid="touch-stick-knob"
-        cx={knobDrawnX}
-        cy={knobDrawnY}
-        r={stickRadius * 0.45}
-        fill="rgba(255, 255, 255, 0.35)"
-        stroke="rgba(255, 255, 255, 0.6)"
-        strokeWidth={2}
-        style={transitionStyle}
-      />
+      {knob.pointerId !== null ? (
+        <g data-testid="touch-stick">
+          {/* Stick anchor is drawn exactly where the left thumb touched down. */}
+          <circle
+            cx={knobX}
+            cy={knobY}
+            r={stickRadius}
+            fill="rgba(255, 255, 255, 0.05)"
+            stroke="rgba(255, 255, 255, 0.25)"
+            strokeWidth={2}
+          />
+          {/* Knob tracks the dragged finger, clamped to the steer radius. */}
+          <circle
+            data-testid="touch-stick-knob"
+            cx={knobDrawnX}
+            cy={knobDrawnY}
+            r={stickRadius * 0.45}
+            fill="rgba(255, 255, 255, 0.35)"
+            stroke="rgba(255, 255, 255, 0.6)"
+            strokeWidth={2}
+            style={transitionStyle}
+          />
+        </g>
+      ) : null}
       {/* Accelerator. */}
       <g data-testid="touch-accelerate">
         <circle
           cx={accelX}
           cy={accelY}
-          r={layout.width * 0.08}
+          r={thumbButtons.accelerate.radius}
           fill="rgba(80, 220, 120, 0.2)"
           stroke="rgba(80, 220, 120, 0.6)"
           strokeWidth={2}
@@ -240,7 +244,7 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
         <circle
           cx={brakeX}
           cy={brakeY}
-          r={layout.width * 0.07}
+          r={thumbButtons.brake.radius}
           fill="rgba(220, 90, 90, 0.2)"
           stroke="rgba(220, 90, 90, 0.6)"
           strokeWidth={2}

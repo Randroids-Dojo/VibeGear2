@@ -415,7 +415,7 @@
         "docs/gdd/20-hud-and-ui-ux.md",
         "docs/gdd/21-technical-design-for-web-implementation.md"
       ],
-      "requirement": "The live race route fills mobile viewports without page scroll and mounts touch controls that feed steering, throttle, brake, nitro, and pause into the race input pipeline.",
+      "requirement": "The live race route fills mobile viewports without page scroll and mounts transient left-half steering plus reachable right-thumb touch controls that feed steering, throttle, brake, nitro, and pause into the race input pipeline.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "src/app/race/page.tsx",
