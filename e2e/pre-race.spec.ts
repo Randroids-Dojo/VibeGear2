@@ -28,8 +28,16 @@ test.describe("pre-race tire selection", () => {
     await expect(page.getByTestId("pre-race-recommended-tire")).toContainText(
       "wet",
     );
+    await expect(page.getByTestId("pre-race-tire-wet")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await expect(page.getByTestId("pre-race-car")).toHaveText("Sparrow GT");
     await page.getByTestId("pre-race-tire-dry").click();
+    await expect(page.getByTestId("pre-race-tire-dry")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await expect(page.getByTestId("pre-race-tire-warning")).toContainText(
       "wet tires",
     );

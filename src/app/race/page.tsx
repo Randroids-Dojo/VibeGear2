@@ -84,8 +84,11 @@ import {
 } from "@/game";
 import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
 import { FIXED_STEP_SECONDS } from "@/game/loop";
-import type { AIDriver, CarBaseStats } from "@/data/schemas";
-import { WeatherOptionSchema } from "@/data/schemas";
+import {
+  WeatherOptionSchema,
+  type AIDriver,
+  type CarBaseStats,
+} from "@/data/schemas";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,

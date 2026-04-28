@@ -110,7 +110,11 @@ function RacePrepShell(): ReactElement {
     );
   }
 
-  if (!trackId || !track || !save || !card) {
+  if (!save) {
+    return <RacePrepLoading />;
+  }
+
+  if (!trackId || !track || !card) {
     return (
       <main style={pageStyle} data-testid="pre-race-page">
         <h1>Pre-race</h1>
@@ -219,6 +223,7 @@ function RacePrepShell(): ReactElement {
                 key={tire}
                 type="button"
                 style={selectedTire === tire ? activeSegmentStyle : segmentStyle}
+                aria-pressed={selectedTire === tire}
                 onClick={() => setSelectedTire(tire)}
                 data-testid={`pre-race-tire-${tire}`}
               >
