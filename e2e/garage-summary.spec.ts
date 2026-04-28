@@ -139,6 +139,9 @@ test.describe("garage summary", () => {
     await page.goto("/garage");
 
     await expect(page.getByTestId("garage-starter-pick")).toBeVisible();
+    await expect(page.getByTestId("starter-sparrow-gt")).toBeVisible();
+    await expect(page.getByTestId("starter-breaker-s")).toBeVisible();
+    await expect(page.getByTestId("starter-vanta-xr")).toBeVisible();
     await page.getByTestId("pick-starter-sparrow-gt").click();
     await expect(page.getByTestId("garage-status")).toContainText(
       "Starter car selected",

@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import {
   CARS,
   CARS_BY_ID,
+  STARTER_CAR_IDS,
   STARTER_CAR_ID,
   getCar,
 } from "@/data/cars";
@@ -124,6 +125,13 @@ describe("car catalogue", () => {
     const starters = CARS.filter((c) => c.purchasePrice === 0);
     expect(starters.length).toBe(1);
     expect(starters[0]?.id).toBe(STARTER_CAR_ID);
+  });
+
+  it("lists the three §11 starter choice examples", () => {
+    expect(STARTER_CAR_IDS).toEqual(["sparrow-gt", "breaker-s", "vanta-xr"]);
+    for (const starterId of STARTER_CAR_IDS) {
+      expect(getCar(starterId)).toBeDefined();
+    }
   });
 });
 

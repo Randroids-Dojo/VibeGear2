@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: F-063 starter eligibility
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) starter car choice,
+[§11](gdd/11-cars-and-stats.md) three starter examples,
+[§20](gdd/20-hud-and-ui-ux.md) garage starter recovery.
+**Branch / PR:** `feat/f-063-starter-eligibility`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/cars/index.ts`: exports `STARTER_CAR_IDS` for the three
+  §11 starter-choice cars while keeping `STARTER_CAR_ID` as the fresh
+  save default.
+- `src/components/garage/garageSummaryState.ts`: uses
+  `STARTER_CAR_IDS` for starter recovery instead of inferring starter
+  eligibility from `purchasePrice`.
+- `src/data/__tests__/cars-content.test.ts` and
+  `src/components/garage/__tests__/garageSummaryState.test.ts`: pin the
+  three starter-choice ids and reject non-starter cars.
+- `e2e/garage-summary.spec.ts`: asserts the starter recovery UI exposes
+  Sparrow GT, Breaker S, and Vanta XR.
+- `docs/FOLLOWUPS.md`: closed F-063.
+- `docs/GDD_COVERAGE.json`: removed F-063 from the garage summary open
+  followup refs.
+
+### Verified
+- `npx vitest run src/data/__tests__/cars-content.test.ts src/components/garage/__tests__/garageSummaryState.test.ts`
+  green, 35 passed.
+- `npm run content-lint` clean.
+- `npm run test:e2e -- e2e/garage-summary.spec.ts` green, 2 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and content-lint
+  all passed; 2,185 unit tests passed.
+
+### Decisions and assumptions
+- Starter eligibility is separate from purchase price. This preserves
+  the current car shop economy while allowing the championship starter
+  picker to offer the three §11 examples.
+
+### Coverage ledger
+- GDD-05-GARAGE-SUMMARY remains covered for starter recovery.
+- Uncovered adjacent requirements: real repair purchasing, real
+  upgrade purchasing, standings, weather fit, ghost status, leaderboard
+  status, and full next-race tournament data remain future garage
+  slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-27: Slice: Garage summary review fixes
 
 **GDD sections touched:**

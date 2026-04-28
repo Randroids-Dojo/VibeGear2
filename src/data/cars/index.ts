@@ -19,8 +19,10 @@ import tempestR from "./tempest-r.json";
 import vantaXr from "./vanta-xr.json";
 
 /**
- * Ordered car list for UI presentation. Starters first (purchasePrice 0
- * granted on new save, then ascending price), late-game cars after.
+ * Ordered car list for UI presentation. The three §11 starter choices
+ * appear first, with Sparrow GT granted on a fresh save and the other
+ * starter choices available through the championship starter picker.
+ * Late-game cars follow after.
  */
 export const CARS: readonly Car[] = [
   sparrowGt as Car,
@@ -46,3 +48,10 @@ export function getCar(id: string): Car | undefined {
 
 /** The id of the starter car granted on new save. */
 export const STARTER_CAR_ID = "sparrow-gt";
+
+/** The §11 starter-choice roster shown by garage starter recovery. */
+export const STARTER_CAR_IDS = [
+  "sparrow-gt",
+  "breaker-s",
+  "vanta-xr",
+] as const;
