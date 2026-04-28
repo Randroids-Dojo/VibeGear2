@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Garage results handoff
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) race to results to garage loop,
+[§12](gdd/12-upgrade-and-economy-system.md) garage upgrade entry,
+[§13](gdd/13-damage-repairs-and-risk.md) between-race repair entry,
+[§20](gdd/20-hud-and-ui-ux.md) results default action.
+**Branch / PR:** `fix/garage-results-handoff`, #33.
+**Status:** Implemented.
+
+### Done
+- `src/app/race/results/page.tsx`: routes the primary Continue to
+  Garage action to the garage hub at `/garage` instead of the car
+  browser, so the post-race loop lands on repairs, upgrades, and next
+  race actions.
+- `e2e/race-finish.spec.ts`: updated the race-finish repair handoff
+  expectation to match the garage hub route.
+- `e2e/results-screen.spec.ts`: updated the seeded results-screen CTA
+  expectation and test name to match the garage hub route.
+- `e2e/garage-flow.spec.ts`: added the missing full garage-flow walk:
+  finish a race, continue to `/garage`, open repairs, complete a full
+  service, buy the first engine upgrade, and start the next race from
+  the garage hub. The seeded save fixture is locally typed so schema
+  drift is caught by TypeScript.
+- `docs/GDD_COVERAGE.json`: records the new end-to-end garage flow test
+  against GDD-05-GARAGE-SUMMARY.
+
+### Verified
+- `npm run test:e2e -- e2e/garage-flow.spec.ts e2e/race-finish.spec.ts e2e/garage-summary.spec.ts`
+  green, 6 passed.
+- `npm run test:e2e -- e2e/results-screen.spec.ts` green, 4 passed.
+- `npm run verify` green: lint, typecheck, unit tests, and
+  content-lint all passed; 2,207 unit tests passed.
+
+### Decisions and assumptions
+- The garage hub is the canonical between-race destination. The car
+  browser remains available from the hub, repair shop, and upgrade shop,
+  but it is not the default post-results action.
+
+### Coverage ledger
+- GDD-05-GARAGE-SUMMARY now has full-loop Playwright coverage through
+  `e2e/garage-flow.spec.ts`.
+- Uncovered adjacent requirements: tour standings, recommended weather
+  fit, ghost status, leaderboard status, and full next-race tournament
+  data remain future garage and tour slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: F-064 race damage garage persistence
 
 **GDD sections touched:**

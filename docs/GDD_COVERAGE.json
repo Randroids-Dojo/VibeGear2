@@ -33,6 +33,7 @@
       "testRefs": [
         "src/components/garage/__tests__/garageSummaryState.test.ts",
         "e2e/garage-summary.spec.ts",
+        "e2e/garage-flow.spec.ts",
         "e2e/title-screen.spec.ts"
       ]
     },
