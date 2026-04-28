@@ -1204,7 +1204,7 @@ describe("drawRoad weather effects", () => {
     ).toBe(false);
   });
 
-  it("paints snow particles with reduced square sizes", () => {
+  it("paints snow particles and roadside whitening", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "snow" },
