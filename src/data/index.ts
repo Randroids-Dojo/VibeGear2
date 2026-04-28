@@ -26,6 +26,11 @@ export {
   SPONSOR_OBJECTIVES_BY_ID,
   getSponsorObjective,
 } from "./sponsors";
+export {
+  HAZARDS,
+  HAZARDS_BY_ID,
+  getHazard,
+} from "./hazards";
 
 import { compileTrack } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";

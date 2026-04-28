@@ -12,6 +12,7 @@ export * from "./physics";
 export * from "./hudState";
 export * from "./ai";
 export * from "./aiGrid";
+export * from "./hazards";
 export * from "./damageBands";
 export * from "./transmission";
 export * from "./nitro";

@@ -32,6 +32,7 @@
 import type {
   AIDriver,
   CarBaseStats,
+  HazardRegistryEntry,
   PlayerDifficultyPreset,
   TransmissionModePersisted,
   UpgradeCategory,
@@ -71,6 +72,7 @@ import {
   type HitKind,
 } from "./damage";
 import { getDamageBand, getDamageScalars } from "./damageBands";
+import type { DamageScalars } from "./damageBands";
 import {
   resolvePresetScalars,
   type AssistScalars,
@@ -82,6 +84,7 @@ import {
   type DraftCarSnapshot,
   type DraftWindowState,
 } from "./drafting";
+import { evaluateHazards } from "./hazards";
 import { NEUTRAL_INPUT, type Input } from "./input";
 import {
   createNitroForCar,
@@ -206,6 +209,8 @@ export interface RaceSessionConfig {
   aiContext?: AITrackContext;
   player: RaceSessionPlayer;
   ai: ReadonlyArray<RaceSessionAI>;
+  /** Optional hazard registry keyed by `TrackSegment.hazards` ids. */
+  hazardsById?: ReadonlyMap<string, Readonly<HazardRegistryEntry>>;
   /**
    * Total laps. Defaults to `track.laps` so the data file owns the lap count
    * unless the run mode (e.g. quick-race) overrides it.
@@ -487,6 +492,8 @@ export interface RaceSessionState {
    * other car), which is small even for a full 12-car grid.
    */
   draftWindows: Readonly<Record<string, DraftWindowState>>;
+  /** Breakable track hazards consumed during this race, keyed by segment and id. */
+  brokenHazards: ReadonlyArray<string>;
 }
 
 /**
@@ -665,6 +672,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     sectorTimer,
     baselineSplitsMs: null,
     draftWindows: {},
+    brokenHazards: [],
   };
 }
 
@@ -826,6 +834,7 @@ export function stepRaceSession(
         sectorTimer: state.sectorTimer,
         baselineSplitsMs: state.baselineSplitsMs,
         draftWindows: state.draftWindows,
+        brokenHazards: state.brokenHazards,
       };
     }
     // Lights out. Flip to racing, zero the tick clock, reset the sector
@@ -850,6 +859,7 @@ export function stepRaceSession(
       sectorTimer: createSectorState(config.track.checkpoints),
       baselineSplitsMs: state.baselineSplitsMs,
       draftWindows: state.draftWindows,
+      brokenHazards: state.brokenHazards,
     };
     return stepRaceSession(promoted, playerInput, config, dt);
   }
@@ -1101,6 +1111,22 @@ export function stepRaceSession(
   }
 
   const playerDraftBonus = draftMultipliers.get(PLAYER_CAR_ID) ?? 1;
+  const hazardsById = config.hazardsById ?? EMPTY_HAZARD_REGISTRY;
+  let nextBrokenHazards = new Set(state.brokenHazards);
+  const hazardHitsByCarId = new Map<string, HitEvent[]>();
+  const playerHazards = playerIsRacing
+    ? evaluateHazards({
+        car: state.player.car,
+        track: config.track,
+        hazardsById,
+        brokenHazards: nextBrokenHazards,
+      })
+    : EMPTY_HAZARD_EFFECT;
+  nextBrokenHazards = new Set(playerHazards.brokenHazards);
+  const playerHazardHits = hitsFromHazards(playerHazards.events);
+  if (playerHazardHits.length > 0) {
+    hazardHitsByCarId.set(PLAYER_CAR_ID, playerHazardHits);
+  }
   // §13 / F-019: derive the player's per-tick damage scalars from the
   // pre-step damage band. The §10 narrative wants engine damage to clip
   // top speed and tire damage to scrub grip; the band table in
@@ -1111,7 +1137,10 @@ export function stepRaceSession(
   // bite the next physics integration. PRISTINE_SCALARS at zero damage
   // collapses the multipliers to identity, preserving pre-binding
   // behaviour for an undamaged car.
-  const playerDamageScalars = getDamageScalars(state.player.damage.total * 100);
+  const playerDamageScalars = withHazardGrip(
+    getDamageScalars(state.player.damage.total * 100),
+    playerHazards.gripMultiplier,
+  );
   // Skip physics integration entirely for non-racing players (DNF or
   // post-finish). Freezing the snapshot is what makes a retired player
   // sit in place across the rest of the race rather than continuing to
@@ -1192,7 +1221,21 @@ export function stepRaceSession(
     // agnostic, so every AI car reads its own pre-step damage band
     // through the same band table. Identity scalars at zero damage keep
     // the unscaled behaviour for an undamaged AI.
-    const aiDamageScalars = getDamageScalars(entry.damage.total * 100);
+    const aiHazards = evaluateHazards({
+      car: entry.car,
+      track: config.track,
+      hazardsById,
+      brokenHazards: nextBrokenHazards,
+    });
+    nextBrokenHazards = new Set(aiHazards.brokenHazards);
+    const aiHazardHits = hitsFromHazards(aiHazards.events);
+    if (aiHazardHits.length > 0) {
+      hazardHitsByCarId.set(aiCarId(index), aiHazardHits);
+    }
+    const aiDamageScalars = withHazardGrip(
+      getDamageScalars(entry.damage.total * 100),
+      aiHazards.gripMultiplier,
+    );
     const nextCar = step(
       entry.car,
       tick.input,
@@ -1268,7 +1311,7 @@ export function stepRaceSession(
   // Per-id list of `carHit` events to apply this tick. The pair scan
   // populates both sides of every contact pair so the §13 carHit
   // distribution applies symmetrically.
-  const hitsByCarId = new Map<string, HitEvent[]>();
+  const hitsByCarId = new Map(hazardHitsByCarId);
   for (let i = 0; i < damageEntries.length; i += 1) {
     const a = damageEntries[i]!;
     if (!a.racing) continue;
@@ -1566,6 +1609,7 @@ export function stepRaceSession(
     sectorTimer: nextSectorTimer,
     baselineSplitsMs: nextBaseline,
     draftWindows: nextDraftWindows,
+    brokenHazards: Array.from(nextBrokenHazards),
   };
 }
 
@@ -1606,6 +1650,35 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
     sectorTimer: state.sectorTimer,
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
+    brokenHazards: state.brokenHazards.slice(),
+  };
+}
+
+const EMPTY_HAZARD_REGISTRY: ReadonlyMap<string, Readonly<HazardRegistryEntry>> =
+  Object.freeze(new Map());
+
+const EMPTY_HAZARD_EFFECT = Object.freeze({
+  events: Object.freeze([]),
+  gripMultiplier: 1,
+  brokenHazards: Object.freeze(new Set<string>()),
+});
+
+function hitsFromHazards(
+  events: readonly { readonly hit: HitEvent | null }[],
+): HitEvent[] {
+  return events.flatMap((event) => (event.hit === null ? [] : [event.hit]));
+}
+
+function withHazardGrip(
+  scalars: Readonly<DamageScalars>,
+  gripMultiplier: number,
+): DamageScalars {
+  if (!Number.isFinite(gripMultiplier) || gripMultiplier === 1) {
+    return scalars;
+  }
+  return {
+    ...scalars,
+    gripScalar: scalars.gripScalar * Math.max(0, gripMultiplier),
   };
 }
 
