@@ -243,6 +243,13 @@ export const ChampionshipTourSchema = z.object({
    * so a content rename does not crash the race-finish flow.
    */
   sponsors: z.array(slug).optional(),
+  /**
+   * Optional per-tour AI roster keyed by `AIDriver.id`. When present,
+   * `/race?tour=...` builds the runtime grid from these drivers up to
+   * `track.spawn.gridSlots - 1` opponents. Optional so future tours can
+   * keep placeholder structure before their driver lineups are tuned.
+   */
+  aiDrivers: z.array(slug).optional(),
 });
 export type ChampionshipTour = z.infer<typeof ChampionshipTourSchema>;
 

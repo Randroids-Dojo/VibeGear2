@@ -15,6 +15,19 @@
       "sponsors": [
         "velvet-coast-co-op",
         "cleanline-insurance"
+      ],
+      "aiDrivers": [
+        "ai_rocket_01",
+        "ai_cleanline_01",
+        "ai_bully_01",
+        "ai_cautious_01",
+        "ai_chaotic_01",
+        "ai_enduro_01",
+        "ai_rocket_02",
+        "ai_cleanline_02",
+        "ai_bully_02",
+        "ai_cautious_02",
+        "ai_chaotic_02"
       ]
     },
     {
@@ -29,6 +42,19 @@
       "sponsors": [
         "iron-borough-fabricators",
         "cleanline-insurance"
+      ],
+      "aiDrivers": [
+        "ai_rocket_03",
+        "ai_cleanline_03",
+        "ai_bully_03",
+        "ai_cautious_03",
+        "ai_chaotic_03",
+        "ai_enduro_02",
+        "ai_rocket_04",
+        "ai_cleanline_04",
+        "ai_enduro_03",
+        "ai_rocket_01",
+        "ai_cleanline_01"
       ]
     },
     {

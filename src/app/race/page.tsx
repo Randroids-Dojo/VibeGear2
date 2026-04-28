@@ -42,7 +42,14 @@ import { readKeyBindings } from "@/components/options/controlsPaneState";
 import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
-import { TRACK_IDS, TRACK_RAW, getChampionship, loadTrack } from "@/data";
+import {
+  AI_DRIVERS,
+  TRACK_IDS,
+  TRACK_RAW,
+  getAIDriver,
+  getChampionship,
+  loadTrack,
+} from "@/data";
 import carsAtlasFixture from "@/data/atlas/cars.json";
 import { AtlasMetaSchema, TrackSchema, type Track } from "@/data/schemas";
 import {
@@ -62,6 +69,7 @@ import {
   applyRaceResultRecords,
   applyTourRaceResult,
   retireRaceSession,
+  spawnGrid,
   startLoop,
   stepRaceSession,
   totalProgress,
@@ -239,21 +247,6 @@ const STARTER_STATS: CarBaseStats = Object.freeze({
   nitroEfficiency: 1.0,
 });
 
-/**
- * Demo AI driver. Single clean_line opponent per the dot stress-test §4.
- * Full grid spawning is owned by `implement-ai-grid-02d7e311`.
- */
-const DEMO_DRIVER: AIDriver = Object.freeze({
-  id: "ai_cleanline_demo",
-  displayName: "K. Vale",
-  archetype: "clean_line",
-  paceScalar: 1.0,
-  mistakeRate: 0,
-  aggression: 0.3,
-  weatherSkill: { clear: 1, rain: 1, fog: 1, snow: 1 },
-  nitroUsage: { launchBias: 0.5, straightBias: 0.5, panicBias: 0.1 },
-});
-
 interface ResolvedTrack {
   id: string;
   runtimeId: string;
@@ -266,6 +259,7 @@ interface TourRaceContext {
   tourId: string;
   raceIndex: number;
   plannedTrackId: string;
+  aiDriverIds: readonly string[];
 }
 
 function resolveTourRaceContext(
@@ -281,7 +275,13 @@ function resolveTourRaceContext(
   if (!Number.isInteger(raceIndex) || raceIndex < 0) return null;
   const plannedTrackId = tour.tracks[raceIndex];
   if (!plannedTrackId) return null;
-  return { championship, tourId, raceIndex, plannedTrackId };
+  return {
+    championship,
+    tourId,
+    raceIndex,
+    plannedTrackId,
+    aiDriverIds: tour.aiDrivers ?? [],
+  };
 }
 
 function resolveTrack(
@@ -321,6 +321,17 @@ function resolveLapsOverride(raw: string | null): number | null {
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) return null;
   return parsed;
+}
+
+function resolveRaceAIDrivers(
+  tourContext: TourRaceContext | null,
+): readonly AIDriver[] {
+  if (tourContext === null) return AI_DRIVERS.slice(0, 1);
+  const tourRoster =
+    tourContext.aiDriverIds
+      .map((driverId) => getAIDriver(driverId))
+      .filter((driver): driver is AIDriver => driver !== undefined);
+  return tourRoster.length > 0 ? tourRoster : AI_DRIVERS.slice(0, 11);
 }
 
 /**
@@ -536,6 +547,7 @@ function RaceCanvas({
     steer: number;
     touchActive: boolean;
   }>(() => ({ steer: 0, touchActive: false }));
+  const [fieldSize, setFieldSize] = useState<number>(1);
   const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
     touchLayoutFor({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }),
   );
@@ -607,6 +619,17 @@ function RaceCanvas({
       : pendingDamageForActiveCar(sessionSave);
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
+    const spawnedAi = timeTrialEnabled
+      ? []
+      : spawnGrid({
+          trackSpawn: track.compiled.spawn,
+          laneCount: track.compiled.laneCount,
+          aiDrivers: resolveRaceAIDrivers(tourContext).map((driver) => ({
+            driver,
+            stats: STARTER_STATS,
+          })),
+          seed: raceSeed,
+        });
 
     const config: RaceSessionConfig = {
       track: track.compiled,
@@ -616,10 +639,11 @@ function RaceCanvas({
         difficultyPreset: persistedDifficulty,
         initialDamage: initialPlayerDamage,
       },
-      ai: [{ driver: DEMO_DRIVER, stats: STARTER_STATS }],
+      ai: spawnedAi,
       seed: raceSeed,
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
+    setFieldSize(1 + config.ai.length);
     const activeWeather = config.weather ?? track.compiled.weatherOptions[0] ?? "clear";
 
     const resetTimeTrialRuntime = (): void => {
@@ -1106,6 +1130,8 @@ function RaceCanvas({
         </dd>
         <dt>Position:</dt>
         <dd data-testid="hud-position">{hudSnapshot.position}</dd>
+        <dt>Field size:</dt>
+        <dd data-testid="race-field-size">{fieldSize}</dd>
         <dt>Touch active:</dt>
         <dd data-testid="race-touch-active">
           {inputSnapshot.touchActive ? "yes" : "no"}

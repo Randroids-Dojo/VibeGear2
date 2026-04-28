@@ -110,6 +110,12 @@
         "velvet-coast/sunpier-loop",
         "velvet-coast/cliffline-arc",
         "velvet-coast/lighthouse-fall"
+      ],
+      "sponsors": ["velvet-coast-co-op", "cleanline-insurance"],
+      "aiDrivers": [
+        "ai_rocket_01",
+        "ai_cleanline_01",
+        "ai_bully_01"
       ]
     }
   ]
