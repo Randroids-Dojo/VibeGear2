@@ -2,6 +2,25 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-14-WEATHER-RENDER-EFFECTS",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races render active weather as rain streaks, snow particles, fog read-distance fade, and dusk or night bloom, with the visual weather assist reducing effect intensity.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": ["F-067"]
+    },
+    {
       "id": "GDD-20-PRE-RACE-TIRE-SELECTION",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",

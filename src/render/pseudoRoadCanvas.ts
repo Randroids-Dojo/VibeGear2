@@ -27,6 +27,7 @@ import {
 } from "@/road/constants";
 import type { Camera, Strip, Viewport } from "@/road/types";
 import type { WeatherOption } from "@/data/schemas";
+import { visibilityForWeather } from "@/game/weather";
 
 import { drawDust, type DustState } from "./dust";
 import { drawParallax, type ParallaxLayer } from "./parallax";
@@ -74,6 +75,7 @@ export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
 export const PLAYER_CAR_DEFAULT_SPRITE_ID = "sparrow_clean";
 export const ROADSIDE_DRAW_PERIOD = 10;
 export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.22;
+export const WEATHER_EFFECT_REDUCTION_SCALE = 0.35;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
 const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
@@ -125,6 +127,16 @@ export interface DrawRoadOptions {
    * pass it in here; the drawer never advances the pool itself.
    */
   dust?: DustState;
+  /**
+   * Optional screen-space weather effects for §14 / §16. These are
+   * visual only: physics weather is handled by `src/game/raceSession.ts`.
+   * The accessibility flag reduces particle density and overlay alpha
+   * while preserving enough feedback to show the selected weather.
+   */
+  weatherEffects?: {
+    weather: WeatherOption;
+    visualReduction?: boolean;
+  };
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
    * a second physics step from the recorded `Player.readNext` inputs to
@@ -304,6 +316,10 @@ export function drawRoad(
     drawDust(ctx, options.dust, viewport);
   }
 
+  if (options.weatherEffects) {
+    drawWeatherEffects(ctx, viewport, options.weatherEffects);
+  }
+
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
   }
@@ -468,6 +484,126 @@ function drawPoleSprite(
   ctx.fillRect(baseX - width * 0.22, baseY - height, width * 0.44, height);
   ctx.fillStyle = "#f1e36a";
   ctx.fillRect(baseX - width * 1.4, baseY - height, width * 2.8, height * 0.09);
+}
+
+function drawWeatherEffects(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  effects: NonNullable<DrawRoadOptions["weatherEffects"]>,
+): void {
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+  const intensity = effects.visualReduction === true ? WEATHER_EFFECT_REDUCTION_SCALE : 1;
+
+  switch (effects.weather) {
+    case "light_rain":
+    case "rain":
+    case "heavy_rain":
+      drawRainStreaks(ctx, viewport, effects.weather, intensity);
+      return;
+    case "snow":
+      drawSnowParticles(ctx, viewport, intensity);
+      return;
+    case "fog":
+      drawFogFade(ctx, viewport, intensity);
+      return;
+    case "dusk":
+    case "night":
+      drawNightBloom(ctx, viewport, effects.weather, intensity);
+      return;
+    case "clear":
+      return;
+  }
+}
+
+function drawRainStreaks(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  weather: Extract<WeatherOption, "light_rain" | "rain" | "heavy_rain">,
+  intensity: number,
+): void {
+  const baseCount = weather === "heavy_rain" ? 92 : weather === "rain" ? 58 : 32;
+  const count = Math.max(4, Math.round(baseCount * intensity));
+  const alpha = (weather === "heavy_rain" ? 0.34 : weather === "rain" ? 0.26 : 0.18) * intensity;
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#cfefff";
+    for (let i = 0; i < count; i++) {
+      const x = ((i * 73) % Math.max(1, viewport.width + 80)) - 40;
+      const y = (i * 47) % Math.max(1, viewport.height);
+      const h = weather === "heavy_rain" ? 18 : 13;
+      ctx.fillRect(x, y, 2, h);
+    }
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
+}
+
+function drawSnowParticles(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  intensity: number,
+): void {
+  const count = Math.max(5, Math.round(54 * intensity));
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = 0.72 * intensity;
+    ctx.fillStyle = "#f4fbff";
+    for (let i = 0; i < count; i++) {
+      const size = i % 5 === 0 ? 3 : 2;
+      const x = (i * 89) % Math.max(1, viewport.width);
+      const y = (i * 53) % Math.max(1, viewport.height);
+      ctx.fillRect(x, y, size, size);
+    }
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
+}
+
+function drawFogFade(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  intensity: number,
+): void {
+  const visibility = visibilityForWeather("fog");
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = Math.min(0.5, (1 - visibility) * 0.72 * intensity);
+    ctx.fillStyle = "#cbd7e1";
+    ctx.fillRect(0, 0, viewport.width, viewport.height * 0.72);
+    ctx.globalAlpha = Math.min(0.28, (1 - visibility) * 0.4 * intensity);
+    ctx.fillRect(0, viewport.height * 0.48, viewport.width, viewport.height * 0.34);
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
+}
+
+function drawNightBloom(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  weather: Extract<WeatherOption, "dusk" | "night">,
+  intensity: number,
+): void {
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = (weather === "night" ? 0.34 : 0.22) * intensity;
+    ctx.fillStyle = "#f4e779";
+    const y = viewport.height * 0.22;
+    const w = viewport.width * 0.12;
+    const h = viewport.height * 0.035;
+    ctx.fillRect(viewport.width * 0.28 - w / 2, y, w, h);
+    ctx.fillRect(viewport.width * 0.72 - w / 2, y, w, h);
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
 }
 
 /**
