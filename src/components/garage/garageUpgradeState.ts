@@ -128,7 +128,8 @@ function disabledReason(input: {
   if (input.atCap) return "This car is already at its category cap.";
   if (input.nextUpgrade === null) return "No next tier exists.";
   if (input.credits < input.nextUpgrade.cost) {
-    return `Need ${input.nextUpgrade.cost - input.credits} more credits.`;
+    const creditsNeeded = input.nextUpgrade.cost - input.credits;
+    return `Need ${creditsNeeded} more ${creditsNeeded === 1 ? "credit" : "credits"}.`;
   }
   return "";
 }
@@ -173,29 +174,29 @@ function formatEffects(effects: Upgrade["effects"]): string {
   );
   if (entries.length === 0) return "No numeric effect listed";
   return entries
-    .map(([key, value]) => `${effectLabel(key)} +${Math.round(value * 100)}%`)
+    .map(
+      ([key, value]) =>
+        `${effectLabel(key as keyof Upgrade["effects"])} +${Math.round(value * 100)}%`,
+    )
     .join(", ");
 }
 
-function effectLabel(key: string): string {
-  switch (key) {
-    case "topSpeed":
-      return "top speed";
-    case "gripDry":
-      return "dry grip";
-    case "gripWet":
-      return "wet grip";
-    case "nitroPower":
-      return "nitro power";
-    case "nitroDuration":
-      return "nitro duration";
-    case "collisionResistance":
-      return "collision resistance";
-    case "heatResistance":
-      return "heat resistance";
-    case "highSpeedStability":
-      return "high-speed stability";
-    default:
-      return key;
-  }
+function effectLabel(key: keyof Upgrade["effects"]): string {
+  const labels: Partial<Record<keyof Upgrade["effects"], string>> = {
+    accel: "acceleration",
+    brake: "braking",
+    gripDry: "dry grip",
+    gripWet: "wet grip",
+    stability: "stability",
+    durability: "durability",
+    nitroEfficiency: "nitro efficiency",
+    topSpeed: "top speed",
+  };
+
+  return (
+    labels[key] ??
+    String(key)
+      .replace(/([A-Z])/g, " $1")
+      .toLowerCase()
+  );
 }

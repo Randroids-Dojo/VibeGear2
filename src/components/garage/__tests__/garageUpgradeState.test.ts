@@ -29,7 +29,7 @@ describe("buildGarageUpgradeView", () => {
     expect(engine?.currentLabel).toBe("Stock");
     expect(engine?.nextUpgrade?.id).toBe("engine-street");
     expect(engine?.nextLabel).toBe("Street (3000 credits)");
-    expect(engine?.effectsLabel).toContain("accel +4%");
+    expect(engine?.effectsLabel).toContain("acceleration +4%");
     expect(engine?.canPurchase).toBe(true);
     expect(engine?.disabledReason).toBe("");
   });
@@ -47,7 +47,7 @@ describe("buildGarageUpgradeView", () => {
     const engine = view.rows.find((row) => row.category === "engine");
 
     expect(engine?.canPurchase).toBe(false);
-    expect(engine?.disabledReason).toBe("Need 1 more credits.");
+    expect(engine?.disabledReason).toBe("Need 1 more credit.");
   });
 
   it("surfaces category caps from the active car", () => {

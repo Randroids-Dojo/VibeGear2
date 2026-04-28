@@ -55,8 +55,7 @@
         "src/components/garage/__tests__/garageUpgradeState.test.ts",
         "e2e/garage-upgrades.spec.ts",
         "src/game/__tests__/economy.test.ts"
-      ],
-      "followupRefs": ["F-062"]
+      ]
     },
     {
       "id": "GDD-09-ELEVATION-LIVE",

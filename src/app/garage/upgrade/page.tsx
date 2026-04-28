@@ -117,6 +117,8 @@ export default function GarageUpgradePage() {
             ...statusStyle,
             color: status.kind === "error" ? "#ff9a9a" : "#9bd2ff",
           }}
+          role="status"
+          aria-live={status.kind === "error" ? "assertive" : "polite"}
         >
           {status.message}
         </p>
