@@ -10,9 +10,9 @@
  *   an offset clamped to a configurable max radius and normalised into
  *   `[-1, 1]` along the X axis. Y axis offset is ignored for now (steer
  *   only). Lifting the finger releases the stick.
- * - Right zone: discrete touch buttons stacked vertically. Top half is
- *   accelerator, bottom half is brake. A nitro and pause button live in
- *   the right thumb-zone too (top corner and bottom corner respectively).
+ * - Right zone: discrete touch buttons in the lower-right thumb arc.
+ *   Accelerator and brake are circular hit targets near the natural
+ *   phone grip position. Nitro and pause stay on the top-right edge.
  *
  * Multi-touch is required so a player can hold accelerator with one
  * finger and steer with another. The stateful manager tracks each
@@ -48,8 +48,8 @@ import { NEUTRAL_INPUT } from "./input";
  * - `pauseCornerSize`: side length of the top-right pause tap target.
  *   Pause sits inboard of nitro so a thumb reach to the corner does not
  *   accidentally pause the race.
- * - `brakeFraction`: fraction of the right zone height occupied by the
- *   brake button (bottom half). Accelerator fills the rest.
+ * - `brakeFraction`: retained for older layout callers. The current
+ *   lower-right button classifier uses derived circular hit targets.
  */
 export interface TouchLayout {
   width: number;
@@ -105,6 +105,21 @@ interface ZoneClassification {
   pause: boolean;
 }
 
+function thumbButtonRadius(layout: TouchLayout): number {
+  return Math.max(52, Math.min(88, layout.width * 0.14));
+}
+
+function isInsideCircle(
+  p: TouchPointer,
+  centerX: number,
+  centerY: number,
+  radius: number,
+): boolean {
+  const dx = p.originX - centerX;
+  const dy = p.originY - centerY;
+  return dx * dx + dy * dy <= radius * radius;
+}
+
 /**
  * Classify a pointer's origin into the layout zones. The zones are
  * computed off the origin position, not the current position, so a drag
@@ -119,7 +134,6 @@ interface ZoneClassification {
 function classifyPointers(state: TouchState): ZoneClassification {
   const { layout } = state;
   const steerZoneMaxX = layout.width * layout.steerZoneRatio;
-  const accelBrakeBoundaryY = layout.height * (1 - layout.brakeFraction);
   const nitroMinX = layout.width - layout.nitroCornerSize;
   const nitroMaxY = layout.nitroCornerSize;
   // Pause sits inboard of nitro on the top edge: it lives just to the
@@ -127,6 +141,11 @@ function classifyPointers(state: TouchState): ZoneClassification {
   const pauseMaxX = nitroMinX;
   const pauseMinX = pauseMaxX - layout.pauseCornerSize;
   const pauseMaxY = layout.pauseCornerSize;
+  const buttonRadius = thumbButtonRadius(layout);
+  const accelCenterX = layout.width * 0.86;
+  const accelCenterY = layout.height * 0.72;
+  const brakeCenterX = layout.width * 0.68;
+  const brakeCenterY = layout.height * 0.82;
 
   let steer: TouchPointer | null = null;
   let accelerate = false;
@@ -162,10 +181,10 @@ function classifyPointers(state: TouchState): ZoneClassification {
       pause = true;
       continue;
     }
-    if (p.originY >= accelBrakeBoundaryY) {
-      brake = true;
-    } else {
+    if (isInsideCircle(p, accelCenterX, accelCenterY, buttonRadius)) {
       accelerate = true;
+    } else if (isInsideCircle(p, brakeCenterX, brakeCenterY, buttonRadius * 0.95)) {
+      brake = true;
     }
   }
 
@@ -345,21 +364,28 @@ export function createTouchInputSource(options: TouchInputSourceOptions = {}): T
   }
 
   const onPointerDown = (ev: Event): void => {
-    upsertPointer(ev as unknown as PointerLike, true);
+    const ple = ev as unknown as PointerLike;
+    ple.preventDefault?.();
+    upsertPointer(ple, true);
   };
   const onPointerMove = (ev: Event): void => {
     const ple = ev as unknown as PointerLike;
     if (!pointers.has(ple.pointerId)) return;
+    ple.preventDefault?.();
     upsertPointer(ple, false);
   };
   const onPointerUp = (ev: Event): void => {
-    releasePointer(ev as unknown as PointerLike);
+    const ple = ev as unknown as PointerLike;
+    ple.preventDefault?.();
+    releasePointer(ple);
   };
   const onPointerCancel = (ev: Event): void => {
     // Cancellation = the system stole the pointer (gesture, palm reject,
     // OS modal). Release it as if the finger lifted so the manager does
     // not hold a phantom stick.
-    releasePointer(ev as unknown as PointerLike);
+    const ple = ev as unknown as PointerLike;
+    ple.preventDefault?.();
+    releasePointer(ple);
   };
   const onBlur = (): void => {
     clearAll();

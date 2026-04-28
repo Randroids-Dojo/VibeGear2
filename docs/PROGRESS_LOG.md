@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Mobile touch controls
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) touch input,
+[§20](gdd/20-hud-and-ui-ux.md) race HUD control surface,
+[§21](gdd/21-technical-design-for-web-implementation.md) web runtime.
+**Branch / PR:** `fix/mobile-touch-controls`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/touch/TouchControls.tsx`: made the steering stick
+  transient, thumb-anchored on left-half pointerdown, and invisible
+  after release while keeping the overlay from intercepting the live
+  canvas input source.
+- `src/game/inputTouch.ts`: moved accelerator and brake hit targets to
+  the lower-right thumb arc and prevents browser gestures from stealing
+  active touch pointers.
+- `e2e/race-mobile.spec.ts`: added live `/race` iPhone coverage for
+  left-half stick spawning, sign-correct steering, stick release, and
+  right-thumb control placement.
+- `docs/GDD_COVERAGE.json`: tightened GDD-19-MOBILE-RACE-INPUT to cover
+  the transient steering and reachable right-thumb controls.
+
+### Verified
+- `npx vitest run src/game/inputTouch.test.ts` green, 39 passed.
+- `npx playwright test e2e/race-mobile.spec.ts --project=mobile-chromium`
+  green, 3 passed.
+- `npx playwright test e2e/touch-input.spec.ts --project=mobile-chromium`
+  green, 4 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2413 passed.
+- `npm run test:e2e` green, 73 passed.
+
+### Decisions and assumptions
+- The visual overlay observes document pointer events while remaining
+  `pointer-events: none`, so the canvas remains the single live input
+  target and the stick still mirrors real touches.
+- Nitro and pause stay at the top-right edge for now because the bug
+  report only calls out GAS and BRK reachability.
+
+### Coverage ledger
+- GDD-19-MOBILE-RACE-INPUT now covers transient left-half steering and
+  reachable right-thumb GAS / BRK placement on the mounted race route.
+- Uncovered adjacent requirements: none created by this slice.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Daily Challenge seed selection
 
 **GDD sections touched:**

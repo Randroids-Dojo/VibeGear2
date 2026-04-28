@@ -27,7 +27,7 @@ test.describe("mobile race playability", () => {
     expect(scrollState.docScrollHeight).toBeLessThanOrEqual(scrollState.innerHeight + 1);
   });
 
-  test("touch overlay drives steering and pause on the live race route", async ({ page }) => {
+  test("transient left-half stick drives steering on the live race route", async ({ page }) => {
     await page.goto("/race");
 
     await expect(page.getByTestId("touch-controls")).toBeVisible();
@@ -36,12 +36,19 @@ test.describe("mobile race playability", () => {
     expect(surfaceBox).not.toBeNull();
     if (!surfaceBox) return;
 
-    const startX = surfaceBox.x + surfaceBox.width * 0.18;
-    const startY = surfaceBox.y + surfaceBox.height * 0.7;
+    const startX = surfaceBox.x + surfaceBox.width * 0.24;
+    const startY = surfaceBox.y + surfaceBox.height * 0.52;
     const endX = startX + Math.min(180, surfaceBox.width * 0.35);
 
+    await expect(page.getByTestId("touch-stick")).toHaveCount(0);
     await pressPointer(page, startX, startY, 1);
     try {
+      await expect(page.getByTestId("touch-stick")).toBeVisible();
+      const knobBox = await page.getByTestId("touch-stick-knob").boundingBox();
+      expect(knobBox).not.toBeNull();
+      if (!knobBox) return;
+      expect(knobBox.x + knobBox.width / 2).toBeCloseTo(startX, 2);
+      expect(knobBox.y + knobBox.height / 2).toBeCloseTo(startY, 2);
       await movePointer(page, endX, startY, 1);
       await expect(page.getByTestId("race-touch-active")).toHaveText("yes");
       await expect.poll(async () => Number(await page.getByTestId("race-last-steer").innerText()))
@@ -49,6 +56,27 @@ test.describe("mobile race playability", () => {
     } finally {
       await releasePointer(page, endX, startY, 1);
     }
+    await expect(page.getByTestId("touch-stick")).toHaveCount(0);
+  });
+
+  test("right-thumb controls are reachable and pause still works", async ({ page }) => {
+    await page.goto("/race");
+
+    await expect(page.getByTestId("touch-controls")).toBeVisible();
+
+    const accelBox = await page.getByTestId("touch-accelerate").boundingBox();
+    const brakeBox = await page.getByTestId("touch-brake").boundingBox();
+    expect(accelBox).not.toBeNull();
+    expect(brakeBox).not.toBeNull();
+    if (!accelBox || !brakeBox) return;
+
+    const viewport = page.viewportSize();
+    expect(viewport).not.toBeNull();
+    if (!viewport) return;
+
+    expect(accelBox.y + accelBox.height / 2).toBeGreaterThan(viewport.height * 0.6);
+    expect(brakeBox.y + brakeBox.height / 2).toBeGreaterThan(viewport.height * 0.7);
+    expect(accelBox.x + accelBox.width / 2).toBeGreaterThan(viewport.width * 0.75);
 
     const pauseBox = await page.getByTestId("touch-pause").boundingBox();
     expect(pauseBox).not.toBeNull();
@@ -73,7 +101,7 @@ async function pressPointer(
 ): Promise<void> {
   await page.evaluate(
     ({ x: px, y: py, pointerId: id }) => {
-      const target = document.querySelector("[data-testid='race-canvas-element']");
+      const target = document.elementFromPoint(px, py);
       if (!target) return;
       target.dispatchEvent(
         new PointerEvent("pointerdown", {
@@ -98,7 +126,7 @@ async function movePointer(
 ): Promise<void> {
   await page.evaluate(
     ({ toX: bx, toY: by, pointerId: id }) => {
-      const target = document.querySelector("[data-testid='race-canvas-element']");
+      const target = document.elementFromPoint(bx, by);
       if (!target) return;
       target.dispatchEvent(
         new PointerEvent("pointermove", {
@@ -123,7 +151,7 @@ async function releasePointer(
 ): Promise<void> {
   await page.evaluate(
     ({ x: px, y: py, pointerId: id }) => {
-      const target = document.querySelector("[data-testid='race-canvas-element']");
+      const target = document.elementFromPoint(px, py);
       if (!target) return;
       target.dispatchEvent(
         new PointerEvent("pointerup", {

@@ -111,7 +111,9 @@ function state(layout: TouchLayout, pointers: TouchPointer[]): TouchState {
 
 const LAYOUT: TouchLayout = { ...DEFAULT_TOUCH_LAYOUT };
 const STEER_ZONE_MAX = LAYOUT.width * LAYOUT.steerZoneRatio;
-const ACCEL_BRAKE_BOUNDARY_Y = LAYOUT.height * (1 - LAYOUT.brakeFraction);
+const THUMB_BUTTON_RADIUS = Math.max(52, Math.min(88, LAYOUT.width * 0.14));
+const ACCEL_CENTER: [number, number] = [LAYOUT.width * 0.86, LAYOUT.height * 0.72];
+const BRAKE_CENTER: [number, number] = [LAYOUT.width * 0.68, LAYOUT.height * 0.82];
 
 // Pure helper --------------------------------------------------------------
 
@@ -199,23 +201,41 @@ describe("inputFromTouchState", () => {
 
   it("maps an accelerator-zone tap to throttle = 1", () => {
     const got = inputFromTouchState(
-      state(LAYOUT, [pointer({ id: 1, origin: [STEER_ZONE_MAX + 50, 100] })]),
+      state(LAYOUT, [pointer({ id: 1, origin: ACCEL_CENTER })]),
     );
     expect(got.throttle).toBe(1);
     expect(got.brake).toBe(0);
   });
 
   it("maps a brake-zone tap to brake = 1", () => {
+    const got = inputFromTouchState(state(LAYOUT, [pointer({ id: 1, origin: BRAKE_CENTER })]));
+    expect(got.brake).toBe(1);
+    expect(got.throttle).toBe(0);
+  });
+
+  it("keeps upper-right empty space from pressing accelerator", () => {
+    const got = inputFromTouchState(
+      state(LAYOUT, [pointer({ id: 1, origin: [STEER_ZONE_MAX + 50, 100] })]),
+    );
+    expect(got.throttle).toBe(0);
+    expect(got.brake).toBe(0);
+  });
+
+  it("accepts thumb-arc button taps inside their circular hit areas", () => {
     const got = inputFromTouchState(
       state(LAYOUT, [
         pointer({
           id: 1,
-          origin: [STEER_ZONE_MAX + 50, ACCEL_BRAKE_BOUNDARY_Y + 10],
+          origin: [ACCEL_CENTER[0] + THUMB_BUTTON_RADIUS * 0.85, ACCEL_CENTER[1]],
+        }),
+        pointer({
+          id: 2,
+          origin: [BRAKE_CENTER[0] - THUMB_BUTTON_RADIUS * 0.65, BRAKE_CENTER[1]],
         }),
       ]),
     );
+    expect(got.throttle).toBe(1);
     expect(got.brake).toBe(1);
-    expect(got.throttle).toBe(0);
   });
 
   it("multi-touch: steer + accelerate populate both fields", () => {
@@ -226,7 +246,7 @@ describe("inputFromTouchState", () => {
           origin: [80, 240],
           current: [80 + LAYOUT.stickMaxRadius, 240],
         }),
-        pointer({ id: 2, origin: [STEER_ZONE_MAX + 50, 100] }),
+        pointer({ id: 2, origin: ACCEL_CENTER }),
       ]),
     );
     expect(got.steer).toBe(1);
@@ -254,11 +274,8 @@ describe("inputFromTouchState", () => {
   it("two pointers in the right zone: any in accelerator counts", () => {
     const got = inputFromTouchState(
       state(LAYOUT, [
-        pointer({ id: 1, origin: [STEER_ZONE_MAX + 50, 100] }),
-        pointer({
-          id: 2,
-          origin: [STEER_ZONE_MAX + 80, ACCEL_BRAKE_BOUNDARY_Y + 5],
-        }),
+        pointer({ id: 1, origin: ACCEL_CENTER }),
+        pointer({ id: 2, origin: BRAKE_CENTER }),
       ]),
     );
     expect(got.throttle).toBe(1);
@@ -288,7 +305,7 @@ describe("inputFromTouchState", () => {
 
   it("never sets handbrake / shifts (not bound on touch in this slice)", () => {
     const got = inputFromTouchState(
-      state(LAYOUT, [pointer({ id: 1, origin: [STEER_ZONE_MAX + 50, 100] })]),
+      state(LAYOUT, [pointer({ id: 1, origin: ACCEL_CENTER })]),
     );
     expect(got.handbrake).toBe(false);
     expect(got.shiftUp).toBe(false);
@@ -409,7 +426,7 @@ describe("createTouchInputSource", () => {
       clientX: 80 + DEFAULT_TOUCH_LAYOUT.stickMaxRadius,
       clientY: 240,
     });
-    tt.fire("pointerdown", { pointerId: 2, clientX: STEER_ZONE_MAX + 50, clientY: 100 });
+    tt.fire("pointerdown", { pointerId: 2, clientX: ACCEL_CENTER[0], clientY: ACCEL_CENTER[1] });
 
     const got = src.sample();
     expect(got.steer).toBe(1);
@@ -442,7 +459,7 @@ describe("createTouchInputSource", () => {
     const tt = makeTouchTarget();
     const src = createTouchInputSource({ target: tt.target });
     tt.fire("pointerdown", { pointerId: 1, clientX: 80, clientY: 240 });
-    tt.fire("pointerdown", { pointerId: 2, clientX: STEER_ZONE_MAX + 50, clientY: 100 });
+    tt.fire("pointerdown", { pointerId: 2, clientX: ACCEL_CENTER[0], clientY: ACCEL_CENTER[1] });
     expect(src.hasActivePointers()).toBe(true);
 
     tt.fire("blur");
@@ -551,7 +568,7 @@ describe("createInputManager(touchTarget)", () => {
     });
     expect(mgr.hasTouch()).toBe(false);
 
-    tt.fire("pointerdown", { pointerId: 1, clientX: STEER_ZONE_MAX + 50, clientY: 100 });
+    tt.fire("pointerdown", { pointerId: 1, clientX: ACCEL_CENTER[0], clientY: ACCEL_CENTER[1] });
     expect(mgr.hasTouch()).toBe(true);
     expect(mgr.sample().throttle).toBe(1);
 
