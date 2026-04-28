@@ -365,8 +365,8 @@ export function drawRoad(
     drawWeatherEffects(ctx, viewport, options.weatherEffects);
   }
 
-  drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
   drawHeatShimmer(ctx, viewport, options.heatShimmer);
+  drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
 
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
