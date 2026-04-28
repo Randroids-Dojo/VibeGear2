@@ -10,6 +10,20 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-067: Add weather particle intensity, glare, and fog readability settings
+**Created:** 2026-04-28
+**Priority:** polish
+**Status:** open
+**Notes:** The weather render-effects slice draws active rain, snow,
+fog, and dusk or night bloom and wires the existing visual weather
+assist to reduce intensity. §14 also calls for finer accessibility
+controls: a weather particles intensity slider, reduced glare mode, fog
+floor clamp for readability, and flash reduction for lightning or night
+bloom. Add these settings to the options surface, persist them in
+`SaveGameSettings.accessibility` or the successor display settings
+bundle, and thread them into `drawRoad` so the renderer can scale or
+disable the relevant effects independently.
+
 ## F-066: Add pre-race tire selection and persist the active tire channel
 **Created:** 2026-04-28
 **Priority:** blocks-release

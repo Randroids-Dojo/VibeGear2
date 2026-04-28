@@ -33,6 +33,7 @@ import {
   PLAYER_CAR_DEFAULT_WINDSHIELD,
   PLAYER_CAR_HEIGHT_FRACTION,
   PLAYER_CAR_WIDTH_TO_HEIGHT,
+  WEATHER_EFFECT_REDUCTION_SCALE,
   drawRoad,
   type DrawRoadOptions,
 } from "../pseudoRoadCanvas";
@@ -812,5 +813,119 @@ describe("drawRoad player car overlay", () => {
     const nulled = makeCanvasSpy();
     drawRoad(nulled.ctx, EMPTY_STRIPS, VIEWPORT, { playerCar: null });
     expect(nulled.calls.filter((c) => c.type === "fill")).toHaveLength(0);
+  });
+});
+
+describe("drawRoad weather effects", () => {
+  it("paints deterministic heavy-rain streaks over the road layer", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "heavy_rain" },
+    });
+
+    const streaks = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#cfefff",
+    );
+    expect(streaks).toHaveLength(92);
+    expect(streaks[0]!.globalAlpha).toBeCloseTo(0.34, 6);
+    expect(streaks[0]!.w).toBe(2);
+    expect(streaks[0]!.h).toBe(18);
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
+  });
+
+  it("reduces rain density when visual weather reduction is enabled", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "heavy_rain", visualReduction: true },
+    });
+
+    const streaks = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#cfefff",
+    );
+    expect(streaks).toHaveLength(Math.round(92 * WEATHER_EFFECT_REDUCTION_SCALE));
+    expect(streaks[0]!.globalAlpha).toBeCloseTo(
+      0.34 * WEATHER_EFFECT_REDUCTION_SCALE,
+      6,
+    );
+  });
+
+  it("paints snow particles with reduced square sizes", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "snow" },
+    });
+
+    const flakes = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#f4fbff",
+    );
+    expect(flakes).toHaveLength(54);
+    expect(flakes[0]!.w).toBe(3);
+    expect(flakes[1]!.w).toBe(2);
+    expect(flakes[0]!.globalAlpha).toBeCloseTo(0.72, 6);
+  });
+
+  it("paints fog as a draw-distance fade without changing clear weather", () => {
+    const fog = makeCanvasSpy();
+    drawRoad(fog.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "fog" },
+    });
+
+    const fogRects = fog.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#cbd7e1",
+    );
+    expect(fogRects).toHaveLength(2);
+    expect(fogRects[0]!.x).toBe(0);
+    expect(fogRects[0]!.y).toBe(0);
+    expect(fogRects[0]!.w).toBe(VIEWPORT.width);
+    expect(fogRects[0]!.h).toBeCloseTo(VIEWPORT.height * 0.72, 6);
+    expect(fogRects[0]!.globalAlpha).toBeCloseTo(0.36, 6);
+
+    const clear = makeCanvasSpy();
+    drawRoad(clear.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "clear" },
+    });
+    expect(
+      clear.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === "#cbd7e1",
+      ),
+    ).toBe(false);
+  });
+
+  it("paints night bloom pools and restores fill state", () => {
+    const spy = makeCanvasSpy();
+    spy.ctx.fillStyle = "#123456";
+    spy.ctx.globalAlpha = 0.64;
+
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "night" },
+    });
+
+    const bloom = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#f4e779",
+    );
+    expect(bloom).toHaveLength(2);
+    expect(bloom[0]!.globalAlpha).toBeCloseTo(0.34, 6);
+    expect(bloom[0]!.w).toBeCloseTo(VIEWPORT.width * 0.12, 6);
+    expect(spy.finalAlpha()).toBeCloseTo(0.64, 6);
+  });
+
+  it("skips weather effects on a zero-area viewport", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, { width: 0, height: 480 }, {
+      weatherEffects: { weather: "heavy_rain" },
+    });
+
+    expect(
+      spy.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === "#cfefff",
+      ),
+    ).toBe(false);
   });
 });

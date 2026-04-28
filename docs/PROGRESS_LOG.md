@@ -6,6 +6,63 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Weather render effects
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) visual effects and
+accessibility,
+[§16](gdd/16-rendering-and-visual-design.md) weather VFX and renderer
+pipeline,
+[§20](gdd/20-hud-and-ui-ux.md) weather communication,
+[§21](gdd/21-technical-design-for-web-implementation.md) Canvas2D
+renderer ownership.
+**Branch / PR:** `feat/weather-render-effects`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: added deterministic screen-space
+  weather effects for rain streaks, snow particles, fog read-distance
+  fade, and dusk or night bloom pools.
+- `src/app/race/page.tsx`: passes the active race weather into the
+  renderer and uses the existing visual weather assist to reduce
+  particle density and overlay alpha.
+- `docs/GDD_COVERAGE.json`: added GDD-14-WEATHER-RENDER-EFFECTS.
+- `docs/FOLLOWUPS.md`: added F-067 for the remaining weather
+  accessibility settings.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 33 passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npm run verify` green, 2318 passed.
+- `npm run test:e2e` green, 70 passed.
+- `grep -rn $'\u2014\|\u2013' ...` clean on changed files.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- Weather effects are deterministic screen-space patterns for this
+  slice so renderer tests can assert structure without brittle
+  screenshots.
+- The existing visual weather assist is the first reduction control.
+  F-067 owns finer §14 settings for particle intensity, glare, fog floor,
+  and flash reduction.
+
+### Coverage ledger
+- GDD-14-WEATHER-RENDER-EFFECTS covers static active-weather rendering
+  and the visual weather assist intensity reduction.
+- Uncovered adjacent requirements: weather state transitions, weather
+  particle intensity slider, reduced glare mode, fog floor clamp,
+  lightning or night flash reduction, and heat shimmer remain future
+  slices.
+
+### Followups created
+- F-067: Add weather particle intensity, glare, and fog readability
+  settings.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Pre-race tire selection
 
 **GDD sections touched:**

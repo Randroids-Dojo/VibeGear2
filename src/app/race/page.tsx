@@ -936,6 +936,10 @@ function RaceCanvas({
         }
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
+          weatherEffects: {
+            weather: activeWeather,
+            visualReduction: persistedAssists.weatherVisualReduction,
+          },
           ghostCar: ghostOverlayRef.current
             ? {
                 ...ghostOverlayRef.current,
