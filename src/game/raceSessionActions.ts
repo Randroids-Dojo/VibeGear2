@@ -108,6 +108,8 @@ export function retireRaceSession(
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
     brokenHazards: state.brokenHazards.slice(),
+    weather: cloneWeatherPure(state.weather),
+    weatherRngState: state.weatherRngState,
   };
 }
 
@@ -155,6 +157,23 @@ function clonePure(state: Readonly<RaceSessionState>): RaceSessionState {
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
     brokenHazards: state.brokenHazards.slice(),
+    weather: cloneWeatherPure(state.weather),
+    weatherRngState: state.weatherRngState,
+  };
+}
+
+function cloneWeatherPure(
+  weather: Readonly<RaceSessionState["weather"]>,
+): RaceSessionState["weather"] {
+  return {
+    current: weather.current,
+    transitioning: weather.transitioning
+      ? {
+          from: weather.transitioning.from,
+          to: weather.transitioning.to,
+          progress: weather.transitioning.progress,
+        }
+      : null,
   };
 }
 
