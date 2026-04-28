@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { defaultSave } from "@/persistence/save";
 
-import { createDamageState } from "../damage";
+import { createDamageState, PRISTINE_DAMAGE_STATE } from "../damage";
 import {
   applyRaceDamageToGarage,
   damageDeltaFromState,
@@ -50,6 +50,10 @@ describe("race damage garage persistence", () => {
     expect(next).not.toBe(save);
     expect(next.garage.pendingDamage?.["sparrow-gt"]).toEqual(damage);
     expect(next.garage.lastRaceCashEarned).toBe(1775);
+  });
+
+  it("returns the frozen pristine state when no active-car damage is queued", () => {
+    expect(pendingDamageForActiveCar(defaultSave())).toBe(PRISTINE_DAMAGE_STATE);
   });
 
   it("does not create repair queue entries for unowned cars", () => {

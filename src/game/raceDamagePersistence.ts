@@ -2,6 +2,7 @@ import type { SaveGame } from "@/data/schemas";
 
 import {
   createDamageState,
+  PRISTINE_DAMAGE_STATE,
   type DamageState,
   type DamageZone,
 } from "./damage";
@@ -21,9 +22,9 @@ export function damageDeltaFromState(
 
 export function pendingDamageForActiveCar(save: SaveGame): DamageState {
   const activeCarId = save.garage.activeCarId;
-  if (!activeCarId) return createDamageState({});
+  if (!activeCarId) return PRISTINE_DAMAGE_STATE;
   const pending = save.garage.pendingDamage?.[activeCarId] ?? null;
-  if (pending === null) return createDamageState({});
+  if (pending === null) return PRISTINE_DAMAGE_STATE;
   return normalizeDamageState(pending);
 }
 

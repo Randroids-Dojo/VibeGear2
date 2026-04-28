@@ -97,7 +97,7 @@ import { defaultSave, loadSave, saveSave } from "@/persistence/save";
 import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
 import type { SaveGame } from "@/data/schemas";
 import type { RaceResult } from "@/game/raceResult";
-import type { DamageState } from "@/game/damage";
+import { PRISTINE_DAMAGE_STATE, type DamageState } from "@/game/damage";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -484,8 +484,10 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
     const persistedKeyBindings = readKeyBindings(sessionSave);
-    const initialPlayerDamage = pendingDamageForActiveCar(sessionSave);
     const timeTrialEnabled = mode === "timeTrial";
+    const initialPlayerDamage = timeTrialEnabled
+      ? PRISTINE_DAMAGE_STATE
+      : pendingDamageForActiveCar(sessionSave);
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
 
