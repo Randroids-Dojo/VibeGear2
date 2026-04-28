@@ -2,6 +2,29 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-15-AI-GRID-SPAWNER",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/25-development-roadmap.md"
+      ],
+      "requirement": "World Tour races can spawn a deterministic campaign-size AI field from per-tour driver rosters while preserving time-trial and prototype route behavior.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/aiGrid.ts",
+        "src/app/race/page.tsx",
+        "src/data/championships/world-tour-standard.json",
+        "src/data/schemas.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/aiGrid.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "e2e/twelve-car-field.spec.ts",
+        "e2e/race-demo.spec.ts"
+      ]
+    },
+    {
       "id": "GDD-24-MVP-TRACK-SET",
       "gddSections": [
         "docs/gdd/09-track-design.md",

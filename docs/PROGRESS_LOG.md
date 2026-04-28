@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: AI grid spawner
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU opponent rosters,
+[§20](gdd/20-hud-and-ui-ux.md) race route diagnostics,
+[§22](gdd/22-data-schemas.md) championship tour schema,
+[§25](gdd/25-development-roadmap.md) MVP race field progression.
+**Branch / PR:** `feat/ai-grid-spawner`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/aiGrid.ts`: added a pure deterministic grid spawner that
+  reserves the player slot, shuffles AI rosters by seed, assigns slots,
+  lanes, start positions, and per-car seeds for `RaceSession`.
+- `src/data/championships/world-tour-standard.json`: added 11-driver AI
+  rosters for the first two authored World Tour regions.
+- `src/data/schemas.ts` and `docs/gdd/22-data-schemas.md`: documented the
+  optional per-tour `aiDrivers` list keyed by `AIDriver.id`.
+- `src/app/race/page.tsx`: wired tour races to spawn an 11-opponent field on
+  12-slot tracks while keeping the plain `/race` prototype route on its
+  single-AI fallback.
+- `e2e/twelve-car-field.spec.ts`: added browser coverage that confirms the
+  Velvet Coast tour route starts with a 12-car field.
+
+### Verified
+- `npx vitest run src/game/__tests__/aiGrid.test.ts src/data/__tests__/championship-content.test.ts`
+  green, 24 passed.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/twelve-car-field.spec.ts e2e/race-demo.spec.ts`
+  green, 4 passed.
+- `npm run verify` green, 2248 passed.
+- `npm run test:e2e` green, 69 passed.
+
+### Decisions and assumptions
+- The player occupies the first grid slot; AI cars use the remaining
+  `track.spawn.gridSlots - 1` slots.
+- Non-tour `/race` remains a one-opponent prototype smoke route so the new
+  campaign-size field does not hide regressions behind early demo DNFs.
+- Time trial still spawns no live AI opponents.
+
+### Coverage ledger
+- GDD-15-AI-GRID-SPAWNER covers the initial grid-spawn portion of §15 for authored
+  World Tour race fields.
+- Uncovered adjacent requirements: richer AI tactical behavior, collision
+  avoidance, per-class roster balancing, and full 32-track roster tuning
+  remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: added `aiDrivers` to the championship
+  tour JSON example.
+
 ## 2026-04-28: Slice: MVP track set
 
 **GDD sections touched:**

@@ -27,6 +27,7 @@ import {
   CHAMPIONSHIPS_BY_ID,
   getChampionship,
 } from "@/data/championships";
+import { AI_DRIVERS_BY_ID } from "@/data/ai";
 import { ChampionshipSchema } from "@/data/schemas";
 import { SPONSOR_OBJECTIVES_BY_ID } from "@/data/sponsors";
 import { TRACK_RAW } from "@/data/tracks";
@@ -172,6 +173,24 @@ describe("world-tour-standard sponsor roster cross-references", () => {
       for (const sponsorId of tour.sponsors ?? []) {
         expect(SPONSOR_OBJECTIVES_BY_ID.has(sponsorId)).toBe(true);
       }
+    }
+  });
+});
+
+describe("world-tour-standard AI roster cross-references", () => {
+  const wt = getChampionship(WORLD_TOUR_ID);
+
+  it("resolves every referenced AI driver id", () => {
+    for (const tour of wt.tours) {
+      for (const driverId of tour.aiDrivers ?? []) {
+        expect(AI_DRIVERS_BY_ID.has(driverId)).toBe(true);
+      }
+    }
+  });
+
+  it("declares 11 AI drivers for each authored MVP tour", () => {
+    for (const tour of wt.tours.slice(0, 2)) {
+      expect(tour.aiDrivers ?? []).toHaveLength(11);
     }
   });
 });
