@@ -852,6 +852,34 @@ describe("drawRoad weather effects", () => {
     );
   });
 
+  it("applies the particle intensity slider to rain density", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "heavy_rain", particleIntensity: 0.5 },
+    });
+
+    const streaks = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#cfefff",
+    );
+    expect(streaks).toHaveLength(Math.round(92 * 0.5));
+    expect(streaks[0]!.globalAlpha).toBeCloseTo(0.34 * 0.5, 6);
+  });
+
+  it("allows weather particles to be disabled", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "snow", particleIntensity: 0 },
+    });
+
+    expect(
+      spy.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === "#f4fbff",
+      ),
+    ).toBe(false);
+  });
+
   it("paints snow particles with reduced square sizes", () => {
     const spy = makeCanvasSpy();
     drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
@@ -900,6 +928,23 @@ describe("drawRoad weather effects", () => {
     ).toBe(false);
   });
 
+  it("uses the fog readability floor to reduce fog overlay alpha", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "fog", fogFloorClamp: 0.8 },
+    });
+
+    const fogRects = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#cbd7e1",
+    );
+    expect(fogRects).toHaveLength(2);
+    expect(fogRects[0]!.globalAlpha).toBeCloseTo(
+      Math.min(0.5, (1 - 0.8) * 0.72),
+      6,
+    );
+  });
+
   it("paints night bloom pools and restores fill state", () => {
     const spy = makeCanvasSpy();
     spy.ctx.fillStyle = "#123456";
@@ -917,6 +962,24 @@ describe("drawRoad weather effects", () => {
     expect(bloom[0]!.globalAlpha).toBeCloseTo(0.34, 6);
     expect(bloom[0]!.w).toBeCloseTo(VIEWPORT.width * 0.12, 6);
     expect(spy.finalAlpha()).toBeCloseTo(0.64, 6);
+  });
+
+  it("reduces night bloom when glare and flash reduction are enabled", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: {
+        weather: "night",
+        reducedGlare: true,
+        flashReduction: true,
+      },
+    });
+
+    const bloom = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" && c.fillStyle === "#f4e779",
+    );
+    expect(bloom).toHaveLength(2);
+    expect(bloom[0]!.globalAlpha).toBeCloseTo(0.34 * 0.55 * 0.45, 6);
   });
 
   it("skips weather effects on a zero-area viewport", () => {

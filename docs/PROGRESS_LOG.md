@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Weather accessibility settings
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather
+accessibility controls,
+[§16](gdd/16-rendering-and-visual-design.md) weather VFX tuning,
+[§20](gdd/20-hud-and-ui-ux.md) settings surface,
+[§22](gdd/22-data-schemas.md) save settings schema.
+**Branch / PR:** `feat/weather-accessibility-settings`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts` and `src/persistence/migrations/v1ToV2.ts`:
+  added additive weather accessibility settings for particle intensity,
+  reduced glare, fog readability floor, and flash reduction.
+- `src/components/options/AccessibilityPane.tsx`: surfaced the new
+  sliders and toggles in the Accessibility pane and persisted changes
+  to the existing save bundle.
+- `src/render/pseudoRoadCanvas.ts` and `src/app/race/page.tsx`: wired
+  the settings into rain, snow, fog, and dusk or night bloom rendering.
+- `docs/FOLLOWUPS.md`: marked F-067 done.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-14-WEATHER-ACCESSIBILITY-SETTINGS.
+
+### Verified
+- `npx vitest run src/components/options/__tests__/accessibilityPaneState.test.ts src/data/__tests__/settings-schema.test.ts src/persistence/migrations/v1ToV2.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 96 passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npx playwright test e2e/options-accessibility.spec.ts` green, 4
+  passed.
+- `npm run verify` green, 2331 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- New fields are optional in the schema so old v2 and v3 saves with an
+  existing accessibility bundle remain valid.
+- Fresh and migrated saves still include concrete defaults, so the UI
+  persists a complete accessibility object after a change.
+
+### Coverage ledger
+- GDD-14-WEATHER-ACCESSIBILITY-SETTINGS covers the §14 persisted
+  controls and renderer application for weather particles, fog, glare,
+  and flashes.
+- Uncovered adjacent requirements: weather state transitions and heat
+  shimmer remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Weather render effects
 
 **GDD sections touched:**

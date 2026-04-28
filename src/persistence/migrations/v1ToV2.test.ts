@@ -54,6 +54,10 @@ describe("migrateV1ToV2", () => {
       reducedMotion: false,
       largeUiText: false,
       screenShakeScale: 1,
+      weatherParticleIntensity: 1,
+      reducedWeatherGlare: false,
+      fogReadabilityClamp: 0,
+      weatherFlashReduction: false,
     });
     expect(migrated.settings.accessibility).toEqual({
       ...V2_ACCESSIBILITY_DEFAULTS,

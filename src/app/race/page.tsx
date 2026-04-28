@@ -939,6 +939,12 @@ function RaceCanvas({
           weatherEffects: {
             weather: activeWeather,
             visualReduction: persistedAssists.weatherVisualReduction,
+            particleIntensity:
+              persistedSettings.accessibility?.weatherParticleIntensity,
+            reducedGlare: persistedSettings.accessibility?.reducedWeatherGlare,
+            fogFloorClamp: persistedSettings.accessibility?.fogReadabilityClamp,
+            flashReduction:
+              persistedSettings.accessibility?.weatherFlashReduction,
           },
           ghostCar: ghostOverlayRef.current
             ? {

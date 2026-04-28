@@ -560,12 +560,20 @@ export type AudioSettings = z.infer<typeof AudioSettingsSchema>;
  * - `screenShakeScale`: 0..1 multiplier on the §16 shake intensity. 0
  *   disables shake entirely; consumers must guard against multiplying NaN /
  *   negative input by clamping to this range at parse time.
+ * - `weatherParticleIntensity`: 0..1 multiplier for rain and snow particles.
+ * - `reducedWeatherGlare`: dampens weather bloom in dusk and night races.
+ * - `fogReadabilityClamp`: minimum fog visibility target for readability.
+ * - `weatherFlashReduction`: further reduces high-contrast weather flashes.
  */
 export const AccessibilitySettingsSchema = z.object({
   colorBlindMode: z.enum(["off", "protanopia", "deuteranopia", "tritanopia"]),
   reducedMotion: z.boolean(),
   largeUiText: z.boolean(),
   screenShakeScale: unitInterval,
+  weatherParticleIntensity: unitInterval.optional(),
+  reducedWeatherGlare: z.boolean().optional(),
+  fogReadabilityClamp: unitInterval.optional(),
+  weatherFlashReduction: z.boolean().optional(),
 });
 export type AccessibilitySettings = z.infer<typeof AccessibilitySettingsSchema>;
 

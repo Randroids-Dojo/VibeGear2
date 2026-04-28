@@ -8,7 +8,12 @@
  * `difficultyPaneState.ts`.
  */
 
-import type { AssistFieldKey, AssistSettings, SaveGame } from "@/data/schemas";
+import type {
+  AccessibilitySettings,
+  AssistFieldKey,
+  AssistSettings,
+  SaveGame,
+} from "@/data/schemas";
 import { ASSIST_FIELDS } from "@/data/schemas";
 
 export interface AssistSpec {
@@ -79,6 +84,27 @@ export const PANE_HEADLINE = "Accessibility assists";
 export const PANE_SUBTITLE =
   "Six §19 assists for smoother control. Each toggle persists to your save and applies to every race mode.";
 
+export const WEATHER_SETTINGS_HEADLINE = "Weather visibility";
+export const WEATHER_SETTINGS_SUBTITLE =
+  "§14 weather display controls for rain, snow, fog, glare, and flashes.";
+
+export const WEATHER_PARTICLE_INTENSITY_LABEL = "Weather particle intensity";
+export const FOG_READABILITY_CLAMP_LABEL = "Fog readability floor";
+
+export const WEATHER_ACCESSIBILITY_DEFAULTS = Object.freeze({
+  weatherParticleIntensity: 1,
+  reducedWeatherGlare: false,
+  fogReadabilityClamp: 0,
+  weatherFlashReduction: false,
+});
+
+const BASE_ACCESSIBILITY_DEFAULTS = Object.freeze({
+  colorBlindMode: "off" as const,
+  reducedMotion: false,
+  largeUiText: false,
+  screenShakeScale: 1,
+});
+
 export type AssistReadResult = Required<
   Pick<
     AssistSettings,
@@ -100,6 +126,38 @@ export function readAssists(save: SaveGame): AssistReadResult {
     nitroToggleMode: a.nitroToggleMode === true,
     reducedSimultaneousInput: a.reducedSimultaneousInput === true,
     weatherVisualReduction: a.weatherVisualReduction === true,
+  };
+}
+
+export type WeatherAccessibilityReadResult = Required<
+  Pick<
+    AccessibilitySettings,
+    | "weatherParticleIntensity"
+    | "reducedWeatherGlare"
+    | "fogReadabilityClamp"
+    | "weatherFlashReduction"
+  >
+>;
+
+export function readWeatherAccessibility(
+  save: SaveGame,
+): WeatherAccessibilityReadResult {
+  const accessibility = save.settings.accessibility;
+  return {
+    weatherParticleIntensity: clampUnit(
+      accessibility?.weatherParticleIntensity ??
+        WEATHER_ACCESSIBILITY_DEFAULTS.weatherParticleIntensity,
+    ),
+    reducedWeatherGlare:
+      accessibility?.reducedWeatherGlare ??
+      WEATHER_ACCESSIBILITY_DEFAULTS.reducedWeatherGlare,
+    fogReadabilityClamp: clampUnit(
+      accessibility?.fogReadabilityClamp ??
+        WEATHER_ACCESSIBILITY_DEFAULTS.fogReadabilityClamp,
+    ),
+    weatherFlashReduction:
+      accessibility?.weatherFlashReduction ??
+      WEATHER_ACCESSIBILITY_DEFAULTS.weatherFlashReduction,
   };
 }
 
@@ -134,9 +192,89 @@ export function applyAssistToggle(
   return { kind: "applied", save: next };
 }
 
+export type WeatherAccessibilityToggleKey =
+  | "reducedWeatherGlare"
+  | "weatherFlashReduction";
+
+export type ApplyWeatherAccessibilityResult =
+  | { kind: "applied"; save: SaveGame }
+  | { kind: "noop"; reason: "same-value" };
+
+export function applyWeatherAccessibilityToggle(
+  save: SaveGame,
+  key: WeatherAccessibilityToggleKey,
+  value: boolean,
+): ApplyWeatherAccessibilityResult {
+  const current = readWeatherAccessibility(save)[key];
+  if (current === value) {
+    return { kind: "noop", reason: "same-value" };
+  }
+  return {
+    kind: "applied",
+    save: withAccessibility(save, { [key]: value }),
+  };
+}
+
+export function applyWeatherParticleIntensity(
+  save: SaveGame,
+  value: number,
+): ApplyWeatherAccessibilityResult {
+  return applyWeatherAccessibilityNumber(
+    save,
+    "weatherParticleIntensity",
+    value,
+  );
+}
+
+export function applyFogReadabilityClamp(
+  save: SaveGame,
+  value: number,
+): ApplyWeatherAccessibilityResult {
+  return applyWeatherAccessibilityNumber(save, "fogReadabilityClamp", value);
+}
+
+function applyWeatherAccessibilityNumber(
+  save: SaveGame,
+  key: "weatherParticleIntensity" | "fogReadabilityClamp",
+  value: number,
+): ApplyWeatherAccessibilityResult {
+  const nextValue = clampUnit(value);
+  const current = readWeatherAccessibility(save)[key];
+  if (current === nextValue) {
+    return { kind: "noop", reason: "same-value" };
+  }
+  return {
+    kind: "applied",
+    save: withAccessibility(save, { [key]: nextValue }),
+  };
+}
+
 function readAssistField(save: SaveGame, key: AssistFieldKey): boolean {
   const raw = save.settings.assists[key];
   return raw === true;
+}
+
+function withAccessibility(
+  save: SaveGame,
+  patch: Partial<WeatherAccessibilityReadResult>,
+): SaveGame {
+  return {
+    ...save,
+    settings: {
+      ...save.settings,
+      accessibility: {
+        ...BASE_ACCESSIBILITY_DEFAULTS,
+        ...save.settings.accessibility,
+        ...readWeatherAccessibility(save),
+        ...patch,
+      },
+    },
+  };
+}
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
 }
 
 /**

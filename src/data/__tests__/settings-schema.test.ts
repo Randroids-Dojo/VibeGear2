@@ -63,6 +63,18 @@ describe("AccessibilitySettingsSchema", () => {
     expect(AccessibilitySettingsSchema.safeParse(happy).success).toBe(true);
   });
 
+  it("accepts the §14 weather accessibility defaults", () => {
+    expect(
+      AccessibilitySettingsSchema.safeParse({
+        ...happy,
+        weatherParticleIntensity: 1,
+        reducedWeatherGlare: false,
+        fogReadabilityClamp: 0,
+        weatherFlashReduction: false,
+      }).success,
+    ).toBe(true);
+  });
+
   it("accepts each colourblind mode", () => {
     for (const mode of ["off", "protanopia", "deuteranopia", "tritanopia"]) {
       expect(
@@ -106,6 +118,21 @@ describe("AccessibilitySettingsSchema", () => {
       AccessibilitySettingsSchema.safeParse({
         ...happy,
         reducedMotion: "yes",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects out-of-range weather accessibility sliders", () => {
+    expect(
+      AccessibilitySettingsSchema.safeParse({
+        ...happy,
+        weatherParticleIntensity: 1.5,
+      }).success,
+    ).toBe(false);
+    expect(
+      AccessibilitySettingsSchema.safeParse({
+        ...happy,
+        fogReadabilityClamp: -0.1,
       }).success,
     ).toBe(false);
   });
@@ -182,6 +209,10 @@ describe("SaveGameSettingsSchema (v2 expansion)", () => {
           reducedMotion: false,
           largeUiText: false,
           screenShakeScale: 1,
+          weatherParticleIntensity: 1,
+          reducedWeatherGlare: false,
+          fogReadabilityClamp: 0,
+          weatherFlashReduction: false,
         },
         keyBindings: { accelerate: ["ArrowUp"] },
       }).success,
