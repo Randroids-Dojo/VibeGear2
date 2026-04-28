@@ -1,11 +1,11 @@
 /**
  * HUD state derivation.
  *
- * Source of truth: `docs/gdd/20-hud-and-ui-ux.md`. This is the Phase 1
- * minimal HUD per `docs/IMPLEMENTATION_PLAN.md` Phase 1: speed, current
- * lap / total laps, and current position (1st of N). Polish slice (later
- * dot) handles the full HUD treatment from §20 ("lap timer", "best lap",
- * "nitro meter", "damage", "weather icon", etc).
+ * Source of truth: `docs/gdd/20-hud-and-ui-ux.md`. The required minimal
+ * HUD fields are speed, current lap / total laps, and current position
+ * (1st of N). Additional §20 widgets are optional fields derived only
+ * when callers provide the matching runtime snapshots, including timers,
+ * splits, minimap, assists, damage, weather, gear, and nitro.
  *
  * Pure derivation: `deriveHudState(input) -> HudState` is a pure
  * function of the race and car snapshots passed in. The renderer

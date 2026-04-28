@@ -25,7 +25,7 @@ Correct them by adding a new entry that references the old one.
 
 ### Verified
 - `npx vitest run src/game/__tests__/hudState.test.ts src/render/__tests__/uiRenderer.test.ts`
-  green, 78 passed.
+  green, 79 passed.
 - `npm run typecheck` green.
 - `npm run verify` green, 2391 passed.
 - `npm run test:e2e` green, 71 passed.

@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 import type { AssistBadge, AssistBadgeLabel } from "@/game/assists";
 import type { HudState } from "@/game/hudState";
 
-import { drawHud, formatAssistBadgeLabel } from "../uiRenderer";
+import { drawHud, formatAssistBadgeLabel, type HudColors } from "../uiRenderer";
 
 type Call =
   | {
@@ -110,6 +110,21 @@ const BASE_HUD: HudState = {
   totalLaps: 3,
   position: 1,
   totalCars: 4,
+};
+
+const CUSTOM_COLORS: HudColors = {
+  text: "#fff",
+  textMuted: "#ccc",
+  shadow: "rgba(0,0,0,0.5)",
+  assistBadgeFill: "#aabbcc",
+  assistBadgeText: "#112233",
+  statusPanelFill: "#010203",
+  damageGood: "#00aa00",
+  damageWarn: "#aaaa00",
+  damageBad: "#aa0000",
+  weatherChipFill: "#002244",
+  nitroFill: "#0044aa",
+  nitroActiveFill: "#aa7700",
 };
 
 function badge(
@@ -271,20 +286,7 @@ describe("drawHud assist badge", () => {
       { ...BASE_HUD, assistBadge: badge("brake-assist") },
       VIEWPORT,
       {
-        colors: {
-          text: "#fff",
-          textMuted: "#ccc",
-          shadow: "rgba(0,0,0,0.5)",
-          assistBadgeFill: "#aabbcc",
-          assistBadgeText: "#112233",
-          statusPanelFill: "#010203",
-          damageGood: "#00aa00",
-          damageWarn: "#aaaa00",
-          damageBad: "#aa0000",
-          weatherChipFill: "#002244",
-          nitroFill: "#0044aa",
-          nitroActiveFill: "#aa7700",
-        },
+        colors: CUSTOM_COLORS,
       },
     );
     const fillRect = calls.find((c) => c.type === "fillRect");
@@ -487,6 +489,22 @@ describe("drawHud gear and nitro widgets", () => {
     const fillRects = calls.filter((c) => c.type === "fillRect");
     expect(fillRects.at(-1)?.fillStyle).toBe("#f4d24a");
     expect(fillRects.at(-1)?.w).toBe(120);
+  });
+
+  it("uses the status panel color for the nitro meter background", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        nitro: { current: 1, max: 3, active: false, percent: 33 },
+      },
+      VIEWPORT,
+      { colors: CUSTOM_COLORS },
+    );
+    const fillRects = calls.filter((c) => c.type === "fillRect");
+    expect(fillRects[0]?.fillStyle).toBe("#010203");
+    expect(fillRects[1]?.fillStyle).toBe("#0044aa");
   });
 
   it("draws the gear and RPM label above the speedometer", () => {

@@ -1,10 +1,10 @@
 /**
  * Canvas2D HUD overlay drawer.
  *
- * Phase 1 minimal HUD per `docs/IMPLEMENTATION_PLAN.md`. Source of truth:
- * `docs/gdd/20-hud-and-ui-ux.md`. This slice ships only speed, lap, and
- * position; the full HUD treatment (lap timer, best lap, nitro meter,
- * damage, weather icon, minimap) lands in the §20 polish slice.
+ * Source of truth: `docs/gdd/20-hud-and-ui-ux.md`. The HUD grows through
+ * guarded §20 widgets so older callers can still provide only speed, lap,
+ * and position, while live race callers can add timers, splits, minimap,
+ * assists, damage, weather, gear, and nitro state.
  *
  * The drawer is the only HUD module that knows about a Canvas2D
  * context. The `HudState` it consumes comes from `src/game/hudState.ts`
@@ -12,9 +12,9 @@
  * derivation can run headless without canvas mocking.
  *
  * Layout matches §20 "UX wireframe descriptions / Race HUD layout":
- * - Top-left: lap, position, current-lap timer (TIME row, polish slice),
- *   and BEST lap (polish slice) under that.
- * - Bottom-right: speed and unit
+ * - Top-left: lap, position, current-lap timer, and BEST lap when supplied.
+ * - Bottom-right: speed, unit, and optional gear / RPM.
+ * - Bottom-center: optional nitro meter.
  * - Top-right (below the splits widget): accessibility-assist badge,
  *   only when `HudState.assistBadge.active` is true. The badge sits at
  *   `y = padding + 64` so it never overlaps the splits widget's three
@@ -24,8 +24,8 @@
  * is supplied (per-field guard); the legacy minimal-HUD callers that
  * never set them keep their current layout untouched.
  *
- * Other §20 corners (bottom-left damage, weather icon, etc) are
- * renderer-guarded so callers can wire them one at a time.
+ * Other §20 widgets are renderer-guarded so callers can wire them one at
+ * a time.
  */
 
 import { ASSIST_BADGE_LABELS, type AssistBadge } from "@/game/assists";
@@ -289,7 +289,7 @@ function drawNitroMeter(
   if (nitro === undefined) return;
   const x = Math.round((viewport.width - NITRO_METER_WIDTH) / 2);
   const y = viewport.height - padding - NITRO_METER_BOTTOM;
-  ctx.fillStyle = "rgba(7, 14, 28, 0.72)";
+  ctx.fillStyle = colors.statusPanelFill;
   ctx.fillRect(x, y, NITRO_METER_WIDTH, NITRO_METER_HEIGHT);
   ctx.fillStyle = nitro.active ? colors.nitroActiveFill : colors.nitroFill;
   ctx.fillRect(
