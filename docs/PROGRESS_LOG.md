@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 essential repair cap,
 [§13](gdd/13-damage-repairs-and-risk.md) full service and quick patch,
 [§22](gdd/22-data-schemas.md) save repair queue.
-**Branch / PR:** `feat/f-061-garage-repairs`, PR pending.
+**Branch / PR:** `feat/f-061-garage-repairs`, #31.
 **Status:** Implemented.
 
 ### Done
