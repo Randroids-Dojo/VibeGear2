@@ -231,7 +231,7 @@ function ResultsView(props: ResultsViewProps): ReactElement {
 
       <nav style={ctaRowStyle} aria-label="Results actions">
         <Link
-          href="/garage/cars"
+          href="/garage"
           ref={continueRef}
           data-testid="results-cta-continue"
           style={primaryCtaStyle}

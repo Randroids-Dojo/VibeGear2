@@ -132,7 +132,7 @@ test.describe("race-finish wiring (F-038)", () => {
       expect(bodyDamage).toBeGreaterThanOrEqual(0.33);
 
       await page.getByTestId("results-cta-continue").click();
-      await expect(page).toHaveURL(/\/garage\/cars/);
+      await expect(page).toHaveURL(/\/garage$/);
       await page.goto("/garage/repair");
 
       await expect(page.getByTestId("garage-repair-page")).toBeVisible();
