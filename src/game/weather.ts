@@ -196,7 +196,8 @@ export const WEATHER_VISIBILITY: Readonly<Record<WeatherOption, number>> =
  * Upper bound for §14 low-visibility AI risk. Fog at unit weather skill
  * reaches 2x mistake pressure because its visibility row is 0.5.
  * Lower skill can push worse conditions above 2x, but the scalar stays
- * capped so a poor weather driver cannot become fully random.
+ * capped to limit how much visibility alone can amplify mistake
+ * pressure for poor weather drivers.
  */
 export const WEATHER_VISIBILITY_RISK_MAX_SCALAR = 3;
 

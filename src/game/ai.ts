@@ -17,7 +17,20 @@
  *
  * The function is pure:
  *
- *   tickAI(driver, aiState, aiCar, player, track, race, dt)
+ *   tickAI(
+ *     driver,
+ *     aiState,
+ *     aiCar,
+ *     player,
+ *     track,
+ *     race,
+ *     stats,
+ *     context,
+ *     dt,
+ *     cpuModifiers,
+ *     weatherSkillScalar,
+ *     visibilityRiskScalar,
+ *   )
  *     -> { input, nextAiState }
  *
  * No globals or time source. Same arguments, including `AIState.seed`,
@@ -69,6 +82,7 @@ import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
 import { deserializeRng } from "./rng";
+import { WEATHER_VISIBILITY_RISK_MAX_SCALAR } from "./weather";
 
 /**
  * Identity §23 CPU modifiers row used as the default when a caller does
@@ -270,9 +284,9 @@ export function tickAI(
     context.roadHalfWidth,
   );
   const effectiveMistakeRate = clamp(
-    driver.mistakeRate *
+      driver.mistakeRate *
       cpuModifiers.mistakeScalar *
-      clamp(visibilityRiskScalar, 1, 3),
+      clamp(visibilityRiskScalar, 1, WEATHER_VISIBILITY_RISK_MAX_SCALAR),
     0,
     1,
   );
