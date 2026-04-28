@@ -13,13 +13,19 @@ or `obsolete` so the trail is preserved.
 ## F-066: Add pre-race tire selection and persist the active tire channel
 **Created:** 2026-04-28
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The weather grip runtime slice applies §23 weather modifiers
 through the existing dry handling path because no active tire-selection
 state exists yet. Add the §14/§20 pre-race tire choice, persist the
 active tire channel for the race, and pass `"wet"` into
 `weatherGripScalar` when the player actually chooses wet tires. The AI
 path can keep dry default until AI setup selection lands.
+
+Closed by `feat/pre-race-tire-selection`. `/world` now routes tour
+entry through `/race/prep`, the pre-race card shows the §20 race fields
+and §14 forecast cells, the player can choose dry or wet tires, and
+`/race` consumes the `tire` query as `RaceSessionConfig.playerTire`.
+AI cars keep the dry default until AI setup selection lands.
 
 ## F-065: Persist active tour race progression through the four-race World Tour loop
 **Created:** 2026-04-28

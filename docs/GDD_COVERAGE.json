@@ -2,6 +2,32 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-20-PRE-RACE-TIRE-SELECTION",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "World Tour entry passes through a pre-race card that shows track, tour, weather forecast, laps, difficulty, tire recommendation, standings, cash, repair estimate, car summary, and carries the selected tire into race physics.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/preRaceCard.ts",
+        "src/app/race/prep/page.tsx",
+        "src/app/world/page.tsx",
+        "src/app/race/page.tsx",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/preRaceCard.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "e2e/pre-race.spec.ts",
+        "e2e/world-tour.spec.ts",
+        "e2e/tour-flow.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-GRIP-RUNTIME",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
@@ -20,7 +46,7 @@
         "src/game/__tests__/physics.test.ts",
         "src/game/__tests__/raceSession.test.ts"
       ],
-      "followupRefs": ["F-066"]
+      "followupRefs": []
     },
     {
       "id": "GDD-21-RNG-CONSUMERS",
