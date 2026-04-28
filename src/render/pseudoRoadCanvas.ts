@@ -289,6 +289,8 @@ export function drawRoad(
   // as one unit. We capture the offset here, then save / translate /
   // restore around the strip loop.
   const shakeOffset = options.vfx ? drawVfx(ctx, options.vfx, viewport) : null;
+  const highContrastSigns =
+    options.weatherEffects?.highContrastRoadsideSigns === true;
 
   if (strips.length >= 2) {
     if (shakeOffset && (shakeOffset.dx !== 0 || shakeOffset.dy !== 0)) {
@@ -299,7 +301,7 @@ export function drawRoad(
         ctx,
         strips,
         viewport,
-        options.weatherEffects?.highContrastRoadsideSigns === true,
+        highContrastSigns,
       );
       ctx.restore();
     } else {
@@ -308,7 +310,7 @@ export function drawRoad(
         ctx,
         strips,
         viewport,
-        options.weatherEffects?.highContrastRoadsideSigns === true,
+        highContrastSigns,
       );
     }
   }
