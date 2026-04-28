@@ -27,15 +27,18 @@ export interface HazardTickEffect {
   readonly brokenHazards: ReadonlySet<string>;
 }
 
+const EMPTY_EVENTS: readonly HazardEvent[] = [];
+const EMPTY_BROKEN_HAZARDS: ReadonlySet<string> = new Set<string>();
+
 export function evaluateHazards(input: EvaluateHazardsInput): HazardTickEffect {
   const segment = segmentAt(input.track, input.car.z);
   if (segment === null || segment.hazardIds.length === 0) {
     return noHazardEffect(input.brokenHazards);
   }
 
-  const priorBroken = input.brokenHazards ?? new Set<string>();
-  const nextBroken = new Set(priorBroken);
-  const events: HazardEvent[] = [];
+  let nextBroken = input.brokenHazards ?? EMPTY_BROKEN_HAZARDS;
+  let writableBroken: Set<string> | null = null;
+  let events: HazardEvent[] | null = null;
   let gripMultiplier = 1;
 
   for (const hazardId of segment.hazardIds) {
@@ -43,16 +46,21 @@ export function evaluateHazards(input: EvaluateHazardsInput): HazardTickEffect {
     if (hazard === undefined) continue;
     if (hazard.kind === "tunnel") continue;
     const key = `${segment.index}:${hazard.id}`;
-    if (priorBroken.has(key)) continue;
+    if (nextBroken.has(key)) continue;
     if (!overlapsLateral(input.car.x, hazard)) continue;
     const event = buildHazardEvent(key, hazard, segment.index, input.car.speed);
+    events ??= [];
     events.push(event);
     gripMultiplier *= event.gripMultiplier;
-    if (event.breakable) nextBroken.add(key);
+    if (event.breakable) {
+      writableBroken ??= new Set(nextBroken);
+      writableBroken.add(key);
+      nextBroken = writableBroken;
+    }
   }
 
   return {
-    events,
+    events: events ?? EMPTY_EVENTS,
     gripMultiplier,
     brokenHazards: nextBroken,
   };
@@ -115,8 +123,8 @@ function noHazardEffect(
   brokenHazards: ReadonlySet<string> | undefined,
 ): HazardTickEffect {
   return {
-    events: [],
+    events: EMPTY_EVENTS,
     gripMultiplier: 1,
-    brokenHazards: brokenHazards ?? new Set<string>(),
+    brokenHazards: brokenHazards ?? EMPTY_BROKEN_HAZARDS,
   };
 }

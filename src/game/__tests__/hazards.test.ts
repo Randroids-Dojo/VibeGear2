@@ -45,6 +45,30 @@ describe("evaluateHazards", () => {
     expect(second.events).toEqual([]);
   });
 
+  it("deduplicates a breakable hazard repeated on one segment", () => {
+    const baseSegment = TRACK.segments[0]!;
+    const track = {
+      ...TRACK,
+      totalLengthMeters: 10,
+      totalCompiledSegments: 1,
+      segments: [
+        {
+          ...baseSegment,
+          index: 0,
+          worldZ: 0,
+          hazardIds: ["traffic_cone", "traffic_cone"],
+        },
+      ],
+    };
+    const effect = evaluateHazards({
+      car: car({ z: 5 }),
+      track,
+      hazardsById: HAZARDS_BY_ID,
+    });
+    expect(effect.events).toHaveLength(1);
+    expect(effect.brokenHazards.has("0:traffic_cone")).toBe(true);
+  });
+
   it("applies puddle grip without damage", () => {
     const track = loadTrack("velvet-coast/harbor-run");
     const effect = evaluateHazards({
