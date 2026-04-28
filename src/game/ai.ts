@@ -36,6 +36,11 @@
  * identity (`getCpuModifiers("normal")`) so existing callers keep
  * Normal behavior unchanged.
  *
+ * Weather skill wiring: callers may pass `weatherSkillScalar` as the
+ * compact §15 weather-skill row resolved for the active weather. It is
+ * a number rather than an adjusted modifiers object so the 60 Hz race
+ * loop does not allocate one object per AI per tick.
+ *
  * Out of scope for this slice (deferred to follow-up AI dots):
  * - Overtake / lane-shift behaviour. §15 lists it; the clean_line single
  *   AI may collide with the player. Collision avoidance lands with the
@@ -44,7 +49,6 @@
  * - Archetype-specific mistake shapes (miss apex, brake too early in
  *   fog, etc.). This slice ships the shared deterministic lane-target
  *   mistake hook.
- * - Weather skill modulation of `paceScalar`.
  * - Full rubber-banding policy. This slice ships the light catch-up
  *   pace hook so the §23 `recoveryScalar` row is consumed.
  */
@@ -235,6 +239,7 @@ export function tickAI(
   context: Readonly<AITrackContext> = DEFAULT_AI_TRACK_CONTEXT,
   _dt: number = 0,
   cpuModifiers: Readonly<CpuDifficultyModifiers> = IDENTITY_CPU_MODIFIERS,
+  weatherSkillScalar: number = 1,
 ): AITickResult {
   const segment = currentSegment(track, aiCar.z);
   // `segment.curve` is the per-compiled-segment dx contribution, already
@@ -298,11 +303,16 @@ export function tickAI(
   // at Hard targets ~5% above the same driver at Normal, while at Easy
   // the same driver targets ~8% below. Identity modifiers (the default
   // when a caller has not threaded the resolved tier) preserve
-  // pre-binding behaviour bit-for-bit. The composed target is then
-  // re-clamped at `stats.topSpeed` so a Master-tier driver with an
-  // authored `paceScalar > 1` still cannot exceed the chassis ceiling.
+  // pre-binding behaviour bit-for-bit. `weatherSkillScalar` stacks the
+  // compact §15 weather-skill row without allocating adjusted modifier
+  // objects per AI tick. The composed target is then re-clamped at
+  // `stats.topSpeed` so a Master-tier driver with an authored
+  // `paceScalar > 1` still cannot exceed the chassis ceiling.
   const curvePenalty = 1 - AI_TUNING.CLEAN_LINE_CURVE_DECEL * Math.abs(authoredCurve);
-  const composedPaceScalar = driver.paceScalar * cpuModifiers.paceScalar;
+  const composedPaceScalar =
+    driver.paceScalar *
+    cpuModifiers.paceScalar *
+    clamp(weatherSkillScalar, 0, 2);
   const rawTarget =
     stats.topSpeed *
     Math.max(0, curvePenalty) *
