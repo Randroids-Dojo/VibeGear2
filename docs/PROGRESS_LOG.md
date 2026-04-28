@@ -34,7 +34,8 @@ consistency.
 - `npx vitest run src/components/garage/__tests__/garageSummaryState.test.ts src/app/__tests__/page.test.tsx`
   green, 13 passed.
 - `npm run content-lint` clean.
-- `npm run test:e2e -- e2e/garage-summary.spec.ts` green, 2 passed.
+- `npm run test:e2e -- e2e/garage-summary.spec.ts e2e/save-persistence.spec.ts`
+  green, 4 passed.
 - `npm run verify` clean: lint, typecheck, unit tests, and content-lint
   all passed; 2,184 unit tests passed.
 
