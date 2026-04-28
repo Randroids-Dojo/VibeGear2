@@ -56,6 +56,7 @@ describe("migrateV1ToV2", () => {
       screenShakeScale: 1,
       weatherParticleIntensity: 1,
       reducedWeatherGlare: false,
+      highContrastRoadsideSigns: false,
       fogReadabilityClamp: 0,
       weatherFlashReduction: false,
     });

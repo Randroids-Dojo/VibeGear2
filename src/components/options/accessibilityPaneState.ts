@@ -86,7 +86,7 @@ export const PANE_SUBTITLE =
 
 export const WEATHER_SETTINGS_HEADLINE = "Weather visibility";
 export const WEATHER_SETTINGS_SUBTITLE =
-  "§14 weather display controls for rain, snow, fog, glare, and flashes.";
+  "§14 weather display controls for rain, snow, fog, signs, glare, and flashes.";
 
 export const WEATHER_PARTICLE_INTENSITY_LABEL = "Weather particle intensity";
 export const FOG_READABILITY_CLAMP_LABEL = "Fog readability floor";
@@ -94,6 +94,7 @@ export const FOG_READABILITY_CLAMP_LABEL = "Fog readability floor";
 export const WEATHER_ACCESSIBILITY_DEFAULTS = Object.freeze({
   weatherParticleIntensity: 1,
   reducedWeatherGlare: false,
+  highContrastRoadsideSigns: false,
   fogReadabilityClamp: 0,
   weatherFlashReduction: false,
 });
@@ -134,6 +135,7 @@ export type WeatherAccessibilityReadResult = Required<
     AccessibilitySettings,
     | "weatherParticleIntensity"
     | "reducedWeatherGlare"
+    | "highContrastRoadsideSigns"
     | "fogReadabilityClamp"
     | "weatherFlashReduction"
   >
@@ -151,6 +153,9 @@ export function readWeatherAccessibility(
     reducedWeatherGlare:
       accessibility?.reducedWeatherGlare ??
       WEATHER_ACCESSIBILITY_DEFAULTS.reducedWeatherGlare,
+    highContrastRoadsideSigns:
+      accessibility?.highContrastRoadsideSigns ??
+      WEATHER_ACCESSIBILITY_DEFAULTS.highContrastRoadsideSigns,
     fogReadabilityClamp: clampUnit(
       accessibility?.fogReadabilityClamp ??
         WEATHER_ACCESSIBILITY_DEFAULTS.fogReadabilityClamp,
@@ -194,6 +199,7 @@ export function applyAssistToggle(
 
 export type WeatherAccessibilityToggleKey =
   | "reducedWeatherGlare"
+  | "highContrastRoadsideSigns"
   | "weatherFlashReduction";
 
 export type ApplyWeatherAccessibilityResult =

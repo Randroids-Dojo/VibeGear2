@@ -138,6 +138,7 @@ export interface DrawRoadOptions {
     visualReduction?: boolean;
     particleIntensity?: number;
     reducedGlare?: boolean;
+    highContrastRoadsideSigns?: boolean;
     fogFloorClamp?: number;
     flashReduction?: boolean;
   };
@@ -288,17 +289,29 @@ export function drawRoad(
   // as one unit. We capture the offset here, then save / translate /
   // restore around the strip loop.
   const shakeOffset = options.vfx ? drawVfx(ctx, options.vfx, viewport) : null;
+  const highContrastSigns =
+    options.weatherEffects?.highContrastRoadsideSigns === true;
 
   if (strips.length >= 2) {
     if (shakeOffset && (shakeOffset.dx !== 0 || shakeOffset.dy !== 0)) {
       ctx.save();
       ctx.translate(shakeOffset.dx, shakeOffset.dy);
       drawStrips(ctx, strips, viewport, colors, markingCameraZFrom(options));
-      drawRoadsideSprites(ctx, strips, viewport);
+      drawRoadsideSprites(
+        ctx,
+        strips,
+        viewport,
+        highContrastSigns,
+      );
       ctx.restore();
     } else {
       drawStrips(ctx, strips, viewport, colors, markingCameraZFrom(options));
-      drawRoadsideSprites(ctx, strips, viewport);
+      drawRoadsideSprites(
+        ctx,
+        strips,
+        viewport,
+        highContrastSigns,
+      );
     }
   }
 
@@ -347,12 +360,13 @@ function drawRoadsideSprites(
   ctx: CanvasRenderingContext2D,
   strips: readonly Strip[],
   viewport: Viewport,
+  highContrastSigns = false,
 ): void {
   for (let i = strips.length - 1; i >= 0; i--) {
     const strip = strips[i];
     if (!strip?.visible) continue;
-    drawRoadsideSprite(ctx, strip, viewport, "left");
-    drawRoadsideSprite(ctx, strip, viewport, "right");
+    drawRoadsideSprite(ctx, strip, viewport, "left", highContrastSigns);
+    drawRoadsideSprite(ctx, strip, viewport, "right", highContrastSigns);
   }
 }
 
@@ -361,6 +375,7 @@ function drawRoadsideSprite(
   strip: Strip,
   viewport: Viewport,
   side: "left" | "right",
+  highContrastSigns: boolean,
 ): void {
   if (!shouldDrawRoadsideSprite(strip, side)) return;
   const id =
@@ -389,7 +404,7 @@ function drawRoadsideSprite(
       drawTreeSprite(ctx, baseX, baseY, width, height);
       break;
     case "sign":
-      drawSignSprite(ctx, baseX, baseY, width, height);
+      drawSignSprite(ctx, baseX, baseY, width, height, highContrastSigns);
       break;
     case "fence":
       drawFenceSprite(ctx, baseX, baseY, width, height);
@@ -434,13 +449,19 @@ function drawSignSprite(
   baseY: number,
   width: number,
   height: number,
+  highContrast = false,
 ): void {
   ctx.fillStyle = "#d9d7c7";
   ctx.fillRect(baseX - width * 0.08, baseY - height * 0.58, width * 0.16, height * 0.58);
-  ctx.fillStyle = "#e7d24d";
+  ctx.fillStyle = highContrast ? "#fff36a" : "#e7d24d";
   ctx.fillRect(baseX - width * 0.5, baseY - height, width, height * 0.38);
-  ctx.fillStyle = "#23304d";
+  ctx.fillStyle = highContrast ? "#05070d" : "#23304d";
   ctx.fillRect(baseX - width * 0.36, baseY - height * 0.88, width * 0.72, height * 0.08);
+  if (highContrast) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(baseX - width * 0.48, baseY - height * 0.99, width * 0.96, height * 0.04);
+    ctx.fillRect(baseX - width * 0.48, baseY - height * 0.66, width * 0.96, height * 0.04);
+  }
 }
 
 function drawFenceSprite(
