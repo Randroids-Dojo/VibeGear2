@@ -6,6 +6,46 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Full World Tour flow coverage
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) race to results loop,
+[§8](gdd/08-world-and-progression-design.md) tour progression,
+[§20](gdd/20-hud-and-ui-ux.md) results next-race flow.
+**Branch / PR:** `test/full-world-tour-flow`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `e2e/tour-flow.spec.ts`: added a start-from-`/world` Velvet Coast
+  flow that finishes all four queued tour races through the Continue
+  tour CTA and asserts Iron Borough unlocks.
+- The same seeded four-race flow runs twice in one test and compares the
+  completed track sequence and tour-complete text, covering the parent
+  dot determinism requirement.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run verify` green: lint, typecheck, unit tests, and
+  content-lint all passed; 2,220 unit tests passed.
+- `npm run test:e2e -- e2e/tour-flow.spec.ts` green, 2 passed.
+
+### Decisions and assumptions
+- The full flow intentionally reuses the temporary unresolved-tour-track
+  placeholder from F-065. This validates tour progression behavior while
+  the authored World Tour track JSON remains future content work.
+
+### Coverage ledger
+- GDD-08-TOUR-PROGRESSION now has start-from-world four-race Playwright
+  coverage in addition to the final-race unlock coverage.
+- Uncovered adjacent requirements: full authored World Tour track JSON
+  and richer tour standings UI remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: F-065 active tour progression
 
 **GDD sections touched:**
