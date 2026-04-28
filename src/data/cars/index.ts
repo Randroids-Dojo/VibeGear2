@@ -51,7 +51,7 @@ export const STARTER_CAR_ID = "sparrow-gt";
 
 /** The §11 starter-choice roster shown by garage starter recovery. */
 export const STARTER_CAR_IDS = [
-  "sparrow-gt",
+  STARTER_CAR_ID,
   "breaker-s",
   "vanta-xr",
 ] as const;

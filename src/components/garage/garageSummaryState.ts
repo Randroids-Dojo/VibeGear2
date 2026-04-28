@@ -72,10 +72,18 @@ export function selectStarterCar(
 }
 
 export function starterCars(): ReadonlyArray<Car> {
-  return STARTER_CAR_IDS.flatMap((carId) => {
+  const cars = STARTER_CAR_IDS.flatMap((carId) => {
     const car = getCar(carId);
     return car ? [car] : [];
   });
+
+  if (cars.length === 0) {
+    throw new Error(
+      `No configured starter cars could be resolved from STARTER_CAR_IDS: ${STARTER_CAR_IDS.join(", ")}`,
+    );
+  }
+
+  return cars;
 }
 
 function isStarterCarId(carId: string): boolean {

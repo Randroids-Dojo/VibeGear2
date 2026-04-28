@@ -129,6 +129,7 @@ describe("car catalogue", () => {
 
   it("lists the three §11 starter choice examples", () => {
     expect(STARTER_CAR_IDS).toEqual(["sparrow-gt", "breaker-s", "vanta-xr"]);
+    expect(STARTER_CAR_IDS[0]).toBe(STARTER_CAR_ID);
     for (const starterId of STARTER_CAR_IDS) {
       expect(getCar(starterId)).toBeDefined();
     }
