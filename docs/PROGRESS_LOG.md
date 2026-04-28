@@ -6,6 +6,43 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: reduce tour-flow e2e runtime
+
+**GDD sections touched:**
+No GDD design change. This slice supports the implementation loop and
+verification budget.
+**Branch / PR:** `chore/reduce-tour-e2e-runtime`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `e2e/tour-flow.spec.ts`: removed a redundant second full Velvet Coast
+  tour pass from the world-hub completion smoke.
+- Preserved completed-track coverage and Iron Borough unlock assertions
+  in the same spec.
+
+### Verified
+- `npx playwright test e2e/tour-flow.spec.ts` green, 2 passed in 37.3s.
+- `npm run test:e2e` green, 71 passed in 1.4m.
+- `npm run verify` green, 2398 passed.
+
+### Decisions and assumptions
+- The second full-tour pass duplicated coverage already held by the same
+  test's track completion assertions plus the final-race unlock spec.
+  Keeping one full-tour pass still verifies the route chain and save
+  progression while reducing loop runtime.
+
+### Coverage ledger
+- GDD-24-MVP-TRACK-SET remains the exercised coverage area for this
+  tour-flow smoke. No new ledger row was added because this is a
+  test-harness optimization only.
+- Uncovered adjacent requirements: none created by this slice.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: HUD cash delta
 
 **GDD sections touched:**
