@@ -6,7 +6,8 @@ VibeGear2 is an original open-source arcade road racer for the web. Start
 with [`README.md`](../README.md), [`GDD.md`](../GDD.md), and the Markdown GDD
 tree under [`docs/gdd/`](gdd/). The project is built to accept community code,
 data, art, audio, and modding work, provided each contribution follows the
-workflow and originality rules below.
+workflow and originality rules below. For mod-specific rules, read
+[`MODDING.md`](MODDING.md) before changing any mod data or loader behavior.
 
 ## 2. Code of Conduct
 
@@ -98,11 +99,16 @@ contributor consent.
 
 ## 9. Asset Manifest Rules
 
-Every art, audio, track, championship, balancing, and mod-data contribution
-must include manifest metadata for author, source, licence, and originality
-statement. The exact manifest paths are owned by the asset and mod-loader
-slices as those systems land. A PR that ships binary assets or third-party
-data without manifest metadata will not merge.
+Every art contribution must update [`public/art.manifest.json`](../public/art.manifest.json)
+with the required manifest fields: `id`, `path`, `kind`, `license`,
+`source`, `originality`, and `date`. Follow
+[`LEGAL_SAFETY.md`](LEGAL_SAFETY.md) section 6 for the canonical field
+requirements. Audio, track, championship, balancing, and mod-data
+contributions must include the corresponding required manifest metadata in
+the matching manifest once that content loader exists. Until then, include
+the metadata beside the data change in the PR description and ask for
+`legal-review` if the source is not fully original. A PR that ships binary
+assets or third-party data without manifest metadata will not merge.
 
 ## 10. Schema and Lint Expectations
 

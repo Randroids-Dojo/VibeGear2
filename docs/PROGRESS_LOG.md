@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: CONTRIBUTING.md guidance
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) contribution guidelines,
+licensing, issue labels, and modding rules.
+**Branch / PR:** `docs/contributing-guidance`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `docs/CONTRIBUTING.md`: confirmed the contributor workflow covers branch
+  and PR rules, commit style, verification, originality, licensing, asset
+  manifest expectations, issue labels, first-time contributor setup,
+  maintainer expectations, and question routing.
+- `docs/CONTRIBUTING.md`: linked `MODDING.md` from the scope section and
+  replaced the generic manifest language with the current
+  `public/art.manifest.json` path.
+- Confirmed the README contributing one-liner is already present.
+
+### Verified
+- `grep -rn $'\u2014\|\u2013' docs/CONTRIBUTING.md docs/PROGRESS_LOG.md` clean.
+- `npm run verify` green: lint, typecheck, unit tests, and content-lint
+  passed; 2,220 unit tests passed.
+
+### Decisions and assumptions
+- Audio, track, balancing, and mod-data manifest loaders are not all present
+  yet, so the contributor guide names the current art manifest path and tells
+  contributors to carry equivalent provenance metadata in the PR until the
+  matching loader exists.
+
+### Coverage ledger
+- GDD-26-CONTRIBUTING-GUIDE covers the contributor guide.
+- Uncovered adjacent requirements: full code of conduct file, PR template
+  reuse of the checklist, expanded audio and mod asset manifest loaders,
+  expanded `MODDING.md`, and GitHub Discussions setup remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Full World Tour flow coverage
 
 **GDD sections touched:**
