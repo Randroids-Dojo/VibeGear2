@@ -63,27 +63,32 @@ export function AccessibilityPane(): ReactElement {
     }
   }, []);
 
+  const persist = useCallback((next: SaveGame, successMessage: string) => {
+    const writeResult = saveSave(next);
+    if (writeResult.kind === "ok") {
+      setSave({
+        ...next,
+        writeCounter: (next.writeCounter ?? 0) + 1,
+      });
+      setStatus({ kind: "info", message: successMessage });
+      return;
+    }
+    setSave(next);
+    setStatus({
+      kind: "error",
+      message: `Save failed (${writeResult.reason}); change kept in memory only.`,
+    });
+  }, []);
+
   const onToggle = useCallback(
     (key: AssistFieldKey, value: boolean) => {
       if (!save) return;
       const result = applyAssistToggle(save, key, value);
       if (result.kind === "noop") return;
-      setSave(result.save);
-      const writeResult = saveSave(result.save);
       const label = ASSISTS.find((a) => a.key === key)?.label ?? key;
-      if (writeResult.kind === "ok") {
-        setStatus({
-          kind: "info",
-          message: `${label} ${value ? "enabled" : "disabled"}.`,
-        });
-      } else {
-        setStatus({
-          kind: "error",
-          message: `Save failed (${writeResult.reason}); change kept in memory only.`,
-        });
-      }
+      persist(result.save, `${label} ${value ? "enabled" : "disabled"}.`);
     },
-    [save],
+    [persist, save],
   );
 
   const onWeatherToggle = useCallback(
@@ -91,23 +96,11 @@ export function AccessibilityPane(): ReactElement {
       if (!save) return;
       const result = applyWeatherAccessibilityToggle(save, key, value);
       if (result.kind === "noop") return;
-      setSave(result.save);
-      const writeResult = saveSave(result.save);
       const label =
         key === "reducedWeatherGlare" ? "Reduced glare" : "Flash reduction";
-      if (writeResult.kind === "ok") {
-        setStatus({
-          kind: "info",
-          message: `${label} ${value ? "enabled" : "disabled"}.`,
-        });
-      } else {
-        setStatus({
-          kind: "error",
-          message: `Save failed (${writeResult.reason}); change kept in memory only.`,
-        });
-      }
+      persist(result.save, `${label} ${value ? "enabled" : "disabled"}.`);
     },
-    [save],
+    [persist, save],
   );
 
   const onWeatherSlider = useCallback(
@@ -122,25 +115,14 @@ export function AccessibilityPane(): ReactElement {
           ? applyWeatherParticleIntensity(save, value)
           : applyFogReadabilityClamp(save, value);
       if (result.kind === "noop") return;
-      setSave(result.save);
-      const writeResult = saveSave(result.save);
       const label =
         kind === "weatherParticleIntensity"
           ? WEATHER_PARTICLE_INTENSITY_LABEL
           : FOG_READABILITY_CLAMP_LABEL;
-      if (writeResult.kind === "ok") {
-        setStatus({
-          kind: "info",
-          message: `${label} set to ${Math.round(value * 100)}%.`,
-        });
-      } else {
-        setStatus({
-          kind: "error",
-          message: `Save failed (${writeResult.reason}); change kept in memory only.`,
-        });
-      }
+      const clamped = readWeatherAccessibility(result.save)[kind];
+      persist(result.save, `${label} set to ${formatPercent(clamped)}.`);
     },
-    [save],
+    [persist, save],
   );
 
   if (!save) {
