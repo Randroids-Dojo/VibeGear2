@@ -11,8 +11,10 @@
  * - `audio = { master: 1, music: 0.8, sfx: 0.9 }` per the §20 audio defaults
  *   (`docs/gdd/20-hud-and-ui-ux.md` Settings section).
  * - `accessibility = { colorBlindMode: 'off', reducedMotion: false,
- *   largeUiText: false, screenShakeScale: 1 }` per the §20 accessibility
- *   defaults; `screenShakeScale: 1` keeps the v1 shake intensity unchanged.
+ *   largeUiText: false, screenShakeScale: 1, weatherParticleIntensity: 1,
+ *   reducedWeatherGlare: false, fogReadabilityClamp: 0,
+ *   weatherFlashReduction: false }` per the §20 accessibility defaults;
+ *   `screenShakeScale: 1` keeps the v1 shake intensity unchanged.
  * - `keyBindings = DEFAULT_KEY_BINDINGS` (cloned from `src/game/input.ts`).
  * - `writeCounter = 0` for the §21 cross-tab last-write-wins protocol; the
  *   first `saveSave` after migration ticks it to 1. v1 saves never had a
@@ -42,6 +44,10 @@ export const V2_ACCESSIBILITY_DEFAULTS = Object.freeze({
   reducedMotion: false,
   largeUiText: false,
   screenShakeScale: 1,
+  weatherParticleIntensity: 1,
+  reducedWeatherGlare: false,
+  fogReadabilityClamp: 0,
+  weatherFlashReduction: false,
 });
 
 /**

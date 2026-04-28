@@ -136,6 +136,10 @@ export interface DrawRoadOptions {
   weatherEffects?: {
     weather: WeatherOption;
     visualReduction?: boolean;
+    particleIntensity?: number;
+    reducedGlare?: boolean;
+    fogFloorClamp?: number;
+    flashReduction?: boolean;
   };
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
@@ -492,27 +496,51 @@ function drawWeatherEffects(
   effects: NonNullable<DrawRoadOptions["weatherEffects"]>,
 ): void {
   if (viewport.width <= 0 || viewport.height <= 0) return;
-  const intensity = effects.visualReduction === true ? WEATHER_EFFECT_REDUCTION_SCALE : 1;
+  const settings = resolveWeatherEffectSettings(effects);
 
   switch (effects.weather) {
     case "light_rain":
     case "rain":
     case "heavy_rain":
-      drawRainStreaks(ctx, viewport, effects.weather, intensity);
+      drawRainStreaks(ctx, viewport, effects.weather, settings.particleIntensity);
       return;
     case "snow":
-      drawSnowParticles(ctx, viewport, intensity);
+      drawSnowParticles(ctx, viewport, settings.particleIntensity);
       return;
     case "fog":
-      drawFogFade(ctx, viewport, intensity);
+      drawFogFade(ctx, viewport, settings.alphaScale, settings.fogFloorClamp);
       return;
     case "dusk":
     case "night":
-      drawNightBloom(ctx, viewport, effects.weather, intensity);
+      drawNightBloom(ctx, viewport, effects.weather, settings.bloomScale);
       return;
     case "clear":
       return;
   }
+}
+
+interface ResolvedWeatherEffectSettings {
+  particleIntensity: number;
+  alphaScale: number;
+  fogFloorClamp: number;
+  bloomScale: number;
+}
+
+function resolveWeatherEffectSettings(
+  effects: NonNullable<DrawRoadOptions["weatherEffects"]>,
+): ResolvedWeatherEffectSettings {
+  const reductionScale =
+    effects.visualReduction === true ? WEATHER_EFFECT_REDUCTION_SCALE : 1;
+  const particleIntensity = clampUnit(effects.particleIntensity ?? 1) * reductionScale;
+  const alphaScale = reductionScale;
+  const glareScale = effects.reducedGlare === true ? 0.55 : 1;
+  const flashScale = effects.flashReduction === true ? 0.45 : 1;
+  return {
+    particleIntensity,
+    alphaScale,
+    fogFloorClamp: clampUnit(effects.fogFloorClamp ?? 0),
+    bloomScale: reductionScale * glareScale * flashScale,
+  };
 }
 
 function drawRainStreaks(
@@ -522,7 +550,8 @@ function drawRainStreaks(
   intensity: number,
 ): void {
   const baseCount = weather === "heavy_rain" ? 92 : weather === "rain" ? 58 : 32;
-  const count = Math.max(4, Math.round(baseCount * intensity));
+  const count = Math.round(baseCount * intensity);
+  if (count <= 0) return;
   const alpha = (weather === "heavy_rain" ? 0.34 : weather === "rain" ? 0.26 : 0.18) * intensity;
   const prevFill = ctx.fillStyle;
   const prevAlpha = ctx.globalAlpha;
@@ -546,7 +575,8 @@ function drawSnowParticles(
   viewport: Viewport,
   intensity: number,
 ): void {
-  const count = Math.max(5, Math.round(54 * intensity));
+  const count = Math.round(54 * intensity);
+  if (count <= 0) return;
   const prevFill = ctx.fillStyle;
   const prevAlpha = ctx.globalAlpha;
   try {
@@ -568,8 +598,9 @@ function drawFogFade(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
   intensity: number,
+  fogFloorClamp: number,
 ): void {
-  const visibility = visibilityForWeather("fog");
+  const visibility = Math.max(visibilityForWeather("fog"), fogFloorClamp);
   const prevFill = ctx.fillStyle;
   const prevAlpha = ctx.globalAlpha;
   try {
@@ -604,6 +635,11 @@ function drawNightBloom(
     ctx.fillStyle = prevFill;
     ctx.globalAlpha = prevAlpha;
   }
+}
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
 }
 
 /**

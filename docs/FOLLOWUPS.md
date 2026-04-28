@@ -5,7 +5,7 @@ entry has an id (`F-NNN`), a one-line description, the loop that created it,
 and a priority.
 
 Priorities: `blocks-release`, `nice-to-have`, `polish`. Statuses: `open`,
-`in-progress`, `done`, `obsolete`. Do not delete entries — mark them `done`
+`in-progress`, `done`, `obsolete`. Do not delete entries. Mark them `done`
 or `obsolete` so the trail is preserved.
 
 ---
@@ -13,7 +13,7 @@ or `obsolete` so the trail is preserved.
 ## F-067: Add weather particle intensity, glare, and fog readability settings
 **Created:** 2026-04-28
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-04-28)
 **Notes:** The weather render-effects slice draws active rain, snow,
 fog, and dusk or night bloom and wires the existing visual weather
 assist to reduce intensity. §14 also calls for finer accessibility
@@ -23,6 +23,11 @@ bloom. Add these settings to the options surface, persist them in
 `SaveGameSettings.accessibility` or the successor display settings
 bundle, and thread them into `drawRoad` so the renderer can scale or
 disable the relevant effects independently.
+
+Closed by `feat/weather-accessibility-settings`. The Accessibility pane
+now persists weather particle intensity, fog readability floor, reduced
+glare, and flash reduction settings. The live race renderer consumes
+those settings for rain, snow, fog, and dusk or night bloom.
 
 ## F-066: Add pre-race tire selection and persist the active tire channel
 **Created:** 2026-04-28

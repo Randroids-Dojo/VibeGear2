@@ -101,4 +101,52 @@ test.describe("options accessibility pane", () => {
       page.getByTestId("accessibility-toggle-steeringSmoothing"),
     ).toBeChecked();
   });
+
+  test("weather visibility settings persist to localStorage", async ({ page }) => {
+    await page.goto("/options");
+    await page.getByTestId("options-tab-accessibility").click();
+
+    await expect(
+      page.getByTestId("accessibility-weather-settings"),
+    ).toBeVisible();
+    await page
+      .getByTestId("accessibility-weather-particle-intensity")
+      .fill("0.5");
+    await page.getByTestId("accessibility-fog-readability-clamp").fill("0.75");
+    await page.getByTestId("accessibility-toggle-reducedWeatherGlare").check();
+    await page.getByTestId("accessibility-toggle-weatherFlashReduction").check();
+
+    await expect(
+      page.getByTestId("accessibility-weather-particle-intensity-value"),
+    ).toHaveText("50%");
+    await expect(
+      page.getByTestId("accessibility-fog-readability-clamp-value"),
+    ).toHaveText("75%");
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }, SAVE_KEY);
+    expect(persisted?.settings?.accessibility?.weatherParticleIntensity).toBe(
+      0.5,
+    );
+    expect(persisted?.settings?.accessibility?.fogReadabilityClamp).toBe(0.75);
+    expect(persisted?.settings?.accessibility?.reducedWeatherGlare).toBe(true);
+    expect(persisted?.settings?.accessibility?.weatherFlashReduction).toBe(true);
+
+    await page.reload();
+    await page.getByTestId("options-tab-accessibility").click();
+    await expect(
+      page.getByTestId("accessibility-weather-particle-intensity-value"),
+    ).toHaveText("50%");
+    await expect(
+      page.getByTestId("accessibility-fog-readability-clamp-value"),
+    ).toHaveText("75%");
+    await expect(
+      page.getByTestId("accessibility-toggle-reducedWeatherGlare"),
+    ).toBeChecked();
+    await expect(
+      page.getByTestId("accessibility-toggle-weatherFlashReduction"),
+    ).toBeChecked();
+  });
 });

@@ -9,9 +9,17 @@ import {
   PANE_HEADLINE,
   PANE_SUBTITLE,
   VISIBLE_ASSIST_KEYS,
+  WEATHER_ACCESSIBILITY_DEFAULTS,
+  WEATHER_PARTICLE_INTENSITY_LABEL,
+  WEATHER_SETTINGS_HEADLINE,
+  WEATHER_SETTINGS_SUBTITLE,
+  applyFogReadabilityClamp,
   applyAssistToggle,
+  applyWeatherAccessibilityToggle,
+  applyWeatherParticleIntensity,
   isAssistActive,
   readAssists,
+  readWeatherAccessibility,
 } from "../accessibilityPaneState";
 
 /**
@@ -42,11 +50,14 @@ describe("ASSISTS catalogue (§19)", () => {
 
   it("never uses an em-dash in any catalogue copy (project rule)", () => {
     for (const assist of ASSISTS) {
-      expect(assist.label).not.toMatch(/[–—]/u);
-      expect(assist.description).not.toMatch(/[–—]/u);
+      expect(assist.label).not.toMatch(/[\u2013\u2014]/u);
+      expect(assist.description).not.toMatch(/[\u2013\u2014]/u);
     }
-    expect(PANE_HEADLINE).not.toMatch(/[–—]/u);
-    expect(PANE_SUBTITLE).not.toMatch(/[–—]/u);
+    expect(PANE_HEADLINE).not.toMatch(/[\u2013\u2014]/u);
+    expect(PANE_SUBTITLE).not.toMatch(/[\u2013\u2014]/u);
+    expect(WEATHER_SETTINGS_HEADLINE).not.toMatch(/[\u2013\u2014]/u);
+    expect(WEATHER_SETTINGS_SUBTITLE).not.toMatch(/[\u2013\u2014]/u);
+    expect(WEATHER_PARTICLE_INTENSITY_LABEL).not.toMatch(/[\u2013\u2014]/u);
   });
 
   it("the visible row keys are the §19 six (legacy schema fields excluded)", () => {
@@ -63,6 +74,96 @@ describe("ASSISTS catalogue (§19)", () => {
   it("the schema's full assist field list still includes the legacy trio", () => {
     expect(ALL_ASSIST_FIELDS).toContain("steeringAssist");
     expect(ALL_ASSIST_FIELDS).toContain("autoNitro");
+  });
+});
+
+describe("readWeatherAccessibility", () => {
+  it("returns weather defaults on a fresh save", () => {
+    expect(readWeatherAccessibility(defaultSave())).toEqual({
+      ...WEATHER_ACCESSIBILITY_DEFAULTS,
+    });
+  });
+
+  it("falls back to defaults when an old save has no accessibility bundle", () => {
+    const save = defaultSave();
+    const stripped: SaveGame = {
+      ...save,
+      settings: {
+        ...save.settings,
+        accessibility: undefined,
+      },
+    };
+    expect(readWeatherAccessibility(stripped)).toEqual({
+      ...WEATHER_ACCESSIBILITY_DEFAULTS,
+    });
+  });
+
+  it("clamps persisted weather slider values when reading", () => {
+    const save = defaultSave();
+    const customised: SaveGame = {
+      ...save,
+      settings: {
+        ...save.settings,
+        accessibility: {
+          ...save.settings.accessibility!,
+          weatherParticleIntensity: 2,
+          fogReadabilityClamp: -1,
+        },
+      },
+    };
+    expect(readWeatherAccessibility(customised).weatherParticleIntensity).toBe(1);
+    expect(readWeatherAccessibility(customised).fogReadabilityClamp).toBe(0);
+  });
+});
+
+describe("weather accessibility mutations", () => {
+  it("applies the weather particle slider without mutating input", () => {
+    const save = defaultSave();
+    const before = JSON.stringify(save);
+    const result = applyWeatherParticleIntensity(save, 0.45);
+    expect(JSON.stringify(save)).toBe(before);
+    expect(result.kind).toBe("applied");
+    if (result.kind === "applied") {
+      expect(
+        result.save.settings.accessibility?.weatherParticleIntensity,
+      ).toBeCloseTo(0.45, 6);
+    }
+  });
+
+  it("clamps the fog readability slider before persisting", () => {
+    const save = defaultSave();
+    const result = applyFogReadabilityClamp(save, 2);
+    expect(result.kind).toBe("applied");
+    if (result.kind === "applied") {
+      expect(result.save.settings.accessibility?.fogReadabilityClamp).toBe(1);
+    }
+  });
+
+  it("returns a same-value noop for unchanged slider values", () => {
+    const save = defaultSave();
+    const result = applyWeatherParticleIntensity(save, 1);
+    expect(result.kind).toBe("noop");
+  });
+
+  it("applies reduced glare and flash reduction independently", () => {
+    let save = defaultSave();
+    const glare = applyWeatherAccessibilityToggle(
+      save,
+      "reducedWeatherGlare",
+      true,
+    );
+    if (glare.kind !== "applied") throw new Error("expected applied");
+    save = glare.save;
+
+    const flash = applyWeatherAccessibilityToggle(
+      save,
+      "weatherFlashReduction",
+      true,
+    );
+    if (flash.kind !== "applied") throw new Error("expected applied");
+
+    expect(flash.save.settings.accessibility?.reducedWeatherGlare).toBe(true);
+    expect(flash.save.settings.accessibility?.weatherFlashReduction).toBe(true);
   });
 });
 

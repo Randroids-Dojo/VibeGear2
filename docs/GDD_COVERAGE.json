@@ -2,6 +2,31 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-14-WEATHER-ACCESSIBILITY-SETTINGS",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Players can persist weather display controls for particle intensity, fog readability, reduced glare, and flash reduction, and live races apply them to the weather renderer.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/options/AccessibilityPane.tsx",
+        "src/components/options/accessibilityPaneState.ts",
+        "src/data/schemas.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/accessibilityPaneState.test.ts",
+        "src/data/__tests__/settings-schema.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/options-accessibility.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-RENDER-EFFECTS",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
@@ -18,7 +43,7 @@
       "testRefs": [
         "src/render/__tests__/pseudoRoadCanvas.test.ts"
       ],
-      "followupRefs": ["F-067"]
+      "followupRefs": []
     },
     {
       "id": "GDD-20-PRE-RACE-TIRE-SELECTION",
