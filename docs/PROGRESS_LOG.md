@@ -30,13 +30,13 @@ Correct them by adding a new entry that references the old one.
   the transient steering and reachable right-thumb controls.
 
 ### Verified
-- `npx vitest run src/game/inputTouch.test.ts` green, 39 passed.
+- `npx vitest run src/game/inputTouch.test.ts` green, 40 passed.
 - `npx playwright test e2e/race-mobile.spec.ts --project=mobile-chromium`
   green, 3 passed.
 - `npx playwright test e2e/touch-input.spec.ts --project=mobile-chromium`
   green, 4 passed.
 - `npm run typecheck` green.
-- `npm run verify` green, 2413 passed.
+- `npm run verify` green, 2414 passed.
 - `npm run test:e2e` green, 73 passed.
 
 ### Decisions and assumptions

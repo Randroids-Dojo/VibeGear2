@@ -26,7 +26,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 
-import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
+import { DEFAULT_TOUCH_LAYOUT, thumbButtonLayout, type TouchLayout } from "@/game/inputTouch";
 
 export interface TouchControlsProps {
   /**
@@ -161,11 +161,11 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
   const knobDrawnX = knobX + knobOffset.dx;
   const knobDrawnY = knobY + knobOffset.dy;
 
-  const thumbRadius = Math.max(52, Math.min(88, layout.width * 0.14));
-  const accelX = layout.width * 0.86;
-  const accelY = layout.height * 0.72;
-  const brakeX = layout.width * 0.68;
-  const brakeY = layout.height * 0.82;
+  const thumbButtons = thumbButtonLayout(layout);
+  const accelX = thumbButtons.accelerate.centerX;
+  const accelY = thumbButtons.accelerate.centerY;
+  const brakeX = thumbButtons.brake.centerX;
+  const brakeY = thumbButtons.brake.centerY;
   const nitroX = layout.width - layout.nitroCornerSize / 2;
   const nitroY = layout.nitroCornerSize / 2;
   const pauseX = layout.width - layout.nitroCornerSize - layout.pauseCornerSize / 2;
@@ -223,7 +223,7 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
         <circle
           cx={accelX}
           cy={accelY}
-          r={thumbRadius}
+          r={thumbButtons.accelerate.radius}
           fill="rgba(80, 220, 120, 0.2)"
           stroke="rgba(80, 220, 120, 0.6)"
           strokeWidth={2}
@@ -244,7 +244,7 @@ export function TouchControls(props: TouchControlsProps): ReactElement | null {
         <circle
           cx={brakeX}
           cy={brakeY}
-          r={thumbRadius * 0.95}
+          r={thumbButtons.brake.radius}
           fill="rgba(220, 90, 90, 0.2)"
           stroke="rgba(220, 90, 90, 0.6)"
           strokeWidth={2}

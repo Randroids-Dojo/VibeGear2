@@ -19,6 +19,7 @@ import {
   DEFAULT_TOUCH_LAYOUT,
   createTouchInputSource,
   inputFromTouchState,
+  thumbButtonLayout,
   type TouchLayout,
   type TouchPointer,
   type TouchState,
@@ -111,9 +112,15 @@ function state(layout: TouchLayout, pointers: TouchPointer[]): TouchState {
 
 const LAYOUT: TouchLayout = { ...DEFAULT_TOUCH_LAYOUT };
 const STEER_ZONE_MAX = LAYOUT.width * LAYOUT.steerZoneRatio;
-const THUMB_BUTTON_RADIUS = Math.max(52, Math.min(88, LAYOUT.width * 0.14));
-const ACCEL_CENTER: [number, number] = [LAYOUT.width * 0.86, LAYOUT.height * 0.72];
-const BRAKE_CENTER: [number, number] = [LAYOUT.width * 0.68, LAYOUT.height * 0.82];
+const THUMB_BUTTONS = thumbButtonLayout(LAYOUT);
+const ACCEL_CENTER: [number, number] = [
+  THUMB_BUTTONS.accelerate.centerX,
+  THUMB_BUTTONS.accelerate.centerY,
+];
+const BRAKE_CENTER: [number, number] = [
+  THUMB_BUTTONS.brake.centerX,
+  THUMB_BUTTONS.brake.centerY,
+];
 
 // Pure helper --------------------------------------------------------------
 
@@ -226,16 +233,43 @@ describe("inputFromTouchState", () => {
       state(LAYOUT, [
         pointer({
           id: 1,
-          origin: [ACCEL_CENTER[0] + THUMB_BUTTON_RADIUS * 0.85, ACCEL_CENTER[1]],
+          origin: [
+            ACCEL_CENTER[0] + THUMB_BUTTONS.accelerate.radius * 0.85,
+            ACCEL_CENTER[1],
+          ],
         }),
         pointer({
           id: 2,
-          origin: [BRAKE_CENTER[0] - THUMB_BUTTON_RADIUS * 0.65, BRAKE_CENTER[1]],
+          origin: [BRAKE_CENTER[0] - THUMB_BUTTONS.brake.radius * 0.65, BRAKE_CENTER[1]],
         }),
       ]),
     );
     expect(got.throttle).toBe(1);
     expect(got.brake).toBe(1);
+  });
+
+  it("resolves overlapping thumb-button taps to the closer center", () => {
+    const overlapNearBrake = inputFromTouchState(
+      state(LAYOUT, [
+        pointer({
+          id: 1,
+          origin: [610, 371],
+        }),
+      ]),
+    );
+    expect(overlapNearBrake.brake).toBe(1);
+    expect(overlapNearBrake.throttle).toBe(0);
+
+    const overlapNearAccelerate = inputFromTouchState(
+      state(LAYOUT, [
+        pointer({
+          id: 1,
+          origin: [622, 368],
+        }),
+      ]),
+    );
+    expect(overlapNearAccelerate.throttle).toBe(1);
+    expect(overlapNearAccelerate.brake).toBe(0);
   });
 
   it("multi-touch: steer + accelerate populate both fields", () => {

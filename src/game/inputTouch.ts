@@ -71,6 +71,17 @@ export const DEFAULT_TOUCH_LAYOUT: Readonly<TouchLayout> = Object.freeze({
   brakeFraction: 0.4,
 });
 
+export interface TouchButtonCircle {
+  centerX: number;
+  centerY: number;
+  radius: number;
+}
+
+export interface TouchThumbButtonLayout {
+  accelerate: TouchButtonCircle;
+  brake: TouchButtonCircle;
+}
+
 /**
  * Snapshot of one tracked pointer at a moment in time. The pure helper
  * accepts a list of these and the layout, and emits an `Input`.
@@ -109,15 +120,33 @@ function thumbButtonRadius(layout: TouchLayout): number {
   return Math.max(52, Math.min(88, layout.width * 0.14));
 }
 
+export function thumbButtonLayout(layout: TouchLayout): TouchThumbButtonLayout {
+  const radius = thumbButtonRadius(layout);
+  return {
+    accelerate: {
+      centerX: layout.width * 0.86,
+      centerY: layout.height * 0.72,
+      radius,
+    },
+    brake: {
+      centerX: layout.width * 0.68,
+      centerY: layout.height * 0.82,
+      radius: radius * 0.95,
+    },
+  };
+}
+
+function distanceSqToCircleCenter(p: TouchPointer, circle: TouchButtonCircle): number {
+  const dx = p.originX - circle.centerX;
+  const dy = p.originY - circle.centerY;
+  return dx * dx + dy * dy;
+}
+
 function isInsideCircle(
   p: TouchPointer,
-  centerX: number,
-  centerY: number,
-  radius: number,
+  circle: TouchButtonCircle,
 ): boolean {
-  const dx = p.originX - centerX;
-  const dy = p.originY - centerY;
-  return dx * dx + dy * dy <= radius * radius;
+  return distanceSqToCircleCenter(p, circle) <= circle.radius * circle.radius;
 }
 
 /**
@@ -141,11 +170,7 @@ function classifyPointers(state: TouchState): ZoneClassification {
   const pauseMaxX = nitroMinX;
   const pauseMinX = pauseMaxX - layout.pauseCornerSize;
   const pauseMaxY = layout.pauseCornerSize;
-  const buttonRadius = thumbButtonRadius(layout);
-  const accelCenterX = layout.width * 0.86;
-  const accelCenterY = layout.height * 0.72;
-  const brakeCenterX = layout.width * 0.68;
-  const brakeCenterY = layout.height * 0.82;
+  const thumbButtons = thumbButtonLayout(layout);
 
   let steer: TouchPointer | null = null;
   let accelerate = false;
@@ -181,9 +206,16 @@ function classifyPointers(state: TouchState): ZoneClassification {
       pause = true;
       continue;
     }
-    if (isInsideCircle(p, accelCenterX, accelCenterY, buttonRadius)) {
+    const insideAccelerate = isInsideCircle(p, thumbButtons.accelerate);
+    const insideBrake = isInsideCircle(p, thumbButtons.brake);
+    if (insideAccelerate && insideBrake) {
+      const accelDistance = distanceSqToCircleCenter(p, thumbButtons.accelerate);
+      const brakeDistance = distanceSqToCircleCenter(p, thumbButtons.brake);
+      if (accelDistance <= brakeDistance) accelerate = true;
+      else brake = true;
+    } else if (insideAccelerate) {
       accelerate = true;
-    } else if (isInsideCircle(p, brakeCenterX, brakeCenterY, buttonRadius * 0.95)) {
+    } else if (insideBrake) {
       brake = true;
     }
   }
