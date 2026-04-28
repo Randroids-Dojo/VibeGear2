@@ -135,7 +135,7 @@ describe("isWeatherTireModifierKey", () => {
     },
   );
 
-  it.each(["light_rain", "dusk", "night"] as const)(
+  it.each(["overcast", "light_rain", "dusk", "night"] as const)(
     "returns false for the WeatherOption %s that §23 leaves uncovered",
     (key) => {
       expect(isWeatherTireModifierKey(key)).toBe(false);
@@ -169,7 +169,7 @@ describe("getWeatherTireModifier", () => {
     },
   );
 
-  it.each(["light_rain", "dusk", "night"] as ReadonlyArray<WeatherOption>)(
+  it.each(["overcast", "light_rain", "dusk", "night"] as ReadonlyArray<WeatherOption>)(
     "returns undefined for the §23-uncovered WeatherOption %s (Q-008)",
     (key) => {
       expect(getWeatherTireModifier(key)).toBeUndefined();
@@ -191,6 +191,7 @@ describe("runtime weather aliases", () => {
 
   it.each([
     ["clear", "clear"],
+    ["overcast", "clear"],
     ["light_rain", "rain"],
     ["rain", "rain"],
     ["heavy_rain", "heavy_rain"],
@@ -232,6 +233,13 @@ describe("effectiveWeatherGrip", () => {
       9,
     );
   });
+
+  it("uses the runtime alias for overcast as a clear-adjacent grip row", () => {
+    expect(effectiveWeatherGrip(STATS, "overcast", "dry")).toBeCloseTo(
+      effectiveWeatherGrip(STATS, "clear", "dry"),
+      9,
+    );
+  });
 });
 
 describe("visibilityForWeather", () => {
@@ -241,6 +249,7 @@ describe("visibilityForWeather", () => {
 
   it.each([
     ["clear", 1],
+    ["overcast", 0.95],
     ["light_rain", 0.9],
     ["rain", 0.8],
     ["heavy_rain", 0.7],
@@ -259,6 +268,7 @@ describe("visibilityForWeather", () => {
 describe("weatherSkillFor", () => {
   it.each([
     ["clear", 1],
+    ["overcast", 1],
     ["dusk", 1],
     ["night", 1],
     ["light_rain", 1.04],

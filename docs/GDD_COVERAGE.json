@@ -2,6 +2,31 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-14-OVERCAST-WEATHER-OPTION",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "Overcast is a valid authored weather option and resolves as a clear-adjacent, grip-neutral condition with a mild visibility reduction.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/game/weather.ts",
+        "src/game/preRaceCard.ts",
+        "src/game/nitro.ts",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/data/schemas.test.ts",
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/preRaceCard.test.ts",
+        "src/game/__tests__/nitro.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-ACCESSIBILITY-SETTINGS",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

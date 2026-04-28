@@ -926,6 +926,17 @@ describe("drawRoad weather effects", () => {
           c.type === "fillRect" && c.fillStyle === "#cbd7e1",
       ),
     ).toBe(false);
+
+    const overcast = makeCanvasSpy();
+    drawRoad(overcast.ctx, EMPTY_STRIPS, VIEWPORT, {
+      weatherEffects: { weather: "overcast" },
+    });
+    expect(
+      overcast.calls.some(
+        (c): c is FillRectCall =>
+          c.type === "fillRect" && c.fillStyle === "#cbd7e1",
+      ),
+    ).toBe(false);
   });
 
   it("uses the fog readability floor to reduce fog overlay alpha", () => {

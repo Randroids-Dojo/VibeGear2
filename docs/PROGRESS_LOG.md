@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Overcast weather option
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather types,
+[§22](gdd/22-data-schemas.md) track weather enum,
+[§23](gdd/23-balancing-tables.md) weather modifier mapping.
+**Branch / PR:** `feat/overcast-weather-option`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts`: added `overcast` to the runtime weather enum
+  so tracks can author the §14 condition.
+- `src/game/weather.ts`: mapped overcast to the clear §23 grip row and
+  a mild 0.95 visibility scalar.
+- `src/game/preRaceCard.ts`, `src/game/nitro.ts`, and
+  `src/render/pseudoRoadCanvas.ts`: treated overcast as a dry-tire,
+  low-risk, visual-neutral weather condition.
+- `docs/gdd/22-data-schemas.md`: documented the weather option ids.
+- `docs/GDD_COVERAGE.json`: added GDD-14-OVERCAST-WEATHER-OPTION.
+
+### Verified
+- `npx vitest run src/data/schemas.test.ts src/game/__tests__/weather.test.ts src/game/__tests__/preRaceCard.test.ts src/game/__tests__/nitro.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/data/__tests__/balancing.test.ts`
+  green, 300 passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npm run verify` green, 2340 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- Overcast is clear-adjacent for grip and nitro risk because §23 has no
+  dedicated Overcast modifier row.
+- Overcast uses a 0.95 visibility scalar, matching the parent weather
+  dot's planned treatment and keeping it distinct from clear without
+  adding particles or bloom.
+
+### Coverage ledger
+- GDD-14-OVERCAST-WEATHER-OPTION covers schema authoring and runtime
+  handling for overcast weather.
+- Uncovered adjacent requirements: weather state transitions, high
+  contrast roadside signs, heat shimmer, and tunnel adaptation remain
+  future slices.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: listed the canonical weather ids.
+
 ## 2026-04-28: Slice: Weather accessibility settings
 
 **GDD sections touched:**
