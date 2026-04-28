@@ -30,6 +30,7 @@ import {
   stepWeatherState,
   visibilityForWeather,
   visibilityForWeatherState,
+  weatherVisibilityRiskScalar,
   weatherGripScalar,
   weatherGripScalarForState,
   weatherSkillFor,
@@ -271,6 +272,27 @@ describe("visibilityForWeather", () => {
       expect(visibilityForWeather(weather)).toBeCloseTo(expected, 9);
     },
   );
+});
+
+describe("weatherVisibilityRiskScalar", () => {
+  it.each([
+    ["clear", 1],
+    ["overcast", 1 / 0.95],
+    ["heavy_rain", 1 / 0.7],
+    ["fog", 2],
+    ["snow", 1 / 0.6],
+    ["night", 1 / 0.65],
+  ] as ReadonlyArray<readonly [WeatherOption, number]>)(
+    "maps %s visibility into AI mistake pressure",
+    (weather, expected) => {
+      expect(weatherVisibilityRiskScalar(weather)).toBeCloseTo(expected, 9);
+    },
+  );
+
+  it("lets weather skill mitigate the extra low-visibility pressure", () => {
+    expect(weatherVisibilityRiskScalar("fog", 2)).toBeCloseTo(1.5, 9);
+    expect(weatherVisibilityRiskScalar("fog", 0.5)).toBeCloseTo(3, 9);
+  });
 });
 
 describe("weatherSkillFor", () => {

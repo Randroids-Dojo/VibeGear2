@@ -17,7 +17,20 @@
  *
  * The function is pure:
  *
- *   tickAI(driver, aiState, aiCar, player, track, race, dt)
+ *   tickAI(
+ *     driver,
+ *     aiState,
+ *     aiCar,
+ *     player,
+ *     track,
+ *     race,
+ *     stats,
+ *     context,
+ *     dt,
+ *     cpuModifiers,
+ *     weatherSkillScalar,
+ *     visibilityRiskScalar,
+ *   )
  *     -> { input, nextAiState }
  *
  * No globals or time source. Same arguments, including `AIState.seed`,
@@ -40,6 +53,11 @@
  * compact §15 weather-skill row resolved for the active weather. It is
  * a number rather than an adjusted modifiers object so the 60 Hz race
  * loop does not allocate one object per AI per tick.
+ *
+ * Visibility-risk wiring: callers may pass a §14 low-visibility risk
+ * scalar resolved from active weather. It multiplies deterministic
+ * lane-target mistake odds so heavy weather and fog raise collision
+ * risk through poorer read distance without changing hit geometry.
  *
  * Out of scope for this slice (deferred to follow-up AI dots):
  * - Overtake / lane-shift behaviour. §15 lists it; the clean_line single
@@ -64,6 +82,7 @@ import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
 import { deserializeRng } from "./rng";
+import { WEATHER_VISIBILITY_RISK_MAX_SCALAR } from "./weather";
 
 /**
  * Identity §23 CPU modifiers row used as the default when a caller does
@@ -240,6 +259,7 @@ export function tickAI(
   _dt: number = 0,
   cpuModifiers: Readonly<CpuDifficultyModifiers> = IDENTITY_CPU_MODIFIERS,
   weatherSkillScalar: number = 1,
+  visibilityRiskScalar: number = 1,
 ): AITickResult {
   const segment = currentSegment(track, aiCar.z);
   // `segment.curve` is the per-compiled-segment dx contribution, already
@@ -264,7 +284,9 @@ export function tickAI(
     context.roadHalfWidth,
   );
   const effectiveMistakeRate = clamp(
-    driver.mistakeRate * cpuModifiers.mistakeScalar,
+      driver.mistakeRate *
+      cpuModifiers.mistakeScalar *
+      clamp(visibilityRiskScalar, 1, WEATHER_VISIBILITY_RISK_MAX_SCALAR),
     0,
     1,
   );

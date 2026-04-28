@@ -104,6 +104,7 @@ import {
   activeWeatherForState,
   createWeatherState,
   stepWeatherState,
+  weatherVisibilityRiskScalar,
   weatherGripScalarForState,
   weatherSkillFor,
   type TireKind,
@@ -1065,6 +1066,7 @@ export function stepRaceSession(
   const aiTickResults = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
     if (!aiConfig) return null;
+    const aiWeatherSkill = weatherSkillFor(aiConfig.driver, trackWeather);
     return tickAI(
       aiConfig.driver,
       entry.state,
@@ -1076,7 +1078,8 @@ export function stepRaceSession(
       aiContext,
       dt,
       cpuModifiers,
-      weatherSkillFor(aiConfig.driver, trackWeather),
+      aiWeatherSkill,
+      weatherVisibilityRiskScalar(trackWeather, aiWeatherSkill),
     );
   });
 

@@ -6,6 +6,50 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Weather visibility AI risk
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) heavy weather
+collision risk from reduced visibility,
+[§15](gdd/15-cpu-opponents-and-ai.md) weather-aware CPU skill.
+**Branch / PR:** `feat/weather-visibility-ai-risk`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/weather.ts`: added a deterministic visibility-risk scalar
+  derived from §14 visibility values and mitigated by AI weather skill.
+- `src/game/ai.ts`: applies that scalar to deterministic lane-target
+  mistake odds so fog, snow, night, and heavy weather can raise collision
+  risk without changing contact geometry.
+- `src/game/raceSession.ts`: wires active race weather and each driver's
+  compact weather-skill row into the AI risk scalar.
+- `docs/GDD_COVERAGE.json`: added GDD-14-VISIBILITY-AI-RISK.
+
+### Verified
+- `npx vitest run src/game/__tests__/weather.test.ts src/game/__tests__/ai.test.ts`
+  green, 111 passed.
+- `npm run verify` green, 2371 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- Visibility risk changes AI line mistakes, not collision dimensions.
+  That keeps §13 hit geometry stable while still making low-visibility
+  races more dangerous through driver behavior.
+- Driver weather skill mitigates only the extra risk above baseline.
+  Unit weather skill preserves the raw `1 / visibility` scalar.
+
+### Coverage ledger
+- GDD-14-VISIBILITY-AI-RISK covers the runtime danger portion of §14
+  weather physics.
+- Uncovered adjacent requirements: full region art packages and sound
+  changes remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Snow roadside whitening renderer
 
 **GDD sections touched:**
