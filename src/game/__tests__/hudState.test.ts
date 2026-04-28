@@ -15,11 +15,16 @@ import { describe, expect, it } from "vitest";
 import {
   deriveHudState,
   formatLapTime,
+  gripHintForHud,
   rankPosition,
+  summarizeHudDamage,
+  summarizeHudWeather,
   speedToDisplayUnit,
+  weatherIconForHud,
   type HudStateInput,
   type RankedCar,
 } from "@/game/hudState";
+import { createDamageState } from "@/game/damage";
 
 const PLAYER = "player";
 
@@ -310,6 +315,70 @@ describe("deriveHudState lap-timer fields", () => {
     );
     expect(state.currentLapElapsedMs).toBe(4_321);
     expect(state.bestLapMs).toBe(9_999);
+  });
+});
+
+describe("HUD damage and weather summaries", () => {
+  it("summarizes damage total and zones as rounded percentages", () => {
+    const damage = createDamageState({ engine: 0.123, tires: 0.49, body: 0.8 });
+    expect(summarizeHudDamage(damage)).toEqual({
+      totalPercent: 43,
+      zones: { engine: 12, tires: 49, body: 80 },
+    });
+  });
+
+  it("maps weather variants to compact icon buckets", () => {
+    expect(weatherIconForHud("clear")).toBe("clear");
+    expect(weatherIconForHud("overcast")).toBe("overcast");
+    expect(weatherIconForHud("rain")).toBe("rain");
+    expect(weatherIconForHud("heavy_rain")).toBe("rain");
+    expect(weatherIconForHud("fog")).toBe("fog");
+    expect(weatherIconForHud("snow")).toBe("snow");
+    expect(weatherIconForHud("night")).toBe("night");
+  });
+
+  it("derives readable weather label, grip hint, and grip percent", () => {
+    expect(summarizeHudWeather("heavy_rain", 0.72)).toEqual({
+      icon: "rain",
+      label: "HEAVY RAIN",
+      gripHint: "slick",
+      gripPercent: 72,
+    });
+  });
+
+  it("keeps grip hints deterministic by weather class", () => {
+    expect(gripHintForHud("clear", 1)).toBe("dry");
+    expect(gripHintForHud("rain", 0.85)).toBe("wet");
+    expect(gripHintForHud("rain", 0.72)).toBe("slick");
+    expect(gripHintForHud("fog", 1)).toBe("low-vis");
+    expect(gripHintForHud("snow", 0.6)).toBe("snow");
+    expect(gripHintForHud("night", 1)).toBe("night");
+  });
+
+  it("surfaces damage and weather when the caller supplies live race state", () => {
+    const state = deriveHudState(
+      input({
+        damage: createDamageState({ engine: 0.5, tires: 0.25, body: 0 }),
+        weather: "fog",
+        weatherGripScalar: 0.91,
+      }),
+    );
+    expect(state.damage).toEqual({
+      totalPercent: 28,
+      zones: { engine: 50, tires: 25, body: 0 },
+    });
+    expect(state.weather).toEqual({
+      icon: "fog",
+      label: "FOG",
+      gripHint: "low-vis",
+      gripPercent: 91,
+    });
+  });
+
+  it("omits damage and weather when callers remain on the minimal HUD shape", () => {
+    const state = deriveHudState(input());
+    expect(state.damage).toBeUndefined();
+    expect(state.weather).toBeUndefined();
   });
 });
 

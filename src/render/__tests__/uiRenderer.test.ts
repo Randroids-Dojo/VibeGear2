@@ -277,6 +277,11 @@ describe("drawHud assist badge", () => {
           shadow: "rgba(0,0,0,0.5)",
           assistBadgeFill: "#aabbcc",
           assistBadgeText: "#112233",
+          statusPanelFill: "#010203",
+          damageGood: "#00aa00",
+          damageWarn: "#aaaa00",
+          damageBad: "#aa0000",
+          weatherChipFill: "#002244",
         },
       },
     );
@@ -311,6 +316,98 @@ describe("drawHud assist badge", () => {
       return calls;
     };
     expect(runOnce()).toEqual(runOnce());
+  });
+});
+
+describe("drawHud damage and weather cluster", () => {
+  it("draws no status panel when damage and weather are absent", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(ctx, BASE_HUD, VIEWPORT);
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels.some((label) => label.startsWith("DMG"))).toBe(false);
+    expect(labels.some((label) => label.startsWith("GRIP"))).toBe(false);
+  });
+
+  it("draws damage total, per-zone text, and a proportional damage bar", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        damage: {
+          totalPercent: 50,
+          zones: { engine: 70, tires: 20, body: 10 },
+        },
+      },
+      VIEWPORT,
+    );
+    const fillTexts = calls.filter((c) => c.type === "fillText");
+    expect(fillTexts.some((c) => c.text === "DMG 50%")).toBe(true);
+    expect(fillTexts.some((c) => c.text === "E70 T20 B10")).toBe(true);
+    const fillRects = calls.filter((c) => c.type === "fillRect");
+    expect(fillRects).toHaveLength(3);
+    const damageFill = fillRects.at(-1);
+    expect(damageFill?.fillStyle).toBe("#f3c84b");
+    expect(damageFill?.w).toBe(37);
+  });
+
+  it("draws weather label and uppercase grip hint", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        weather: {
+          icon: "rain",
+          label: "HEAVY RAIN",
+          gripHint: "slick",
+          gripPercent: 72,
+        },
+      },
+      VIEWPORT,
+    );
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels).toContain("R");
+    expect(labels).toContain("HEAVY RAIN");
+    expect(labels).toContain("GRIP 72% SLICK");
+  });
+
+  it("draws combined damage and weather inside one bottom-left panel", () => {
+    const { ctx, calls } = makeSpy();
+    drawHud(
+      ctx,
+      {
+        ...BASE_HUD,
+        damage: {
+          totalPercent: 82,
+          zones: { engine: 90, tires: 80, body: 70 },
+        },
+        weather: {
+          icon: "fog",
+          label: "FOG",
+          gripHint: "low-vis",
+          gripPercent: 91,
+        },
+      },
+      VIEWPORT,
+    );
+    const fillRects = calls.filter((c) => c.type === "fillRect");
+    expect(fillRects[0]).toMatchObject({
+      type: "fillRect",
+      fillStyle: "rgba(7, 14, 28, 0.72)",
+      x: 16,
+      w: 142,
+    });
+    expect(fillRects.some((c) => c.fillStyle === "#ef4b4b")).toBe(true);
+    const labels = calls
+      .filter((c) => c.type === "fillText")
+      .map((c) => c.text);
+    expect(labels).toContain("F");
+    expect(labels).toContain("GRIP 91% LOW-VIS");
   });
 });
 

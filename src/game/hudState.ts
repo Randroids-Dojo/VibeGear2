@@ -23,7 +23,9 @@
  */
 
 import type { SpeedUnit } from "@/data/schemas";
+import type { WeatherOption } from "@/data/schemas";
 import type { AssistBadge } from "./assists";
+import type { DamageState, DamageZone } from "./damage";
 import type { RaceState } from "./raceState";
 
 /** Forward-distance pair used to rank cars on the track. */
@@ -86,6 +88,15 @@ export interface HudStateInput {
    * skip the BEST row entirely.
    */
   bestLapMs?: number | null;
+  /** Optional live §13 damage snapshot for the §20 bottom-left HUD cluster. */
+  damage?: Readonly<DamageState>;
+  /** Optional active §14 weather state for the §20 weather icon. */
+  weather?: WeatherOption;
+  /**
+   * Optional effective player grip scalar after weather and tire choice.
+   * Used only for the §20 grip hint. Omit to hide the hint.
+   */
+  weatherGripScalar?: number;
 }
 
 /** Optional minimap snapshot derived from the compiled track + car field. */
@@ -148,11 +159,111 @@ export interface HudState {
    * field) keeps its existing snapshot shape.
    */
   assistBadge?: AssistBadge;
+  /** Optional §20 damage HUD summary. */
+  damage?: HudDamageSummary;
+  /** Optional §20 weather HUD summary. */
+  weather?: HudWeatherSummary;
+}
+
+export interface HudDamageSummary {
+  totalPercent: number;
+  zones: Readonly<Record<DamageZone, number>>;
+}
+
+export type HudWeatherIcon = "clear" | "rain" | "fog" | "snow" | "night" | "overcast";
+export type HudGripHint = "dry" | "wet" | "slick" | "snow" | "low-vis" | "night";
+
+export interface HudWeatherSummary {
+  icon: HudWeatherIcon;
+  label: string;
+  gripHint?: HudGripHint;
+  gripPercent?: number;
 }
 
 /** Conversion factors. SI base is m/s. */
 const KPH_PER_MPS = 3.6;
 const MPH_PER_MPS = 2.2369362920544025;
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
+function percentFromUnit(value: number): number {
+  return Math.round(clampUnit(value) * 100);
+}
+
+export function summarizeHudDamage(damage: Readonly<DamageState>): HudDamageSummary {
+  return {
+    totalPercent: percentFromUnit(damage.total),
+    zones: {
+      engine: percentFromUnit(damage.zones.engine),
+      tires: percentFromUnit(damage.zones.tires),
+      body: percentFromUnit(damage.zones.body),
+    },
+  };
+}
+
+export function weatherIconForHud(weather: WeatherOption): HudWeatherIcon {
+  switch (weather) {
+    case "light_rain":
+    case "rain":
+    case "heavy_rain":
+      return "rain";
+    case "fog":
+      return "fog";
+    case "snow":
+      return "snow";
+    case "dusk":
+    case "night":
+      return "night";
+    case "overcast":
+      return "overcast";
+    case "clear":
+      return "clear";
+  }
+}
+
+export function weatherLabelForHud(weather: WeatherOption): string {
+  return weather.replaceAll("_", " ").toUpperCase();
+}
+
+export function gripHintForHud(
+  weather: WeatherOption,
+  weatherGripScalar: number | undefined,
+): HudGripHint | undefined {
+  if (weatherGripScalar === undefined || !Number.isFinite(weatherGripScalar)) {
+    return undefined;
+  }
+  if (weather === "snow") return "snow";
+  if (weather === "fog") return "low-vis";
+  if (weather === "night" || weather === "dusk") return "night";
+  if (
+    weather === "light_rain" ||
+    weather === "rain" ||
+    weather === "heavy_rain"
+  ) {
+    return weatherGripScalar < 0.82 ? "slick" : "wet";
+  }
+  return weatherGripScalar < 0.95 ? "wet" : "dry";
+}
+
+export function summarizeHudWeather(
+  weather: WeatherOption,
+  weatherGripScalar?: number,
+): HudWeatherSummary {
+  const gripPercent =
+    weatherGripScalar !== undefined && Number.isFinite(weatherGripScalar)
+      ? percentFromUnit(weatherGripScalar)
+      : undefined;
+  const gripHint = gripHintForHud(weather, weatherGripScalar);
+  return {
+    icon: weatherIconForHud(weather),
+    label: weatherLabelForHud(weather),
+    ...(gripHint !== undefined ? { gripHint } : {}),
+    ...(gripPercent !== undefined ? { gripPercent } : {}),
+  };
+}
 
 /**
  * Format a lap time in milliseconds as `MM:SS.mmm` for the §20 lap-timer
@@ -268,6 +379,12 @@ export function deriveHudState(input: HudStateInput): HudState {
   }
   if (input.bestLapMs !== undefined) {
     result.bestLapMs = input.bestLapMs;
+  }
+  if (input.damage !== undefined) {
+    result.damage = summarizeHudDamage(input.damage);
+  }
+  if (input.weather !== undefined) {
+    result.weather = summarizeHudWeather(input.weather, input.weatherGripScalar);
   }
   return result;
 }

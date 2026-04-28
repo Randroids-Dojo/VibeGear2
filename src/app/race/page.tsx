@@ -114,7 +114,11 @@ import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
 import type { SaveGame } from "@/data/schemas";
 import type { RaceResult } from "@/game/raceResult";
 import { PRISTINE_DAMAGE_STATE, type DamageState } from "@/game/damage";
-import { activeWeatherForState, type TireKind } from "@/game/weather";
+import {
+  activeWeatherForState,
+  weatherGripScalarForState,
+  type TireKind,
+} from "@/game/weather";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -996,8 +1000,15 @@ function RaceCanvas({
           playerSpeedMetersPerSecond: session.player.car.speed,
           playerId: PLAYER_ID,
           cars,
-          speedUnit: "kph",
+          speedUnit: persistedSettings.displaySpeedUnit,
           assistBadge: session.player.assistBadge ?? undefined,
+          damage: session.player.damage,
+          weather: renderWeather,
+          weatherGripScalar: weatherGripScalarForState(
+            STARTER_STATS,
+            session.weather,
+            config.playerTire ?? "dry",
+          ),
         });
         drawHud(ctx, hud, viewport);
 

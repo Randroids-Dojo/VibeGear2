@@ -6,6 +6,53 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: HUD damage and weather grip indicators
+
+**GDD sections touched:**
+[§13](gdd/13-damage-repairs-and-risk.md) damage visualization,
+[§14](gdd/14-weather-and-environmental-systems.md) weather feedback,
+[§20](gdd/20-hud-and-ui-ux.md) race HUD.
+**Branch / PR:** `feat/hud-damage-weather`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/hudState.ts`: added optional HUD summaries for live damage,
+  active weather, and weather grip hints while preserving the minimal
+  HUD shape for older callers.
+- `src/render/uiRenderer.ts`: added a guarded bottom-left status cluster
+  for damage, weather, and grip, with no drawing when the fields are
+  absent.
+- `src/app/race/page.tsx`: wires live player damage, active race weather,
+  effective weather grip, and persisted speed units into `deriveHudState`.
+- `docs/GDD_COVERAGE.json`: added GDD-20-HUD-DAMAGE-WEATHER.
+
+### Verified
+- `npx vitest run src/game/__tests__/hudState.test.ts src/render/__tests__/uiRenderer.test.ts`
+  green, 68 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2381 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- The HUD uses compact ASCII weather chips plus labels instead of new
+  bitmap icon assets, so this slice stays focused on the live status
+  surface. Asset-backed HUD icons remain part of the broader art pass.
+- The damage and weather cluster is drawn above the minimap area to avoid
+  overlap while keeping the §20 bottom-left grouping.
+
+### Coverage ledger
+- GDD-20-HUD-DAMAGE-WEATHER covers the live HUD damage, weather icon, and
+  grip hint requirements.
+- Uncovered adjacent requirements: nitro meter, cash delta, full pause
+  action polish, results styling, and resize reflow verification remain
+  future §20 slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Weather visibility AI risk
 
 **GDD sections touched:**
