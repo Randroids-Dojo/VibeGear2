@@ -826,6 +826,7 @@ describe("buildRaceResult + awardCredits: F-034 race-finish wiring", () => {
         "test-circuit": {
           bestLapMs: 25_000,
           bestRaceMs: 88_000,
+          bestSplitsMs: [12_000, 18_000],
         },
       },
     };
@@ -843,6 +844,7 @@ describe("buildRaceResult + awardCredits: F-034 race-finish wiring", () => {
     expect(committed.records["test-circuit"]).toEqual({
       bestLapMs: 25_000,
       bestRaceMs: 88_000,
+      bestSplitsMs: [12_000, 18_000],
     });
   });
 });

@@ -496,7 +496,10 @@ function commitTimeTrialRecords(input: {
   const write = saveSave(nextSave);
   return {
     result,
-    save: write.kind === "ok" ? nextSave : baseSave,
+    save:
+      write.kind === "ok"
+        ? { ...nextSave, writeCounter: (nextSave.writeCounter ?? 0) + 1 }
+        : baseSave,
   };
 }
 

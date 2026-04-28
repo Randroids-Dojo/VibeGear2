@@ -511,6 +511,7 @@ export function applyRaceResultRecords(save: SaveGame, result: RaceResult): Save
     records: {
       ...save.records,
       [patch.trackId]: {
+        ...(existing ?? {}),
         bestLapMs,
         bestRaceMs,
       },
