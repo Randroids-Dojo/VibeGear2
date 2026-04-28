@@ -288,6 +288,30 @@ function WeatherSettings({
           </label>
         </li>
         <li
+          style={itemStyle(weather.highContrastRoadsideSigns)}
+          data-testid="accessibility-row-highContrastRoadsideSigns"
+          data-active={weather.highContrastRoadsideSigns ? "true" : "false"}
+        >
+          <label
+            htmlFor="accessibility-toggle-highContrastRoadsideSigns"
+            style={labelStyle}
+          >
+            <input
+              id="accessibility-toggle-highContrastRoadsideSigns"
+              type="checkbox"
+              checked={weather.highContrastRoadsideSigns}
+              onChange={(e) =>
+                onToggle("highContrastRoadsideSigns", e.currentTarget.checked)
+              }
+              data-testid="accessibility-toggle-highContrastRoadsideSigns"
+            />
+            <span style={textStyle}>
+              <span style={titleStyle}>High-contrast signs</span>
+              <span style={descStyle}>Boost roadside sign panels and markings.</span>
+            </span>
+          </label>
+        </li>
+        <li
           style={itemStyle(weather.weatherFlashReduction)}
           data-testid="accessibility-row-weatherFlashReduction"
           data-active={weather.weatherFlashReduction ? "true" : "false"}

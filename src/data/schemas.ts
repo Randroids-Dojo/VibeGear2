@@ -563,6 +563,7 @@ export type AudioSettings = z.infer<typeof AudioSettingsSchema>;
  *   negative input by clamping to this range at parse time.
  * - `weatherParticleIntensity`: 0..1 multiplier for rain and snow particles.
  * - `reducedWeatherGlare`: dampens weather bloom in dusk and night races.
+ * - `highContrastRoadsideSigns`: boosts roadside sign panel and glyph contrast.
  * - `fogReadabilityClamp`: minimum fog visibility target for readability.
  * - `weatherFlashReduction`: further reduces high-contrast weather flashes.
  */
@@ -573,6 +574,7 @@ export const AccessibilitySettingsSchema = z.object({
   screenShakeScale: unitInterval,
   weatherParticleIntensity: unitInterval.optional(),
   reducedWeatherGlare: z.boolean().optional(),
+  highContrastRoadsideSigns: z.boolean().optional(),
   fogReadabilityClamp: unitInterval.optional(),
   weatherFlashReduction: z.boolean().optional(),
 });

@@ -942,6 +942,8 @@ function RaceCanvas({
             particleIntensity:
               persistedSettings.accessibility?.weatherParticleIntensity,
             reducedGlare: persistedSettings.accessibility?.reducedWeatherGlare,
+            highContrastRoadsideSigns:
+              persistedSettings.accessibility?.highContrastRoadsideSigns,
             fogFloorClamp: persistedSettings.accessibility?.fogReadabilityClamp,
             flashReduction:
               persistedSettings.accessibility?.weatherFlashReduction,

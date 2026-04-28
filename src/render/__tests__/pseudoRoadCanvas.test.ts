@@ -605,6 +605,60 @@ describe("drawRoad roadside sprites", () => {
     expect(fillRects.some((call) => call.fillStyle === "#1b3a20")).toBe(true);
   });
 
+  it("boosts sign panel and glyph contrast when the assist is enabled", () => {
+    const normal = makeCanvasSpy();
+    const highContrast = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 440,
+        screenW: 260,
+        segment: {
+          ...strip({}).segment,
+          index: 0,
+          roadsideLeftId: "sign_marker",
+          roadsideRightId: "default",
+        },
+      }),
+      strip({
+        screenY: 300,
+        screenW: 110,
+        segment: {
+          ...strip({}).segment,
+          index: 1,
+          roadsideLeftId: "default",
+          roadsideRightId: "default",
+        },
+      }),
+    ];
+
+    drawRoad(normal.ctx, strips, VIEWPORT, {
+      weatherEffects: { weather: "clear" },
+    });
+    drawRoad(highContrast.ctx, strips, VIEWPORT, {
+      weatherEffects: {
+        weather: "clear",
+        highContrastRoadsideSigns: true,
+      },
+    });
+
+    const normalRects = normal.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    const highContrastRects = highContrast.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    expect(normalRects.some((call) => call.fillStyle === "#05070d")).toBe(false);
+    expect(
+      highContrastRects.some((call) => call.fillStyle === "#fff36a"),
+    ).toBe(true);
+    expect(
+      highContrastRects.some((call) => call.fillStyle === "#05070d"),
+    ).toBe(true);
+    expect(
+      highContrastRects.filter((call) => call.fillStyle === "#ffffff"),
+    ).toHaveLength(2);
+  });
+
   it("skips the default roadside id", () => {
     const spy = makeCanvasSpy();
     const strips: readonly Strip[] = [

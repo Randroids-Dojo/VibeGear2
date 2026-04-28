@@ -114,6 +114,9 @@ test.describe("options accessibility pane", () => {
       .fill("0.5");
     await page.getByTestId("accessibility-fog-readability-clamp").fill("0.75");
     await page.getByTestId("accessibility-toggle-reducedWeatherGlare").check();
+    await page
+      .getByTestId("accessibility-toggle-highContrastRoadsideSigns")
+      .check();
     await page.getByTestId("accessibility-toggle-weatherFlashReduction").check();
 
     await expect(
@@ -132,6 +135,9 @@ test.describe("options accessibility pane", () => {
     );
     expect(persisted?.settings?.accessibility?.fogReadabilityClamp).toBe(0.75);
     expect(persisted?.settings?.accessibility?.reducedWeatherGlare).toBe(true);
+    expect(
+      persisted?.settings?.accessibility?.highContrastRoadsideSigns,
+    ).toBe(true);
     expect(persisted?.settings?.accessibility?.weatherFlashReduction).toBe(true);
 
     await page.reload();
@@ -144,6 +150,9 @@ test.describe("options accessibility pane", () => {
     ).toHaveText("75%");
     await expect(
       page.getByTestId("accessibility-toggle-reducedWeatherGlare"),
+    ).toBeChecked();
+    await expect(
+      page.getByTestId("accessibility-toggle-highContrastRoadsideSigns"),
     ).toBeChecked();
     await expect(
       page.getByTestId("accessibility-toggle-weatherFlashReduction"),

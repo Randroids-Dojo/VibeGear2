@@ -165,6 +165,24 @@ describe("weather accessibility mutations", () => {
     expect(flash.save.settings.accessibility?.reducedWeatherGlare).toBe(true);
     expect(flash.save.settings.accessibility?.weatherFlashReduction).toBe(true);
   });
+
+  it("applies high-contrast roadside signs independently", () => {
+    const save = defaultSave();
+    const result = applyWeatherAccessibilityToggle(
+      save,
+      "highContrastRoadsideSigns",
+      true,
+    );
+    expect(result.kind).toBe("applied");
+    if (result.kind === "applied") {
+      expect(
+        result.save.settings.accessibility?.highContrastRoadsideSigns,
+      ).toBe(true);
+      expect(result.save.settings.accessibility?.reducedWeatherGlare).toBe(
+        false,
+      );
+    }
+  });
 });
 
 describe("readAssists", () => {

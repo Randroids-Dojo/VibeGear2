@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: High-contrast roadside signs
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather
+accessibility controls,
+[§16](gdd/16-rendering-and-visual-design.md) roadside sprite rendering,
+[§20](gdd/20-hud-and-ui-ux.md) settings surface,
+[§22](gdd/22-data-schemas.md) save settings schema.
+**Branch / PR:** `feat/high-contrast-roadside-signs`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts` and `src/persistence/migrations/v1ToV2.ts`:
+  added the additive `highContrastRoadsideSigns` accessibility setting
+  with a false default for fresh and migrated saves.
+- `src/components/options/AccessibilityPane.tsx`: added the persisted
+  high-contrast signs toggle to the Weather visibility fieldset.
+- `src/render/pseudoRoadCanvas.ts` and `src/app/race/page.tsx`: threaded
+  the setting into live race rendering and boosted sign panel, glyph, and
+  edge contrast when enabled.
+- `docs/GDD_COVERAGE.json`: expanded
+  GDD-14-WEATHER-ACCESSIBILITY-SETTINGS to include roadside signs.
+
+### Verified
+- `npx vitest run src/data/__tests__/settings-schema.test.ts src/persistence/migrations/v1ToV2.test.ts src/components/options/__tests__/accessibilityPaneState.test.ts src/components/options/__tests__/AccessibilityPane.test.tsx src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 100 passed.
+- `npx playwright test e2e/options-accessibility.spec.ts` green, 4
+  passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npm run verify` green, 2342 passed.
+- `npm run test:e2e` green, 71 passed.
+
+### Decisions and assumptions
+- The setting lives in the existing Weather visibility group because
+  §14 lists high-contrast roadside signs under weather accessibility.
+- Old saves keep parsing because the new schema field is optional and
+  the read helper falls back to the default.
+
+### Coverage ledger
+- GDD-14-WEATHER-ACCESSIBILITY-SETTINGS now covers high-contrast roadside
+  signs in addition to the weather particle, fog, glare, and flash
+  controls.
+- Uncovered adjacent requirements: weather state transitions, heat
+  shimmer, and tunnel adaptation remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Overcast weather option
 
 **GDD sections touched:**

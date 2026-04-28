@@ -12,7 +12,8 @@
  *   (`docs/gdd/20-hud-and-ui-ux.md` Settings section).
  * - `accessibility = { colorBlindMode: 'off', reducedMotion: false,
  *   largeUiText: false, screenShakeScale: 1, weatherParticleIntensity: 1,
- *   reducedWeatherGlare: false, fogReadabilityClamp: 0,
+ *   reducedWeatherGlare: false, highContrastRoadsideSigns: false,
+ *   fogReadabilityClamp: 0,
  *   weatherFlashReduction: false }` per the §20 accessibility defaults;
  *   `screenShakeScale: 1` keeps the v1 shake intensity unchanged.
  * - `keyBindings = DEFAULT_KEY_BINDINGS` (cloned from `src/game/input.ts`).
@@ -46,6 +47,7 @@ export const V2_ACCESSIBILITY_DEFAULTS = Object.freeze({
   screenShakeScale: 1,
   weatherParticleIntensity: 1,
   reducedWeatherGlare: false,
+  highContrastRoadsideSigns: false,
   fogReadabilityClamp: 0,
   weatherFlashReduction: false,
 });
