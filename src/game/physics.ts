@@ -268,6 +268,12 @@ export interface StepOptions {
    * no per-tick allocation cost.
    */
   assistScalars?: Readonly<AssistScalars>;
+  /**
+   * Per-tick weather grip scalar, composed by the race session from
+   * `weatherGripScalar` in `weather.ts`. Defaults to `1` so callers
+   * that have not wired weather preserve their old dry-grip output.
+   */
+  weatherGripScalar?: number;
 }
 
 /** Conservative upper bound on the draft bonus inside the step. */
@@ -382,7 +388,9 @@ export function step(
   // The damage band's `gripScalar` derates grip in the moderate band
   // and above per §10 "reduced grip".
   const damageGripScalar = clamp(damageScalars.gripScalar, 0, 1);
-  const baseGrip = clamp(stats.gripDry, 0, 2) * damageGripScalar;
+  const weatherGripScalar = clamp(options.weatherGripScalar ?? 1, 0, 2);
+  const baseGrip =
+    clamp(stats.gripDry, 0, 2) * damageGripScalar * weatherGripScalar;
   const tractionScalar = offRoad ? baseGrip * 0.5 : baseGrip;
   const steerInput = clamp(input.steer, -1, 1);
   const steerRate = steerRateForSpeed(nextSpeed, stats.topSpeed);

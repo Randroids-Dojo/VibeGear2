@@ -122,6 +122,11 @@ nitroWhileSeverelyDamagedBonus = +15%
 | Snow | -0.18 | +0.14 |
 | Fog | 0.00 | 0.00 |
 
+Runtime weather aliases for §14 weather types without a separate row:
+`light_rain` uses Rain, `dusk` uses Clear, and `night` uses Clear for
+grip. Dusk and night still reduce visibility through §14 read-distance
+scalars rather than tire grip.
+
 ## CPU difficulty modifiers
 
 | Difficulty | Pace scalar | Recovery scalar | Mistake scalar |

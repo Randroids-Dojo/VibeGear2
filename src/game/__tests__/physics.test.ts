@@ -202,6 +202,28 @@ describe("step (steering)", () => {
   });
 });
 
+describe("step (weather grip scalar)", () => {
+  it("lower weather grip reduces lateral authority", () => {
+    const start = freshState({ speed: 30 });
+    const clear = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT, {
+      weatherGripScalar: 1.08,
+    });
+    const rain = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT, {
+      weatherGripScalar: 0.88,
+    });
+    expect(Math.abs(rain.x)).toBeLessThan(Math.abs(clear.x));
+  });
+
+  it("omitting weatherGripScalar preserves prior output", () => {
+    const start = freshState({ speed: 30 });
+    const a = step(start, withInput({ steer: 0.4 }), STARTER_STATS, ROAD, DT);
+    const b = step(start, withInput({ steer: 0.4 }), STARTER_STATS, ROAD, DT, {
+      weatherGripScalar: 1,
+    });
+    expect(b).toEqual(a);
+  });
+});
+
 describe("step (off-road)", () => {
   it("isOffRoad detects positions outside road half-width", () => {
     expect(isOffRoad(0, ROAD.roadHalfWidth)).toBe(false);

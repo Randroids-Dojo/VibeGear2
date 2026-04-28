@@ -128,8 +128,9 @@ this resolution only confirms no upgrade is required. Resolved.
 **GDD reference:** [§23](gdd/23-balancing-tables.md) "Weather modifiers",
 [§14](gdd/14-weather-and-environmental-systems.md) "Weather types",
 [§22](gdd/22-data-schemas.md) "Weather option enum"
-**Status:** open
+**Status:** answered
 **Asked in loop:** 2026-04-26
+**Answered in loop:** 2026-04-28
 
 **Question.** `WeatherOption` (the `TrackSchema`-validated enum in
 `src/data/schemas.ts`) declares eight values: `clear`, `light_rain`,
@@ -166,6 +167,15 @@ without blocking on a GDD edit.
 the §23-row subset; no runtime consumer reads the lookup yet. The
 parent weather dot picks a resolution before its physics integration
 lands.
+
+**Resolution.** Adopted option (b) for the first runtime consumer:
+`light_rain` aliases to Rain, `dusk` aliases to Clear, and `night`
+aliases to Clear for tire-grip math. The weather grip runtime slice
+documents the alias map in §23 and pins it in
+`WEATHER_TIRE_MODIFIER_ALIASES`. Dusk and night still reduce read
+distance through `WEATHER_VISIBILITY`, so they are not fully neutral;
+they are grip-neutral. Full per-weather balancing rows remain optional
+future tuning, but no runtime caller receives `undefined`.
 
 ---
 

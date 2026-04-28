@@ -6,6 +6,62 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Weather grip runtime
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather physics and
+visibility effects,
+[§15](gdd/15-cpu-opponents-and-ai.md) AI weather skill,
+[§23](gdd/23-balancing-tables.md) weather modifiers.
+**Branch / PR:** `feat/weather-grip-runtime`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/weather.ts`: added runtime aliases for weather options that
+  §23 does not give a separate tire row, weather visibility scalars,
+  effective grip helpers, and exhaustive AI weather-skill mapping.
+- `src/game/physics.ts`: added an optional weather grip scalar to the
+  lateral grip calculation while preserving identity behavior for
+  callers that omit it.
+- `src/game/raceSession.ts`: threads active race weather into player
+  and AI physics, and applies AI weather skill to the AI pace scalar.
+- `docs/OPEN_QUESTIONS.md`: answered Q-008 with the runtime alias map.
+- `docs/FOLLOWUPS.md`: added F-066 for the missing pre-race tire
+  selection and active tire-channel persistence.
+- `docs/GDD_COVERAGE.json`: added GDD-14-WEATHER-GRIP-RUNTIME.
+
+### Verified
+- `npx vitest run src/game/__tests__/weather.test.ts src/game/__tests__/physics.test.ts src/game/__tests__/raceSession.test.ts src/data/__tests__/balancing.test.ts`
+  green, 287 passed.
+- `npm run typecheck` clean.
+- `npm run verify` green, 2295 passed.
+- `npm run test:e2e` green, 69 passed.
+
+### Decisions and assumptions
+- Q-008 resolved to aliases rather than new balancing numbers:
+  `light_rain` uses Rain, `dusk` uses Clear, and `night` uses Clear for
+  tire grip. Dusk and night still reduce visibility through
+  `WEATHER_VISIBILITY`.
+- Race sessions still use the dry tire channel because no active
+  tire-selection state exists yet. F-066 owns the §14/§20 tire choice
+  surface and the `"wet"` channel handoff.
+- Weather changes remain race-start static. Mid-race weather
+  transitions stay out of this PR.
+
+### Coverage ledger
+- GDD-14-WEATHER-GRIP-RUNTIME covers active weather grip, visibility
+  scalars, and AI weather-skill mapping.
+- Uncovered adjacent requirements: tire selection, weather VFX
+  particles, fog draw-distance rendering, weather intensity settings,
+  and mid-race weather transitions remain future slices.
+
+### Followups created
+- F-066: Add pre-race tire selection and persist the active tire channel.
+
+### GDD edits
+- `docs/gdd/23-balancing-tables.md`: documented runtime aliases for
+  §14 weather options without separate §23 tire rows.
+
 ## 2026-04-28: Slice: F-024 RNG consumers
 
 **GDD sections touched:**
