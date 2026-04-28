@@ -216,7 +216,19 @@ the new `ghosts` map is filled with `{}`.
   },
   "progress": {
     "unlockedTours": ["velvet-coast", "iron-borough"],
-    "completedTours": ["velvet-coast"]
+    "completedTours": ["velvet-coast"],
+    "activeTour": {
+      "tourId": "iron-borough",
+      "raceIndex": 1,
+      "results": [
+        {
+          "trackId": "iron-borough/freightline-ring",
+          "placement": 2,
+          "dnf": false,
+          "cashEarned": 1800
+        }
+      ]
+    }
   },
   "records": {
     "velvet-coast/harbor-run": {
@@ -242,6 +254,13 @@ older v3 saves still validate; a fully fresh save seeds it to `{}`.
 `garage.lastRaceCashEarned` is the previous credited race payout used by
 the §12 essential-repair cap. It is optional for older saves and seeded
 to `0` on fresh saves.
+
+`progress.activeTour` is optional and exists only while a four-race tour
+is in progress. `raceIndex` points at the next tour race to run, and
+`results` stores completed race outcomes in order, including the cash
+receipt used by the tour-clear bonus, so the results screen can resume,
+aggregate standings, unlock the next tour on pass, and clear the cursor
+after the fourth race.
 
 `writeCounter` is the cross-tab last-write-wins advisory described in
 `docs/gdd/21-technical-design-for-web-implementation.md` "Cross-tab

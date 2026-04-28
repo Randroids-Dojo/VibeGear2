@@ -134,6 +134,20 @@ function ResultsView(props: ResultsViewProps): ReactElement {
   );
   const playerFinished = playerRow?.status === "finished";
   const playerBestLapMs = playerRow?.bestLapMs ?? null;
+  const tourProgress = result.tourProgress ?? null;
+  const continueTourHref =
+    result.nextRace && tourProgress && tourProgress.nextRaceIndex !== null
+      ? `/race?track=${encodeURIComponent(
+          result.nextRace.trackId,
+        )}&tour=${encodeURIComponent(tourProgress.tourId)}&raceIndex=${
+          tourProgress.nextRaceIndex
+        }`
+      : null;
+  const tourCompleteLabel = tourProgress?.completed
+    ? tourProgress.passed
+      ? `Tour complete. Standing ${tourProgress.playerStanding ?? "?"}.`
+      : `Tour failed. Standing ${tourProgress.playerStanding ?? "?"}.`
+    : null;
 
   return (
     <main
@@ -219,6 +233,14 @@ function ResultsView(props: ResultsViewProps): ReactElement {
               No upcoming race scheduled.
             </p>
           )}
+          {tourCompleteLabel ? (
+            <p data-testid="results-tour-complete" style={nextStyle}>
+              {tourCompleteLabel}
+              {tourProgress?.unlockedTourId
+                ? ` Unlocked ${formatTourName(tourProgress.unlockedTourId)}.`
+                : ""}
+            </p>
+          ) : null}
 
           <LeaderboardPanel
             trackId={result.trackId}
@@ -230,11 +252,22 @@ function ResultsView(props: ResultsViewProps): ReactElement {
       </section>
 
       <nav style={ctaRowStyle} aria-label="Results actions">
+        {continueTourHref ? (
+          <Link
+            href={continueTourHref}
+            ref={continueRef}
+            data-testid="results-cta-continue-tour"
+            style={primaryCtaStyle}
+            onClick={() => clearRaceResult()}
+          >
+            Continue tour
+          </Link>
+        ) : null}
         <Link
           href="/garage"
-          ref={continueRef}
+          ref={continueTourHref ? undefined : continueRef}
           data-testid="results-cta-continue"
-          style={primaryCtaStyle}
+          style={continueTourHref ? secondaryCtaStyle : primaryCtaStyle}
           onClick={() => clearRaceResult()}
         >
           Continue to Garage
@@ -293,6 +326,14 @@ function formatMs(ms: number): string {
   const seconds = Math.floor((total % 60_000) / 1000);
   const millis = total % 1000;
   return `${pad2(minutes)}:${pad2(seconds)}.${pad3(millis)}`;
+}
+
+function formatTourName(id: string): string {
+  return id
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function pad2(value: number): string {

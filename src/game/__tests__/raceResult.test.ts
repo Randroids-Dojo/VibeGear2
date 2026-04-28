@@ -516,6 +516,12 @@ describe("buildRaceResult: next race card", () => {
       makeInput({ championship, tourId: "t1", currentTrackIndex: 0 }),
     );
     expect(result.nextRace?.trackId).toBe("next-circuit");
+    expect(result.tourProgress).toMatchObject({
+      tourId: "t1",
+      raceIndex: 0,
+      nextRaceIndex: 1,
+      completed: false,
+    });
   });
 
   it("falls back to indexOf when currentTrackIndex omitted", () => {
@@ -530,6 +536,12 @@ describe("buildRaceResult: next race card", () => {
       makeInput({ championship, tourId: "t1", currentTrackIndex: 2 }),
     );
     expect(result.nextRace).toBe(null);
+    expect(result.tourProgress).toMatchObject({
+      tourId: "t1",
+      raceIndex: 2,
+      nextRaceIndex: null,
+      completed: true,
+    });
   });
 
   it("returns null when the tour id is not in the championship", () => {

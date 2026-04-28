@@ -60,9 +60,19 @@ export function enterWorldTour(
   if (!tour) return { ok: false, code: "unknown_tour" };
   const firstTrackId = tour.tracks[0];
   if (!firstTrackId) return { ok: false, code: "unknown_tour" };
+  const unlockedSave = withFirstTourUnlocked(result.save, championship);
   return {
     ...result,
-    save: withFirstTourUnlocked(result.save, championship),
+    save: {
+      ...unlockedSave,
+      progress: {
+        ...unlockedSave.progress,
+        activeTour: {
+          ...result.activeTour,
+          results: [...result.activeTour.results],
+        },
+      },
+    },
     firstTrackId,
     firstTrackName: formatTrackName(firstTrackId),
   };

@@ -64,6 +64,21 @@ const SEED_RESULT = {
   recordsUpdated: { trackId: "test-circuit", bestLapMs: 30_000 },
 };
 
+const SEED_TOUR_RESULT = {
+  ...SEED_RESULT,
+  trackId: "velvet-coast/harbor-run",
+  nextRace: { trackId: "velvet-coast/sunpier-loop", laps: 3 },
+  tourProgress: {
+    tourId: "velvet-coast",
+    raceIndex: 0,
+    nextRaceIndex: 1,
+    completed: false,
+    passed: null,
+    playerStanding: null,
+    unlockedTourId: null,
+  },
+};
+
 test.describe("race results screen", () => {
   test("renders all seven §20 fields and both CTAs", async ({ page }) => {
     await page.goto("/race/results");
@@ -156,6 +171,25 @@ test.describe("race results screen", () => {
     await expect(page.getByTestId("results-cta-continue")).toBeVisible();
     await page.getByTestId("results-cta-continue").click();
     await expect(page).toHaveURL(/\/garage$/);
+  });
+
+  test("Continue tour CTA routes to the next tour race", async ({ page }) => {
+    await page.goto("/race/results");
+    await page.evaluate(
+      ([key, payload]) => {
+        sessionStorage.setItem(key, payload);
+      },
+      [STORAGE_KEY, JSON.stringify(SEED_TOUR_RESULT)] as const,
+    );
+    await page.reload();
+
+    const continueTour = page.getByTestId("results-cta-continue-tour");
+    await expect(continueTour).toBeVisible();
+    await expect(continueTour).toBeFocused();
+    await continueTour.click();
+    await expect(page).toHaveURL(
+      /\/race\?track=velvet-coast%2Fsunpier-loop&tour=velvet-coast&raceIndex=1$/,
+    );
   });
 
   test("direct nav with no result renders the empty fallback", async ({

@@ -203,6 +203,35 @@ describe("SaveGameSchema", () => {
     expect(SaveGameSchema.safeParse(withRepairState).success).toBe(true);
   });
 
+  it("accepts an optional active tour cursor", () => {
+    const withActiveTour = {
+      ...saveGameExample,
+      progress: {
+        ...saveGameExample.progress,
+        activeTour: {
+          tourId: "velvet-coast",
+          raceIndex: 2,
+          results: [
+            {
+              trackId: "velvet-coast/harbor-run",
+              placement: 1,
+              dnf: false,
+              cashEarned: 1500,
+            },
+            {
+              trackId: "velvet-coast/sunpier-loop",
+              placement: 2,
+              dnf: false,
+              cashEarned: 1200,
+            },
+          ],
+        },
+      },
+    };
+
+    expect(SaveGameSchema.safeParse(withActiveTour).success).toBe(true);
+  });
+
   it("rejects garage repair damage outside the unit interval", () => {
     const broken = {
       ...saveGameExample,

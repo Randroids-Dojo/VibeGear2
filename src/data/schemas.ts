@@ -621,9 +621,34 @@ export const SaveGameGarageSchema = z.object({
 });
 export type SaveGameGarage = z.infer<typeof SaveGameGarageSchema>;
 
+export const SaveGameActiveTourRaceResultSchema = z.object({
+  trackId: slug,
+  placement: nonNegInt,
+  dnf: z.boolean(),
+  cashEarned: nonNegInt.optional(),
+});
+export type SaveGameActiveTourRaceResult = z.infer<
+  typeof SaveGameActiveTourRaceResultSchema
+>;
+
+export const SaveGameActiveTourSchema = z.object({
+  tourId: slug,
+  raceIndex: nonNegInt,
+  results: z.array(SaveGameActiveTourRaceResultSchema),
+});
+export type SaveGameActiveTour = z.infer<typeof SaveGameActiveTourSchema>;
+
 export const SaveGameProgressSchema = z.object({
   unlockedTours: z.array(slug),
   completedTours: z.array(slug),
+  /**
+   * Active World Tour cursor, persisted while the player is between
+   * races in a four-race tour. `raceIndex` points at the next race to
+   * run, and `results` stores completed race outcomes in order so the
+   * results screen can resume, finish, and unlock tours deterministically.
+   * Optional so saves without an in-progress tour still load cleanly.
+   */
+  activeTour: SaveGameActiveTourSchema.optional(),
   /**
    * One-shot tour-stipend claim ledger per `docs/gdd/12-upgrade-and-economy-system.md`
    * "Catch-up mechanisms". Maps a tour id to `true` once the under-threshold

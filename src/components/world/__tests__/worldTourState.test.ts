@@ -86,6 +86,11 @@ describe("enterWorldTour", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.save.progress.unlockedTours).toEqual(["velvet-coast"]);
+    expect(result.save.progress.activeTour).toEqual({
+      tourId: "velvet-coast",
+      raceIndex: 0,
+      results: [],
+    });
     expect(result.activeTour).toEqual({
       tourId: "velvet-coast",
       raceIndex: 0,

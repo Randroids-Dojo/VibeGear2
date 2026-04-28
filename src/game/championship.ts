@@ -34,13 +34,10 @@
  *   itself. Idempotent: re-running on an already-completed tour does
  *   not double-add ids.
  *
- * The runtime `ActiveTour` shape is defined here rather than on
- * `SaveGameSchema` because the per-tour state is in-flight only: the
- * persistence schema records `unlockedTours` / `completedTours` /
- * `stipendsClaimed`, but the active-tour cursor lives in memory between
- * race-finishes (a future "resume tour" affordance can promote this to
- * a schema field; for now the §20 results screen rebuilds it from the
- * championship + the player's last race outcome on demand).
+ * The runtime `ActiveTour` shape mirrors `SaveGameProgress.activeTour`.
+ * `enterTour` returns the seeded cursor, and the caller persists it when
+ * a tour begins. The race-finish path advances the cursor after each
+ * result and clears it once the tour is complete.
  *
  * All functions never mutate the input `save` reference, never call
  * `Date.now`, `Math.random`, or any IO. Same inputs always produce
@@ -81,13 +78,15 @@ export interface TourRaceResult {
   placement: number;
   /** True when the player retired or wrecked. Forces points to 0. */
   dnf: boolean;
+  /** Cash receipt for the race, used by the tour-completion bonus. */
+  cashEarned?: number;
 }
 
 /**
  * Cursor state for a tour in progress. Created by `enterTour`; advanced
  * by `recordResult` once per race; consumed by `tourComplete` after the
- * final race. Lives in memory between race-finishes (see module header
- * for the persistence boundary).
+ * final race. The persisted save stores the same shape under
+ * `progress.activeTour` between race-finishes.
  *
  * `raceIndex` is 0-indexed and points at the *next* race to run. After
  * the final race it equals `tour.tracks.length`; the §20 results screen
@@ -195,8 +194,8 @@ function findTour(
 /**
  * Enter the named tour. Verifies the tour exists in the championship
  * and is in `save.progress.unlockedTours`; on success returns a fresh
- * `SaveGame` (the cursor `ActiveTour` lives in memory) plus the seeded
- * cursor and the §12 stipend amount granted (if any).
+ * `SaveGame` plus the seeded cursor and the §12 stipend amount granted
+ * (if any).
  *
  * The first tour of a championship (index 0) must already appear in
  * `save.progress.unlockedTours` for the player to enter it; the seeding
