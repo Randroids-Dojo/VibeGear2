@@ -1112,7 +1112,11 @@ export function stepRaceSession(
 
   const playerDraftBonus = draftMultipliers.get(PLAYER_CAR_ID) ?? 1;
   const hazardsById = config.hazardsById ?? EMPTY_HAZARD_REGISTRY;
-  let nextBrokenHazards = new Set(state.brokenHazards);
+  const initialBrokenHazards =
+    state.brokenHazards.length > 0
+      ? new Set(state.brokenHazards)
+      : EMPTY_BROKEN_HAZARDS;
+  let nextBrokenHazards = initialBrokenHazards;
   const hazardHitsByCarId = new Map<string, HitEvent[]>();
   const playerHazards = playerIsRacing
     ? evaluateHazards({
@@ -1122,7 +1126,7 @@ export function stepRaceSession(
         brokenHazards: nextBrokenHazards,
       })
     : EMPTY_HAZARD_EFFECT;
-  nextBrokenHazards = new Set(playerHazards.brokenHazards);
+  nextBrokenHazards = playerHazards.brokenHazards;
   const playerHazardHits = hitsFromHazards(playerHazards.events);
   if (playerHazardHits.length > 0) {
     hazardHitsByCarId.set(PLAYER_CAR_ID, playerHazardHits);
@@ -1227,7 +1231,7 @@ export function stepRaceSession(
       hazardsById,
       brokenHazards: nextBrokenHazards,
     });
-    nextBrokenHazards = new Set(aiHazards.brokenHazards);
+    nextBrokenHazards = aiHazards.brokenHazards;
     const aiHazardHits = hitsFromHazards(aiHazards.events);
     if (aiHazardHits.length > 0) {
       hazardHitsByCarId.set(aiCarId(index), aiHazardHits);
@@ -1609,7 +1613,10 @@ export function stepRaceSession(
     sectorTimer: nextSectorTimer,
     baselineSplitsMs: nextBaseline,
     draftWindows: nextDraftWindows,
-    brokenHazards: Array.from(nextBrokenHazards),
+    brokenHazards:
+      nextBrokenHazards === initialBrokenHazards
+        ? state.brokenHazards
+        : Array.from(nextBrokenHazards),
   };
 }
 
@@ -1654,13 +1661,17 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
   };
 }
 
-const EMPTY_HAZARD_REGISTRY: ReadonlyMap<string, Readonly<HazardRegistryEntry>> =
-  Object.freeze(new Map());
+const EMPTY_HAZARD_REGISTRY: ReadonlyMap<
+  string,
+  Readonly<HazardRegistryEntry>
+> = new Map();
+
+const EMPTY_BROKEN_HAZARDS: ReadonlySet<string> = new Set<string>();
 
 const EMPTY_HAZARD_EFFECT = Object.freeze({
   events: Object.freeze([]),
   gripMultiplier: 1,
-  brokenHazards: Object.freeze(new Set<string>()),
+  brokenHazards: EMPTY_BROKEN_HAZARDS,
 });
 
 function hitsFromHazards(
