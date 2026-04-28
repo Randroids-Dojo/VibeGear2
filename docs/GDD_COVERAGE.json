@@ -2,6 +2,27 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The daily challenge mode derives a deterministic UTC-day seed, selects a fixed bundled track and authored weather option, recommends a car class for that day, and exposes a shareable entry route.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/dailyChallenge.ts",
+        "src/app/daily/page.tsx",
+        "src/app/daily/DailyShareButton.tsx",
+        "src/app/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/dailyChallenge.test.ts",
+        "src/app/__tests__/page.test.tsx",
+        "e2e/title-screen.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

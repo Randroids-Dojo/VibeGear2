@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Daily Challenge seed selection
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Community challenge,
+[§21](gdd/21-technical-design-for-web-implementation.md) deterministic
+runtime conventions.
+**Branch / PR:** `feat/daily-challenge-seed-selection`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/modes/dailyChallenge.ts`: added deterministic UTC-day seed
+  generation, fixed daily track / weather selection, car-class
+  recommendation, race-link construction, and share-text formatting.
+- `src/app/daily/page.tsx`: added the Daily Challenge entry route with
+  today's fixed challenge, a time-trial race link, and copyable share
+  text fallback.
+- `src/app/page.tsx`: added Daily Challenge to the title menu.
+- `docs/GDD_COVERAGE.json`: added GDD-06-DAILY-CHALLENGE-SELECTION.
+
+### Verified
+- `npx vitest run src/game/modes/__tests__/dailyChallenge.test.ts src/app/__tests__/page.test.tsx`
+  green, 22 passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/title-screen.spec.ts` green, 7 passed.
+- `npm run verify` green, 2411 passed.
+- `npm run test:e2e` green, 72 passed.
+
+### Decisions and assumptions
+- Daily selection uses UTC date keys so the challenge is stable across
+  local time zones and browser sessions.
+- The first Daily Challenge race link reuses Time Trial mode with a
+  fixed track and weather. Car class is a recommendation until `/race`
+  can enforce or temporarily loan eligible cars. Dedicated daily result
+  persistence and actual run-time share strings remain adjacent work.
+
+### Coverage ledger
+- GDD-06-DAILY-CHALLENGE-SELECTION covers deterministic daily seed,
+  fixed track / weather selection, car-class recommendation, title
+  navigation, and the entry route.
+- Uncovered adjacent requirements: result-backed Daily Challenge share
+  text, UTC-midnight fake-clock e2e, and full Time Trial PB save button
+  remain under the §6 modes parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: reduce tour-flow e2e runtime
 
 **GDD sections touched:**

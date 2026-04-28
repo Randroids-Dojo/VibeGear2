@@ -38,6 +38,12 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/time-trial"');
   });
 
+  it("renders Daily Challenge as an anchor pointing at /daily", () => {
+    const match = html.match(/<a[^>]*data-testid="menu-daily"[^>]*>/);
+    expect(match, "menu-daily anchor not found").not.toBeNull();
+    expect(match?.[0]).toContain('href="/daily"');
+  });
+
   it("renders World Tour as an anchor pointing at /world", () => {
     const match = html.match(/<a[^>]*data-testid="menu-world"[^>]*>/);
     expect(match, "menu-world anchor not found").not.toBeNull();
@@ -56,16 +62,18 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/options"');
   });
 
-  it("places Start Race before World Tour before Time Trial before Garage before Options in tab order", () => {
+  it("places Start Race before World Tour before Time Trial before Daily before Garage before Options in tab order", () => {
     const startIdx = html.indexOf('data-testid="menu-start-race"');
     const worldIdx = html.indexOf('data-testid="menu-world"');
     const timeTrialIdx = html.indexOf('data-testid="menu-time-trial"');
+    const dailyIdx = html.indexOf('data-testid="menu-daily"');
     const garageIdx = html.indexOf('data-testid="menu-garage"');
     const optionsIdx = html.indexOf('data-testid="menu-options"');
     expect(startIdx).toBeGreaterThan(-1);
     expect(worldIdx).toBeGreaterThan(startIdx);
     expect(timeTrialIdx).toBeGreaterThan(worldIdx);
-    expect(garageIdx).toBeGreaterThan(timeTrialIdx);
+    expect(dailyIdx).toBeGreaterThan(timeTrialIdx);
+    expect(garageIdx).toBeGreaterThan(dailyIdx);
     expect(optionsIdx).toBeGreaterThan(garageIdx);
   });
 
