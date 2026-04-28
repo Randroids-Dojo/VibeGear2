@@ -6,6 +6,64 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: F-064 race damage garage persistence
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) race to results to repairs loop,
+[§12](gdd/12-upgrade-and-economy-system.md) essential repair cap,
+[§13](gdd/13-damage-repairs-and-risk.md) repair decisions and damage risk,
+[§22](gdd/22-data-schemas.md) save repair queue.
+**Branch / PR:** `feat/f-064-race-damage-persistence`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/raceDamagePersistence.ts`: added pure helpers to read active
+  car pending damage, project damage into the results builder, normalize
+  final damage, and write final damage plus race payout into the garage
+  queue.
+- `src/game/raceSession.ts`: lets the player session start from queued
+  active-car damage while preserving pristine defaults for fresh saves.
+- `src/app/race/page.tsx`: threads initial damage into result damage
+  deltas and writes final `session.player.damage` from both natural
+  finish and retire paths.
+- `e2e/race-finish.spec.ts`: covers race finish to results to garage
+  repair, including localStorage damage queue and repair-page readback.
+- `docs/FOLLOWUPS.md`: closed F-064.
+- `docs/GDD_COVERAGE.json`: added
+  `GDD-13-RACE-DAMAGE-PERSISTENCE` and removed the stale open repair
+  followup refs.
+
+### Verified
+- `npx vitest run src/game/__tests__/raceDamagePersistence.test.ts src/game/__tests__/raceSession.test.ts src/game/__tests__/raceResult.test.ts`
+  green, 162 passed.
+- `npm run lint` clean.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/race-finish.spec.ts e2e/garage-repairs.spec.ts`
+  green, 4 passed.
+
+### Decisions and assumptions
+- The persisted repair queue stores the final active-car damage for the
+  completed race. That means an already damaged car starts the next race
+  damaged, and any additional race damage accumulates before the queue is
+  overwritten with the new final state.
+- Time Trial keeps skipping economy writes, so it does not write repair
+  queue damage or last race cash.
+
+### Coverage ledger
+- Added GDD-13-RACE-DAMAGE-PERSISTENCE with code and automated test
+  coverage.
+- GDD-13-GARAGE-REPAIR-PURCHASE no longer tracks F-064 as an open
+  followup.
+- Uncovered adjacent requirements: tour standings, recommended weather
+  fit, ghost status, leaderboard status, and full next-race tournament
+  data remain future garage slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: F-061 garage repair purchase surface
 
 **GDD sections touched:**

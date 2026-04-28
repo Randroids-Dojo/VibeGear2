@@ -53,8 +53,11 @@ import {
   createInputManager,
   createRaceSession,
   createTimeTrialRecorder,
+  damageDeltaFromState,
   deriveHudState,
   deriveSplitsState,
+  pendingDamageForActiveCar,
+  applyRaceDamageToGarage,
   applyRaceResultRecords,
   retireRaceSession,
   startLoop,
@@ -94,6 +97,7 @@ import { defaultSave, loadSave, saveSave } from "@/persistence/save";
 import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
 import type { SaveGame } from "@/data/schemas";
 import type { RaceResult } from "@/game/raceResult";
+import type { DamageState } from "@/game/damage";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -297,8 +301,10 @@ function commitRaceCredits(input: {
   save: SaveGame;
   difficulty: string;
   baseTrackReward: number;
+  damageAfter?: Readonly<DamageState>;
+  activeCarId?: string | null;
 }): RaceResult {
-  const { result, save, difficulty, baseTrackReward } = input;
+  const { result, save, difficulty, baseTrackReward, damageAfter, activeCarId } = input;
   const playerRecord = result.finishingOrder.find(
     (record) => record.carId === result.playerCarId,
   );
@@ -327,7 +333,17 @@ function commitRaceCredits(input: {
   // Persist the credited save plus any PB patch emitted by the result
   // builder. Storage failure is non-fatal here: the player still sees
   // the receipt, and the next race finish can retry from a loaded save.
-  saveSave(applyRaceResultRecords(award.state, result));
+  const recordsSave = applyRaceResultRecords(award.state, result);
+  const nextSave =
+    damageAfter === undefined
+      ? recordsSave
+      : applyRaceDamageToGarage({
+          save: recordsSave,
+          carId: activeCarId ?? recordsSave.garage.activeCarId,
+          damage: damageAfter,
+          lastRaceCashEarned: award.cashEarned ?? 0,
+        });
+  saveSave(nextSave);
 
   return {
     ...result,
@@ -468,6 +484,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
     const persistedKeyBindings = readKeyBindings(sessionSave);
+    const initialPlayerDamage = pendingDamageForActiveCar(sessionSave);
     const timeTrialEnabled = mode === "timeTrial";
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
@@ -478,6 +495,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         stats: STARTER_STATS,
         assists: persistedAssists,
         difficultyPreset: persistedDifficulty,
+        initialDamage: initialPlayerDamage,
       },
       ai: [{ driver: DEMO_DRIVER, stats: STARTER_STATS }],
       seed: raceSeed,
@@ -621,6 +639,8 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         track: trackForResult,
         playerCarId: PLAYER_ID,
         playerStartPosition: 1,
+        damageBefore: damageDeltaFromState(initialPlayerDamage),
+        damageAfter: damageDeltaFromState(retired.player.damage),
         recordPBs: false,
       });
       // F-034: credit the wallet (DNF cars receive the §12 participation
@@ -635,6 +655,8 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
             // a `difficultyPreset` field reads as `'normal'`.
             difficulty: persistedDifficulty ?? "normal",
             baseTrackReward: baseRewardForTrackDifficulty(track.compiled.difficulty),
+            damageAfter: retired.player.damage,
+            activeCarId: save.garage.activeCarId,
           });
       saveRaceResult(committed);
       // Flip the natural-finish guard so the render callback's finish
@@ -826,6 +848,8 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
               track: trackForResult,
               playerCarId: PLAYER_ID,
               playerStartPosition: 1,
+              damageBefore: damageDeltaFromState(initialPlayerDamage),
+              damageAfter: damageDeltaFromState(session.player.damage),
               recordPBs: session.player.status === "finished",
             });
             // F-034: credit the wallet from the same numbers the
@@ -843,6 +867,8 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
                   baseTrackReward: baseRewardForTrackDifficulty(
                     track.compiled.difficulty,
                   ),
+                  damageAfter: session.player.damage,
+                  activeCarId: save.garage.activeCarId,
                 });
             saveRaceResult(committed);
             // Tear down the loop / input before the route hop so the

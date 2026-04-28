@@ -169,6 +169,12 @@ export interface RaceSessionPlayer {
    * to title -> options -> resume to apply a new preset.
    */
   difficultyPreset?: PlayerDifficultyPreset | null;
+  /**
+   * Persisted active-car damage loaded from the garage repair queue at
+   * race start. Defaults to pristine for fresh saves and non-economy
+   * sessions.
+   */
+  initialDamage?: Readonly<DamageState> | null;
 }
 
 export interface RaceSessionAI {
@@ -605,7 +611,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     dnfReason: null,
     lapTimes: [],
     finishedAtMs: null,
-    damage: PRISTINE_DAMAGE_STATE,
+    damage: config.player.initialDamage ?? PRISTINE_DAMAGE_STATE,
   };
 
   const ai: RaceSessionAICar[] = config.ai.map((entry, index) => {
