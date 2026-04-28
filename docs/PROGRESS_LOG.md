@@ -20,12 +20,12 @@ Correct them by adding a new entry that references the old one.
   behavior, closed-context replacement, and hidden-page suspension.
 - `src/audio/context.test.ts`: pinned deferred creation, first-resume
   creation, no duplicate resumes, unavailable Web Audio, visibility
-  suspension, and no create-on-hidden behavior.
+  suspension, already-hidden binding, and no create-on-hidden behavior.
 - `docs/GDD_COVERAGE.json`: added
   GDD-18-AUDIO-CONTEXT-LIFECYCLE.
 
 ### Verified
-- `npx vitest run src/audio/context.test.ts` green, 6 passed.
+- `npx vitest run src/audio/context.test.ts` green, 7 passed.
 - `npm run typecheck` green.
 - `npm run verify` green, 2431 passed.
 
@@ -35,6 +35,9 @@ Correct them by adding a new entry that references the old one.
 - Visibility hidden suspends an existing running context, but visibility
   visible does not auto-resume because browser resume still needs an
   explicit user gesture.
+- Binding visibility suspension while the page is already hidden
+  immediately suspends an existing running context without creating a
+  new one.
 - If Web Audio is unavailable, the controller returns `null` and callers
   can treat audio as a no-op.
 

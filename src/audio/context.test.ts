@@ -106,6 +106,19 @@ describe("AudioContextController", () => {
     expect(documentLike.listener).toBeNull();
   });
 
+  it("suspends an existing running context when bound while already hidden", () => {
+    const context = new FakeAudioContext("running");
+    const controller = new AudioContextController(() => context);
+    const documentLike = new FakeDocument();
+
+    controller.ensure();
+    documentLike.hidden = true;
+    controller.bindVisibilitySuspension(documentLike);
+
+    expect(context.suspendSpy).toHaveBeenCalledTimes(1);
+    expect(context.state).toBe("suspended");
+  });
+
   it("does not create a context just because the page becomes hidden", () => {
     const create = vi.fn(() => new FakeAudioContext("running"));
     const controller = new AudioContextController(create);

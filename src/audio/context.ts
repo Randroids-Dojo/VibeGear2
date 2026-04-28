@@ -55,6 +55,7 @@ export class AudioContextController {
       }
     };
     documentLike.addEventListener("visibilitychange", onVisibilityChange);
+    onVisibilityChange();
     return () => documentLike.removeEventListener("visibilitychange", onVisibilityChange);
   }
 }
