@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: F-065 active tour progression
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) race to results loop,
+[§8](gdd/08-world-and-progression-design.md) tour unlock structure,
+[§20](gdd/20-hud-and-ui-ux.md) results next-race flow,
+[§22](gdd/22-data-schemas.md) save progress fields.
+**Branch / PR:** `feat/f-065-active-tour-progression`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts`: added optional `progress.activeTour` with the
+  persisted tour cursor and recorded per-race outcomes.
+- `src/components/world/worldTourState.ts`: persists the seeded active
+  tour when the player enters a tour.
+- `src/game/tourProgress.ts`: added the pure active-tour commit helper
+  that advances races one through three, clears the cursor after race
+  four, and unlocks the next tour on pass.
+- `src/app/race/page.tsx`: resolves tour race URLs against planned
+  championship track ids, uses the temporary straight-track runtime
+  placeholder for unimplemented tour tracks, and applies tour progress
+  during natural finish and retire commits.
+- `src/app/race/results/page.tsx`: shows tour completion state and adds
+  the Continue tour action when another tour race is queued.
+- `e2e/tour-flow.spec.ts`: covers the final Velvet Coast race unlocking
+  Iron Borough.
+- `docs/FOLLOWUPS.md`: marked F-065 done.
+- `docs/GDD_COVERAGE.json`: added GDD-08-TOUR-PROGRESSION coverage.
+
+### Verified
+- `npx vitest run src/game/__tests__/tourProgress.test.ts src/game/__tests__/raceResult.test.ts src/components/world/__tests__/worldTourState.test.ts src/data/schemas.test.ts`
+  green, 115 passed.
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run verify` green: lint, typecheck, unit tests, and
+  content-lint all passed; 2,220 unit tests passed.
+- `npm run test:e2e -- e2e/results-screen.spec.ts e2e/world-tour.spec.ts e2e/tour-flow.spec.ts`
+  green, 7 passed.
+
+### Decisions and assumptions
+- Planned World Tour track ids are preserved in results and URLs even
+  before all 32 track JSON files exist. The race runtime temporarily
+  runs unresolved tour tracks on `test/straight` so tour progression can
+  ship without blocking on track content.
+- Tour completion bonus wiring reads the persisted per-race cash ledger
+  from `progress.activeTour.results`, so the fourth-race completion
+  bonus is based on all completed tour races.
+
+### Coverage ledger
+- Added GDD-08-TOUR-PROGRESSION with unit and Playwright coverage.
+- GDD-08-WORLD-TOUR-HUB no longer has F-065 as an open followup.
+- Uncovered adjacent requirements: full authored World Tour track JSON
+  and richer tour standings UI remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+- Updated [§22](gdd/22-data-schemas.md) with the optional
+  `progress.activeTour` save shape.
+
 ## 2026-04-28: Slice: World tour entry hub
 
 **GDD sections touched:**

@@ -41,7 +41,7 @@ import { readKeyBindings } from "@/components/options/controlsPaneState";
 import { usePauseActions } from "@/components/pause/usePauseActions";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
-import { TRACK_IDS, TRACK_RAW, loadTrack } from "@/data";
+import { TRACK_IDS, TRACK_RAW, getChampionship, loadTrack } from "@/data";
 import carsAtlasFixture from "@/data/atlas/cars.json";
 import { AtlasMetaSchema, TrackSchema, type Track } from "@/data/schemas";
 import {
@@ -59,6 +59,7 @@ import {
   pendingDamageForActiveCar,
   applyRaceDamageToGarage,
   applyRaceResultRecords,
+  applyTourRaceResult,
   retireRaceSession,
   startLoop,
   stepRaceSession,
@@ -102,6 +103,8 @@ import { PRISTINE_DAMAGE_STATE, type DamageState } from "@/game/damage";
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
 const DEFAULT_TRACK_ID = "test/elevation";
+const TOUR_PLACEHOLDER_TRACK_ID = "test/straight";
+const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
 const CARS_ATLAS_META = AtlasMetaSchema.parse(carsAtlasFixture);
 
@@ -223,14 +226,49 @@ const DEMO_DRIVER: AIDriver = Object.freeze({
 
 interface ResolvedTrack {
   id: string;
+  runtimeId: string;
   version: number;
   compiled: CompiledTrack;
 }
 
-function resolveTrack(requestedId: string | null): ResolvedTrack {
-  const id = requestedId && TRACK_IDS.includes(requestedId) ? requestedId : DEFAULT_TRACK_ID;
-  const parsed = TrackSchema.parse(TRACK_RAW[id]);
-  return { id, version: parsed.version, compiled: loadTrack(id) };
+interface TourRaceContext {
+  championship: ReturnType<typeof getChampionship>;
+  tourId: string;
+  raceIndex: number;
+  plannedTrackId: string;
+}
+
+function resolveTourRaceContext(
+  tourId: string | null,
+  raceIndexRaw: string | null,
+): TourRaceContext | null {
+  if (!tourId) return null;
+  const championship = getChampionship(WORLD_TOUR_CHAMPIONSHIP_ID);
+  const tour = championship.tours.find((candidate) => candidate.id === tourId);
+  if (!tour) return null;
+  const raceIndex =
+    raceIndexRaw === null ? 0 : Number.parseInt(raceIndexRaw, 10);
+  if (!Number.isInteger(raceIndex) || raceIndex < 0) return null;
+  const plannedTrackId = tour.tracks[raceIndex];
+  if (!plannedTrackId) return null;
+  return { championship, tourId, raceIndex, plannedTrackId };
+}
+
+function resolveTrack(
+  requestedId: string | null,
+  tourContext: TourRaceContext | null,
+): ResolvedTrack {
+  const knownId =
+    requestedId && TRACK_IDS.includes(requestedId) ? requestedId : null;
+  const useTourPlaceholder =
+    knownId === null &&
+    requestedId !== null &&
+    tourContext !== null &&
+    requestedId === tourContext.plannedTrackId;
+  const runtimeId = knownId ?? (useTourPlaceholder ? TOUR_PLACEHOLDER_TRACK_ID : DEFAULT_TRACK_ID);
+  const id = useTourPlaceholder ? requestedId : runtimeId;
+  const parsed = TrackSchema.parse(TRACK_RAW[runtimeId]);
+  return { id, runtimeId, version: parsed.version, compiled: loadTrack(runtimeId) };
 }
 
 type RaceMode = "race" | "timeTrial";
@@ -303,8 +341,20 @@ function commitRaceCredits(input: {
   baseTrackReward: number;
   damageAfter?: Readonly<DamageState>;
   activeCarId?: string | null;
+  transformCommit?: (save: SaveGame, result: RaceResult) => {
+    readonly save: SaveGame;
+    readonly result: RaceResult;
+  };
 }): RaceResult {
-  const { result, save, difficulty, baseTrackReward, damageAfter, activeCarId } = input;
+  const {
+    result,
+    save,
+    difficulty,
+    baseTrackReward,
+    damageAfter,
+    activeCarId,
+    transformCommit,
+  } = input;
   const playerRecord = result.finishingOrder.find(
     (record) => record.carId === result.playerCarId,
   );
@@ -343,12 +393,18 @@ function commitRaceCredits(input: {
           damage: damageAfter,
           lastRaceCashEarned: award.cashEarned ?? 0,
         });
-  saveSave(nextSave);
-
-  return {
+  const creditedResult = {
     ...result,
     creditsAwarded: award.cashEarned ?? 0,
   };
+  const transformed =
+    transformCommit?.(nextSave, creditedResult) ?? {
+      save: nextSave,
+      result: creditedResult,
+    };
+  saveSave(transformed.save);
+
+  return transformed.result;
 }
 
 export default function RacePage(): ReactElement {
@@ -374,19 +430,41 @@ function RaceShell(): ReactElement {
   const requestedId = search?.get("track") ?? null;
   const lapsRaw = search?.get("laps") ?? null;
   const modeRaw = search?.get("mode") ?? null;
-  const track = useMemo(() => resolveTrack(requestedId), [requestedId]);
+  const tourId = search?.get("tour") ?? null;
+  const raceIndexRaw = search?.get("raceIndex") ?? null;
+  const tourContext = useMemo(
+    () => resolveTourRaceContext(tourId, raceIndexRaw),
+    [tourId, raceIndexRaw],
+  );
+  const track = useMemo(
+    () => resolveTrack(requestedId, tourContext),
+    [requestedId, tourContext],
+  );
   const lapsOverride = useMemo(() => resolveLapsOverride(lapsRaw), [lapsRaw]);
   const mode = useMemo(() => resolveRaceMode(modeRaw), [modeRaw]);
-  return <RaceCanvas track={track} lapsOverride={lapsOverride} mode={mode} />;
+  return (
+    <RaceCanvas
+      track={track}
+      lapsOverride={lapsOverride}
+      mode={mode}
+      tourContext={tourContext}
+    />
+  );
 }
 
 interface RaceCanvasProps {
   track: ResolvedTrack;
   lapsOverride: number | null;
   mode: RaceMode;
+  tourContext: TourRaceContext | null;
 }
 
-function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElement {
+function RaceCanvas({
+  track,
+  lapsOverride,
+  mode,
+  tourContext,
+}: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
@@ -644,6 +722,9 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
         damageBefore: damageDeltaFromState(initialPlayerDamage),
         damageAfter: damageDeltaFromState(retired.player.damage),
         recordPBs: false,
+        championship: tourContext?.championship,
+        tourId: tourContext?.tourId,
+        currentTrackIndex: tourContext?.raceIndex,
       });
       // F-034: credit the wallet (DNF cars receive the §12 participation
       // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
@@ -659,6 +740,16 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
             baseTrackReward: baseRewardForTrackDifficulty(track.compiled.difficulty),
             damageAfter: retired.player.damage,
             activeCarId: save.garage.activeCarId,
+            transformCommit:
+              tourContext === null
+                ? undefined
+                : (nextSave, nextResult) =>
+                    applyTourRaceResult({
+                      save: nextSave,
+                      result: nextResult,
+                      championship: tourContext.championship,
+                      playerCarId: save.garage.activeCarId,
+                    }),
           });
       saveRaceResult(committed);
       // Flip the natural-finish guard so the render callback's finish
@@ -853,6 +944,9 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
               damageBefore: damageDeltaFromState(initialPlayerDamage),
               damageAfter: damageDeltaFromState(session.player.damage),
               recordPBs: session.player.status === "finished",
+              championship: tourContext?.championship,
+              tourId: tourContext?.tourId,
+              currentTrackIndex: tourContext?.raceIndex,
             });
             // F-034: credit the wallet from the same numbers the
             // results screen will render. The `commitRaceCredits`
@@ -871,6 +965,16 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
                   ),
                   damageAfter: session.player.damage,
                   activeCarId: save.garage.activeCarId,
+                  transformCommit:
+                    tourContext === null
+                      ? undefined
+                      : (nextSave, nextResult) =>
+                          applyTourRaceResult({
+                            save: nextSave,
+                            result: nextResult,
+                            championship: tourContext.championship,
+                            playerCarId: save.garage.activeCarId,
+                          }),
                 });
             saveRaceResult(committed);
             // Tear down the loop / input before the route hop so the
@@ -898,7 +1002,7 @@ function RaceCanvas({ track, lapsOverride, mode }: RaceCanvasProps): ReactElemen
       sessionRef.current = null;
       inputManager.dispose();
     };
-  }, [track, router, lapsOverride, initialTotalLaps, mode]);
+  }, [track, router, lapsOverride, initialTotalLaps, mode, tourContext]);
 
   return (
     <main

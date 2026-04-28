@@ -29,3 +29,4 @@ export * from "./raceDamagePersistence";
 // ambiguity. Direct importers can still reach `raceBonuses` via
 // `@/game/raceBonuses` for the tour-completion / sponsor surfaces.
 export * from "./raceResult";
+export * from "./tourProgress";

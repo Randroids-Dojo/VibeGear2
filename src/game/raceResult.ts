@@ -118,6 +118,19 @@ export interface NextRaceCard {
   laps: number;
 }
 
+/** Persisted tour handoff displayed by the results screen. */
+export interface TourResultProgress {
+  tourId: string;
+  /** 0-indexed race that just finished. */
+  raceIndex: number;
+  /** 0-indexed next race, or null when the tour is complete. */
+  nextRaceIndex: number | null;
+  completed: boolean;
+  passed: boolean | null;
+  playerStanding: number | null;
+  unlockedTourId: string | null;
+}
+
 /**
  * Records patch the page component is responsible for merging into the
  * save before calling `saveGame`. The mode (Practice, Time Trial, Quick
@@ -199,6 +212,7 @@ export interface RaceResult {
   damageTaken: DamageDelta;
   fastestLap: FinalRaceState["fastestLap"];
   nextRace: NextRaceCard | null;
+  tourProgress?: TourResultProgress | null;
   recordsUpdated: RecordsUpdatePatch | null;
 }
 
@@ -416,6 +430,18 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     currentTrackId: track.id,
     currentTrackIndex,
   });
+  const tourProgress =
+    championship && tourId
+      ? {
+          tourId,
+          raceIndex: currentTrackIndex ?? 0,
+          nextRaceIndex: nextRace ? (currentTrackIndex ?? 0) + 1 : null,
+          completed: nextRace === null,
+          passed: null,
+          playerStanding: null,
+          unlockedTourId: null,
+        }
+      : null;
 
   // 8. Records patch.
   const recordsUpdated = recordPBs
@@ -445,6 +471,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     damageTaken,
     fastestLap: finalState.fastestLap,
     nextRace,
+    tourProgress,
     recordsUpdated,
   };
 }
