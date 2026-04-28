@@ -19,10 +19,10 @@ Correct them by adding a new entry that references the old one.
 - `src/audio/engine.ts`: added a pure speed-to-engine-pitch model with
   idle, redline, exponential rise, and overrun clamps.
 - `src/audio/mixer.ts`: added master, music, and SFX gain resolution
-  from persisted audio settings, plus a disabled-audio null path for
+  from persisted audio settings as raw bus scalars, plus a disabled-audio null path for
   later Web Audio callers.
 - `src/audio/engine.test.ts` and `src/audio/mixer.test.ts`: pinned
-  monotonic pitch, pure repeatability, defensive clamps, gain products,
+  monotonic pitch, pure repeatability, defensive clamps, raw gain values,
   disabled audio, and silence detection.
 - `docs/GDD_COVERAGE.json`: added
   GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES.
@@ -41,6 +41,11 @@ Correct them by adding a new entry that references the old one.
 - `resolveMixerGains` returns `null` when audio is disabled so future
   engine, SFX, and music callers can short-circuit before creating
   Web Audio nodes.
+- `resolveMixerGains` returns raw master, music, and SFX scalars rather
+  than post-master bus products so the future Web Audio graph can avoid
+  double-applying the master gain.
+- `enginePitchHz` resolves its pitch config once per call and shares the
+  resolved config with the internal speed-ratio helper.
 
 ### Coverage ledger
 - GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES covers engine pitch and mix-bus
