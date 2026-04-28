@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Mobile race playability
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-input.md) touch controls,
+[§20](gdd/20-hud-and-ui-ux.md) live race HUD surface,
+[§21](gdd/21-technical-design-for-web-implementation.md) browser e2e.
+**Branch / PR:** `fix/mobile-race-playability`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/race/page.tsx`: changed `/race` to a fixed, full-viewport
+  surface with no page scroll and a canvas backing store that resizes from
+  the rendered CSS size with a DPR clamp.
+- `src/app/race/page.tsx`: mounted the existing `TouchControls` overlay on
+  the live race route and wired the canvas into `createInputManager` as the
+  touch target.
+- `src/app/race/page.tsx`: keeps the touch overlay layout synchronized with
+  the live canvas size so visual zones and input zones match on mobile
+  viewports.
+- `e2e/race-mobile.spec.ts`: added iPhone 13 coverage for full-viewport
+  canvas sizing, no document scroll, live touch steering, and touch pause.
+- `playwright.config.ts`: includes the mobile race spec in the
+  `mobile-chromium` project and excludes it from desktop runs.
+- `e2e/touch-input.spec.ts`: keeps the existing touch pointer-hold smoke
+  tests serial inside the mobile project so they model one device session
+  without parallel pointer-event flake.
+- `docs/GDD_COVERAGE.json`: added GDD-19-MOBILE-RACE-INPUT.
+
+### Verified
+- `npm run lint && npm run typecheck` clean.
+- `npm run test:e2e -- --project=mobile-chromium e2e/race-mobile.spec.ts`
+  green, 2 passed.
+- `npm run test:e2e -- --project=chromium e2e/race-demo.spec.ts e2e/pause-actions.spec.ts e2e/pause-overlay.spec.ts`
+  green, 10 passed.
+- `npm run test:e2e -- --project=mobile-chromium e2e/touch-input.spec.ts e2e/race-mobile.spec.ts`
+  green, 6 passed.
+- `npm run verify` green: lint, typecheck, unit tests, and content-lint
+  all passed; 2,220 unit tests passed.
+
+### Decisions and assumptions
+- The full-screen race surface intentionally uses `position: fixed`,
+  `inset: 0`, `overflow: hidden`, and canvas `width: 100%` /
+  `height: 100%` rather than viewport-height CSS units so mobile browser
+  chrome changes do not leave black page gaps.
+- The overlay remains cosmetic. Pointer events feed the canvas-owned touch
+  input source; the overlay receives the same live layout so it stays
+  visually aligned with that source.
+
+### Coverage ledger
+- GDD-19-MOBILE-RACE-INPUT covers the live mobile viewport and touch-input
+  wiring.
+- Uncovered adjacent requirements: touch handbrake and manual-shift zones,
+  full key-remap UI, haptic feedback, and device-lab Safari / Android
+  manual verification remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: CONTRIBUTING.md guidance
 
 **GDD sections touched:**
