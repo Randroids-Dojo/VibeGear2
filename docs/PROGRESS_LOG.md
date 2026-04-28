@@ -41,6 +41,9 @@ Correct them by adding a new entry that references the old one.
 ### Coverage ledger
 - No new GDD coverage ID. This hotfix preserves the runtime performance
   contract for the existing GDD-14-WEATHER-GRIP-RUNTIME coverage.
+- Uncovered adjacent requirements: tire selection, weather VFX particles,
+  fog draw-distance rendering, weather intensity settings, and mid-race
+  weather transitions remain future slices.
 
 ### Followups created
 None.
