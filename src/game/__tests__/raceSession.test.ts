@@ -214,6 +214,35 @@ describe("stepRaceSession (racing)", () => {
     const second = stepRaceSession(first, NEUTRAL_INPUT, config, DT);
     expect(second.player.damage.total).toBe(afterFirstHit);
   });
+
+  it("preserves broken hazards when the player is no longer racing", () => {
+    const track = loadTrack("iron-borough/freightline-ring");
+    const config = buildConfig({
+      track,
+      player: {
+        stats: STARTER_STATS,
+        initial: { z: 245, speed: 30 },
+      },
+      countdownSec: 0,
+      hazardsById: HAZARDS_BY_ID,
+    });
+    const session = createRaceSession(config);
+    const next = stepRaceSession(
+      {
+        ...session,
+        player: {
+          ...session.player,
+          status: "dnf",
+          dnfReason: "off-track",
+        },
+        brokenHazards: ["40:traffic_cone"],
+      },
+      NEUTRAL_INPUT,
+      config,
+      DT,
+    );
+    expect(next.brokenHazards).toContain("40:traffic_cone");
+  });
 });
 
 describe("stepRaceSession (lap completion)", () => {

@@ -8,7 +8,7 @@ export const HAZARDS: readonly HazardRegistryEntry[] = Object.freeze(
 );
 
 export const HAZARDS_BY_ID: ReadonlyMap<string, HazardRegistryEntry> =
-  Object.freeze(new Map(HAZARDS.map((entry) => [entry.id, entry])));
+  new Map(HAZARDS.map((entry) => [entry.id, entry]));
 
 export function getHazard(id: string): HazardRegistryEntry | undefined {
   return HAZARDS_BY_ID.get(id);
