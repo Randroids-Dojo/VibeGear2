@@ -330,8 +330,6 @@ export function drawRoad(
     }
   }
 
-  drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
-
   // Ghost car paints over the road strips so the player sees their best
   // line, but BEFORE the dust pool so off-road dust the live car kicks
   // up still occludes the ghost rather than the ghost showing through
@@ -353,6 +351,8 @@ export function drawRoad(
   if (options.weatherEffects) {
     drawWeatherEffects(ctx, viewport, options.weatherEffects);
   }
+
+  drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
 
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
