@@ -1,0 +1,26 @@
+{
+  "id": "velvet-coast/sunpier-loop",
+  "name": "Sunpier Loop",
+  "tourId": "velvet-coast",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1536,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "rain"],
+  "difficulty": 1,
+  "segments": [
+    { "len": 216, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 240, "curve": 0.12, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 180, "curve": 0.08, "grade": 0.03, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": ["puddle"] },
+    { "len": 240, "curve": -0.1, "grade": -0.02, "roadsideLeft": "sign_marker", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 300, "curve": -0.04, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "pier" },
+    { "segmentIndex": 4, "label": "boardwalk" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

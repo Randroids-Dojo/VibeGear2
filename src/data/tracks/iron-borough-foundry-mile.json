@@ -1,0 +1,26 @@
+{
+  "id": "iron-borough/foundry-mile",
+  "name": "Foundry Mile",
+  "tourId": "iron-borough",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1644,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "rain"],
+  "difficulty": 3,
+  "segments": [
+    { "len": 240, "curve": 0, "grade": 0.01, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 240, "curve": 0.14, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": ["traffic_cone"] },
+    { "len": 240, "curve": -0.08, "grade": 0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 240, "curve": -0.12, "grade": -0.03, "roadsideLeft": "light_pole", "roadsideRight": "fence_post", "hazards": ["puddle"] },
+    { "len": 324, "curve": 0.06, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "foundry" },
+    { "segmentIndex": 4, "label": "milepost" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

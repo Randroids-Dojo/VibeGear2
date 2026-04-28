@@ -2,6 +2,35 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-24-MVP-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The MVP content set includes the first two World Tour regions with eight registered, schema-valid, compiler-valid bundled track JSON files that cover clear, rain, fog, curves, and elevation.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/velvet-coast-harbor-run.json",
+        "src/data/tracks/velvet-coast-sunpier-loop.json",
+        "src/data/tracks/velvet-coast-cliffline-arc.json",
+        "src/data/tracks/velvet-coast-lighthouse-fall.json",
+        "src/data/tracks/iron-borough-freightline-ring.json",
+        "src/data/tracks/iron-borough-rivet-tunnel.json",
+        "src/data/tracks/iron-borough-foundry-mile.json",
+        "src/data/tracks/iron-borough-outer-exchange.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts",
+        "e2e/tour-flow.spec.ts",
+        "e2e/world-tour.spec.ts"
+      ]
+    },
+    {
       "id": "GDD-19-MOBILE-RACE-INPUT",
       "gddSections": [
         "docs/gdd/19-controls-and-input.md",

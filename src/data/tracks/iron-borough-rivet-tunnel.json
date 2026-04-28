@@ -1,0 +1,26 @@
+{
+  "id": "iron-borough/rivet-tunnel",
+  "name": "Rivet Tunnel",
+  "tourId": "iron-borough",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1620,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "fog"],
+  "difficulty": 2,
+  "segments": [
+    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 240, "curve": -0.1, "grade": 0.02, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 240, "curve": 0, "grade": -0.02, "roadsideLeft": "rock_boulder", "roadsideRight": "rock_boulder", "hazards": ["tunnel"] },
+    { "len": 240, "curve": 0.12, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 300, "curve": -0.04, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["traffic_cone"] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "light_pole", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "tunnel" },
+    { "segmentIndex": 4, "label": "rivet-row" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

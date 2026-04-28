@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: MVP track set
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track anatomy, curve and elevation mix,
+[§22](gdd/22-data-schemas.md) track JSON schema,
+[§24](gdd/24-content-plan.md) MVP two-tour track content.
+**Branch / PR:** `feat/mvp-track-set`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/tracks/`: added eight bundled MVP track JSON files for
+  Velvet Coast and Iron Borough.
+- `src/data/tracks/index.ts`: registered the first two World Tour regions
+  in `TRACK_RAW` so the live `/race?track=...` route loads real content
+  instead of the temporary unresolved-track fallback.
+- `src/data/__tests__/tracks-content.test.ts`: expanded the expected
+  catalogue and pinned the MVP set's weather, lane, curve, and elevation
+  coverage.
+- `src/data/__tests__/championship-content.test.ts`: now requires every
+  first-two-tour championship track id to resolve while preserving the
+  temporary permissive guard for later tours.
+- `docs/GDD_COVERAGE.json`: added GDD-24-MVP-TRACK-SET.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/road/__tests__/trackCompiler.test.ts src/road/__tests__/trackCompiler.golden.test.ts`
+  green, 88 passed.
+- `npm run typecheck` clean.
+- `npm run test:e2e -- e2e/tour-flow.spec.ts e2e/world-tour.spec.ts`
+  green, 3 passed.
+- `npm run verify` green, 2240 passed.
+- `npm run test:e2e` green, 68 passed in 5.0m.
+
+### Decisions and assumptions
+- The first two regions ship as the §24 MVP track set. The remaining
+  six World Tour regions stay under the existing permissive championship
+  placeholder guard until their content slices land.
+- MVP track lengths are intentionally short enough to keep current
+  tour-flow e2e stable while still exercising curves, elevation, rain,
+  fog, and authored hazards.
+
+### Coverage ledger
+- GDD-24-MVP-TRACK-SET covers the first two World Tour regions.
+- Uncovered adjacent requirements: the remaining six tours, full 32-track
+  v1.0 content, richer region-specific art themes, and track-editor
+  authoring workflows remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Mobile race playability
 
 **GDD sections touched:**
