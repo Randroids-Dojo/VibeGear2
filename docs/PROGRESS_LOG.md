@@ -28,7 +28,8 @@ Correct them by adding a new entry that references the old one.
 - `e2e/garage-flow.spec.ts`: added the missing full garage-flow walk:
   finish a race, continue to `/garage`, open repairs, complete a full
   service, buy the first engine upgrade, and start the next race from
-  the garage hub.
+  the garage hub. The seeded save fixture is locally typed so schema
+  drift is caught by TypeScript.
 - `docs/GDD_COVERAGE.json`: records the new end-to-end garage flow test
   against GDD-05-GARAGE-SUMMARY.
 

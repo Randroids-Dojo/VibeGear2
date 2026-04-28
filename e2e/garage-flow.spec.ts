@@ -2,6 +2,47 @@ import { expect, test } from "@playwright/test";
 
 const SAVE_KEY = "vibegear2:save:v3";
 
+interface SeededSave {
+  version: number;
+  profileName: string;
+  settings: {
+    displaySpeedUnit: "kph" | "mph";
+    assists: {
+      steeringAssist: boolean;
+      autoNitro: boolean;
+      weatherVisualReduction: boolean;
+    };
+    difficultyPreset: "easy" | "normal" | "hard" | "master";
+    transmissionMode: "auto" | "manual";
+    audio: { master: number; music: number; sfx: number };
+    accessibility: {
+      colorBlindMode: "off" | "protanopia" | "deuteranopia" | "tritanopia";
+      reducedMotion: boolean;
+      largeUiText: boolean;
+      screenShakeScale: number;
+    };
+  };
+  garage: {
+    credits: number;
+    ownedCars: ReadonlyArray<string>;
+    activeCarId: string;
+    installedUpgrades: Record<string, Record<string, number>>;
+    pendingDamage: Record<
+      string,
+      {
+        zones: { engine: number; tires: number; body: number };
+        total: number;
+        offRoadAccumSeconds: number;
+      }
+    >;
+    lastRaceCashEarned: number;
+  };
+  progress: { unlockedTours: string[]; completedTours: string[] };
+  records: Record<string, unknown>;
+  ghosts: Record<string, unknown>;
+  writeCounter: number;
+}
+
 test.describe("garage flow", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
@@ -95,7 +136,7 @@ test.describe("garage flow", () => {
   });
 });
 
-function buildGarageFlowSave() {
+function buildGarageFlowSave(): SeededSave {
   return {
     version: 3,
     profileName: "GarageFlowTester",
