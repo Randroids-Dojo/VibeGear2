@@ -43,11 +43,13 @@ essential repair cap,
 
 ### Verified
 - `npx vitest run src/components/garage/__tests__/garageRepairState.test.ts src/components/garage/__tests__/garageSummaryState.test.ts src/data/schemas.test.ts src/persistence/save.test.ts`
-  green, 88 passed.
+  green, 91 passed.
 - `npm run lint` clean.
 - `npm run typecheck` clean.
 - `npm run test:e2e -- e2e/garage-repairs.spec.ts e2e/garage-summary.spec.ts`
   green, 3 passed.
+- `npm run verify` clean: lint, typecheck, unit tests, and
+  content-lint all passed; 2,201 unit tests passed.
 
 ### Decisions and assumptions
 - Full service maps to all current damage zones (`engine`, `tires`,

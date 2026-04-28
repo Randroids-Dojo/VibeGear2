@@ -97,6 +97,55 @@ describe("repairGarageDamage", () => {
       body: 0.5,
     });
   });
+
+  it("rejects a repair when the active car is not owned", () => {
+    const save: SaveGame = {
+      ...damagedSave(),
+      garage: {
+        ...damagedSave().garage,
+        activeCarId: "breaker-s",
+        pendingDamage: {
+          "breaker-s": {
+            zones: {
+              engine: 0.5,
+              tires: 0,
+              body: 0,
+            },
+            total: 0.225,
+            offRoadAccumSeconds: 0,
+          },
+        },
+      },
+    };
+
+    const result = repairGarageDamage(save, "full");
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.failure).toEqual({
+      code: "car_not_owned",
+      carId: "breaker-s",
+    });
+  });
+
+  it("rejects a repair when the active car is missing from the catalogue", () => {
+    const save: SaveGame = {
+      ...damagedSave(),
+      garage: {
+        ...damagedSave().garage,
+        activeCarId: "missing-car",
+      },
+    };
+
+    const result = repairGarageDamage(save, "full");
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.failure).toEqual({
+      code: "unknown_car",
+      carId: "missing-car",
+    });
+  });
 });
 
 describe("repairFailureMessage", () => {

@@ -84,6 +84,16 @@ export function repairGarageDamage(
   kind: GarageRepairKind,
 ): EconomyResult {
   const activeCarId = save.garage.activeCarId;
+  if (!getCar(activeCarId)) {
+    return { ok: false, failure: { code: "unknown_car", carId: activeCarId } };
+  }
+  if (!save.garage.ownedCars.includes(activeCarId)) {
+    return {
+      ok: false,
+      failure: { code: "car_not_owned", carId: activeCarId },
+    };
+  }
+
   const result = applyRepairCost(cloneSaveForRepair(save), {
     carId: activeCarId,
     damage: pendingDamageFor(save, activeCarId),

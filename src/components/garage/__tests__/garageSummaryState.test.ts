@@ -48,6 +48,30 @@ describe("buildGarageSummaryView", () => {
     expect(view.damagePercent).toBe(31);
   });
 
+  it("derives pending damage from zones instead of trusting stored total", () => {
+    const save: SaveGame = {
+      ...defaultSave(),
+      garage: {
+        ...defaultSave().garage,
+        pendingDamage: {
+          "sparrow-gt": {
+            zones: {
+              engine: 0.5,
+              tires: 0,
+              body: 0,
+            },
+            total: 0,
+            offRoadAccumSeconds: 0,
+          },
+        },
+      },
+    };
+
+    const view = buildGarageSummaryView(save);
+
+    expect(view.damagePercent).toBe(23);
+  });
+
   it("asks for a starter pick when the active car id is not owned", () => {
     const save: SaveGame = {
       ...defaultSave(),

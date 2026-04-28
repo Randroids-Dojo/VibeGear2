@@ -5,6 +5,7 @@ import type {
   UpgradeCategory,
 } from "@/data/schemas";
 import { UpgradeCategorySchema } from "@/data/schemas";
+import { createDamageState } from "@/game/damage";
 
 const UPGRADE_CATEGORIES: ReadonlyArray<UpgradeCategory> =
   UpgradeCategorySchema.options;
@@ -32,14 +33,13 @@ export function buildGarageSummaryView(
   const activeCar = getCar(save.garage.activeCarId) ?? null;
   const ownsActive = save.garage.ownedCars.includes(save.garage.activeCarId);
   const installed = save.garage.installedUpgrades[save.garage.activeCarId];
-  const pendingDamage = save.garage.pendingDamage?.[save.garage.activeCarId];
 
   return {
     activeCar,
     activeCarId: save.garage.activeCarId,
     credits: save.garage.credits,
     ownedCount: save.garage.ownedCars.length,
-    damagePercent: Math.round((pendingDamage?.total ?? 0) * 100),
+    damagePercent: activeCarDamagePercent(save, save.garage.activeCarId),
     needsStarterPick: activeCar === null || !ownsActive,
     starterCars: starterCars(),
     installedTiers: UPGRADE_CATEGORIES.map((category) => ({
@@ -97,6 +97,21 @@ function defaultUpgradeTiers(): Record<UpgradeCategory, number> {
   return Object.fromEntries(
     UPGRADE_CATEGORIES.map((category) => [category, 0]),
   ) as Record<UpgradeCategory, number>;
+}
+
+function activeCarDamagePercent(
+  save: Readonly<SaveGame>,
+  carId: string,
+): number {
+  const pending = save.garage.pendingDamage?.[carId];
+  if (!pending) return 0;
+  return Math.round(
+    createDamageState({
+      engine: pending.zones.engine,
+      tires: pending.zones.tires,
+      body: pending.zones.body,
+    }).total * 100,
+  );
 }
 
 function upgradeLabel(category: UpgradeCategory): string {
