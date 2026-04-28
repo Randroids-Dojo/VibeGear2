@@ -1126,7 +1126,9 @@ export function stepRaceSession(
         brokenHazards: nextBrokenHazards,
       })
     : EMPTY_HAZARD_EFFECT;
-  nextBrokenHazards = playerHazards.brokenHazards;
+  if (playerIsRacing) {
+    nextBrokenHazards = playerHazards.brokenHazards;
+  }
   const playerHazardHits = hitsFromHazards(playerHazards.events);
   if (playerHazardHits.length > 0) {
     hazardHitsByCarId.set(PLAYER_CAR_ID, playerHazardHits);

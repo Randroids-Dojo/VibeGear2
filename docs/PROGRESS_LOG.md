@@ -38,7 +38,7 @@ Correct them by adding a new entry that references the old one.
 
 ### Verified
 - `npx vitest run src/game/__tests__/hazards.test.ts src/data/__tests__/hazards-content.test.ts src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts`
-  green, 119 passed.
+  green, 120 passed.
 - `npm run typecheck` clean.
 - `npm run verify` green, 2256 passed.
 - `npm run test:e2e` green, 69 passed.
