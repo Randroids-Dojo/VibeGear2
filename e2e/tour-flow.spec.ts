@@ -94,7 +94,11 @@ async function runFullTourFromWorld(page: Page): Promise<FullTourResult> {
   await page.goto("/world");
   await page.getByTestId("world-tour-enter-velvet-coast").click();
   await expect(page).toHaveURL(
-    /\/race\?track=velvet-coast%2Fharbor-run&tour=velvet-coast&raceIndex=0$/,
+    /\/race\/prep\?track=velvet-coast%2Fharbor-run&tour=velvet-coast&raceIndex=0$/,
+  );
+  await page.getByTestId("pre-race-start-link").click();
+  await expect(page).toHaveURL(
+    /\/race\?track=velvet-coast%2Fharbor-run&weather=clear&tire=dry&tour=velvet-coast&raceIndex=0$/,
   );
 
   const completedTracks: string[] = [];

@@ -24,6 +24,7 @@ export * from "./timeTrial";
 export * from "./assists";
 export * from "./difficultyPresets";
 export * from "./raceDamagePersistence";
+export * from "./preRaceCard";
 // `raceBonuses` is the owner of the §5 bonus pipeline; `raceResult` is
 // the §20 results-screen builder that consumes it. The two re-export the
 // same `RaceBonus` / `RaceBonusKind` and the four bonus constants, so

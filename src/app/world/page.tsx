@@ -81,7 +81,7 @@ export default function WorldPage() {
       }
 
       router.push(
-        `/race?track=${encodeURIComponent(result.firstTrackId)}&tour=${encodeURIComponent(tourId)}&raceIndex=0`,
+        `/race/prep?track=${encodeURIComponent(result.firstTrackId)}&tour=${encodeURIComponent(tourId)}&raceIndex=0`,
       );
     },
     [championship, router, save],

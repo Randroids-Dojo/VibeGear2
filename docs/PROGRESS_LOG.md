@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Pre-race tire selection
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) race preparation,
+[§14](gdd/14-weather-and-environmental-systems.md) pre-race forecast,
+[§20](gdd/20-hud-and-ui-ux.md) pre-race screen,
+[§23](gdd/23-balancing-tables.md) weather modifiers.
+**Branch / PR:** `feat/pre-race-tire-selection`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/preRaceCard.ts`: added a pure pre-race card builder with
+  track, tour, weather, laps, difficulty, recommended tires, standings,
+  cash, repair estimate, car summary, setup summary, grip rating, and
+  visibility rating.
+- `src/app/race/prep/page.tsx`: added the pre-race surface with weather
+  selection, dry/wet tire choice, tire mismatch warning, and Start CTA.
+- `src/app/world/page.tsx`: routes World Tour entry through the
+  pre-race screen instead of jumping directly into the race.
+- `src/app/race/page.tsx` and `src/game/raceSession.ts`: read the
+  selected `weather` and `tire` query values and apply the player tire
+  channel to runtime weather grip.
+- `docs/FOLLOWUPS.md`: marked F-066 done.
+- `docs/GDD_COVERAGE.json`: added GDD-20-PRE-RACE-TIRE-SELECTION and
+  removed F-066 from the weather-runtime coverage followup list.
+
+### Verified
+- `npx vitest run src/game/__tests__/preRaceCard.test.ts src/game/__tests__/raceSession.test.ts`
+  green, 124 passed.
+- `npm run typecheck` clean.
+- `npm run content-lint` clean.
+- `npx playwright test e2e/pre-race.spec.ts e2e/world-tour.spec.ts`
+  green, 2 passed.
+- `npx playwright test e2e/tour-flow.spec.ts` green, 2 passed.
+- `npm run verify` green, 2312 passed.
+- `npm run test:e2e` green, 70 passed.
+- `grep -rn $'\u2014\|\u2013' ...` clean on changed files.
+- `git diff --check` clean.
+
+### Decisions and assumptions
+- The active tire channel is persisted for the race through the route
+  query (`tire=dry|wet`) and held on `RaceSessionConfig.playerTire`.
+  This avoids a save-schema change for a per-race setup choice.
+- AI cars keep dry tires until an AI setup-selection slice lands, matching
+  F-066.
+- Direct `/race` links still default to dry tires and the first track
+  weather option.
+
+### Coverage ledger
+- GDD-20-PRE-RACE-TIRE-SELECTION covers the first pre-race card surface
+  and active player tire handoff into race physics.
+- Uncovered adjacent requirements: optional setup bias, nitro loadout
+  confirmation, practice-mode weather swap UI, and AI tire selection
+  remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Weather AI allocation hotfix
 
 **GDD sections touched:**

@@ -75,7 +75,11 @@ test.describe("world tour hub", () => {
 
     await page.getByTestId("world-tour-enter-velvet-coast").click();
     await expect(page).toHaveURL(
-      /\/race\?track=velvet-coast%2Fharbor-run&tour=velvet-coast&raceIndex=0$/,
+      /\/race\/prep\?track=velvet-coast%2Fharbor-run&tour=velvet-coast&raceIndex=0$/,
+    );
+    await expect(page.getByTestId("pre-race-track")).toHaveText("Harbor Run");
+    await expect(page.getByTestId("pre-race-recommended-tire")).toContainText(
+      "dry",
     );
 
     const persisted = await page.evaluate((key) => {

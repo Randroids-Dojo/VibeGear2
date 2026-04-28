@@ -100,7 +100,7 @@ import {
   tickTransmission,
   type TransmissionState,
 } from "./transmission";
-import { weatherGripScalar, weatherSkillFor } from "./weather";
+import { weatherGripScalar, weatherSkillFor, type TireKind } from "./weather";
 import {
   DEFAULT_TRACK_CONTEXT,
   INITIAL_CAR_STATE,
@@ -239,6 +239,12 @@ export interface RaceSessionConfig {
    * builds.
    */
   weather?: WeatherOption;
+  /**
+   * Active player tire channel chosen in the pre-race surface. Defaults
+   * to dry so existing direct race links preserve their old behavior.
+   * AI cars keep dry tires until an AI setup-selection slice lands.
+   */
+  playerTire?: TireKind;
 }
 
 /**
@@ -919,7 +925,11 @@ export function stepRaceSession(
   const assistSettings = config.player.assists ?? {};
   const trackWeather =
     config.weather ?? config.track.weatherOptions[0] ?? "clear";
-  const playerWeatherGripScalar = weatherGripScalar(playerStats, trackWeather);
+  const playerWeatherGripScalar = weatherGripScalar(
+    playerStats,
+    trackWeather,
+    config.playerTire ?? "dry",
+  );
   const assistResult = playerIsRacing
     ? applyAssists(
         playerInput,

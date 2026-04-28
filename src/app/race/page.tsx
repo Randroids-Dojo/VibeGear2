@@ -85,6 +85,7 @@ import {
 import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
 import { FIXED_STEP_SECONDS } from "@/game/loop";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
+import { WeatherOptionSchema } from "@/data/schemas";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
@@ -110,6 +111,7 @@ import { awardCredits, baseRewardForTrackDifficulty } from "@/game/economy";
 import type { SaveGame } from "@/data/schemas";
 import type { RaceResult } from "@/game/raceResult";
 import { PRISTINE_DAMAGE_STATE, type DamageState } from "@/game/damage";
+import type { TireKind } from "@/game/weather";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -308,6 +310,19 @@ function resolveRaceMode(raw: string | null): RaceMode {
   return raw === "timeTrial" ? "timeTrial" : "race";
 }
 
+function resolveRaceWeather(
+  raw: string | null,
+  track: ResolvedTrack,
+): RaceSessionConfig["weather"] {
+  const parsed = WeatherOptionSchema.safeParse(raw);
+  if (!parsed.success) return undefined;
+  return track.compiled.weatherOptions.includes(parsed.data) ? parsed.data : undefined;
+}
+
+function resolvePlayerTire(raw: string | null): TireKind | undefined {
+  return raw === "wet" || raw === "dry" ? raw : undefined;
+}
+
 /**
  * Parse the optional `?laps=N` URL override. Used by the F-029 e2e to
  * coerce a multi-lap run on the bundled single-lap test tracks without
@@ -472,6 +487,8 @@ function RaceShell(): ReactElement {
   const requestedId = search?.get("track") ?? null;
   const lapsRaw = search?.get("laps") ?? null;
   const modeRaw = search?.get("mode") ?? null;
+  const weatherRaw = search?.get("weather") ?? null;
+  const tireRaw = search?.get("tire") ?? null;
   const tourId = search?.get("tour") ?? null;
   const raceIndexRaw = search?.get("raceIndex") ?? null;
   const tourContext = useMemo(
@@ -484,12 +501,19 @@ function RaceShell(): ReactElement {
   );
   const lapsOverride = useMemo(() => resolveLapsOverride(lapsRaw), [lapsRaw]);
   const mode = useMemo(() => resolveRaceMode(modeRaw), [modeRaw]);
+  const weather = useMemo(
+    () => resolveRaceWeather(weatherRaw, track),
+    [track, weatherRaw],
+  );
+  const playerTire = useMemo(() => resolvePlayerTire(tireRaw), [tireRaw]);
   return (
     <RaceCanvas
       track={track}
       lapsOverride={lapsOverride}
       mode={mode}
       tourContext={tourContext}
+      weather={weather}
+      playerTire={playerTire}
     />
   );
 }
@@ -499,6 +523,8 @@ interface RaceCanvasProps {
   lapsOverride: number | null;
   mode: RaceMode;
   tourContext: TourRaceContext | null;
+  weather: RaceSessionConfig["weather"];
+  playerTire: TireKind | undefined;
 }
 
 function RaceCanvas({
@@ -506,6 +532,8 @@ function RaceCanvas({
   lapsOverride,
   mode,
   tourContext,
+  weather,
+  playerTire,
 }: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -643,6 +671,8 @@ function RaceCanvas({
       ai: spawnedAi,
       hazardsById: HAZARDS_BY_ID,
       seed: raceSeed,
+      ...(weather ? { weather } : {}),
+      ...(playerTire ? { playerTire } : {}),
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
     setFieldSize(1 + config.ai.length);
@@ -1093,7 +1123,17 @@ function RaceCanvas({
       sessionRef.current = null;
       inputManager.dispose();
     };
-  }, [track, router, lapsOverride, initialTotalLaps, mode, tourContext, openPauseMenu]);
+  }, [
+    track,
+    router,
+    lapsOverride,
+    initialTotalLaps,
+    mode,
+    tourContext,
+    openPauseMenu,
+    weather,
+    playerTire,
+  ]);
 
   return (
     <main

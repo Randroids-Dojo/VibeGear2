@@ -243,6 +243,37 @@ describe("stepRaceSession (racing)", () => {
     );
   });
 
+  it("applies the selected player tire channel to weather grip", () => {
+    const steer = { ...NEUTRAL_INPUT, steer: 1 };
+    const dryConfig = buildConfig({
+      countdownSec: 0,
+      weather: "rain",
+      playerTire: "dry",
+      player: { stats: STARTER_STATS, initial: { speed: 30 } },
+    });
+    const wetConfig = buildConfig({
+      countdownSec: 0,
+      weather: "rain",
+      playerTire: "wet",
+      player: { stats: STARTER_STATS, initial: { speed: 30 } },
+    });
+    const dry = stepRaceSession(
+      createRaceSession(dryConfig),
+      steer,
+      dryConfig,
+      DT,
+    );
+    const wet = stepRaceSession(
+      createRaceSession(wetConfig),
+      steer,
+      wetConfig,
+      DT,
+    );
+    expect(Math.abs(wet.player.car.x)).toBeGreaterThan(
+      Math.abs(dry.player.car.x),
+    );
+  });
+
   it("maps active weather through AI weather skill", () => {
     const wetSpecialist = {
       ...TEST_DRIVER,
