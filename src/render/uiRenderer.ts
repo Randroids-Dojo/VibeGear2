@@ -25,7 +25,7 @@
  * never set them keep their current layout untouched.
  *
  * Other §20 corners (bottom-left damage, weather icon, etc) are
- * intentionally empty in this slice.
+ * renderer-guarded so callers can wire them one at a time.
  */
 
 import { ASSIST_BADGE_LABELS, type AssistBadge } from "@/game/assists";
@@ -46,6 +46,16 @@ export interface HudColors {
   assistBadgeFill: string;
   /** Text colour drawn on top of the assist-badge pill. */
   assistBadgeText: string;
+  /** Bottom-left status panel fill for damage and weather. */
+  statusPanelFill: string;
+  /** Healthy damage bar fill. */
+  damageGood: string;
+  /** Warning damage bar fill. */
+  damageWarn: string;
+  /** Critical damage bar fill. */
+  damageBad: string;
+  /** Weather icon chip fill. */
+  weatherChipFill: string;
 }
 
 export interface DrawHudOptions {
@@ -69,6 +79,11 @@ const DEFAULT_COLORS: HudColors = {
   shadow: "rgba(0, 0, 0, 0.65)",
   assistBadgeFill: "rgba(80, 130, 220, 0.85)",
   assistBadgeText: "#ffffff",
+  statusPanelFill: "rgba(7, 14, 28, 0.72)",
+  damageGood: "#66d17a",
+  damageWarn: "#f3c84b",
+  damageBad: "#ef4b4b",
+  weatherChipFill: "rgba(104, 160, 220, 0.78)",
 };
 
 const DEFAULT_PADDING = 16;
@@ -103,6 +118,11 @@ const ASSIST_BADGE_PADDING_Y = 4;
 const ASSIST_BADGE_HEIGHT = 20;
 /** Badge label font size. Matches the splits sector label so the corner reads cohesive. */
 const ASSIST_BADGE_FONT_SIZE = 12;
+const STATUS_CLUSTER_WIDTH = 142;
+const STATUS_CLUSTER_ROW_HEIGHT = 16;
+const STATUS_CLUSTER_BOTTOM_OFFSET = 156;
+const DAMAGE_BAR_WIDTH = 74;
+const DAMAGE_BAR_HEIGHT = 5;
 
 /**
  * Draw a string with a one-pixel drop shadow underlay so it reads over
@@ -195,6 +215,10 @@ export function drawHud(
     );
   }
 
+  if (state.damage !== undefined || state.weather !== undefined) {
+    drawStatusCluster(ctx, state, viewport, padding, fontFamily, colors);
+  }
+
   // Bottom-right: large speed value with a small unit label below.
   ctx.font = `700 36px ${fontFamily}`;
   ctx.textAlign = "right";
@@ -226,6 +250,129 @@ export function drawHud(
   ctx.font = prevFont;
   ctx.textAlign = prevAlign;
   ctx.textBaseline = prevBaseline;
+}
+
+function drawStatusCluster(
+  ctx: CanvasRenderingContext2D,
+  state: HudState,
+  viewport: Viewport,
+  padding: number,
+  fontFamily: string,
+  colors: HudColors,
+): void {
+  const hasGripRow =
+    state.weather !== undefined &&
+    (state.weather.gripHint !== undefined || state.weather.gripPercent !== undefined);
+  const rows =
+    (state.damage !== undefined ? 2 : 0) +
+    (state.weather !== undefined ? 1 : 0) +
+    (hasGripRow ? 1 : 0);
+  const panelHeight = rows * STATUS_CLUSTER_ROW_HEIGHT + 14;
+  const x = padding;
+  const y = Math.max(
+    padding + 88,
+    viewport.height - padding - STATUS_CLUSTER_BOTTOM_OFFSET - panelHeight,
+  );
+  ctx.fillStyle = colors.statusPanelFill;
+  ctx.fillRect(x, y, STATUS_CLUSTER_WIDTH, panelHeight);
+
+  let rowY = y + 8;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = `600 11px ${fontFamily}`;
+
+  if (state.damage !== undefined) {
+    const total = state.damage.totalPercent;
+    drawShadowedText(
+      ctx,
+      `DMG ${total}%`,
+      x + 8,
+      rowY,
+      colors.shadow,
+      colors.text,
+    );
+    const barX = x + 60;
+    const barY = rowY + 5;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.fillRect(barX, barY, DAMAGE_BAR_WIDTH, DAMAGE_BAR_HEIGHT);
+    ctx.fillStyle = damageColor(total, colors);
+    ctx.fillRect(
+      barX,
+      barY,
+      Math.round((DAMAGE_BAR_WIDTH * Math.max(0, Math.min(100, total))) / 100),
+      DAMAGE_BAR_HEIGHT,
+    );
+    rowY += STATUS_CLUSTER_ROW_HEIGHT;
+    const zoneLabel = `E${state.damage.zones.engine} T${state.damage.zones.tires} B${state.damage.zones.body}`;
+    drawShadowedText(
+      ctx,
+      zoneLabel,
+      x + 8,
+      rowY,
+      colors.shadow,
+      colors.textMuted,
+    );
+    rowY += STATUS_CLUSTER_ROW_HEIGHT;
+  }
+
+  if (state.weather !== undefined) {
+    ctx.fillStyle = colors.weatherChipFill;
+    ctx.fillRect(x + 8, rowY + 1, 22, 12);
+    drawShadowedText(
+      ctx,
+      weatherIconText(state.weather.icon),
+      x + 13,
+      rowY + 1,
+      colors.shadow,
+      colors.text,
+    );
+    drawShadowedText(
+      ctx,
+      state.weather.label,
+      x + 36,
+      rowY,
+      colors.shadow,
+      colors.text,
+    );
+    if (hasGripRow) {
+      rowY += STATUS_CLUSTER_ROW_HEIGHT;
+      const gripLabel =
+        state.weather.gripPercent === undefined
+          ? `GRIP ${state.weather.gripHint ?? ""}`
+          : `GRIP ${state.weather.gripPercent}% ${state.weather.gripHint ?? ""}`.trim();
+      drawShadowedText(
+        ctx,
+        gripLabel.toUpperCase(),
+        x + 8,
+        rowY,
+        colors.shadow,
+        colors.textMuted,
+      );
+    }
+  }
+}
+
+function damageColor(totalPercent: number, colors: HudColors): string {
+  if (totalPercent >= 70) return colors.damageBad;
+  if (totalPercent >= 35) return colors.damageWarn;
+  return colors.damageGood;
+}
+
+function weatherIconText(icon: NonNullable<HudState["weather"]>["icon"]): string {
+  switch (icon) {
+    case "rain":
+      return "R";
+    case "fog":
+      return "F";
+    case "snow":
+      return "S";
+    case "night":
+      return "N";
+    case "overcast":
+      return "O";
+    case "clear":
+      return "C";
+  }
 }
 
 /**

@@ -97,6 +97,26 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-20-HUD-DAMAGE-WEATHER",
+      "gddSections": [
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race HUD shows damage, active weather, and a grip hint from the current weather and tire setup.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/hudState.ts",
+        "src/render/uiRenderer.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/hudState.test.ts",
+        "src/render/__tests__/uiRenderer.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-GRIP-RUNTIME",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
