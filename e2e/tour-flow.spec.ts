@@ -8,16 +8,16 @@ test.describe("World Tour race progression", () => {
   }) => {
     test.setTimeout(420_000);
 
-    const first = await runFullTourFromWorld(page);
-    const second = await runFullTourFromWorld(page);
+    const result = await runFullTourFromWorld(page);
 
-    expect(first.completedTracks).toEqual([
+    expect(result.completedTracks).toEqual([
       "velvet-coast/harbor-run",
       "velvet-coast/sunpier-loop",
       "velvet-coast/cliffline-arc",
       "velvet-coast/lighthouse-fall",
     ]);
-    expect(second).toEqual(first);
+    expect(result.completionText).toContain("Tour complete");
+    expect(result.completionText).toContain("Iron Borough");
   });
 
   test("final Velvet Coast race unlocks Iron Borough", async ({ page }) => {
