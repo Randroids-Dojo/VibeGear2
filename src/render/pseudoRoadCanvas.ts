@@ -80,6 +80,9 @@ export const TUNNEL_ADAPTATION_OVERLAY_FILL = "#05070d";
 export const TUNNEL_ADAPTATION_HIGHLIGHT_FILL = "#f2e18a";
 export const TUNNEL_ADAPTATION_MAX_ALPHA = 0.38;
 export const TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA = 0.24;
+export const HEAT_SHIMMER_FILL = "#f4ddb0";
+export const HEAT_SHIMMER_MAX_ALPHA = 0.16;
+export const HEAT_SHIMMER_BAND_COUNT = 6;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
 const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
@@ -156,6 +159,16 @@ export interface DrawRoadOptions {
   tunnelAdaptation?: {
     enabled?: boolean;
     intensityScale?: number;
+  };
+  /**
+   * Optional desert-tour heat shimmer pass for §14. The caller passes
+   * a deterministic phase from camera z so the bands drift with motion
+   * without consuming random state or changing physics.
+   */
+  heatShimmer?: {
+    enabled?: boolean;
+    intensity?: number;
+    phaseMeters?: number;
   };
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
@@ -352,6 +365,7 @@ export function drawRoad(
     drawWeatherEffects(ctx, viewport, options.weatherEffects);
   }
 
+  drawHeatShimmer(ctx, viewport, options.heatShimmer);
   drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
 
   if (options.playerCar) {
@@ -596,6 +610,43 @@ function tunnelAdaptationIntensity(strips: readonly Strip[]): number {
   }
   if (visible === 0 || tunnel === 0) return 0;
   return 0.55 + Math.min(0.45, tunnel / visible);
+}
+
+function drawHeatShimmer(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  options: DrawRoadOptions["heatShimmer"],
+): void {
+  if (options?.enabled !== true) return;
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+  const intensity = clampUnit(options.intensity ?? 1);
+  if (intensity <= 0) return;
+  const phaseMeters =
+    typeof options.phaseMeters === "number" && Number.isFinite(options.phaseMeters)
+      ? options.phaseMeters
+      : 0;
+
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.fillStyle = HEAT_SHIMMER_FILL;
+    const segmentWidth = Math.max(24, viewport.width * 0.18);
+    const gap = segmentWidth * 0.92;
+    for (let i = 0; i < HEAT_SHIMMER_BAND_COUNT; i += 1) {
+      const y = viewport.height * (0.24 + i * 0.033);
+      const h = Math.max(1, viewport.height * (0.004 + i * 0.0007));
+      const drift =
+        (((phaseMeters * 0.22 + i * 37) % (segmentWidth + gap)) + segmentWidth + gap) %
+        (segmentWidth + gap);
+      ctx.globalAlpha = HEAT_SHIMMER_MAX_ALPHA * intensity * (1 - i * 0.08);
+      for (let x = -segmentWidth + drift; x < viewport.width; x += segmentWidth + gap) {
+        ctx.fillRect(x, y, segmentWidth, h);
+      }
+    }
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
+  }
 }
 
 interface ResolvedWeatherEffectSettings {

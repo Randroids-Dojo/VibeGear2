@@ -948,6 +948,10 @@ function RaceCanvas({
             flashReduction:
               persistedSettings.accessibility?.weatherFlashReduction,
           },
+          heatShimmer:
+            tourContext?.tourId === "ember-steppe"
+              ? { enabled: true, phaseMeters: camera.z }
+              : undefined,
           ghostCar: ghostOverlayRef.current
             ? {
                 ...ghostOverlayRef.current,
