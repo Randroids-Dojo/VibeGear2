@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§26](gdd/26-open-source-project-guidance.md) contribution guidelines and
 project structure.
-**Branch / PR:** `docs/contributor-dev-experience`, PR pending.
+**Branch / PR:** `docs/contributor-dev-experience`, PR #110.
 **Status:** Implemented.
 
 ### Done
