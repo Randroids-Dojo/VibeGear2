@@ -910,14 +910,10 @@
         "docs/gdd/21-technical-design-for-web-implementation.md"
       ],
       "requirement": "The CI workflow verifies the production Vercel Git deployment for pushed main commits by checking that the live app serves the expected build id.",
-      "coverage": ["implemented-code", "automated-test"],
+      "coverage": ["implemented-code"],
       "implementationRefs": [
         ".github/workflows/ci.yml",
         "src/app/api/version/route.ts"
-      ],
-      "testRefs": [
-        "src/app/api/version/__tests__/route.test.ts",
-        "scripts/__tests__/content-lint.test.ts"
       ],
       "followupRefs": []
     },
