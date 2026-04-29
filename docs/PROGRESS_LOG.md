@@ -13,7 +13,7 @@ Correct them by adding a new entry that references the old one.
 [§20](gdd/20-hud-and-ui-ux.md) settings,
 [§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline,
 [§22](gdd/22-data-schemas.md) save audio schema.
-**Branch / PR:** `feat/audio-options-pane`, PR pending.
+**Branch / PR:** `feat/audio-options-pane`, PR #67.
 **Status:** Implemented.
 
 ### Done
