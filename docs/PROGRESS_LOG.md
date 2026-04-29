@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§20](gdd/20-hud-and-ui-ux.md) Settings,
 [§22](gdd/22-data-schemas.md) save settings schema.
-**Branch / PR:** `feat/display-options-pane`, PR pending.
+**Branch / PR:** `feat/display-options-pane`, PR #92.
 **Status:** Implemented.
 
 ### Done
