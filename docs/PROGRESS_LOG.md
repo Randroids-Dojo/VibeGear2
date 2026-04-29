@@ -34,7 +34,7 @@ Correct them by adding a new entry that references the old one.
 - `npx vitest run src/mods/__tests__/manifest.test.ts src/data/schemas.test.ts`
   green, 60 passed.
 - `npm run typecheck` green.
-- `npm run verify` green, 2580 passed.
+- `npm run verify` green, 2582 passed.
 
 ### Decisions and assumptions
 - The first loader is a pure data loader. It validates mod packs but does not

@@ -28,6 +28,13 @@ const slug = z
     message: "id must be a slug or slug/slug path (lowercase, digits, hyphens, underscores)",
   });
 
+const singleSegmentSlug = z
+  .string()
+  .min(1)
+  .regex(/^[a-z0-9][a-z0-9_-]*$/u, {
+    message: "id must be a single slug segment (lowercase, digits, hyphens, underscores)",
+  });
+
 const nonNegInt = z.number().int().nonnegative();
 const positiveInt = z.number().int().positive();
 const positiveNumber = z.number().positive();
@@ -486,7 +493,7 @@ export type ModAssetRefs = z.infer<typeof ModAssetRefsSchema>;
 
 export const ModManifestSchema = z
   .object({
-    id: slug,
+    id: singleSegmentSlug,
     name: z.string().min(1),
     version: positiveInt,
     author: z.string().min(1),
