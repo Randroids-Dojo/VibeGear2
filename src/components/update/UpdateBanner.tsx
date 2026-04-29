@@ -13,7 +13,11 @@
  * Behaviour pinned by the slice spec:
  *   - Initial 30s delay so a fresh page load is not slowed by an
  *     extra request.
- *   - 60s poll interval thereafter.
+ *   - 60s poll interval thereafter, scheduled as a chained
+ *     `setTimeout` so we can stop polling the moment a `"stale"`
+ *     result lands. Once the banner is up the answer cannot change
+ *     back to fresh, so further polls would only generate idle
+ *     traffic on a tab the player has likely walked away from.
  *   - Network errors swallowed silently (a transient backend hiccup
  *     must not surface to the player).
  *   - The only action is a `RELOAD` button. There is intentionally no
@@ -43,25 +47,37 @@ export function UpdateBanner(): React.JSX.Element | null {
     if (isDevBuild) return;
 
     let cancelled = false;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    function clearScheduled(): void {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
+    function schedule(delayMs: number): void {
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
+        void check();
+      }, delayMs);
+    }
 
     async function check(): Promise<void> {
       const result = await checkRemoteVersion({ currentVersion: BUILD_ID });
       if (cancelled) return;
-      if (result === "stale") setIsStale(true);
+      if (result === "stale") {
+        setIsStale(true);
+        return;
+      }
+      schedule(POLL_INTERVAL_MS);
     }
 
-    const initialId = setTimeout(() => {
-      void check();
-      intervalId = setInterval(() => {
-        void check();
-      }, POLL_INTERVAL_MS);
-    }, INITIAL_DELAY_MS);
+    schedule(INITIAL_DELAY_MS);
 
     return () => {
       cancelled = true;
-      clearTimeout(initialId);
-      if (intervalId !== null) clearInterval(intervalId);
+      clearScheduled();
     };
   }, []);
 
@@ -83,12 +99,12 @@ export function UpdateBanner(): React.JSX.Element | null {
         justifyContent: "center",
         gap: 12,
         padding: "7px 16px",
-        background: "rgba(11,10,15,0.97)",
-        borderBottom: "1px solid #e63946",
+        background: "var(--bg)",
+        borderBottom: "1px solid var(--accent)",
         fontFamily: "ui-monospace, monospace",
         fontSize: 12,
         letterSpacing: "0.08em",
-        color: "#94a3b8",
+        color: "var(--muted)",
       }}
     >
       <span>NEW VERSION AVAILABLE</span>
@@ -97,9 +113,9 @@ export function UpdateBanner(): React.JSX.Element | null {
         data-testid="update-banner-reload"
         onClick={() => window.location.reload()}
         style={{
-          background: "rgba(230,57,70,0.12)",
-          border: "1px solid #e63946",
-          color: "#e63946",
+          background: "transparent",
+          border: "1px solid var(--accent)",
+          color: "var(--accent)",
           padding: "3px 12px",
           fontFamily: "ui-monospace, monospace",
           fontSize: 12,
