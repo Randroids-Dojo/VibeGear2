@@ -21,6 +21,10 @@ public/mods/<mod-id>/
 
 The `<mod-id>` folder name must match `manifest.json` `id`.
 
+The repository includes a tiny starter pack at
+`public/mods/starter-sample/`. Use it as the reference for file layout,
+manifest fields, and schema-valid track JSON.
+
 ## Manifest
 
 Each mod must include `manifest.json`:

@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Starter mod sample pack
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) mod layer,
+[§22](gdd/22-data-schemas.md) mod manifest schema,
+[§26](gdd/26-open-source-project-guidance.md) data-only mod rules.
+**Branch / PR:** `feat/starter-mod-sample`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `public/mods/starter-sample/`: added a schema-valid data-only starter mod
+  with manifest provenance fields, a README, and one original sample track.
+- `src/app/dev/mods/`: added a browser smoke page that loads the starter
+  pack through `loadModContent`.
+- `e2e/mod-loader.spec.ts`: added a Playwright smoke that verifies the
+  browser loader reaches ready state and exposes the starter track id.
+- `docs/MODDING.md`: linked the starter sample as the reference layout.
+
+### Verified
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/mod-loader.spec.ts` green, 1 passed.
+- `npm run verify` green, 2583 passed.
+- No-dash scan and `git diff --check` green.
+
+### Decisions and assumptions
+- The starter pack stays intentionally tiny and data-only. It proves the
+  loader contract without adding a public mod-browser UI.
+
+### Coverage ledger
+- GDD-26-STARTER-MOD-SAMPLE covers the starter mod sample pack and browser
+  mod-loader smoke.
+- Uncovered adjacent requirements: public mod browser submission and legal
+  review UI remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Data mod loader
 
 **GDD sections touched:**
