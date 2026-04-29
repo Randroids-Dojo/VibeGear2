@@ -120,7 +120,12 @@ import {
   type Surface,
   type TrackContext,
 } from "./physics";
-import { EMPTY_PASSED_SET } from "./raceCheckpoints";
+import {
+  EMPTY_PASSED_SET,
+  applyCheckpointPass,
+  detectCheckpointPass,
+  resetCheckpointsForNewLap,
+} from "./raceCheckpoints";
 import {
   exceedsRaceTimeLimit,
   INITIAL_DNF_TIMERS,
@@ -1760,6 +1765,35 @@ export function stepRaceSession(
     trackLength > 0
       ? ((nextPlayerCar.z % trackLength) + trackLength) % trackLength
       : nextPlayerCar.z;
+  const prevLapPos =
+    trackLength > 0
+      ? ((state.player.car.z % trackLength) + trackLength) % trackLength
+      : state.player.car.z;
+  const checkpointInputs = config.track.checkpoints.map((checkpoint) => ({
+    segmentIndex: checkpoint.compiledStart,
+    label: checkpoint.label,
+  }));
+  const checkpointPass = detectCheckpointPass(
+    prevLapPos,
+    lapPos,
+    trackLength,
+    SEGMENT_LENGTH,
+    checkpointInputs,
+  );
+  let nextRaceCheckpointState =
+    checkpointPass === null
+      ? state.race
+      : applyCheckpointPass(
+          state.race,
+          checkpointPass,
+          nextTick,
+          nextPlayerCar,
+        );
+  if (nextLap > state.race.lap) {
+    nextRaceCheckpointState = resetCheckpointsForNewLap(
+      nextRaceCheckpointState,
+    );
+  }
   let nextBaseline = state.baselineSplitsMs;
   if (nextLap > state.race.lap) {
     // Close the final sector of the just-finished lap so its split lands in
@@ -1803,6 +1837,9 @@ export function stepRaceSession(
   return {
     race: {
       ...state.race,
+      lastCheckpoint: nextRaceCheckpointState.lastCheckpoint,
+      passedCheckpointsThisLap:
+        nextRaceCheckpointState.passedCheckpointsThisLap,
       phase: nextPhase,
       elapsed: nextElapsed,
       lap: nextLap,

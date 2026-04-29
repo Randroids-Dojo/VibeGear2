@@ -71,6 +71,11 @@ test.describe("title screen", () => {
     await expect(quickRace).toHaveText("Quick Race");
     await expect(quickRace).toHaveAttribute("href", "/quick-race");
 
+    const practice = page.getByTestId("menu-practice");
+    await expect(practice).toBeVisible();
+    await expect(practice).toHaveText("Practice");
+    await expect(practice).toHaveAttribute("href", "/race?mode=practice");
+
     const daily = page.getByTestId("menu-daily");
     await expect(daily).toBeVisible();
     await expect(daily).toHaveText("Daily Challenge");
@@ -127,6 +132,17 @@ test.describe("title screen", () => {
       "href",
       /\/race\?mode=quickRace&track=.+&weather=.+&car=.+/,
     );
+  });
+
+  test("Practice link navigates to practice race mode", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-practice").click();
+    await expect(page).toHaveURL(/\/race\?mode=practice$/);
+    await expect(page.getByTestId("race-canvas")).toHaveAttribute(
+      "data-mode",
+      "practice",
+    );
+    await expect(page.getByTestId("practice-panel")).toBeVisible();
   });
 
   test("Daily Challenge link navigates to /daily", async ({ page }) => {

@@ -36,6 +36,7 @@ import {
   type RaceSessionPlayerCar,
   type RaceSessionState,
 } from "./raceSession";
+import type { WeatherOption } from "@/data/schemas";
 
 /**
  * `DnfReason` value pinned for user-initiated retirement. Re-exported here
@@ -110,6 +111,39 @@ export function retireRaceSession(
     brokenHazards: state.brokenHazards.slice(),
     weather: cloneWeatherPure(state.weather),
     weatherRngState: state.weatherRngState,
+    audioEvents: [],
+  };
+}
+
+export function resetRaceSessionToLastCheckpoint(
+  state: Readonly<RaceSessionState>,
+): RaceSessionState {
+  const checkpoint = state.race.lastCheckpoint;
+  if (checkpoint === null || state.race.phase === "finished") {
+    return clonePure(state);
+  }
+
+  return {
+    ...clonePure(state),
+    player: {
+      ...clonePlayerPure(state.player),
+      car: { ...checkpoint.carState },
+    },
+    audioEvents: [],
+  };
+}
+
+export function setRaceSessionWeather(
+  state: Readonly<RaceSessionState>,
+  weather: WeatherOption,
+  allowedWeather: ReadonlyArray<WeatherOption>,
+): RaceSessionState {
+  if (!allowedWeather.includes(weather)) {
+    return clonePure(state);
+  }
+  return {
+    ...clonePure(state),
+    weather: { current: weather, transitioning: null },
     audioEvents: [],
   };
 }

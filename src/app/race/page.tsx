@@ -78,6 +78,8 @@ import {
   applyTourRaceResult,
   rankPosition,
   retireRaceSession,
+  resetRaceSessionToLastCheckpoint,
+  setRaceSessionWeather,
   spawnGrid,
   startLoop,
   stepRaceSession,
@@ -102,6 +104,7 @@ import {
   WeatherOptionSchema,
   type AIDriver,
   type CarBaseStats,
+  type WeatherOption,
 } from "@/data/schemas";
 import {
   CAMERA_DEPTH,
@@ -411,9 +414,10 @@ function resolveTrack(
   return { id, runtimeId, version: parsed.version, compiled: loadTrack(runtimeId) };
 }
 
-type RaceMode = "race" | "timeTrial" | "quickRace";
+type RaceMode = "race" | "timeTrial" | "quickRace" | "practice";
 
 function resolveRaceMode(raw: string | null): RaceMode {
+  if (raw === "practice") return "practice";
   if (raw === "quickRace") return "quickRace";
   return raw === "timeTrial" ? "timeTrial" : "race";
 }
@@ -429,6 +433,13 @@ function resolveRaceWeather(
 
 function resolvePlayerTire(raw: string | null): TireKind | undefined {
   return raw === "wet" || raw === "dry" ? raw : undefined;
+}
+
+function weatherOptionLabel(weather: WeatherOption): string {
+  return weather
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function resolveSessionCar(
@@ -725,6 +736,14 @@ function RaceCanvas({
     steer: number;
     touchActive: boolean;
   }>(() => ({ steer: 0, touchActive: false }));
+  const [practiceSnapshot, setPracticeSnapshot] = useState<{
+    weather: WeatherOption;
+    weatherGripPercent: number;
+    tire: TireKind;
+    surface: string;
+    checkpointLabel: string | null;
+    checkpointReady: boolean;
+  } | null>(null);
   const [fieldSize, setFieldSize] = useState<number>(1);
   const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
     touchLayoutFor({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }),
@@ -758,6 +777,34 @@ function RaceCanvas({
   const onExitToTitleImpl = useCallback(() => {
     exitFnRef.current?.();
   }, []);
+  const onPracticeCheckpointReset = useCallback(() => {
+    if (mode !== "practice") return;
+    const session = sessionRef.current;
+    if (!session) return;
+    sessionRef.current = resetRaceSessionToLastCheckpoint(session);
+  }, [mode]);
+  const onPracticeWeatherChange = useCallback(
+    (nextWeather: WeatherOption) => {
+      if (mode !== "practice") return;
+      const session = sessionRef.current;
+      if (!session) return;
+      if (!track.compiled.weatherOptions.includes(nextWeather)) return;
+      sessionRef.current = setRaceSessionWeather(
+        session,
+        nextWeather,
+        track.compiled.weatherOptions,
+      );
+      setPracticeSnapshot((prev) =>
+        prev === null
+          ? prev
+          : {
+              ...prev,
+              weather: nextWeather,
+            },
+      );
+    },
+    [mode, track],
+  );
 
   const pauseActions = usePauseActions({
     closeMenu: pause.closeMenu,
@@ -791,17 +838,19 @@ function RaceCanvas({
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
     const persistedKeyBindings = readKeyBindings(sessionSave);
+    const practiceMode = mode === "practice";
     const ghostEnabled = mode === "timeTrial";
     const recordsOnlyMode = mode === "timeTrial" || mode === "quickRace";
+    const noCampaignMode = recordsOnlyMode || practiceMode;
     const economyEnabled = mode === "race";
     const sessionCar = resolveSessionCar(sessionSave, selectedCarId);
     const playerStats = sessionCar.stats;
-    const initialPlayerDamage = recordsOnlyMode
+    const initialPlayerDamage = noCampaignMode
       ? PRISTINE_DAMAGE_STATE
       : pendingDamageForActiveCar(sessionSave);
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
-    const spawnedAi = ghostEnabled
+    const spawnedAi = ghostEnabled || practiceMode
       ? []
       : spawnGrid({
           trackSpawn: track.compiled.spawn,
@@ -826,6 +875,7 @@ function RaceCanvas({
       seed: raceSeed,
       ...(weather ? { weather } : {}),
       ...(playerTire ? { playerTire } : {}),
+      ...(practiceMode ? { countdownSec: 0 } : {}),
       ...(lapsOverride !== null ? { totalLaps: lapsOverride } : {}),
     };
     setFieldSize(1 + config.ai.length);
@@ -932,7 +982,7 @@ function RaceCanvas({
     const raceMusicCueForSession = raceMusicCue({
       trackId: track.id,
       tourId: tourContext?.tourId,
-      mode: mode === "quickRace" ? "race" : mode,
+      mode: mode === "quickRace" || mode === "practice" ? "race" : mode,
     });
     let latestEngineInput: EngineRuntimeInput = {
       speed: 0,
@@ -1017,7 +1067,7 @@ function RaceCanvas({
       // the dl below re-renders the countdown immediately rather than
       // showing the racing phase momentarily until the next render
       // tick fires.
-      setPhase("countdown");
+      setPhase((config.countdownSec ?? 3) > 0 ? "countdown" : "racing");
       setCountdownSecondsLeft(Math.ceil(config.countdownSec ?? 3));
       setResultMs(null);
       lastCountdownSfxStep = null;
@@ -1081,26 +1131,30 @@ function RaceCanvas({
       }
       const committed = recordsOnlyCommit
         ? recordsOnlyCommit.result
-        : commitRaceCredits({
-            result,
-            save,
-            // §15 default per `SaveGameSettingsSchema`: a v1 save without
-            // a `difficultyPreset` field reads as `'normal'`.
-            difficulty: persistedDifficulty ?? "normal",
-            baseTrackReward: baseRewardForTrackDifficulty(track.compiled.difficulty),
-            damageAfter: retired.player.damage,
-            activeCarId: save.garage.activeCarId,
-            transformCommit:
-              tourContext === null
-                ? undefined
-                : (nextSave, nextResult) =>
-                    applyTourRaceResult({
-                      save: nextSave,
-                      result: nextResult,
-                      championship: tourContext.championship,
-                      playerCarId: save.garage.activeCarId,
-                    }),
-          });
+        : practiceMode
+          ? { ...result, creditsAwarded: 0 }
+          : commitRaceCredits({
+              result,
+              save,
+              // §15 default per `SaveGameSettingsSchema`: a v1 save without
+              // a `difficultyPreset` field reads as `'normal'`.
+              difficulty: persistedDifficulty ?? "normal",
+              baseTrackReward: baseRewardForTrackDifficulty(
+                track.compiled.difficulty,
+              ),
+              damageAfter: retired.player.damage,
+              activeCarId: save.garage.activeCarId,
+              transformCommit:
+                tourContext === null
+                  ? undefined
+                  : (nextSave, nextResult) =>
+                      applyTourRaceResult({
+                        save: nextSave,
+                        result: nextResult,
+                        championship: tourContext.championship,
+                        playerCarId: save.garage.activeCarId,
+                      }),
+            });
       saveRaceResult(committed);
       // Flip the natural-finish guard so the render callback's finish
       // wiring cannot also fire on the next frame (the loop tear-down
@@ -1367,7 +1421,8 @@ function RaceCanvas({
               playerStartPosition: 1,
               damageBefore: damageDeltaFromState(initialPlayerDamage),
               damageAfter: damageDeltaFromState(session.player.damage),
-              recordPBs: session.player.status === "finished",
+              recordPBs:
+                !practiceMode && session.player.status === "finished",
               championship: tourContext?.championship,
               tourId: tourContext?.tourId,
               currentTrackIndex: tourContext?.raceIndex,
@@ -1384,28 +1439,30 @@ function RaceCanvas({
             }
             const committed = recordsOnlyCommit
               ? recordsOnlyCommit.result
-              : commitRaceCredits({
-                  result,
-                  save,
-                  // §15 default per `SaveGameSettingsSchema`: a v1 save
-                  // without a `difficultyPreset` reads as `'normal'`.
-                  difficulty: persistedDifficulty ?? "normal",
-                  baseTrackReward: baseRewardForTrackDifficulty(
-                    track.compiled.difficulty,
-                  ),
-                  damageAfter: session.player.damage,
-                  activeCarId: save.garage.activeCarId,
-                  transformCommit:
-                    tourContext === null
-                      ? undefined
-                      : (nextSave, nextResult) =>
-                          applyTourRaceResult({
-                            save: nextSave,
-                            result: nextResult,
-                            championship: tourContext.championship,
-                            playerCarId: save.garage.activeCarId,
-                          }),
-                });
+              : practiceMode
+                ? { ...result, creditsAwarded: 0 }
+                : commitRaceCredits({
+                    result,
+                    save,
+                    // §15 default per `SaveGameSettingsSchema`: a v1 save
+                    // without a `difficultyPreset` reads as `'normal'`.
+                    difficulty: persistedDifficulty ?? "normal",
+                    baseTrackReward: baseRewardForTrackDifficulty(
+                      track.compiled.difficulty,
+                    ),
+                    damageAfter: session.player.damage,
+                    activeCarId: save.garage.activeCarId,
+                    transformCommit:
+                      tourContext === null
+                        ? undefined
+                        : (nextSave, nextResult) =>
+                            applyTourRaceResult({
+                              save: nextSave,
+                              result: nextResult,
+                              championship: tourContext.championship,
+                              playerCarId: save.garage.activeCarId,
+                            }),
+                  });
             saveRaceResult(committed);
             // Tear down the loop, input, and audio bindings before the
             // route hop. Mirrors the retire branch tear-down ordering.
@@ -1429,6 +1486,22 @@ function RaceCanvas({
           steer: lastSteerRef.current,
           touchActive: inputManager.hasTouch(),
         });
+        if (practiceMode) {
+          setPracticeSnapshot({
+            weather: renderWeather,
+            weatherGripPercent: Math.round(
+              weatherGripScalarForState(
+                playerStats,
+                session.weather,
+                config.playerTire ?? "dry",
+              ) * 100,
+            ),
+            tire: config.playerTire ?? "dry",
+            surface: session.player.car.surface,
+            checkpointLabel: session.race.lastCheckpoint?.label ?? null,
+            checkpointReady: session.race.lastCheckpoint !== null,
+          });
+        }
       },
     });
 
@@ -1501,6 +1574,67 @@ function RaceCanvas({
           Race finished. Total time: {(resultMs / 1000).toFixed(2)} s
         </div>
       ) : null}
+      {mode === "practice" && practiceSnapshot !== null ? (
+        <section
+          aria-label="Practice controls"
+          data-testid="practice-panel"
+          style={practicePanelStyle}
+        >
+          <div style={practiceToolbarStyle}>
+            <button
+              type="button"
+              data-testid="practice-restart"
+              style={practiceButtonStyle}
+              onClick={onRestartImpl}
+            >
+              Restart
+            </button>
+            <button
+              type="button"
+              data-testid="practice-checkpoint-reset"
+              style={practiceButtonStyle}
+              onClick={onPracticeCheckpointReset}
+              disabled={!practiceSnapshot.checkpointReady}
+            >
+              Checkpoint
+            </button>
+            <label style={practiceSelectLabelStyle}>
+              Weather
+              <select
+                data-testid="practice-weather-select"
+                value={practiceSnapshot.weather}
+                onChange={(event) => {
+                  const parsed = WeatherOptionSchema.safeParse(
+                    event.currentTarget.value,
+                  );
+                  if (parsed.success) onPracticeWeatherChange(parsed.data);
+                }}
+                style={practiceSelectStyle}
+              >
+                {track.compiled.weatherOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {weatherOptionLabel(option)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <dl style={practiceTelemetryStyle}>
+            <dt>Grip</dt>
+            <dd data-testid="practice-grip">
+              {practiceSnapshot.weatherGripPercent}%
+            </dd>
+            <dt>Tire</dt>
+            <dd data-testid="practice-tire">{practiceSnapshot.tire}</dd>
+            <dt>Surface</dt>
+            <dd data-testid="practice-surface">{practiceSnapshot.surface}</dd>
+            <dt>Checkpoint</dt>
+            <dd data-testid="practice-checkpoint">
+              {practiceSnapshot.checkpointLabel ?? "none"}
+            </dd>
+          </dl>
+        </section>
+      ) : null}
       <PauseOverlay open={pause.open} {...pauseActions} />
     </main>
   );
@@ -1544,4 +1678,61 @@ const resultStyle: CSSProperties = {
   border: "1px solid var(--muted, #888)",
   borderRadius: "6px",
   background: "rgba(255,255,255,0.05)",
+};
+
+const practicePanelStyle: CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  bottom: "1rem",
+  transform: "translateX(-50%)",
+  display: "grid",
+  gap: "0.5rem",
+  minWidth: "min(42rem, calc(100vw - 2rem))",
+  padding: "0.75rem",
+  border: "1px solid rgba(160, 200, 255, 0.72)",
+  borderRadius: "6px",
+  background: "rgba(8, 14, 25, 0.86)",
+  color: "#f4f7ff",
+  pointerEvents: "auto",
+};
+
+const practiceToolbarStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "0.5rem",
+  alignItems: "center",
+};
+
+const practiceButtonStyle: CSSProperties = {
+  minHeight: "2.25rem",
+  padding: "0 0.75rem",
+  border: "1px solid rgba(240, 245, 255, 0.7)",
+  borderRadius: "4px",
+  background: "rgba(245, 248, 255, 0.12)",
+  color: "inherit",
+  font: "inherit",
+  cursor: "pointer",
+};
+
+const practiceSelectLabelStyle: CSSProperties = {
+  display: "flex",
+  gap: "0.5rem",
+  alignItems: "center",
+};
+
+const practiceSelectStyle: CSSProperties = {
+  minHeight: "2.25rem",
+  border: "1px solid rgba(240, 245, 255, 0.7)",
+  borderRadius: "4px",
+  background: "#0e1727",
+  color: "inherit",
+  font: "inherit",
+};
+
+const practiceTelemetryStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, auto)",
+  gap: "0.25rem 0.75rem",
+  margin: 0,
+  fontSize: "0.86rem",
 };

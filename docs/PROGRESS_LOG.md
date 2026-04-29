@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Practice mode
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Practice,
+[§20](gdd/20-hud-and-ui-ux.md) title menu and race controls,
+[§21](gdd/21-technical-design-for-web-implementation.md) runtime reuse.
+**Branch / PR:** `feat/practice-mode`, PR #94.
+**Status:** Implemented.
+
+### Done
+- `src/app/race/page.tsx`: added `mode=practice` with no AI grid,
+  no campaign economy, no damage persistence, no PB writes, and no
+  countdown delay.
+- `src/app/race/page.tsx`: added a Practice control panel with restart,
+  checkpoint reset, weather swap, and grip telemetry.
+- `src/game/raceSessionActions.ts`: added pure helpers for checkpoint
+  rewind and instant weather swaps.
+- `src/app/page.tsx`: added Practice to the title menu.
+- `docs/GDD_COVERAGE.json`: added GDD-06-PRACTICE-MODE.
+
+### Verified
+- `npm run typecheck` green.
+- `npx vitest run src/game/__tests__/raceSessionActions.test.ts src/app/__tests__/page.test.tsx`
+  green, 22 passed.
+- `npx vitest run src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts src/app/__tests__/page.test.tsx`
+  green, 141 passed after PR review fixes.
+- `npx playwright test e2e/title-screen.spec.ts --grep "Practice|main menu" e2e/practice-mode.spec.ts`
+  green, 3 passed.
+- `npm run verify` green, 2528 passed.
+- `npm run test:e2e` green, 84 passed.
+
+### Decisions and assumptions
+- Practice sessions use the normal race renderer and physics but disable
+  all persistent result writes. Results can still be staged in session
+  storage if the player finishes or retires.
+- Checkpoint reset is pinned with pure unit coverage. The browser smoke
+  verifies the shipped control surface and weather swap because reaching
+  a mid-track checkpoint in e2e is slow and already covered by the
+  checkpoint detector tests.
+
+### Coverage ledger
+- GDD-06-PRACTICE-MODE covers the §6 Practice requirement for restart,
+  checkpoint reset, grip telemetry, and instant weather swap.
+- Uncovered adjacent requirements: none for the Practice and Quick Race
+  parent dot after this slice.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Quick Race mode
 
 **GDD sections touched:**
