@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§18](gdd/18-sound-and-music-design.md) race music intensity layers,
 [§21](gdd/21-technical-design-for-web-implementation.md) audio
 runtime.
-**Branch / PR:** `feat/music-intensity-stem-runtime`, PR pending.
+**Branch / PR:** `feat/music-intensity-stem-runtime`, PR #90.
 **Status:** Implemented.
 
 ### Done
