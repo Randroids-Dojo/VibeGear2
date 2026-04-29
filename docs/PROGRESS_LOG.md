@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Placeholder roadside prop bank
+
+**GDD sections touched:**
+[§17](gdd/17-art-direction.md) roadside prop source sizes,
+[§24](gdd/24-content-plan.md) asset list,
+[§26](gdd/26-open-source-project-guidance.md) asset provenance,
+[§27](gdd/27-risks-and-mitigations.md) asset burden.
+**Branch / PR:** `feat/placeholder-roadside-props`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `scripts/generate-placeholder-art.ts`: added a generated regional
+  roadside prop bank with 12 props per region.
+- `public/art/roadside/`: added 96 generated prop SVG files across the
+  eight GDD regions.
+- `public/art.manifest.json`: listed every generated prop with CC0
+  license, source, originality, and date metadata.
+- `scripts/__tests__/placeholder-art-bank.test.ts`: added coverage that
+  the generated roadside bank satisfies the GDD 80 to 120 prop range and
+  includes every region.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-17-PLACEHOLDER-ROADSIDE-PROPS.
+
+### Verified
+- `npm run art:generate` completed and reproduced the generated prop
+  manifest entries.
+- `npx vitest run scripts/__tests__/placeholder-art-bank.test.ts scripts/__tests__/check-art-manifest.test.ts`
+  green, 10 passed.
+- `npm run art:check` green.
+- No file under `public/art/` exceeds 32 KB; total art size is 608 KB.
+- `npm run verify` green, 2479 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- The existing `public/art/roadside/temperate.svg` atlas remains in place
+  for current runtime compatibility. The new per-region files are content
+  bank assets for the later visual-polish renderer wiring.
+
+### Coverage ledger
+- GDD-17-PLACEHOLDER-ROADSIDE-PROPS covers placeholder roadside prop
+  volume and per-region asset availability.
+- Uncovered adjacent requirements: menu backgrounds, final car artwork,
+  and production art replacement remain under the placeholder-art parent
+  dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Placeholder car sprite sheet bank
 
 **GDD sections touched:**

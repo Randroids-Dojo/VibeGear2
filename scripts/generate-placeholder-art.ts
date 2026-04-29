@@ -20,6 +20,11 @@ interface RegionArt {
   accent: string;
 }
 
+interface RoadsideProp {
+  id: string;
+  category: "tree" | "sign" | "barrier" | "building";
+}
+
 const ROOT = process.cwd();
 const MANIFEST_PATH = path.join(ROOT, "public", "art.manifest.json");
 const GENERATED_DATE = "2026-04-29";
@@ -62,6 +67,21 @@ const HUD_ICONS = [
 ] as const;
 
 const EFFECTS = ["flash", "dust", "sparks", "rain", "fog", "snow"] as const;
+
+const ROADSIDE_PROPS: readonly RoadsideProp[] = [
+  { id: "marker-light", category: "sign" },
+  { id: "speed-board", category: "sign" },
+  { id: "chevron-left", category: "sign" },
+  { id: "chevron-right", category: "sign" },
+  { id: "short-rail", category: "barrier" },
+  { id: "long-rail", category: "barrier" },
+  { id: "tire-stack", category: "barrier" },
+  { id: "cone-row", category: "barrier" },
+  { id: "slim-tree", category: "tree" },
+  { id: "wide-tree", category: "tree" },
+  { id: "low-building", category: "building" },
+  { id: "tower-building", category: "building" },
+] as const;
 
 const manifest: ManifestEntry[] = [
   {
@@ -172,6 +192,88 @@ function roadsideSvg(): string {
   );
 }
 
+function roadsidePropSvg(region: RegionArt, prop: RoadsideProp, index: number): string {
+  const base = [
+    '<rect width="128" height="128" fill="none"/>',
+    '<ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>',
+  ];
+  if (prop.category === "sign") {
+    const arrow = prop.id.includes("left")
+      ? '<path d="M76 43 L48 64 L76 85" fill="none" stroke="#101827" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter"/>'
+      : '<path d="M52 43 L80 64 L52 85" fill="none" stroke="#101827" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter"/>';
+    return svg(
+      128,
+      128,
+      [
+        ...base,
+        '<rect x="59" y="62" width="10" height="50" fill="#d7dde6"/>',
+        `<rect x="28" y="22" width="72" height="44" rx="3" fill="${region.accent}"/>`,
+        prop.id.includes("chevron") ? arrow : '<rect x="42" y="38" width="44" height="12" fill="#101827"/>',
+        `<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="${region.accent}">PLACEHOLDER</text>`,
+      ].join("\n"),
+    );
+  }
+  if (prop.category === "barrier") {
+    const railWidth = prop.id === "long-rail" ? 96 : 64;
+    const x = (128 - railWidth) / 2;
+    return svg(
+      128,
+      128,
+      [
+        ...base,
+        `<rect x="${x}" y="72" width="${railWidth}" height="12" fill="#d7dde6"/>`,
+        `<rect x="${x}" y="90" width="${railWidth}" height="10" fill="${region.accent}"/>`,
+        '<rect x="34" y="68" width="8" height="42" fill="#b7c0ca"/>',
+        '<rect x="86" y="68" width="8" height="42" fill="#b7c0ca"/>',
+        prop.id === "tire-stack"
+          ? '<circle cx="44" cy="74" r="13" fill="#161b22"/><circle cx="64" cy="74" r="13" fill="#161b22"/><circle cx="84" cy="74" r="13" fill="#161b22"/>'
+          : "",
+        prop.id === "cone-row"
+          ? '<path d="M38 98 L48 66 L58 98 Z" fill="#ff7a1a"/><path d="M60 98 L70 66 L80 98 Z" fill="#ff7a1a"/><path d="M82 98 L92 66 L102 98 Z" fill="#ff7a1a"/>'
+          : "",
+        `<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="${region.accent}">PLACEHOLDER</text>`,
+      ].join("\n"),
+    );
+  }
+  if (prop.category === "tree") {
+    const leaf = prop.id === "wide-tree" ? 32 : 24;
+    return svg(
+      128,
+      128,
+      [
+        ...base,
+        '<rect x="59" y="72" width="10" height="40" fill="#6b4a2e"/>',
+        `<path d="M64 16 L${64 - leaf} 88 L${64 + leaf} 88 Z" fill="${region.near}"/>`,
+        `<path d="M64 8 L${70 - leaf} 66 L${58 + leaf} 66 Z" fill="${region.horizon}" opacity="0.9"/>`,
+        `<rect x="${48 + (index % 4) * 2}" y="68" width="10" height="6" fill="${region.accent}" opacity="0.35"/>`,
+        `<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="${region.accent}">PLACEHOLDER</text>`,
+      ].join("\n"),
+    );
+  }
+  const isTower = prop.id === "tower-building";
+  const buildingTop = isTower ? 24 : 56;
+  const innerTop = buildingTop + 6;
+  const buildingHeight = isTower ? 88 : 56;
+  const innerHeight = buildingHeight - 12;
+  const floors = isTower ? 4 : 2;
+  const windows = Array.from({ length: floors * 2 }, (_, i) => {
+    const x = 46 + (i % 2) * 24;
+    const y = innerTop + 10 + Math.floor(i / 2) * 16;
+    return `<rect x="${x}" y="${y}" width="12" height="8" fill="${region.accent}" opacity="0.65"/>`;
+  });
+  return svg(
+    128,
+    128,
+    [
+      ...base,
+      `<rect x="34" y="${buildingTop}" width="60" height="${buildingHeight}" fill="${region.horizon}"/>`,
+      `<rect x="40" y="${innerTop}" width="48" height="${innerHeight}" fill="${region.near}" opacity="0.82"/>`,
+      ...windows,
+      `<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="${region.accent}">PLACEHOLDER</text>`,
+    ].join("\n"),
+  );
+}
+
 function carSheetSvg(car: (typeof CAR_SHEETS)[number]): string {
   const skews = [0, 4, 8, 12, 8, 4, 0, -4, -8, -12, -8, -4];
   const damageRows = [
@@ -262,6 +364,14 @@ for (const car of CAR_SHEETS) {
 
 writeTextFile("public/art/roadside/temperate.svg", roadsideSvg());
 addManifest("roadside:temperate", "art/roadside/temperate.svg");
+
+for (const region of REGIONS) {
+  for (const [i, prop] of ROADSIDE_PROPS.entries()) {
+    const relPath = `public/art/roadside/${region.id}/${prop.id}.svg`;
+    writeTextFile(relPath, roadsidePropSvg(region, prop, i));
+    addManifest(`roadside:${region.id}:${prop.id}`, relPath.slice("public/".length));
+  }
+}
 
 for (const icon of HUD_ICONS) {
   const relPath = `public/art/hud/${icon}.svg`;

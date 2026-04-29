@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<rect width="128" height="128" fill="none"/>
+<ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
+<rect x="34" y="24" width="60" height="88" fill="#326a84"/>
+<rect x="40" y="30" width="48" height="76" fill="#1f5e45" opacity="0.82"/>
+<rect x="46" y="40" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="70" y="40" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="46" y="56" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="70" y="56" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="46" y="72" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="70" y="72" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="46" y="88" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<rect x="70" y="88" width="12" height="8" fill="#a7e3ff" opacity="0.65"/>
+<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#a7e3ff">PLACEHOLDER</text>
+</svg>
