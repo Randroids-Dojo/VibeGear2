@@ -26,9 +26,22 @@ export interface WeatherMusicStem {
   readonly volumeScale: number;
 }
 
+export type MusicIntensityLayerId = "drive" | "lead";
+
+export type RaceMusicCueId = Exclude<MusicCueId, "title">;
+
+export interface MusicIntensityStem {
+  readonly id: string;
+  readonly cueId: RaceMusicCueId;
+  readonly layer: MusicIntensityLayerId;
+  readonly src: string;
+  readonly volumeScale: number;
+}
+
 export interface MusicIntensity {
   readonly volumeScale: number;
   readonly playbackRate: number;
+  readonly layerMix: Readonly<Record<MusicIntensityLayerId, number>>;
 }
 
 export interface RaceMusicInput {
@@ -63,7 +76,7 @@ export interface MusicRuntimeOptions {
   readonly fadeSeconds?: number;
 }
 
-interface Channel<Cue extends MusicCue | WeatherMusicStem> {
+interface Channel<Cue extends MusicCue | WeatherMusicStem | MusicIntensityStem> {
   readonly cue: Cue;
   readonly element: MusicAudioElementLike;
   readonly startedAt: number;
@@ -79,11 +92,19 @@ const SILENT_AUDIO: AudioSettings = Object.freeze({
 const DEFAULT_INTENSITY: MusicIntensity = Object.freeze({
   volumeScale: 1,
   playbackRate: 1,
+  layerMix: Object.freeze({
+    drive: 0,
+    lead: 0,
+  }),
 });
 
 const DEFAULT_BASE_GAIN = 0.34;
 const DEFAULT_WEATHER_STEM_GAIN = 0.16;
 const DEFAULT_FADE_SECONDS = 0.35;
+const MUSIC_INTENSITY_LAYER_IDS: readonly MusicIntensityLayerId[] = [
+  "drive",
+  "lead",
+];
 
 export const MUSIC_CUES: Readonly<Record<MusicCueId, MusicCue>> = Object.freeze({
   title: { id: "title", src: "/audio/music/title.opus" },
@@ -146,6 +167,19 @@ export const WEATHER_MUSIC_STEMS: Readonly<
   },
 });
 
+export const MUSIC_INTENSITY_STEMS: Readonly<
+  Record<RaceMusicCueId, Readonly<Record<MusicIntensityLayerId, MusicIntensityStem>>>
+> = Object.freeze({
+  "velvet-coast": musicIntensityStemSet("velvet-coast"),
+  "iron-borough": musicIntensityStemSet("iron-borough"),
+  "ember-steppe": musicIntensityStemSet("ember-steppe"),
+  "breakwater-isles": musicIntensityStemSet("breakwater-isles"),
+  "glass-ridge": musicIntensityStemSet("glass-ridge"),
+  "neon-meridian": musicIntensityStemSet("neon-meridian"),
+  "moss-frontier": musicIntensityStemSet("moss-frontier"),
+  "crown-circuit": musicIntensityStemSet("crown-circuit"),
+});
+
 export function titleMusicCue(): MusicCue {
   return MUSIC_CUES.title;
 }
@@ -173,14 +207,27 @@ export function weatherMusicStem(
   }
 }
 
+export function musicIntensityStemsFor(
+  cueId: MusicCueId,
+): readonly MusicIntensityStem[] {
+  if (cueId === "title") return [];
+  return MUSIC_INTENSITY_LAYER_IDS.map((layer) => MUSIC_INTENSITY_STEMS[cueId][layer]);
+}
+
 export function raceMusicIntensity(input: RaceMusicIntensityInput): MusicIntensity {
   const speedScalar = clampUnit(input.speed / Math.max(1, input.topSpeed));
   const nitro = input.nitroActive ? 1 : 0;
   const finalLap = input.finalLap ? 1 : 0;
   const timeTrialTrim = input.nitroActive === undefined ? -0.04 : 0;
+  const driveMix = clamp01((speedScalar - 0.28) / 0.42 + nitro * 0.24 + finalLap * 0.1);
+  const leadMix = clamp01((speedScalar - 0.68) / 0.32 + nitro * 0.36 + finalLap * 0.24);
   return {
     volumeScale: clamp(0.76 + speedScalar * 0.2 + nitro * 0.07 + finalLap * 0.06, 0, 1.12),
     playbackRate: clamp(0.98 + speedScalar * 0.035 + nitro * 0.025 + finalLap * 0.015 + timeTrialTrim, 0.92, 1.08),
+    layerMix: {
+      drive: driveMix,
+      lead: leadMix,
+    },
   };
 }
 
@@ -189,6 +236,12 @@ export class MusicRuntime {
   private fadingOut: Channel<MusicCue> | null = null;
   private activeWeatherStem: Channel<WeatherMusicStem> | null = null;
   private fadingWeatherStem: Channel<WeatherMusicStem> | null = null;
+  private activeIntensityStems: Partial<
+    Record<MusicIntensityLayerId, Channel<MusicIntensityStem>>
+  > = {};
+  private fadingIntensityStems: Partial<
+    Record<MusicIntensityLayerId, Channel<MusicIntensityStem>>
+  > = {};
   private readonly createAudio: (src: string) => MusicAudioElementLike | null;
   private readonly nowSeconds: () => number;
   private readonly baseGain: number;
@@ -215,12 +268,21 @@ export class MusicRuntime {
       this.active !== null ||
       this.fadingOut !== null ||
       this.activeWeatherStem !== null ||
-      this.fadingWeatherStem !== null
+      this.fadingWeatherStem !== null ||
+      hasAnyStem(this.activeIntensityStems) ||
+      hasAnyStem(this.fadingIntensityStems)
     );
   }
 
   currentWeatherStemId(): WeatherMusicStemId | null {
     return this.activeWeatherStem?.cue.id ?? null;
+  }
+
+  currentIntensityStemIds(): readonly string[] {
+    return MUSIC_INTENSITY_LAYER_IDS.flatMap((layer) => {
+      const stem = this.activeIntensityStems[layer];
+      return stem === undefined ? [] : [stem.cue.id];
+    });
   }
 
   play(
@@ -260,7 +322,10 @@ export class MusicRuntime {
     element.playbackRate = intensity.playbackRate;
     this.active = { cue, element, startedAt: now, fromVolume: 0 };
     void Promise.resolve(element.play()).catch(() => {
-      if (this.active?.element === element) this.active = null;
+      if (this.active?.element === element) {
+        this.active = null;
+        this.stopIntensityStems();
+      }
       this.stopChannel({ cue, element, startedAt: now, fromVolume: 0 });
     });
     this.update(audio, intensity);
@@ -292,6 +357,10 @@ export class MusicRuntime {
         this.stopChannel(this.fadingOut);
         this.fadingOut = null;
       }
+    }
+
+    if (this.active !== null) {
+      this.updateIntensityStems(this.active.cue.id, audio, intensity);
     }
   }
 
@@ -385,6 +454,7 @@ export class MusicRuntime {
     this.stopChannel(this.fadingOut);
     this.stopChannel(this.activeWeatherStem);
     this.stopChannel(this.fadingWeatherStem);
+    this.stopIntensityStems();
     this.active = null;
     this.fadingOut = null;
     this.activeWeatherStem = null;
@@ -398,12 +468,100 @@ export class MusicRuntime {
     this.fadingWeatherStem = null;
   }
 
-  private stopChannel<Cue extends MusicCue | WeatherMusicStem>(
+  private stopChannel<Cue extends MusicCue | WeatherMusicStem | MusicIntensityStem>(
     channel: Channel<Cue> | null,
   ): void {
     if (channel === null) return;
     channel.element.pause();
     channel.element.volume = 0;
+  }
+
+  private stopIntensityStems(): void {
+    for (const layer of MUSIC_INTENSITY_LAYER_IDS) {
+      this.stopChannel(this.activeIntensityStems[layer] ?? null);
+      this.stopChannel(this.fadingIntensityStems[layer] ?? null);
+    }
+    this.activeIntensityStems = {};
+    this.fadingIntensityStems = {};
+  }
+
+  private fadeOutIntensityStem(layer: MusicIntensityLayerId, now: number): void {
+    const active = this.activeIntensityStems[layer];
+    if (active === undefined) return;
+    this.stopChannel(this.fadingIntensityStems[layer] ?? null);
+    this.fadingIntensityStems[layer] = {
+      ...active,
+      startedAt: now,
+      fromVolume: active.element.volume,
+    };
+    delete this.activeIntensityStems[layer];
+  }
+
+  private updateIntensityStems(
+    cueId: MusicCueId,
+    audio: AudioSettings | undefined,
+    intensity: MusicIntensity,
+  ): void {
+    const now = this.nowSeconds();
+    const stems = musicIntensityStemsFor(cueId);
+    for (const layer of MUSIC_INTENSITY_LAYER_IDS) {
+      const stem = stems.find((item) => item.layer === layer) ?? null;
+      const targetVolume = this.effectiveIntensityStemGain(audio, stem, intensity);
+      const active = this.activeIntensityStems[layer];
+
+      if (stem === null || targetVolume === 0) {
+        this.fadeOutIntensityStem(layer, now);
+      } else if (active === undefined || active.cue.id !== stem.id) {
+        const element = this.createAudio(stem.src);
+        if (element !== null) {
+          this.fadeOutIntensityStem(layer, now);
+          element.src = stem.src;
+          element.loop = true;
+          element.preload = "auto";
+          element.currentTime = this.active?.element.currentTime ?? 0;
+          element.volume = 0;
+          element.playbackRate = intensity.playbackRate;
+          this.activeIntensityStems[layer] = {
+            cue: stem,
+            element,
+            startedAt: now,
+            fromVolume: 0,
+          };
+          void Promise.resolve(element.play()).catch(() => {
+            if (this.activeIntensityStems[layer]?.element === element) {
+              delete this.activeIntensityStems[layer];
+            }
+            this.stopChannel({ cue: stem, element, startedAt: now, fromVolume: 0 });
+          });
+        }
+      }
+
+      const nextActive = this.activeIntensityStems[layer];
+      if (nextActive !== undefined) {
+        const fade = fadeProgress(now, nextActive.startedAt, this.fadeSeconds);
+        this.syncIntensityStemPlayback(nextActive);
+        nextActive.element.volume = targetVolume * fade;
+        nextActive.element.playbackRate = intensity.playbackRate;
+      }
+
+      const fading = this.fadingIntensityStems[layer];
+      if (fading !== undefined) {
+        const fade = fadeProgress(now, fading.startedAt, this.fadeSeconds);
+        fading.element.volume = fading.fromVolume * (1 - fade);
+        if (fade >= 1) {
+          this.stopChannel(fading);
+          delete this.fadingIntensityStems[layer];
+        }
+      }
+    }
+  }
+
+  private syncIntensityStemPlayback(channel: Channel<MusicIntensityStem>): void {
+    const baseTime = this.active?.element.currentTime;
+    if (baseTime === undefined) return;
+    if (Math.abs(channel.element.currentTime - baseTime) > 0.08) {
+      channel.element.currentTime = baseTime;
+    }
   }
 
   private effectiveGain(
@@ -426,6 +584,50 @@ export class MusicRuntime {
       gains.master * gains.music * this.weatherStemGain * stem.volumeScale,
     );
   }
+
+  private effectiveIntensityStemGain(
+    audio: AudioSettings | undefined,
+    stem: MusicIntensityStem | null,
+    intensity: MusicIntensity,
+  ): number {
+    if (stem === null) return 0;
+    const gains = resolveMixerGains(audio ?? SILENT_AUDIO);
+    if (gains === null || isMixerSilent(gains) || gains.music === 0) return 0;
+    return clamp01(
+      gains.master *
+        gains.music *
+        this.baseGain *
+        stem.volumeScale *
+        intensity.layerMix[stem.layer],
+    );
+  }
+}
+
+function musicIntensityStemSet(
+  cueId: RaceMusicCueId,
+): Readonly<Record<MusicIntensityLayerId, MusicIntensityStem>> {
+  return Object.freeze({
+    drive: {
+      id: `${cueId}:drive`,
+      cueId,
+      layer: "drive",
+      src: `/audio/music/stems/${cueId}-drive.opus`,
+      volumeScale: 0.58,
+    },
+    lead: {
+      id: `${cueId}:lead`,
+      cueId,
+      layer: "lead",
+      src: `/audio/music/stems/${cueId}-lead.opus`,
+      volumeScale: 0.5,
+    },
+  });
+}
+
+function hasAnyStem(
+  stems: Partial<Record<MusicIntensityLayerId, Channel<MusicIntensityStem>>>,
+): boolean {
+  return MUSIC_INTENSITY_LAYER_IDS.some((layer) => stems[layer] !== undefined);
 }
 
 function regionMusicCueId(value: string): MusicCueId {
