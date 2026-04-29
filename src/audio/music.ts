@@ -63,8 +63,8 @@ export interface MusicRuntimeOptions {
   readonly fadeSeconds?: number;
 }
 
-interface Channel {
-  readonly cue: MusicCue | WeatherMusicStem;
+interface Channel<Cue extends MusicCue | WeatherMusicStem> {
+  readonly cue: Cue;
   readonly element: MusicAudioElementLike;
   readonly startedAt: number;
   readonly fromVolume: number;
@@ -185,10 +185,10 @@ export function raceMusicIntensity(input: RaceMusicIntensityInput): MusicIntensi
 }
 
 export class MusicRuntime {
-  private active: Channel | null = null;
-  private fadingOut: Channel | null = null;
-  private activeWeatherStem: Channel | null = null;
-  private fadingWeatherStem: Channel | null = null;
+  private active: Channel<MusicCue> | null = null;
+  private fadingOut: Channel<MusicCue> | null = null;
+  private activeWeatherStem: Channel<WeatherMusicStem> | null = null;
+  private fadingWeatherStem: Channel<WeatherMusicStem> | null = null;
   private readonly createAudio: (src: string) => MusicAudioElementLike | null;
   private readonly nowSeconds: () => number;
   private readonly baseGain: number;
@@ -207,17 +207,20 @@ export class MusicRuntime {
   }
 
   currentCueId(): MusicCueId | null {
-    const id = this.active?.cue.id;
-    return isMusicCueId(id) ? id : null;
+    return this.active?.cue.id ?? null;
   }
 
   isPlaying(): boolean {
-    return this.active !== null;
+    return (
+      this.active !== null ||
+      this.fadingOut !== null ||
+      this.activeWeatherStem !== null ||
+      this.fadingWeatherStem !== null
+    );
   }
 
   currentWeatherStemId(): WeatherMusicStemId | null {
-    const id = this.activeWeatherStem?.cue.id;
-    return isWeatherMusicStemId(id) ? id : null;
+    return this.activeWeatherStem?.cue.id ?? null;
   }
 
   play(
@@ -395,7 +398,9 @@ export class MusicRuntime {
     this.fadingWeatherStem = null;
   }
 
-  private stopChannel(channel: Channel | null): void {
+  private stopChannel<Cue extends MusicCue | WeatherMusicStem>(
+    channel: Channel<Cue> | null,
+  ): void {
     if (channel === null) return;
     channel.element.pause();
     channel.element.volume = 0;
@@ -421,29 +426,6 @@ export class MusicRuntime {
       gains.master * gains.music * this.weatherStemGain * stem.volumeScale,
     );
   }
-}
-
-function isWeatherMusicStemId(value: string | undefined): value is WeatherMusicStemId {
-  return (
-    value === "rain" ||
-    value === "heavy_rain" ||
-    value === "fog" ||
-    value === "snow"
-  );
-}
-
-function isMusicCueId(value: string | undefined): value is MusicCueId {
-  return (
-    value === "title" ||
-    value === "velvet-coast" ||
-    value === "iron-borough" ||
-    value === "ember-steppe" ||
-    value === "breakwater-isles" ||
-    value === "glass-ridge" ||
-    value === "neon-meridian" ||
-    value === "moss-frontier" ||
-    value === "crown-circuit"
-  );
 }
 
 function regionMusicCueId(value: string): MusicCueId {

@@ -201,6 +201,7 @@ describe("MusicRuntime", () => {
     });
 
     expect(runtime.playWeatherStem(WEATHER_MUSIC_STEMS.rain, AUDIO)).toBe(true);
+    expect(runtime.isPlaying()).toBe(true);
     expect(runtime.currentWeatherStemId()).toBe("rain");
     expect(elements).toHaveLength(1);
     expect(elements[0]?.src).toBe("/audio/weather/rain-loop.opus");

@@ -126,7 +126,7 @@
         "docs/gdd/14-weather-and-environmental-systems.md",
         "docs/gdd/21-technical-design-for-web-implementation.md"
       ],
-      "requirement": "Race music supports optional weather stem loops for rainy, heavy rainy, foggy, and snowy races through the persisted music mixer bus, with smooth fades as weather state changes.",
+      "requirement": "Race music supports optional weather stem loops for rainy, heavy rain, foggy, and snowy races through the persisted music mixer bus, with smooth fades as weather state changes.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "src/audio/music.ts",
