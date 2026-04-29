@@ -187,6 +187,7 @@ function clonePlayerPure(
     car: { ...player.car },
     nitro: { ...player.nitro },
     transmission: { ...player.transmission },
+    audioGates: { ...player.audioGates },
     assistMemory: { ...player.assistMemory },
     dnfTimers: { ...player.dnfTimers },
     lapTimes: player.lapTimes.slice(),

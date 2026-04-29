@@ -253,6 +253,16 @@ function playRaceSfxEvents(
       runtime.playLapComplete({ audio });
     } else if (event.kind === "raceFinish") {
       runtime.playResultsStinger({ audio });
+    } else if (event.kind === "brakeScrub") {
+      runtime.playBrakeScrub({ speedFactor: event.speedFactor, audio });
+    } else if (event.kind === "tireSqueal") {
+      runtime.playTireSqueal({ speedFactor: event.speedFactor, audio });
+    } else if (event.kind === "surfaceHush") {
+      runtime.playSurfaceHush({
+        surface: event.surface,
+        speedFactor: event.speedFactor,
+        audio,
+      });
     }
   }
 }

@@ -229,6 +229,52 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[1]?.stop).toHaveBeenCalledWith(0.34);
   });
 
+  it("plays surface cues with speed-scaled ramps", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(runtime.playBrakeScrub({ speedFactor: 0.5, audio: AUDIO })).toBe(
+      true,
+    );
+    expect(runtime.playTireSqueal({ speedFactor: 0.5, audio: AUDIO })).toBe(
+      true,
+    );
+    expect(
+      runtime.playSurfaceHush({
+        surface: "snow",
+        speedFactor: 0.5,
+        audio: AUDIO,
+      }),
+    ).toBe(true);
+
+    expect(context.oscillators[0]?.type).toBe("sawtooth");
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      215,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(165, 0.14);
+    expect(context.oscillators[1]?.type).toBe("triangle");
+    expect(context.oscillators[1]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      1070,
+      0,
+    );
+    expect(
+      context.oscillators[1]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(1240, 0.16);
+    expect(context.oscillators[2]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      300,
+      0,
+    );
+    expect(
+      context.oscillators[2]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(245, 0.24);
+  });
+
   it("disconnects finished one-shots", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralSfxRuntime({ context: () => context });
