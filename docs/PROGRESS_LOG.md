@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§6](gdd/06-game-modes.md) Practice,
 [§20](gdd/20-hud-and-ui-ux.md) title menu and race controls,
 [§21](gdd/21-technical-design-for-web-implementation.md) runtime reuse.
-**Branch / PR:** `feat/practice-mode`, PR pending.
+**Branch / PR:** `feat/practice-mode`, PR #94.
 **Status:** Implemented.
 
 ### Done
