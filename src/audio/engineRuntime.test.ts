@@ -78,6 +78,23 @@ describe("ProceduralEngineRuntime", () => {
     expect(context.gains[0]?.gain.value).toBeCloseTo(0.5 * 0.5 * 0.2);
   });
 
+  it("allows smoothing to be disabled for immediate updates", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralEngineRuntime({
+      context: () => context,
+      smoothingSeconds: 0,
+    });
+
+    runtime.start({ speed: 10, topSpeed: 60, audio: AUDIO });
+    runtime.update({ speed: 45, topSpeed: 60, audio: AUDIO });
+
+    expect(context.oscillators[0]?.frequency.setTargetAtTime).not.toHaveBeenCalled();
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      enginePitchHz({ speed: 45, topSpeed: 60 }),
+      0,
+    );
+  });
+
   it("stops and disconnects the graph", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralEngineRuntime({ context: () => context });

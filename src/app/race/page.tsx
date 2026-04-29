@@ -834,12 +834,16 @@ function RaceCanvas({
       audio: persistedSettings.audio,
     };
     let engineStartPending = false;
+    let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
     const tryStartEngineAudio = (): void => {
-      if (engineStartPending || engineAudio.isRunning()) return;
+      if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
+        return;
+      }
       engineStartPending = true;
       void resumeAudioContext()
         .then(() => {
+          if (engineAudioTeardown) return;
           engineAudio.start(latestEngineInput);
         })
         .finally(() => {
@@ -849,6 +853,23 @@ function RaceCanvas({
     canvas.addEventListener("pointerdown", tryStartEngineAudio);
     window.addEventListener("keydown", tryStartEngineAudio);
     const unbindAudioVisibility = bindAudioVisibilitySuspension();
+    let engineAudioBindingsActive = true;
+    const unbindEngineAudio = (): void => {
+      if (!engineAudioBindingsActive) return;
+      engineAudioBindingsActive = false;
+      canvas.removeEventListener("pointerdown", tryStartEngineAudio);
+      window.removeEventListener("keydown", tryStartEngineAudio);
+      unbindAudioVisibility();
+    };
+    const stopRaceRuntime = (): void => {
+      engineAudioTeardown = true;
+      unbindEngineAudio();
+      handleRef.current?.stop();
+      engineAudio.stop();
+      handleRef.current = null;
+      sessionRef.current = null;
+      inputManager.dispose();
+    };
 
     // Wire the §20 pause-menu imperative actions. Each callback closes
     // over the local `config`, the persisted save, the input manager,
@@ -959,22 +980,14 @@ function RaceCanvas({
       // wiring cannot also fire on the next frame (the loop tear-down
       // below stops the rAF, but the latch is the explicit contract).
       routedRef.current = true;
-      // Tear down the loop / input before the route hop so the rAF
-      // handle and the keydown listener cannot outlive the page.
-      handleRef.current?.stop();
-      engineAudio.stop();
-      handleRef.current = null;
-      sessionRef.current = null;
-      inputManager.dispose();
+      // Tear down the loop, input, and audio bindings before the route
+      // hop so no event handler can restart engine audio in transition.
+      stopRaceRuntime();
       router.push("/race/results");
     };
 
     exitFnRef.current = (): void => {
-      handleRef.current?.stop();
-      engineAudio.stop();
-      handleRef.current = null;
-      sessionRef.current = null;
-      inputManager.dispose();
+      stopRaceRuntime();
       router.push("/");
     };
 
@@ -1245,14 +1258,9 @@ function RaceCanvas({
                           }),
                 });
             saveRaceResult(committed);
-            // Tear down the loop / input before the route hop so the
-            // rAF handle and the keydown listener cannot outlive the
-            // page. Mirrors the retire branch tear-down ordering.
-            handleRef.current?.stop();
-            engineAudio.stop();
-            handleRef.current = null;
-            sessionRef.current = null;
-            inputManager.dispose();
+            // Tear down the loop, input, and audio bindings before the
+            // route hop. Mirrors the retire branch tear-down ordering.
+            stopRaceRuntime();
             router.push("/race/results");
           }
         }
@@ -1272,14 +1280,7 @@ function RaceCanvas({
     return () => {
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
-      canvas.removeEventListener("pointerdown", tryStartEngineAudio);
-      window.removeEventListener("keydown", tryStartEngineAudio);
-      unbindAudioVisibility();
-      handleRef.current?.stop();
-      engineAudio.stop();
-      handleRef.current = null;
-      sessionRef.current = null;
-      inputManager.dispose();
+      stopRaceRuntime();
     };
   }, [
     track,
