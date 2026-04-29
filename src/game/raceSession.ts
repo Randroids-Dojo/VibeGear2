@@ -243,6 +243,10 @@ export interface RaceSessionRaceFinishAudioEvent {
   readonly carId: string;
 }
 
+type RaceSessionLapMilestoneAudioEvent =
+  | RaceSessionLapCompleteAudioEvent
+  | RaceSessionRaceFinishAudioEvent;
+
 export type RaceSessionAudioEvent =
   | RaceSessionImpactAudioEvent
   | RaceSessionNitroAudioEvent
@@ -1535,7 +1539,7 @@ export function stepRaceSession(
   let bestLapTimeMs = state.race.bestLapTimeMs;
   let nextPhase: RaceState["phase"] = state.race.phase;
   let nextPlayerLapTimes: ReadonlyArray<number> = state.player.lapTimes;
-  const playerLapEvents: RaceSessionAudioEvent[] = [];
+  const playerLapEvents: RaceSessionLapMilestoneAudioEvent[] = [];
   // Apply the §13 wreck flip before the lap-completion check so a car
   // that wrecked this tick cannot also pick up a finish (would-be lap
   // crossings on the wrecked tick are ignored, mirroring the §7 DNF
@@ -1724,6 +1728,19 @@ export function stepRaceSession(
     SEGMENT_LENGTH,
     nextTick,
   );
+  const hasPlayerNonImpactAudioEvents =
+    playerNitroEvents.length > 0 ||
+    playerShiftEvents.length > 0 ||
+    playerLapEvents.length > 0;
+  const nextAudioEvents: ReadonlyArray<RaceSessionAudioEvent> =
+    hasPlayerNonImpactAudioEvents
+      ? [
+          ...playerNitroEvents,
+          ...playerShiftEvents,
+          ...playerLapEvents,
+          ...playerImpactEvents,
+        ]
+      : playerImpactEvents;
 
   return {
     race: {
@@ -1769,12 +1786,7 @@ export function stepRaceSession(
         : Array.from(nextBrokenHazards),
     weather: nextWeather,
     weatherRngState: nextWeatherRngState,
-    audioEvents: [
-      ...playerNitroEvents,
-      ...playerShiftEvents,
-      ...playerLapEvents,
-      ...playerImpactEvents,
-    ],
+    audioEvents: nextAudioEvents,
   };
 }
 
