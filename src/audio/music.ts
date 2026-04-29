@@ -322,7 +322,10 @@ export class MusicRuntime {
     element.playbackRate = intensity.playbackRate;
     this.active = { cue, element, startedAt: now, fromVolume: 0 };
     void Promise.resolve(element.play()).catch(() => {
-      if (this.active?.element === element) this.active = null;
+      if (this.active?.element === element) {
+        this.active = null;
+        this.stopIntensityStems();
+      }
       this.stopChannel({ cue, element, startedAt: now, fromVolume: 0 });
     });
     this.update(audio, intensity);
@@ -515,7 +518,7 @@ export class MusicRuntime {
           element.src = stem.src;
           element.loop = true;
           element.preload = "auto";
-          element.currentTime = 0;
+          element.currentTime = this.active?.element.currentTime ?? 0;
           element.volume = 0;
           element.playbackRate = intensity.playbackRate;
           this.activeIntensityStems[layer] = {
@@ -536,6 +539,7 @@ export class MusicRuntime {
       const nextActive = this.activeIntensityStems[layer];
       if (nextActive !== undefined) {
         const fade = fadeProgress(now, nextActive.startedAt, this.fadeSeconds);
+        this.syncIntensityStemPlayback(nextActive);
         nextActive.element.volume = targetVolume * fade;
         nextActive.element.playbackRate = intensity.playbackRate;
       }
@@ -549,6 +553,14 @@ export class MusicRuntime {
           delete this.fadingIntensityStems[layer];
         }
       }
+    }
+  }
+
+  private syncIntensityStemPlayback(channel: Channel<MusicIntensityStem>): void {
+    const baseTime = this.active?.element.currentTime;
+    if (baseTime === undefined) return;
+    if (Math.abs(channel.element.currentTime - baseTime) > 0.08) {
+      channel.element.currentTime = baseTime;
     }
   }
 

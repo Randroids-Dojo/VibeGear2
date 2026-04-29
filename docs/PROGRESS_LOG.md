@@ -23,16 +23,17 @@ runtime.
   and stop the regional drive and lead stems alongside the base race
   music cue.
 - `src/audio/music.test.ts`: covers intensity stem mapping, mix
-  pressure, playback volumes, playback rate sync, and fade-out.
+  pressure, playback volumes, playback rate sync, phase alignment,
+  base-cue failure cleanup, and fade-out.
 - `docs/GDD_COVERAGE.json`: added
   GDD-18-MUSIC-INTENSITY-STEM-RUNTIME.
 
 ### Verified
-- `npx vitest run src/audio/music.test.ts` green, 16 passed.
+- `npx vitest run src/audio/music.test.ts` green, 18 passed.
 - `npm run typecheck` green.
 - `npx vitest run src/audio/music.test.ts scripts/__tests__/content-lint.test.ts`
-  green, 70 passed.
-- `npm run verify` green, 2514 passed.
+  green, 72 passed.
+- `npm run verify` green, 2516 passed.
 - `npm run test:e2e` green, 79 passed.
 
 ### Decisions and assumptions
@@ -41,6 +42,9 @@ runtime.
   layer requirement without adding a fourth live race music bus.
 - Intensity stems follow the base race cue playback rate so nitro and
   final-lap pressure stay phase-compatible with the main loop.
+- New stems start at the active base cue playback time and resync if
+  drift exceeds a small threshold. If the base cue fails to play, all
+  intensity stems stop with it so no orphaned loop remains.
 
 ### Coverage ledger
 - GDD-18-MUSIC-INTENSITY-STEM-RUNTIME covers runtime mixing for the

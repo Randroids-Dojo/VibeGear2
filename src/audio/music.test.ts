@@ -322,6 +322,65 @@ describe("MusicRuntime", () => {
     expect(elements[2]?.playbackRate).toBe(1.03);
   });
 
+  it("aligns new intensity stems to the active base cue time", () => {
+    let now = 0;
+    const elements: FakeMusicElement[] = [];
+    const runtime = new MusicRuntime({
+      nowSeconds: () => now,
+      fadeSeconds: 1,
+      createAudio: (src) => {
+        const element = new FakeMusicElement();
+        element.src = src;
+        elements.push(element);
+        return element;
+      },
+    });
+    const quiet = {
+      volumeScale: 1,
+      playbackRate: 1,
+      layerMix: { drive: 0, lead: 0 },
+    };
+    const active = {
+      volumeScale: 1,
+      playbackRate: 1,
+      layerMix: { drive: 1, lead: 0 },
+    };
+
+    runtime.play(MUSIC_CUES["velvet-coast"], AUDIO, quiet);
+    elements[0]!.currentTime = 12.5;
+    now = 1;
+    runtime.update(AUDIO, active);
+
+    expect(elements[1]?.currentTime).toBe(12.5);
+  });
+
+  it("stops intensity stems when the base cue play fails", async () => {
+    const elements: FakeMusicElement[] = [];
+    const runtime = new MusicRuntime({
+      createAudio: (src) => {
+        const element =
+          elements.length === 0
+            ? new FakeMusicElement(() => Promise.reject(new Error("play failed")))
+            : new FakeMusicElement();
+        element.src = src;
+        elements.push(element);
+        return element;
+      },
+    });
+    const intensity = {
+      volumeScale: 1,
+      playbackRate: 1,
+      layerMix: { drive: 1, lead: 1 },
+    };
+
+    expect(runtime.play(MUSIC_CUES["velvet-coast"], AUDIO, intensity)).toBe(true);
+    await vi.waitFor(() => expect(runtime.currentCueId()).toBeNull());
+
+    expect(runtime.currentIntensityStemIds()).toEqual([]);
+    expect(elements[1]?.pause).toHaveBeenCalledTimes(1);
+    expect(elements[2]?.pause).toHaveBeenCalledTimes(1);
+  });
+
   it("fades intensity stems out when the mix clears", () => {
     let now = 0;
     const elements: FakeMusicElement[] = [];
@@ -362,12 +421,14 @@ describe("MusicRuntime", () => {
 });
 
 class FakeMusicElement implements MusicAudioElementLike {
+  constructor(private readonly playImpl = () => Promise.resolve()) {}
+
   src = "";
   loop = false;
   preload = "";
   volume = 0;
   playbackRate = 1;
   currentTime = 0;
-  readonly play = vi.fn(() => Promise.resolve());
+  readonly play = vi.fn(() => this.playImpl());
   readonly pause = vi.fn(() => undefined);
 }
