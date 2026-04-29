@@ -102,6 +102,24 @@
       "followupRefs": ["VibeGear2-implement-placeholder-audio-94594c41"]
     },
     {
+      "id": "GDD-18-MUSIC-RUNTIME",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "Menu and race routes can play the shipped music bank through the persisted music mixer bus, with regional race cue selection and speed, nitro, and final-lap intensity scaling.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/music.ts",
+        "src/components/audio/MenuMusicDirector.tsx",
+        "src/app/layout.tsx",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": ["src/audio/music.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

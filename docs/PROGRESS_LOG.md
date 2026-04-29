@@ -6,6 +6,65 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Sound and music runtime
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) music direction, race music,
+dynamic audio layers, and SFX guidance,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio
+pipeline,
+[§24](gdd/24-content-plan.md) audio content bank.
+**Branch / PR:** `feat/sound-music-systems`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/audio/music.ts`: added a music cue resolver and runtime for the
+  generated music bank, with menu cue playback, regional race cue
+  selection, music-bus gain handling, crossfades, and speed / nitro /
+  final-lap intensity scaling.
+- `src/audio/music.test.ts`: covered cue selection, race intensity
+  scaling, silence handling, fade-up, crossfade, and playback-rate
+  updates.
+- `src/components/audio/MenuMusicDirector.tsx`: added a root-level
+  menu music director that starts title music after the first user
+  gesture on menu routes and stops when leaving those routes.
+- `src/app/layout.tsx`: mounted the menu music director globally.
+- `src/app/race/page.tsx`: starts regional race music from the same
+  gesture path as engine audio, updates intensity from live race state,
+  and stops music during race teardown.
+- `docs/GDD_COVERAGE.json`: added GDD-18-MUSIC-RUNTIME.
+
+### Verified
+- `npx vitest run src/audio/music.test.ts src/audio/mixer.test.ts src/audio/sfx.test.ts src/audio/engineRuntime.test.ts`
+  green, 32 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2497 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- Browser autoplay policy still gates playback behind a pointer or key
+  gesture. The runtime returns cleanly when playback is blocked or audio
+  is unavailable.
+- This slice uses the shipped single-loop placeholder files. The runtime
+  exposes intensity through gain and playback-rate scaling until final
+  2 to 3 stem assets exist.
+
+### Coverage ledger
+- GDD-18-MUSIC-RUNTIME covers menu music playback, regional race music
+  selection, persisted music bus levels, smooth cue fades, and race
+  intensity scaling from speed, nitro, and final lap.
+- Uncovered adjacent requirements: true multi-stem music layering,
+  weather stem blending, final-lap stingers, lap-complete SFX, results
+  stingers, surface-specific spray or snow hush SFX, brake scrub, tire
+  squeal, gear shift, and final production music replacement remain
+  under the §18 sound parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Placeholder audio bank
 
 **GDD sections touched:**
