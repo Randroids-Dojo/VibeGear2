@@ -213,6 +213,6 @@ const descStyle: CSSProperties = {
 function statusStyle(kind: PaneStatus["kind"]): CSSProperties {
   return {
     margin: 0,
-    color: kind === "error" ? "#ff9c9c" : "var(--accent, #8cf)",
+    color: kind === "error" ? "var(--danger, #f88)" : "var(--accent, #8cf)",
   };
 }
