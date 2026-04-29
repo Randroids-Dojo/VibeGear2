@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§14](gdd/14-weather-and-environmental-systems.md) weather visual effects,
 [§16](gdd/16-rendering-and-visual-design.md) pseudo-3D rendering,
 [§21](gdd/21-technical-design-for-web-implementation.md) renderer layer.
-**Branch / PR:** `feat/weather-depth-particles`, PR pending.
+**Branch / PR:** `feat/weather-depth-particles`, PR #79.
 **Status:** Implemented.
 
 ### Done
