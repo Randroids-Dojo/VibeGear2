@@ -69,14 +69,14 @@ const HUD_ICONS = [
 const EFFECTS = ["flash", "dust", "sparks", "rain", "fog", "snow"] as const;
 
 const MENU_BACKGROUNDS = [
-  { id: "title", region: "crown-circuit", label: "TITLE", accent: "#ffd85a" },
-  { id: "world", region: "velvet-coast", label: "WORLD", accent: "#9cc9ff" },
-  { id: "garage", region: "iron-borough", label: "GARAGE", accent: "#f5cf69" },
-  { id: "race-prep", region: "neon-meridian", label: "PREP", accent: "#ff5bd6" },
-  { id: "results", region: "glass-ridge", label: "RESULTS", accent: "#d8f4ff" },
-  { id: "daily", region: "ember-steppe", label: "DAILY", accent: "#ffba6b" },
-  { id: "options", region: "moss-frontier", label: "OPTIONS", accent: "#c2e879" },
-  { id: "loading", region: "breakwater-isles", label: "LOADING", accent: "#a7e3ff" },
+  { id: "title", region: "crown-circuit", label: "TITLE" },
+  { id: "world", region: "velvet-coast", label: "WORLD" },
+  { id: "garage", region: "iron-borough", label: "GARAGE" },
+  { id: "race-prep", region: "neon-meridian", label: "RACE PREP" },
+  { id: "results", region: "glass-ridge", label: "RESULTS" },
+  { id: "daily", region: "ember-steppe", label: "DAILY" },
+  { id: "options", region: "moss-frontier", label: "OPTIONS" },
+  { id: "loading", region: "breakwater-isles", label: "LOADING" },
 ] as const;
 
 const ROADSIDE_PROPS: readonly RoadsideProp[] = [
@@ -371,11 +371,11 @@ function menuBackgroundSvg(menu: (typeof MENU_BACKGROUNDS)[number]): string {
       `<path d="M0 470 C260 420 500 486 730 430 C1020 360 1230 460 1460 410 C1670 365 1800 405 1920 370 L1920 650 L0 650 Z" fill="${region.near}" opacity="0.78"/>`,
       '<rect x="0" y="640" width="1920" height="440" fill="#0b1019" opacity="0.45"/>',
       `<path d="M760 1080 L910 650 L1010 650 L1160 1080 Z" fill="#535b60" opacity="0.8"/>`,
-      `<path d="M928 1080 L955 650 L965 650 L992 1080 Z" fill="${menu.accent}" opacity="0.75"/>`,
-      `<rect x="116" y="116" width="480" height="18" fill="${menu.accent}" opacity="0.7"/>`,
-      `<rect x="116" y="156" width="320" height="10" fill="${menu.accent}" opacity="0.32"/>`,
-      `<rect x="1324" y="812" width="360" height="18" fill="${menu.accent}" opacity="0.45"/>`,
-      `<text x="960" y="1000" text-anchor="middle" font-family="monospace" font-size="44" font-weight="700" fill="${menu.accent}" opacity="0.82">${menu.label} PLACEHOLDER</text>`,
+      `<path d="M928 1080 L955 650 L965 650 L992 1080 Z" fill="${region.accent}" opacity="0.75"/>`,
+      `<rect x="116" y="116" width="480" height="18" fill="${region.accent}" opacity="0.7"/>`,
+      `<rect x="116" y="156" width="320" height="10" fill="${region.accent}" opacity="0.32"/>`,
+      `<rect x="1324" y="812" width="360" height="18" fill="${region.accent}" opacity="0.45"/>`,
+      `<text x="960" y="1000" text-anchor="middle" font-family="monospace" font-size="44" font-weight="700" fill="${region.accent}" opacity="0.82">${menu.label} PLACEHOLDER</text>`,
     ].join("\n"),
   );
 }
