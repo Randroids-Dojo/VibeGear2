@@ -37,6 +37,11 @@ export interface LoadModOptions {
 }
 
 const EXECUTABLE_EXT_RE = /\.(?:js|mjs|cjs|ts|tsx|jsx|wasm|html?)$/iu;
+const ModIdSchema = ModManifestSchema.shape.id;
+
+export function isSafeModId(modId: string): boolean {
+  return ModIdSchema.safeParse(modId).success;
+}
 
 export function isSafeModPath(path: string): boolean {
   if (!path || path.startsWith("/") || path.includes("\\")) return false;
@@ -46,6 +51,9 @@ export function isSafeModPath(path: string): boolean {
 }
 
 export function modFileUrl(basePath: string, modId: string, path: string): string {
+  if (!isSafeModId(modId)) {
+    throw new Error(`modFileUrl: unsafe mod id "${modId}"`);
+  }
   if (!isSafeModPath(path)) {
     throw new Error(`modFileUrl: unsafe mod path "${path}"`);
   }

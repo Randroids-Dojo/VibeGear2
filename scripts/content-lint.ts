@@ -48,7 +48,15 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 import {
   AIDriverSchema,
   CarSchema,
@@ -428,7 +436,13 @@ function lintReferencedModFiles(
 ): void {
   for (const ref of refs ?? []) {
     const abs = resolve(modDir, ref);
-    if (!abs.startsWith(`${modDir}/`)) {
+    const relFromMod = relative(modDir, abs);
+    const firstRelSegment = relFromMod.split(/[\\/]/, 1)[0];
+    if (
+      relFromMod === ".." ||
+      firstRelSegment === ".." ||
+      isAbsolute(relFromMod)
+    ) {
       hits.push({
         path: relative(input.repoRoot, manifestAbs),
         rule: "mod-manifest",
@@ -477,7 +491,7 @@ export function lintPublicModManifests(input: LintInput): LintHit[] {
 
   const hits: LintHit[] = [];
   for (const manifestAbs of walkFiles(modsDir, (p) =>
-    p.endsWith(`/${MOD_MANIFEST_FILENAME}`),
+    basename(p) === MOD_MANIFEST_FILENAME,
   )) {
     const modDir = dirname(manifestAbs);
     const raw = parseJson(manifestAbs);

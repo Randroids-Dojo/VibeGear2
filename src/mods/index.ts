@@ -1,6 +1,7 @@
 export {
   MOD_MANIFEST_FILE,
   MODS_BASE_PATH,
+  isSafeModId,
   isSafeModPath,
   loadModContent,
   loadModManifest,

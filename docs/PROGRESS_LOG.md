@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§21](gdd/21-technical-design-for-web-implementation.md) mod layer,
 [§22](gdd/22-data-schemas.md) mod manifest schema,
 [§26](gdd/26-open-source-project-guidance.md) data-only mod rules.
-**Branch / PR:** `feat/mod-loader`, PR #98.
+**Branch / PR:** `feat/mod-loader`, PR #98; `fix/mod-loader-review`, PR #99.
 **Status:** Implemented.
 
 ### Done
@@ -34,7 +34,7 @@ Correct them by adding a new entry that references the old one.
 - `npx vitest run src/mods/__tests__/manifest.test.ts src/data/schemas.test.ts`
   green, 60 passed.
 - `npm run typecheck` green.
-- `npm run verify` green, 2580 passed.
+- `npm run verify` green, 2583 passed.
 
 ### Decisions and assumptions
 - The first loader is a pure data loader. It validates mod packs but does not

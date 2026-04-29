@@ -18,7 +18,7 @@
 
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -54,8 +54,7 @@ afterEach(() => {
 
 function writeFile(relPath: string, contents: string): void {
   const abs = join(repoRoot, relPath);
-  const dir = abs.substring(0, abs.lastIndexOf("/"));
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dirname(abs), { recursive: true });
   writeFileSync(abs, contents, "utf8");
 }
 
@@ -439,6 +438,19 @@ describe("lintPublicModManifests", () => {
   it("accepts a valid data-only public mod", () => {
     writeFile("public/mods/community-pack/manifest.json", JSON.stringify(MOD_MANIFEST));
     writeFile("public/mods/community-pack/tracks/harbor-day.json", JSON.stringify(MOD_TRACK));
+
+    expect(lintPublicModManifests({ repoRoot })).toEqual([]);
+  });
+
+  it("accepts safe in-folder paths whose segment starts with two dots", () => {
+    writeFile(
+      "public/mods/community-pack/manifest.json",
+      JSON.stringify({
+        ...MOD_MANIFEST,
+        data: { tracks: ["..foo/harbor-day.json"] },
+      }),
+    );
+    writeFile("public/mods/community-pack/..foo/harbor-day.json", JSON.stringify(MOD_TRACK));
 
     expect(lintPublicModManifests({ repoRoot })).toEqual([]);
   });
