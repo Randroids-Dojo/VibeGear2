@@ -879,6 +879,27 @@
       ]
     },
     {
+      "id": "GDD-26-DATA-MOD-LOADER",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Official builds support data-only mods under /mods/<mod-id>/ through a strict manifest schema, provenance fields, safe relative paths, no executable plugin references, and schema validation for referenced track, car, upgrade, AI driver, and championship JSON.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/mods/manifest.ts",
+        "scripts/content-lint.ts",
+        "docs/MODDING.md"
+      ],
+      "testRefs": [
+        "src/mods/__tests__/manifest.test.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-26-DEV-TRACK-EDITOR",
       "gddSections": [
         "docs/gdd/09-track-design.md",

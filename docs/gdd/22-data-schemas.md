@@ -171,6 +171,41 @@
 entries are valid registry metadata but their light and audio transition
 effects are owned by the tunnel segment slice.
 
+## Mod manifest JSON schema
+
+Data mods live under `/mods/<mod-id>/` and load through a manifest file:
+
+```
+{
+  "id": "community-pack",
+  "name": "Community Pack",
+  "version": 1,
+  "author": "A. Contributor",
+  "license": "CC-BY-SA-4.0",
+  "originality": "Original data authored from scratch for this project.",
+  "description": "Optional player-facing summary.",
+  "data": {
+    "tracks": ["tracks/harbor-day.json"],
+    "cars": ["cars/local-starter.json"],
+    "upgrades": ["upgrades/local-upgrades.json"],
+    "aiDrivers": ["ai/local-rivals.json"],
+    "championships": ["championships/local-cup.json"]
+  },
+  "assets": {
+    "art": ["art/roadside.local.manifest.json"],
+    "audio": ["audio/weather.local.manifest.json"]
+  }
+}
+```
+
+`id` must match the folder name in `/mods/<mod-id>/`. Mod manifests are
+strict data: no executable plugin files, no URL schemes, no absolute paths,
+and no `..` path escapes. The loader accepts the approved project data
+licenses (`CC-BY-SA-4.0`, `CC-BY-4.0`, `CC0-1.0`, and `public-domain`) and
+requires an originality statement for legal review. The `data` object must
+reference at least one JSON file, and every referenced file validates against
+the matching schema in this section.
+
 ## Save-game JSON schema
 
 Current schema major: **v3**. v1 saves migrate forward additively via

@@ -32,6 +32,9 @@
  *    to data JSON only because the README, the page title, and source
  *    comments legitimately describe the project as a spiritual successor
  *    to Top Gear 2 per `docs/gdd/01-title-and-high-concept.md`.
+ * 5. `mod-manifest`: Any public data mod under `public/mods/<mod-id>/`
+ *    must ship a valid manifest, match its folder id, and reference
+ *    schema-valid data files without executable plugin paths.
  *
  * Exit code:
  * - 0 when no hits.
@@ -45,7 +48,15 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve, extname } from "node:path";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
+import {
+  AIDriverSchema,
+  CarSchema,
+  ChampionshipSchema,
+  ModManifestSchema,
+  TrackSchema,
+  UpgradeSchema,
+} from "../src/data/schemas";
 
 // Denylists -----------------------------------------------------------------
 
@@ -129,6 +140,7 @@ export interface LintHit {
     | "track-real-circuit-name"
     | "car-manufacturer-name"
     | "topgear-text"
+    | "mod-manifest"
     | "gdd-coverage-ledger"
     | "progress-log-coverage";
   detail: string;
@@ -386,6 +398,165 @@ function safeRead(abs: string): string | null {
     return null;
   }
 }
+
+// Public mod manifests ------------------------------------------------------
+
+function parseJson(abs: string): unknown | Error {
+  const text = safeRead(abs);
+  if (text === null) return new Error("file cannot be read");
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    return error as Error;
+  }
+}
+
+type SchemaLike = {
+  safeParse: (
+    value: unknown,
+  ) => { success: true; data: unknown } | { success: false; error: Error };
+};
+
+function lintReferencedModFiles(
+  input: LintInput,
+  hits: LintHit[],
+  manifestAbs: string,
+  modDir: string,
+  refs: readonly string[] | undefined,
+  label: string,
+  schema: SchemaLike,
+): void {
+  for (const ref of refs ?? []) {
+    const abs = resolve(modDir, ref);
+    if (!abs.startsWith(`${modDir}/`)) {
+      hits.push({
+        path: relative(input.repoRoot, manifestAbs),
+        rule: "mod-manifest",
+        detail: `${label} ref escapes mod folder: ${ref}`,
+      });
+      continue;
+    }
+    if (!existsSync(abs)) {
+      hits.push({
+        path: relative(input.repoRoot, manifestAbs),
+        rule: "mod-manifest",
+        detail: `${label} ref does not exist: ${ref}`,
+      });
+      continue;
+    }
+    const raw = parseJson(abs);
+    if (raw instanceof Error) {
+      hits.push({
+        path: relative(input.repoRoot, abs),
+        rule: "mod-manifest",
+        detail: `${label} JSON parse failed: ${raw.message}`,
+      });
+      continue;
+    }
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) {
+      hits.push({
+        path: relative(input.repoRoot, abs),
+        rule: "mod-manifest",
+        detail: `${label} schema validation failed: ${parsed.error.message}`,
+      });
+    }
+  }
+}
+
+/**
+ * Validate public data-only mods. Each `public/mods/<mod-id>/manifest.json`
+ * must match the mod manifest schema, match its folder id, and every
+ * referenced data file must exist and validate against the matching content
+ * schema. Binary asset provenance still runs through the existing manifest
+ * pass; this pass owns the data-pack contract.
+ */
+export function lintPublicModManifests(input: LintInput): LintHit[] {
+  const modsDir = resolve(input.repoRoot, "public/mods");
+  if (!existsSync(modsDir)) return [];
+
+  const hits: LintHit[] = [];
+  for (const manifestAbs of walkFiles(modsDir, (p) =>
+    p.endsWith(`/${MOD_MANIFEST_FILENAME}`),
+  )) {
+    const modDir = dirname(manifestAbs);
+    const raw = parseJson(manifestAbs);
+    if (raw instanceof Error) {
+      hits.push({
+        path: relative(input.repoRoot, manifestAbs),
+        rule: "mod-manifest",
+        detail: `manifest JSON parse failed: ${raw.message}`,
+      });
+      continue;
+    }
+    const parsed = ModManifestSchema.safeParse(raw);
+    if (!parsed.success) {
+      hits.push({
+        path: relative(input.repoRoot, manifestAbs),
+        rule: "mod-manifest",
+        detail: `manifest schema validation failed: ${parsed.error.message}`,
+      });
+      continue;
+    }
+    const expectedId = basename(modDir);
+    if (parsed.data.id !== expectedId) {
+      hits.push({
+        path: relative(input.repoRoot, manifestAbs),
+        rule: "mod-manifest",
+        detail: `manifest id "${parsed.data.id}" does not match folder "${expectedId}"`,
+      });
+    }
+
+    lintReferencedModFiles(
+      input,
+      hits,
+      manifestAbs,
+      modDir,
+      parsed.data.data.tracks,
+      "track",
+      TrackSchema,
+    );
+    lintReferencedModFiles(
+      input,
+      hits,
+      manifestAbs,
+      modDir,
+      parsed.data.data.cars,
+      "car",
+      CarSchema,
+    );
+    lintReferencedModFiles(
+      input,
+      hits,
+      manifestAbs,
+      modDir,
+      parsed.data.data.upgrades,
+      "upgrade",
+      UpgradeSchema,
+    );
+    lintReferencedModFiles(
+      input,
+      hits,
+      manifestAbs,
+      modDir,
+      parsed.data.data.aiDrivers,
+      "AI driver",
+      AIDriverSchema,
+    );
+    lintReferencedModFiles(
+      input,
+      hits,
+      manifestAbs,
+      modDir,
+      parsed.data.data.championships,
+      "championship",
+      ChampionshipSchema,
+    );
+  }
+  return hits;
+}
+
+const MOD_MANIFEST_FILENAME = "manifest.json";
 
 // GDD coverage ledger -------------------------------------------------------
 
@@ -722,8 +893,8 @@ export function lintLatestProgressLogCoverage(input: LintInput): LintHit[] {
 
 /**
  * Run every pass and return the concatenated hit list. Order is stable:
- * binary-without-manifest first, then track / car / topgear. Tests rely
- * on this ordering for assertion stability.
+ * binary-without-manifest first, then track / car / topgear / mod
+ * manifest checks. Tests rely on this ordering for assertion stability.
  */
 export function runContentLint(input: LintInput): LintHit[] {
   return [
@@ -731,6 +902,7 @@ export function runContentLint(input: LintInput): LintHit[] {
     ...lintTrackNames(input),
     ...lintCarNames(input),
     ...lintTopGearText(input),
+    ...lintPublicModManifests(input),
     ...lintGddCoverageLedger(input),
     ...lintLatestProgressLogCoverage(input),
   ];
