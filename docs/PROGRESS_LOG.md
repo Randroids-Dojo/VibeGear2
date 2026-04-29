@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§25](gdd/25-development-roadmap.md) v1.0 contributor starter tasks,
 [§26](gdd/26-open-source-project-guidance.md) suggested issue labels and
 contribution rules.
-**Branch / PR:** `chore/github-issue-starters`, PR pending.
+**Branch / PR:** `chore/github-issue-starters`, PR #108.
 **Status:** Implemented.
 
 ### Done
