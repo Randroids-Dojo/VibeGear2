@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Garage next race layout fix
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) garage loop,
+[§20](gdd/20-hud-and-ui-ux.md) garage layout and next race info.
+**Branch / PR:** `fix/garage-next-race-layout`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/garage/page.tsx`: gave the garage next race card a dedicated
+  column layout with an explicit gap so its explanatory copy and World
+  Tour action cannot collide at narrow desktop widths.
+- `src/app/garage/page.tsx`: added a test id for the World Tour action
+  inside the next race card so browser tests can target the exact
+  control.
+- `e2e/garage-summary.spec.ts`: added a regression check that verifies
+  the next race description renders above the World Tour action without
+  overlap.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-20-GARAGE-NEXT-RACE-LAYOUT.
+
+### Verified
+- `npx playwright test e2e/garage-summary.spec.ts --project=chromium`
+  green, 3 passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2458 passed.
+- `npm run test:e2e` green, 76 passed.
+
+### Decisions and assumptions
+- This is a layout contract fix only. The garage flow, destination route,
+  and next race selection behavior remain unchanged.
+
+### Coverage ledger
+- GDD-20-GARAGE-NEXT-RACE-LAYOUT covers readable non-overlapping garage
+  next race copy and action layout at narrow desktop widths.
+- Uncovered adjacent requirements: full garage tab navigation, tire setup,
+  tour standings, stats or ghost UI, repair forecast details, and bottom
+  CTA row polish remain under their existing garage and UI backlog dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Grass restart physics fix
 
 **GDD sections touched:**

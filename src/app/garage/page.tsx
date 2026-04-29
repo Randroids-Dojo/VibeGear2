@@ -189,13 +189,17 @@ export default function GaragePage() {
             </dl>
           </section>
 
-          <aside style={panelStyle} data-testid="garage-next-card">
+          <aside style={nextRacePanelStyle} data-testid="garage-next-card">
             <h2 style={sectionTitleStyle}>Next race</h2>
-            <p style={mutedTextStyle}>
+            <p style={nextRaceTextStyle}>
               Pick the next World Tour event, then return here for repairs and
               upgrades between races.
             </p>
-            <Link href="/world" style={primaryLinkStyle}>
+            <Link
+              href="/world"
+              style={primaryLinkStyle}
+              data-testid="garage-open-world-tour-link"
+            >
               Open world tour
             </Link>
           </aside>
@@ -278,6 +282,20 @@ const panelStyle: CSSProperties = {
   borderRadius: "8px",
   padding: "1rem",
   background: "rgba(255, 255, 255, 0.03)",
+};
+
+const nextRacePanelStyle: CSSProperties = {
+  ...panelStyle,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: "0.85rem",
+};
+
+const nextRaceTextStyle: CSSProperties = {
+  ...mutedTextStyle,
+  margin: 0,
+  maxWidth: "28rem",
 };
 
 const summaryGridStyle: CSSProperties = {
