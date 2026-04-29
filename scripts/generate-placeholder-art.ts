@@ -250,10 +250,15 @@ function roadsidePropSvg(region: RegionArt, prop: RoadsideProp, index: number): 
       ].join("\n"),
     );
   }
-  const floors = prop.id === "tower-building" ? 4 : 2;
+  const isTower = prop.id === "tower-building";
+  const buildingTop = isTower ? 24 : 56;
+  const innerTop = buildingTop + 6;
+  const buildingHeight = isTower ? 88 : 56;
+  const innerHeight = buildingHeight - 12;
+  const floors = isTower ? 4 : 2;
   const windows = Array.from({ length: floors * 2 }, (_, i) => {
     const x = 46 + (i % 2) * 24;
-    const y = 40 + Math.floor(i / 2) * 16;
+    const y = innerTop + 10 + Math.floor(i / 2) * 16;
     return `<rect x="${x}" y="${y}" width="12" height="8" fill="${region.accent}" opacity="0.65"/>`;
   });
   return svg(
@@ -261,8 +266,8 @@ function roadsidePropSvg(region: RegionArt, prop: RoadsideProp, index: number): 
     128,
     [
       ...base,
-      `<rect x="34" y="${prop.id === "tower-building" ? 24 : 56}" width="60" height="${prop.id === "tower-building" ? 88 : 56}" fill="${region.horizon}"/>`,
-      `<rect x="40" y="${prop.id === "tower-building" ? 30 : 62}" width="48" height="${prop.id === "tower-building" ? 76 : 44}" fill="${region.near}" opacity="0.82"/>`,
+      `<rect x="34" y="${buildingTop}" width="60" height="${buildingHeight}" fill="${region.horizon}"/>`,
+      `<rect x="40" y="${innerTop}" width="48" height="${innerHeight}" fill="${region.near}" opacity="0.82"/>`,
       ...windows,
       `<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="${region.accent}">PLACEHOLDER</text>`,
     ].join("\n"),
