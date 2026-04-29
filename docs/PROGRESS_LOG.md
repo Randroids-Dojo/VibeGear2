@@ -20,8 +20,11 @@ Correct them by adding a new entry that references the old one.
   race surfaces does not highlight page text.
 - `src/app/globals.css`: preserved text selection for editable controls
   such as inputs, textareas, selects, and contenteditable regions.
+- `src/app/globals.css`: restored selection for all non-false
+  contenteditable variants, including plaintext-only.
 - `e2e/ui-selection.spec.ts`: added browser coverage for race UI
-  selection suppression and daily share textarea selection.
+  selection suppression, daily share textarea selection, and
+  plaintext-only contenteditable selection.
 - `docs/GDD_COVERAGE.json`: added GDD-20-GAME-UI-SELECTION.
 
 ### Verified

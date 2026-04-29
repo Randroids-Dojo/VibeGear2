@@ -33,8 +33,8 @@ input,
 textarea,
 select,
 option,
-[contenteditable="true"],
-[contenteditable="true"] * {
+[contenteditable]:not([contenteditable="false"]),
+[contenteditable]:not([contenteditable="false"]) * {
   -webkit-user-select: text;
   user-select: text;
 }

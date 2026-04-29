@@ -29,5 +29,17 @@ test.describe("browser text selection", () => {
       .evaluate((node) => getComputedStyle(node).userSelect);
 
     expect(textareaSelection).toBe("text");
+
+    const editableSelection = await page.evaluate(() => {
+      const editable = document.createElement("div");
+      editable.setAttribute("contenteditable", "plaintext-only");
+      editable.textContent = "Editable note";
+      document.body.append(editable);
+      const userSelect = getComputedStyle(editable).userSelect;
+      editable.remove();
+      return userSelect;
+    });
+
+    expect(editableSelection).toBe("text");
   });
 });
