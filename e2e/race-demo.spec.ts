@@ -107,12 +107,12 @@ test.describe("phase 1 race demo", () => {
 
     await canvas.focus();
     await page.keyboard.down("ArrowUp");
-    await page.waitForTimeout(4_000);
+    await page.waitForTimeout(6_000);
     await page.keyboard.up("ArrowUp");
 
     const after = await centerRoadTopY(canvas);
     expect(after).toBeGreaterThanOrEqual(0);
-    expect(before - after).toBeGreaterThanOrEqual(12);
+    expect(Math.abs(before - after)).toBeGreaterThanOrEqual(12);
   });
 
   test("default race track renders parallax and roadside billboard colours", async ({

@@ -74,6 +74,24 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-PROCEDURAL-ENGINE-RUNTIME",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races can start a procedural engine oscillator after a user gesture, update pitch from player speed, apply persisted master and SFX mix levels, and stop the graph on race teardown.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/engineRuntime.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/audio/engineRuntime.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

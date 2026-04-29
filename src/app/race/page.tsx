@@ -129,6 +129,16 @@ import {
   weatherGripScalarForState,
   type TireKind,
 } from "@/game/weather";
+import {
+  bindAudioVisibilitySuspension,
+  getAudioContext,
+  resumeAudioContext,
+} from "@/audio/context";
+import {
+  ProceduralEngineRuntime,
+  type EngineAudioContextLike,
+  type EngineRuntimeInput,
+} from "@/audio/engineRuntime";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -178,6 +188,20 @@ function touchLayoutFor(viewport: Viewport): TouchLayout {
     width: viewport.width,
     height: viewport.height,
   };
+}
+
+function currentEngineAudioContext(): EngineAudioContextLike | null {
+  const context = getAudioContext();
+  if (
+    context === null ||
+    !("createOscillator" in context) ||
+    !("createGain" in context) ||
+    !("currentTime" in context) ||
+    !("destination" in context)
+  ) {
+    return null;
+  }
+  return context as EngineAudioContextLike;
 }
 
 function createLayerCanvas(
@@ -801,6 +825,30 @@ function RaceCanvas({
       bindings: persistedKeyBindings,
       touchTarget: canvas,
     });
+    const engineAudio = new ProceduralEngineRuntime({
+      context: currentEngineAudioContext,
+    });
+    let latestEngineInput: EngineRuntimeInput = {
+      speed: 0,
+      topSpeed: STARTER_STATS.topSpeed,
+      audio: persistedSettings.audio,
+    };
+    let engineStartPending = false;
+    let lastEngineAudioUpdateMs = 0;
+    const tryStartEngineAudio = (): void => {
+      if (engineStartPending || engineAudio.isRunning()) return;
+      engineStartPending = true;
+      void resumeAudioContext()
+        .then(() => {
+          engineAudio.start(latestEngineInput);
+        })
+        .finally(() => {
+          engineStartPending = false;
+        });
+    };
+    canvas.addEventListener("pointerdown", tryStartEngineAudio);
+    window.addEventListener("keydown", tryStartEngineAudio);
+    const unbindAudioVisibility = bindAudioVisibilitySuspension();
 
     // Wire the §20 pause-menu imperative actions. Each callback closes
     // over the local `config`, the persisted save, the input manager,
@@ -914,6 +962,7 @@ function RaceCanvas({
       // Tear down the loop / input before the route hop so the rAF
       // handle and the keydown listener cannot outlive the page.
       handleRef.current?.stop();
+      engineAudio.stop();
       handleRef.current = null;
       sessionRef.current = null;
       inputManager.dispose();
@@ -922,6 +971,7 @@ function RaceCanvas({
 
     exitFnRef.current = (): void => {
       handleRef.current?.stop();
+      engineAudio.stop();
       handleRef.current = null;
       sessionRef.current = null;
       inputManager.dispose();
@@ -951,6 +1001,16 @@ function RaceCanvas({
         if (!session) return;
         camera.z = session.player.car.z;
         camera.x = session.player.car.x;
+        latestEngineInput = {
+          speed: session.player.car.speed,
+          topSpeed: STARTER_STATS.topSpeed,
+          audio: persistedSettings.audio,
+        };
+        const audioUpdateMs = performance.now();
+        if (audioUpdateMs - lastEngineAudioUpdateMs >= 50) {
+          lastEngineAudioUpdateMs = audioUpdateMs;
+          engineAudio.update(latestEngineInput);
+        }
         const renderWeather = activeWeatherForState(session.weather);
 
         const strips = project(track.compiled.segments, camera, viewport);
@@ -1189,6 +1249,7 @@ function RaceCanvas({
             // rAF handle and the keydown listener cannot outlive the
             // page. Mirrors the retire branch tear-down ordering.
             handleRef.current?.stop();
+            engineAudio.stop();
             handleRef.current = null;
             sessionRef.current = null;
             inputManager.dispose();
@@ -1211,7 +1272,11 @@ function RaceCanvas({
     return () => {
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
+      canvas.removeEventListener("pointerdown", tryStartEngineAudio);
+      window.removeEventListener("keydown", tryStartEngineAudio);
+      unbindAudioVisibility();
       handleRef.current?.stop();
+      engineAudio.stop();
       handleRef.current = null;
       sessionRef.current = null;
       inputManager.dispose();

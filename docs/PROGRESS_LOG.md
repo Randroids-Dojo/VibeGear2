@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Procedural engine runtime
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) sound and music design,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline.
+**Branch / PR:** `feat/procedural-engine-runtime`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/audio/engineRuntime.ts`: added a procedural engine runtime that
+  creates an oscillator and gain node only when a shared audio context
+  exists, maps player speed to `enginePitchHz`, applies master and SFX
+  mixer gain, and stops the graph on teardown.
+- `src/app/race/page.tsx`: starts engine audio from race key or pointer
+  gestures, updates pitch and gain from the live player state, binds
+  visibility suspension, and stops audio on retire, finish, exit, and
+  unmount.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-PROCEDURAL-ENGINE-RUNTIME.
+
+### Verified
+- `npx vitest run src/audio/engineRuntime.test.ts src/audio/engine.test.ts src/audio/mixer.test.ts src/audio/context.test.ts`
+  green, 22 passed.
+- `npm run lint` green.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/race-demo.spec.ts --project=chromium`
+  green, 3 passed.
+- `npm run verify` green, 2443 passed.
+- `npm run test:e2e` green, 75 passed.
+
+### Decisions and assumptions
+- This slice ships procedural engine playback only. It does not add SFX,
+  music stems, placeholder audio assets, or menu music.
+- Engine audio starts only after a key or pointer gesture resumes the
+  shared Web Audio context. Server render, no-context browsers, and
+  silent SFX mixer settings stay no-op paths.
+- The engine oscillator uses a sawtooth source with a low base gain so
+  future SFX and music buses have headroom.
+
+### Coverage ledger
+- GDD-18-PROCEDURAL-ENGINE-RUNTIME covers gesture-gated engine graph
+  creation, speed-driven pitch updates, persisted master and SFX gain,
+  and graph teardown.
+- Uncovered adjacent requirements: impact SFX, countdown SFX, menu
+  clicks, music playback, region stem metadata, placeholder audio
+  assets, and weather audio layers remain under the §18 audio parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Audio options pane
 
 **GDD sections touched:**
