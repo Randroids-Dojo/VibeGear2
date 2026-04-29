@@ -898,6 +898,25 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-26-DEVELOPER-ONBOARDING",
+      "gddSections": [
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Contributor onboarding includes a complete npm script catalogue, local development troubleshooting guide, and automated doc-parity checks for shared workflow rules.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "docs/SCRIPTS.md",
+        "docs/LOCAL_DEV.md",
+        "scripts/check-doc-parity.ts",
+        "package.json",
+        ".github/workflows/ci.yml",
+        "AGENTS.md",
+        "docs/CONTRIBUTING.md"
+      ],
+      "testRefs": ["scripts/check-doc-parity.ts"],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-26-DATA-MOD-LOADER",
       "gddSections": [
         "docs/gdd/21-technical-design-for-web-implementation.md",

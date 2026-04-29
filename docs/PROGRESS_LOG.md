@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Contributor dev experience docs
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) contribution guidelines and
+project structure.
+**Branch / PR:** `docs/contributor-dev-experience`, PR #110.
+**Status:** Implemented.
+
+### Done
+- `docs/SCRIPTS.md`: added a complete npm script catalogue with run timing
+  and failure meanings.
+- `docs/LOCAL_DEV.md`: added local setup and troubleshooting guidance for
+  Node, installs, port conflicts, Playwright, blank builds, and generated
+  file scans.
+- `scripts/check-doc-parity.ts`: added a docs guard that verifies every
+  package script is documented and shared workflow anchors stay present in
+  `AGENTS.md` and `docs/CONTRIBUTING.md`.
+- `package.json` and `.github/workflows/ci.yml`: wired `npm run docs:check`
+  into local verify and CI.
+- `AGENTS.md` and `docs/CONTRIBUTING.md`: linked the script catalogue and
+  local troubleshooting guide.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run verify` green, 2593 passed.
+
+### Decisions and assumptions
+- The parity check intentionally verifies a small set of exact workflow
+  anchors instead of comparing whole documents, so docs can still explain the
+  same rule in their own surrounding context.
+
+### Coverage ledger
+- GDD-26-DEVELOPER-ONBOARDING covers the script catalogue, troubleshooting
+  guide, and automated workflow-anchor check.
+- Uncovered adjacent requirements: formal code of conduct remains TBD in
+  `docs/CONTRIBUTING.md`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Leaderboard storage provider gate
 
 **GDD sections touched:**

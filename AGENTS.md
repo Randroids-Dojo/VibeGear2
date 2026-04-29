@@ -60,9 +60,11 @@ The Game Design Document is the source of truth for what VibeGear2 is. Before pr
 Implementation work runs the loop in `IMPLEMENTATION_PLAN.md` §4. Each loop iteration is one ship-shaped slice that fits in a single PR.
 
 - Branch off `main` as `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`. One branch per slice. Delete after merge.
+- Create short-lived branches from `main` named `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`.
 - Never push directly to `main`. Always go through a PR.
 - Commit messages follow the `<type>(<area>): <imperative summary>` format from `WORKING_AGREEMENT.md` §3. Lead the body with *why*, not *what*.
 - Never `--amend` a pushed commit. Never `--no-verify`. Never force-push `main` or any branch with someone else's commits on it.
+- Do not bypass checks with `--no-verify`.
 - PR title mirrors the slice title. PR body links the GDD section(s) implemented, the matching `PROGRESS_LOG.md` entry, the test plan, and any followups created.
 - Wait for CI green before merging. Squash-merge into `main` unless the slice deliberately benefits from preserving history.
 
@@ -125,6 +127,7 @@ Per `IMPLEMENTATION_PLAN.md` §8 and `WORKING_AGREEMENT.md` §6:
 ## Quick pre-commit checklist
 
 1. No em-dashes. Run `grep -rn $'\u2014' .` (checks for codepoint U+2014). Must return nothing.
+   Do not use em-dashes or en-dashes anywhere.
 2. No AI attribution in the commit message or PR body.
 3. Lint, type-check, unit, integration, and e2e suites all pass locally.
 4. New game-logic, route, and content code has tests per RULE 8.
@@ -132,3 +135,6 @@ Per `IMPLEMENTATION_PLAN.md` §8 and `WORKING_AGREEMENT.md` §6:
 6. `PROGRESS_LOG.md` has a new entry. `OPEN_QUESTIONS.md` and `FOLLOWUPS.md` reflect the new state.
 7. No secrets in the diff.
 8. Branch name and commit messages follow `WORKING_AGREEMENT.md` §2 and §3.
+
+See [`docs/SCRIPTS.md`](docs/SCRIPTS.md) for the full npm script reference.
+See [`docs/LOCAL_DEV.md`](docs/LOCAL_DEV.md) when local setup or test runs fail.
