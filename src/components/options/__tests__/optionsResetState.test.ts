@@ -5,7 +5,7 @@ import { defaultSave } from "@/persistence";
 import { resetShippedOptionsToDefaults } from "../optionsResetState";
 
 describe("resetShippedOptionsToDefaults", () => {
-  it("resets assists, audio, and difficulty to defaults", () => {
+  it("resets assists, audio, display, and difficulty to defaults", () => {
     const save = defaultSave();
     const customised = {
       ...save,
@@ -18,6 +18,7 @@ describe("resetShippedOptionsToDefaults", () => {
         },
         audio: { master: 0.25, music: 0.35, sfx: 0.45 },
         difficultyPreset: "hard" as const,
+        displaySpeedUnit: "mph" as const,
       },
     };
 
@@ -28,10 +29,11 @@ describe("resetShippedOptionsToDefaults", () => {
       expect(result.save.settings.assists).toEqual(defaultSave().settings.assists);
       expect(result.save.settings.audio).toEqual(defaultSave().settings.audio);
       expect(result.save.settings.difficultyPreset).toBe("normal");
+      expect(result.save.settings.displaySpeedUnit).toBe("kph");
     }
   });
 
-  it("preserves placeholder-owned settings and profile data", () => {
+  it("preserves unshipped settings and profile data", () => {
     const save = defaultSave();
     const customised = {
       ...save,
@@ -69,7 +71,7 @@ describe("resetShippedOptionsToDefaults", () => {
     if (result.kind === "applied") {
       expect(result.save.profileName).toBe("Reset Proof");
       expect(result.save.garage.credits).toBe(1234);
-      expect(result.save.settings.displaySpeedUnit).toBe("mph");
+      expect(result.save.settings.displaySpeedUnit).toBe("kph");
       expect(result.save.settings.transmissionMode).toBe("manual");
       expect(result.save.settings.audio).toEqual(defaultSave().settings.audio);
       expect(result.save.settings.accessibility).toEqual(

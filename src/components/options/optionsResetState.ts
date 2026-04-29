@@ -21,6 +21,7 @@ export function resetShippedOptionsToDefaults(
       assists: { ...defaults.settings.assists },
       audio: defaults.settings.audio,
       difficultyPreset: defaults.settings.difficultyPreset,
+      displaySpeedUnit: defaults.settings.displaySpeedUnit,
       keyBindings: defaults.settings.keyBindings,
     },
   };
@@ -30,6 +31,7 @@ export function resetShippedOptionsToDefaults(
       JSON.stringify(save.settings.assists) &&
     JSON.stringify(next.settings.audio) === JSON.stringify(save.settings.audio) &&
     next.settings.difficultyPreset === save.settings.difficultyPreset &&
+    next.settings.displaySpeedUnit === save.settings.displaySpeedUnit &&
     JSON.stringify(next.settings.keyBindings) ===
       JSON.stringify(save.settings.keyBindings)
   ) {
