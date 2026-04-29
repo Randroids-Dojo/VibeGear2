@@ -986,12 +986,13 @@
         "docs/gdd/24-content-plan.md"
       ],
       "requirement": "Online leaderboard production storage must use a currently available provider and must not be provisioned until the dev approves the provider, pricing plan, and production environment changes.",
-      "coverage": ["implemented-code"],
+      "coverage": ["implemented-code", "open-question", "open-followup"],
       "implementationRefs": [
         "docs/OPEN_QUESTIONS.md",
         "docs/FOLLOWUPS.md",
         "docs/PROGRESS_LOG.md"
       ],
+      "questionRefs": ["Q-011"],
       "followupRefs": ["F-069"]
     },
     {
