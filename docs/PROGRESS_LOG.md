@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Procedural nitro engage SFX runtime
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) vehicle and race SFX,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline.
+**Branch / PR:** `feat/procedural-nitro-sfx`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/raceSession.ts`: added a transient nitro-engage audio
+  event emitted from the deterministic nitro reducer when the player
+  starts a fresh charge.
+- `src/audio/sfx.ts`: added a short rising procedural nitro tone that
+  respects shared-context lookup, master gain, SFX gain, and no-op
+  behavior when audio is unavailable or muted.
+- `src/app/race/page.tsx`: plays race-session audio events once per
+  simulation tick through the existing SFX runtime.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-PROCEDURAL-NITRO-SFX.
+
+### Verified
+- `npx vitest run src/audio/sfx.test.ts src/game/__tests__/raceSession.test.ts`
+  green, 125 passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2457 passed.
+- `npm run test:e2e` green, 75 passed.
+
+### Decisions and assumptions
+- Nitro playback is driven by the pure race-session event stream rather
+  than by React input state so replays and tests see the same gameplay
+  source of truth.
+- Only player nitro emits an audible cue in this slice. AI nitro audio
+  remains under the wider §18 field-mix policy.
+
+### Coverage ledger
+- GDD-18-PROCEDURAL-NITRO-SFX covers player nitro start event emission,
+  rising nitro playback, persisted SFX gain use, no-context no-op
+  behavior, silent SFX no-op behavior, and race teardown cleanup.
+- Uncovered adjacent requirements: gear shift, brake scrub, tire squeal,
+  spray or snow hush, lap complete, results stinger, music playback,
+  region stem metadata, and placeholder audio assets remain under the
+  §18 audio parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Procedural impact SFX runtime
 
 **GDD sections touched:**

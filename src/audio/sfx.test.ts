@@ -145,6 +145,31 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.08);
   });
 
+  it("plays nitro engage as a short rising SFX cue", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(runtime.playNitroEngage({ audio: AUDIO })).toBe(true);
+
+    expect(context.oscillators).toHaveLength(1);
+    expect(context.oscillators[0]?.type).toBe("sawtooth");
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      980,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(1460, 0.18);
+    expect(context.gains[0]?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1 * 0.9 * 0.2 * 0.75,
+      0.01,
+    );
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.18);
+  });
+
   it("disconnects finished one-shots", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralSfxRuntime({ context: () => context });

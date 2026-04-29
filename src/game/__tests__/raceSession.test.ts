@@ -723,6 +723,9 @@ describe("stepRaceSession (nitro)", () => {
     expect(session.player.nitro.charges).toBe(2);
     expect(session.player.nitro.activeRemainingSec).toBeGreaterThan(0);
     expect(session.player.lastNitroPressed).toBe(true);
+    expect(session.audioEvents).toEqual([
+      { kind: "nitroEngage", carId: "player" },
+    ]);
   });
 
   it("does not double-spend charges when nitro is held across ticks", () => {
@@ -733,8 +736,10 @@ describe("stepRaceSession (nitro)", () => {
     session = stepRaceSession(session, nitroTap(), config, DT);
     expect(session.player.nitro.charges).toBe(2);
     session = stepRaceSession(session, nitroTap(), config, DT);
+    expect(session.audioEvents).toEqual([]);
     session = stepRaceSession(session, nitroTap(), config, DT);
     expect(session.player.nitro.charges).toBe(2);
+    expect(session.audioEvents).toEqual([]);
   });
 
   it("releases the held flag so a re-tap consumes the next charge", () => {
@@ -2065,7 +2070,10 @@ describe("stepRaceSession (§13 damage wiring, F-047)", () => {
       carId: "player",
       hitKind: "carHit",
     });
-    expect(session.audioEvents[0]?.speedFactor).toBeCloseTo(
+    const impactEvent = session.audioEvents[0];
+    expect(impactEvent?.kind).toBe("impact");
+    if (impactEvent?.kind !== "impact") throw new Error("expected impact event");
+    expect(impactEvent.speedFactor).toBeCloseTo(
       40.2266666667 / COLLISION_REFERENCE_TOP_SPEED_M_PER_S,
       8,
     );
