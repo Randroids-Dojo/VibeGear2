@@ -18,6 +18,16 @@ const REGION_IDS = [
   "moss-frontier",
   "crown-circuit",
 ] as const;
+const MENU_BACKGROUND_IDS = [
+  "title",
+  "world",
+  "garage",
+  "race-prep",
+  "results",
+  "daily",
+  "options",
+  "loading",
+] as const;
 
 function readManifest(): ArtManifestEntry[] {
   return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as ArtManifestEntry[];
@@ -58,6 +68,18 @@ describe("placeholder art bank", () => {
         expect(entry.license).toBe("CC0");
         expect(entry.originality).toContain("Original geometric placeholder art");
       }
+    }
+  });
+
+  it("ships placeholder backgrounds for the main menu screens", () => {
+    const manifest = readManifest();
+    for (const menuId of MENU_BACKGROUND_IDS) {
+      const entry = manifest.find((item) => item.id === `menu:${menuId}:background`);
+      expect(entry).toBeDefined();
+      expect(entry?.path).toBe(`art/menu/${menuId}.svg`);
+      expect(existsSync(path.join(PUBLIC_DIR, `art/menu/${menuId}.svg`))).toBe(true);
+      expect(entry?.license).toBe("CC0");
+      expect(entry?.originality).toContain("Original geometric placeholder art");
     }
   });
 });

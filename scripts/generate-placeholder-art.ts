@@ -68,6 +68,17 @@ const HUD_ICONS = [
 
 const EFFECTS = ["flash", "dust", "sparks", "rain", "fog", "snow"] as const;
 
+const MENU_BACKGROUNDS = [
+  { id: "title", region: "crown-circuit", label: "TITLE" },
+  { id: "world", region: "velvet-coast", label: "WORLD" },
+  { id: "garage", region: "iron-borough", label: "GARAGE" },
+  { id: "race-prep", region: "neon-meridian", label: "RACE PREP" },
+  { id: "results", region: "glass-ridge", label: "RESULTS" },
+  { id: "daily", region: "ember-steppe", label: "DAILY" },
+  { id: "options", region: "moss-frontier", label: "OPTIONS" },
+  { id: "loading", region: "breakwater-isles", label: "LOADING" },
+] as const;
+
 const ROADSIDE_PROPS: readonly RoadsideProp[] = [
   { id: "marker-light", category: "sign" },
   { id: "speed-board", category: "sign" },
@@ -348,6 +359,27 @@ function effectSvg(effect: string): string {
   );
 }
 
+function menuBackgroundSvg(menu: (typeof MENU_BACKGROUNDS)[number]): string {
+  const region = REGIONS.find((entry) => entry.id === menu.region);
+  if (region === undefined) throw new Error(`Unknown menu background region: ${menu.region}`);
+  return svg(
+    1920,
+    1080,
+    [
+      `<rect width="1920" height="1080" fill="${region.sky}"/>`,
+      `<path d="M0 340 L220 160 L420 340 L690 185 L940 340 L1180 140 L1410 340 L1660 180 L1920 300 L1920 520 L0 520 Z" fill="${region.horizon}" opacity="0.6"/>`,
+      `<path d="M0 470 C260 420 500 486 730 430 C1020 360 1230 460 1460 410 C1670 365 1800 405 1920 370 L1920 650 L0 650 Z" fill="${region.near}" opacity="0.78"/>`,
+      '<rect x="0" y="640" width="1920" height="440" fill="#0b1019" opacity="0.45"/>',
+      `<path d="M760 1080 L910 650 L1010 650 L1160 1080 Z" fill="#535b60" opacity="0.8"/>`,
+      `<path d="M928 1080 L955 650 L965 650 L992 1080 Z" fill="${region.accent}" opacity="0.75"/>`,
+      `<rect x="116" y="116" width="480" height="18" fill="${region.accent}" opacity="0.7"/>`,
+      `<rect x="116" y="156" width="320" height="10" fill="${region.accent}" opacity="0.32"/>`,
+      `<rect x="1324" y="812" width="360" height="18" fill="${region.accent}" opacity="0.45"/>`,
+      `<text x="960" y="1000" text-anchor="middle" font-family="monospace" font-size="44" font-weight="700" fill="${region.accent}" opacity="0.82">${menu.label} PLACEHOLDER</text>`,
+    ].join("\n"),
+  );
+}
+
 for (const region of REGIONS) {
   for (const layer of ["sky", "mountains", "hills"] as const) {
     const relPath = `public/art/backdrops/${region.id}/${layer}.svg`;
@@ -383,6 +415,12 @@ for (const effect of EFFECTS) {
   const relPath = `public/art/effects/${effect}.svg`;
   writeTextFile(relPath, effectSvg(effect));
   addManifest(`effect:${effect}`, relPath.slice("public/".length));
+}
+
+for (const menu of MENU_BACKGROUNDS) {
+  const relPath = `public/art/menu/${menu.id}.svg`;
+  writeTextFile(relPath, menuBackgroundSvg(menu));
+  addManifest(`menu:${menu.id}:background`, relPath.slice("public/".length));
 }
 
 manifest.sort((a, b) => a.src.localeCompare(b.src));
