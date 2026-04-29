@@ -1155,22 +1155,24 @@
         "docs/gdd/16-rendering-and-visual-design.md",
         "docs/gdd/17-art-direction.md"
       ],
-      "requirement": "Live and ghost cars use original directional sprite atlas frames with damage, brake, and nitro variants.",
+      "requirement": "Live and ghost cars use original directional sprite atlas frames with damage, brake, nitro, wet spray, and snow trail variants.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/art/cars/sparrow.svg",
         "public/art.manifest.json",
         "src/data/atlas/cars.json",
         "src/app/race/page.tsx",
+        "src/render/carSpriteCompositor.ts",
         "src/render/pseudoRoadCanvas.ts",
         "src/render/spriteAtlas.ts"
       ],
       "testRefs": [
+        "src/render/__tests__/carSpriteCompositor.test.ts",
         "src/render/__tests__/pseudoRoadCanvas.test.ts",
         "src/render/__tests__/spriteAtlas.test.ts",
         "src/render/__tests__/carFrame.test.ts"
       ],
-      "followupRefs": ["F-051", "F-059", "F-060"]
+      "followupRefs": ["F-051", "F-059", "F-060", "F-068"]
     },
     {
       "id": "GDD-16-CAR-WEATHER-VARIANTS",

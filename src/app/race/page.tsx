@@ -1289,6 +1289,10 @@ function RaceCanvas({
             atlas: carAtlasRef.current,
             frameIndex: playerFrameIndex,
             weather: renderWeather,
+            braking: session.player.audioGates.brakeScrubActive,
+            nitroActive: session.player.nitro.activeRemainingSec > 0,
+            speedMetersPerSecond: session.player.car.speed,
+            damageTotal: session.player.damage.total,
           },
         });
 

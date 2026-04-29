@@ -31,6 +31,10 @@ import { visibilityForWeather } from "@/game/weather";
 
 import { drawDust, type DustState } from "./dust";
 import { drawParallax, type ParallaxLayer } from "./parallax";
+import {
+  resolveCarRenderFrames,
+  selectCarFramePlan,
+} from "./carSpriteCompositor";
 import { frame, type LoadedAtlas } from "./spriteAtlas";
 export {
   TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
@@ -223,6 +227,10 @@ export interface DrawRoadOptions {
     atlas?: LoadedAtlas | null;
     spriteId?: string;
     frameIndex?: number;
+    braking?: boolean;
+    nitroActive?: boolean;
+    speedMetersPerSecond?: number;
+    damageTotal?: number;
   } | null;
 }
 
@@ -1057,17 +1065,50 @@ function drawPlayerCar(
   const topY = bottomY - height;
   const halfW = width / 2;
 
-  drawCarWeatherTrail(ctx, centerX, bottomY, width, height, car.weather);
-
   if (car.atlas?.image) {
-    const sprite = frame(
+    const frameIndex = car.frameIndex ?? 0;
+    const frames = resolveCarRenderFrames(
       car.atlas,
-      car.spriteId ?? PLAYER_CAR_DEFAULT_SPRITE_ID,
-      car.frameIndex ?? 0,
+      selectCarFramePlan({
+        frameIndex,
+        braking: car.braking === true,
+        nitroActive: car.nitroActive === true,
+        weather: car.weather,
+        speedMetersPerSecond: car.speedMetersPerSecond ?? 0,
+        damageTotal: car.damageTotal ?? 0,
+        spriteSet: car.spriteId
+          ? {
+              clean: car.spriteId,
+              damage1: car.spriteId,
+              damage2: car.spriteId,
+              damage3: car.spriteId,
+              brake: car.spriteId,
+              nitro: car.spriteId,
+              wetTrail: car.spriteId,
+              snowTrail: car.spriteId,
+            }
+          : undefined,
+      }),
     );
-    drawAtlasCarFrame(ctx, car.atlas.image, sprite, centerX, bottomY, width, 1);
-    return;
+    if (frames) {
+      drawAtlasCarFrame(ctx, car.atlas.image, frames.base, centerX, bottomY, width, 1);
+      if (frames.trailOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.trailOverlay, centerX, bottomY, width, 1);
+      }
+      if (frames.brakeOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.brakeOverlay, centerX, bottomY, width, 1);
+      }
+      if (frames.nitroOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.nitroOverlay, centerX, bottomY, width, 1);
+      }
+      if (frames.damageOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.damageOverlay, centerX, bottomY, width, 1);
+      }
+      return;
+    }
   }
+
+  drawCarWeatherTrail(ctx, centerX, bottomY, width, height, car.weather);
 
   const prevFill = ctx.fillStyle;
   try {
