@@ -31,9 +31,12 @@ import {
 import {
   DNF_REASON_RETIRED,
   buildFinalCarInputsFromSession,
+  resetRaceSessionToLastCheckpoint,
   retireRaceSession,
+  setRaceSessionWeather,
 } from "@/game/raceSessionActions";
 import { NEUTRAL_INPUT } from "@/game/input";
+import { applyCheckpointPass } from "@/game/raceCheckpoints";
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 
 const STARTER_STATS: CarBaseStats = Object.freeze({
@@ -138,6 +141,70 @@ describe("retireRaceSession", () => {
     expect(retired.ai).toHaveLength(session.ai.length);
     expect(retired.ai[0]?.status).toBe(session.ai[0]?.status);
     expect(retired.ai[0]?.car.z).toBe(session.ai[0]?.car.z);
+  });
+});
+
+describe("resetRaceSessionToLastCheckpoint", () => {
+  it("rewinds the player car to the most recent checkpoint snapshot", () => {
+    const config = buildConfig();
+    const session = createRaceSession(config);
+    const checkpointCar = {
+      ...session.player.car,
+      x: 0.35,
+      z: 410,
+      speed: 23,
+    };
+    const withCheckpoint = {
+      ...session,
+      race: applyCheckpointPass(
+        session.race,
+        { segmentIndex: 68, label: "sector-1" },
+        22,
+        checkpointCar,
+      ),
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: -0.8, z: 700, speed: 55 },
+      },
+    };
+
+    const reset = resetRaceSessionToLastCheckpoint(withCheckpoint);
+
+    expect(reset.player.car).toEqual(checkpointCar);
+    expect(reset.player.car).not.toBe(checkpointCar);
+    expect(withCheckpoint.player.car.z).toBe(700);
+  });
+
+  it("returns a fresh no-op clone when no checkpoint has been passed", () => {
+    const session = createRaceSession(buildConfig());
+    const reset = resetRaceSessionToLastCheckpoint(session);
+    expect(reset.player.car).toEqual(session.player.car);
+    expect(reset.player.car).not.toBe(session.player.car);
+  });
+});
+
+describe("setRaceSessionWeather", () => {
+  it("switches the live weather immediately and clears any transition", () => {
+    const session = createRaceSession({
+      ...buildConfig(),
+      weather: "clear",
+    });
+    const withTransition = {
+      ...session,
+      weather: {
+        current: "clear" as const,
+        transitioning: {
+          from: "clear" as const,
+          to: "rain" as const,
+          progress: 0.4,
+        },
+      },
+    };
+
+    const swapped = setRaceSessionWeather(withTransition, "snow");
+
+    expect(swapped.weather).toEqual({ current: "snow", transitioning: null });
+    expect(withTransition.weather.transitioning).not.toBeNull();
   });
 });
 
