@@ -36,6 +36,19 @@ export interface CountdownSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export type ImpactSfxKind =
+  | "rub"
+  | "carHit"
+  | "wallHit"
+  | "offRoadObject"
+  | "offRoadPersistent";
+
+export interface ImpactSfxInput {
+  readonly hitKind: ImpactSfxKind;
+  readonly speedFactor: number;
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface ProceduralSfxRuntimeOptions {
   readonly context: () => SfxAudioContextLike | null;
   readonly baseGain?: number;
@@ -73,6 +86,38 @@ export class ProceduralSfxRuntime {
   }
 
   playCountdownTick(input: CountdownSfxInput): boolean {
+    return this.playTone({
+      audio: input.audio,
+      frequency: countdownFrequency(input.step),
+      oscillatorType: input.step <= 0 ? "square" : "triangle",
+      gainScale: 1,
+      durationSeconds: this.durationSeconds,
+    });
+  }
+
+  playImpact(input: ImpactSfxInput): boolean {
+    return this.playTone({
+      audio: input.audio,
+      frequency: impactFrequency(input.hitKind, input.speedFactor),
+      oscillatorType: impactOscillatorType(input.hitKind),
+      gainScale: impactGainScale(input.hitKind, input.speedFactor),
+      durationSeconds: impactDurationSeconds(input.hitKind),
+    });
+  }
+
+  stopAll(): void {
+    for (const graph of Array.from(this.active)) {
+      this.disconnect(graph);
+    }
+  }
+
+  private playTone(input: {
+    readonly audio: AudioSettings | undefined;
+    readonly frequency: number;
+    readonly oscillatorType: OscillatorType;
+    readonly gainScale: number;
+    readonly durationSeconds: number;
+  }): boolean {
     const gain = this.effectiveGain(input.audio);
     if (gain === 0) return false;
 
@@ -82,13 +127,13 @@ export class ProceduralSfxRuntime {
     const output = context.createGain();
     const oscillator = context.createOscillator();
     const startTime = context.currentTime;
-    const stopTime = startTime + this.durationSeconds;
+    const stopTime = startTime + input.durationSeconds;
     const graph: OneShotGraph = { oscillator, output };
 
-    oscillator.type = input.step <= 0 ? "square" : "triangle";
-    setParam(oscillator.frequency, countdownFrequency(input.step), startTime);
+    oscillator.type = input.oscillatorType;
+    setParam(oscillator.frequency, input.frequency, startTime);
     setParam(output.gain, 0, startTime);
-    rampParam(output.gain, gain, startTime + 0.01);
+    rampParam(output.gain, gain * input.gainScale, startTime + 0.01);
     rampParam(output.gain, 0, stopTime);
     oscillator.connect(output);
     output.connect(context.destination);
@@ -99,12 +144,6 @@ export class ProceduralSfxRuntime {
     oscillator.start(startTime);
     oscillator.stop(stopTime);
     return true;
-  }
-
-  stopAll(): void {
-    for (const graph of Array.from(this.active)) {
-      this.disconnect(graph);
-    }
   }
 
   private disconnect(graph: OneShotGraph): void {
@@ -124,6 +163,43 @@ export class ProceduralSfxRuntime {
 export function countdownFrequency(step: number): number {
   if (!Number.isFinite(step) || step <= 0) return 880;
   return step === 1 ? 660 : 520;
+}
+
+export function impactFrequency(
+  hitKind: ImpactSfxKind,
+  speedFactor: number,
+): number {
+  const speed = clampUnit(speedFactor);
+  const base =
+    hitKind === "rub" || hitKind === "offRoadPersistent"
+      ? 180
+      : hitKind === "carHit"
+        ? 250
+        : 120;
+  const range =
+    hitKind === "rub" || hitKind === "offRoadPersistent"
+      ? 90
+      : hitKind === "carHit"
+        ? 150
+        : 80;
+  return Math.round(base + range * speed);
+}
+
+function impactOscillatorType(hitKind: ImpactSfxKind): OscillatorType {
+  return hitKind === "rub" || hitKind === "offRoadPersistent"
+    ? "sawtooth"
+    : "square";
+}
+
+function impactGainScale(hitKind: ImpactSfxKind, speedFactor: number): number {
+  const speed = clampUnit(speedFactor);
+  const base =
+    hitKind === "rub" || hitKind === "offRoadPersistent" ? 0.35 : 0.6;
+  return base + speed * 0.55;
+}
+
+function impactDurationSeconds(hitKind: ImpactSfxKind): number {
+  return hitKind === "rub" || hitKind === "offRoadPersistent" ? 0.08 : 0.16;
 }
 
 function setParam(
@@ -154,4 +230,9 @@ function nonNegativeOr(value: number | undefined, fallback: number): number {
   return value === undefined || !Number.isFinite(value) || value < 0
     ? fallback
     : value;
+}
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
 }

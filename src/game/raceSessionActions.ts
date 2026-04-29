@@ -110,6 +110,7 @@ export function retireRaceSession(
     brokenHazards: state.brokenHazards.slice(),
     weather: cloneWeatherPure(state.weather),
     weatherRngState: state.weatherRngState,
+    audioEvents: [],
   };
 }
 
@@ -159,6 +160,7 @@ function clonePure(state: Readonly<RaceSessionState>): RaceSessionState {
     brokenHazards: state.brokenHazards.slice(),
     weather: cloneWeatherPure(state.weather),
     weatherRngState: state.weatherRngState,
+    audioEvents: state.audioEvents.slice(),
   };
 }
 

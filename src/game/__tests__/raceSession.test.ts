@@ -394,9 +394,16 @@ describe("stepRaceSession (racing)", () => {
     const afterFirstHit = first.player.damage.total;
     expect(afterFirstHit).toBeGreaterThan(0);
     expect(first.brokenHazards).toContain("40:traffic_cone");
+    expect(first.audioEvents).toHaveLength(1);
+    expect(first.audioEvents[0]).toMatchObject({
+      kind: "impact",
+      carId: "player",
+      hitKind: "offRoadObject",
+    });
 
     const second = stepRaceSession(first, NEUTRAL_INPUT, config, DT);
     expect(second.player.damage.total).toBe(afterFirstHit);
+    expect(second.audioEvents).toEqual([]);
   });
 
   it("preserves broken hazards when the player is no longer racing", () => {
@@ -2052,6 +2059,16 @@ describe("stepRaceSession (§13 damage wiring, F-047)", () => {
     session = stepRaceSession(session, fullThrottle(), config, DT);
     expect(session.player.damage.total).toBeGreaterThan(0);
     expect(session.ai[0]?.damage.total ?? 0).toBeGreaterThan(0);
+    expect(session.audioEvents).toHaveLength(1);
+    expect(session.audioEvents[0]).toMatchObject({
+      kind: "impact",
+      carId: "player",
+      hitKind: "carHit",
+    });
+    expect(session.audioEvents[0]?.speedFactor).toBeCloseTo(
+      40.2266666667 / COLLISION_REFERENCE_TOP_SPEED_M_PER_S,
+      8,
+    );
   });
 
   it("does not register a collision when cars are laterally separated past CAR_WIDTH_M", () => {
@@ -2076,6 +2093,7 @@ describe("stepRaceSession (§13 damage wiring, F-047)", () => {
     session = stepRaceSession(session, fullThrottle(), config, DT);
     expect(session.player.damage.total).toBe(0);
     expect(session.ai[0]?.damage.total ?? 0).toBe(0);
+    expect(session.audioEvents).toEqual([]);
   });
 
   it("does not damage a car for being in contact with a non-racing car", () => {

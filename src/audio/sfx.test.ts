@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   countdownFrequency,
+  impactFrequency,
   ProceduralSfxRuntime,
   type SfxAudioContextLike,
   type SfxAudioParamLike,
@@ -18,6 +19,21 @@ describe("countdownFrequency", () => {
   it("treats invalid and negative steps as the go pitch", () => {
     expect(countdownFrequency(Number.NaN)).toBe(880);
     expect(countdownFrequency(-1)).toBe(880);
+  });
+});
+
+describe("impactFrequency", () => {
+  it("maps harder impacts to higher pitch within the same hit kind", () => {
+    expect(impactFrequency("carHit", 1)).toBeGreaterThan(
+      impactFrequency("carHit", 0),
+    );
+  });
+
+  it("clamps invalid impact speed factors", () => {
+    expect(impactFrequency("wallHit", Number.NaN)).toBe(
+      impactFrequency("wallHit", 0),
+    );
+    expect(impactFrequency("wallHit", 3)).toBe(impactFrequency("wallHit", 1));
   });
 });
 
@@ -78,6 +94,55 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[0]?.frequency.value).toBe(
       countdownFrequency(0),
     );
+  });
+
+  it("plays car impact tones through the SFX bus", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+      durationSeconds: 0.1,
+    });
+
+    expect(
+      runtime.playImpact({
+        hitKind: "carHit",
+        speedFactor: 0.5,
+        audio: AUDIO,
+      }),
+    ).toBe(true);
+
+    expect(context.oscillators).toHaveLength(1);
+    expect(context.oscillators[0]?.type).toBe("square");
+    expect(context.oscillators[0]?.frequency.value).toBe(
+      impactFrequency("carHit", 0.5),
+    );
+    expect(context.gains[0]?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1 * 0.9 * 0.2 * 0.875,
+      0.01,
+    );
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.16);
+  });
+
+  it("uses a shorter low-gain scrape for rub impacts", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    runtime.playImpact({
+      hitKind: "rub",
+      speedFactor: 0,
+      audio: AUDIO,
+    });
+
+    expect(context.oscillators[0]?.type).toBe("sawtooth");
+    expect(context.gains[0]?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1 * 0.9 * 0.2 * 0.35,
+      0.01,
+    );
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.08);
   });
 
   it("disconnects finished one-shots", () => {
