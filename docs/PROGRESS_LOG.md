@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Placeholder menu backgrounds
+
+**GDD sections touched:**
+[§17](gdd/17-art-direction.md) HUD and menu art,
+[§24](gdd/24-content-plan.md) asset list,
+[§26](gdd/26-open-source-project-guidance.md) asset provenance.
+**Branch / PR:** `feat/placeholder-menu-backgrounds`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `scripts/generate-placeholder-art.ts`: added generated placeholder
+  menu backgrounds for title, world, garage, race prep, results, daily,
+  options, and loading screens.
+- `public/art/menu/`: added eight generated SVG background assets.
+- `public/art.manifest.json`: listed every generated menu background with
+  CC0 license, source, originality, and date metadata.
+- `scripts/__tests__/placeholder-art-bank.test.ts`: added coverage that
+  the named menu background set exists on disk and in the manifest.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-17-PLACEHOLDER-MENU-BACKGROUNDS.
+
+### Verified
+- `npm run art:generate` completed and reproduced the generated menu
+  background manifest entries.
+- `npx vitest run scripts/__tests__/placeholder-art-bank.test.ts scripts/__tests__/check-art-manifest.test.ts`
+  green, 11 passed.
+- `npm run art:check` green.
+- No file under `public/art/` exceeds 32 KB; total art size is 640 KB.
+- `npm run verify` green, 2480 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- The generated backgrounds are content-bank assets. Runtime adoption
+  remains a later UI or visual-polish slice so this PR does not change
+  screen composition.
+
+### Coverage ledger
+- GDD-17-PLACEHOLDER-MENU-BACKGROUNDS covers placeholder menu background
+  asset availability and provenance metadata.
+- Uncovered adjacent requirements: final artwork and production art
+  replacement remain under the placeholder-art parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Placeholder roadside prop bank
 
 **GDD sections touched:**
