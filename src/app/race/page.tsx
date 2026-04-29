@@ -834,12 +834,16 @@ function RaceCanvas({
       audio: persistedSettings.audio,
     };
     let engineStartPending = false;
+    let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
     const tryStartEngineAudio = (): void => {
-      if (engineStartPending || engineAudio.isRunning()) return;
+      if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
+        return;
+      }
       engineStartPending = true;
       void resumeAudioContext()
         .then(() => {
+          if (engineAudioTeardown) return;
           engineAudio.start(latestEngineInput);
         })
         .finally(() => {
@@ -858,6 +862,7 @@ function RaceCanvas({
       unbindAudioVisibility();
     };
     const stopRaceRuntime = (): void => {
+      engineAudioTeardown = true;
       unbindEngineAudio();
       handleRef.current?.stop();
       engineAudio.stop();
