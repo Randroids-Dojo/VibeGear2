@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: GitHub issue labels and starter tasks
+
+**GDD sections touched:**
+[§25](gdd/25-development-roadmap.md) v1.0 contributor starter tasks,
+[§26](gdd/26-open-source-project-guidance.md) suggested issue labels and
+contribution rules.
+**Branch / PR:** `chore/github-issue-starters`, PR #108.
+**Status:** Implemented.
+
+### Done
+- `.github/labels.yml` and `.github/workflows/labels.yml`: added the §26
+  issue-label set and an on-main label sync workflow.
+- `.github/ISSUE_TEMPLATE/`: added bug, design discussion, and good first
+  issue templates tied to GDD and originality expectations.
+- `scripts/seed-good-first-issues.sh`: added a repeat-safe `gh` seeding script
+  for contributor-friendly starter issues.
+- `docs/CONTRIBUTING.md` and `docs/GDD_COVERAGE.json`: linked the label
+  registry, templates, and starter-task coverage.
+
+### Verified
+- `bash -n scripts/seed-good-first-issues.sh` green.
+- `actionlint .github/workflows/labels.yml` green.
+- No-dash scan and `git diff --check` green.
+- `npm run verify` green, 2593 passed.
+- `scripts/seed-good-first-issues.sh` created or confirmed six
+  `good-first-issue` issues: #102, #103, #104, #105, #106, and #107.
+
+### Decisions and assumptions
+- The seed script keeps default GitHub labels intact and only manages the
+  project-specific §26 label set.
+- Seeded issues are skipped if their title already exists, including closed
+  issues, so the script does not recreate completed starter tasks.
+
+### Coverage ledger
+- GDD-26-ISSUE-LABELS-STARTERS covers the §26 label set and §25 v1.0
+  contributor starter-task deliverable.
+- Uncovered adjacent requirements: public mod browser submission and
+  community curation tools remain future post-v1.0 work.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Car FX sprite compositor
 
 **GDD sections touched:**

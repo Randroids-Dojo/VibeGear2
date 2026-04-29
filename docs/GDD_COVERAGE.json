@@ -879,6 +879,25 @@
       ]
     },
     {
+      "id": "GDD-26-ISSUE-LABELS-STARTERS",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The GitHub repo has the §26 issue-label set, issue templates for bugs, design discussion, and starter tasks, plus seeded good-first-issue tasks for v1.0 contributor onboarding.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        ".github/labels.yml",
+        ".github/workflows/labels.yml",
+        ".github/ISSUE_TEMPLATE/good-first-issue.md",
+        ".github/ISSUE_TEMPLATE/bug-report.md",
+        ".github/ISSUE_TEMPLATE/design-discussion.md",
+        "scripts/seed-good-first-issues.sh",
+        "docs/CONTRIBUTING.md"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-26-DATA-MOD-LOADER",
       "gddSections": [
         "docs/gdd/21-technical-design-for-web-implementation.md",

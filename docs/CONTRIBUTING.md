@@ -140,6 +140,12 @@ Use `legal-review` for originality, licence, trademark, or source-provenance
 questions. Maintainers may block merge until the legal-review question is
 resolved.
 
+The canonical label definitions live in [`.github/labels.yml`](../.github/labels.yml)
+and are synced on pushes to `main` by [`.github/workflows/labels.yml`](../.github/workflows/labels.yml).
+Use the issue templates under [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/)
+for bug reports, GDD-grounded design discussions, and contributor-friendly
+starter tasks.
+
 ## 12. First-Time Contributor Walkthrough
 
 1. Clone the repo and install dependencies:
