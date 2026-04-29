@@ -905,6 +905,23 @@
       "followupRefs": ["VibeGear2-implement-mod-loader-e9b8b51f"]
     },
     {
+      "id": "GDD-21-CI-DEPLOY-HEALTH",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The CI workflow verifies the production Vercel Git deployment for pushed main commits by checking that the live app serves the expected build id.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        ".github/workflows/ci.yml",
+        "src/app/api/version/route.ts"
+      ],
+      "testRefs": [
+        "src/app/api/version/__tests__/route.test.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-05-GARAGE-SUMMARY",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",

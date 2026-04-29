@@ -32,8 +32,10 @@ Correct them by adding a new entry that references the old one.
   CLI deployment with a separate token secret.
 
 ### Coverage ledger
-- This is CI health work for §21. It does not add a new gameplay coverage
-  item.
+- GDD-21-CI-DEPLOY-HEALTH covers the `main` production deploy verification
+  contract for the Vercel Git integration.
+- Uncovered adjacent requirements: none for the CI deploy verification
+  contract.
 
 ### Followups created
 None.
