@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§21](gdd/21-technical-design-for-web-implementation.md) leaderboard back end
 concept, [§24](gdd/24-content-plan.md) online leaderboard.
-**Branch / PR:** `docs/leaderboard-storage-gate`, PR pending.
+**Branch / PR:** `docs/leaderboard-storage-gate`, PR #109.
 **Status:** Partial.
 
 ### Done
