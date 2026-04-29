@@ -118,8 +118,10 @@ championship, save, leaderboard, and future mod-manifest data should be
 schema-first. Lint warnings block merge. Content-lint violations block merge.
 Do not bypass checks with `--no-verify`.
 
-For a complete command reference, read [`SCRIPTS.md`](SCRIPTS.md). For local
-setup and test failures, read [`LOCAL_DEV.md`](LOCAL_DEV.md).
+For setup, use the reproducible install flow in [`LOCAL_DEV.md`](LOCAL_DEV.md)
+with `npm ci`. Use `npm run verify` to run the full validation suite for code,
+docs, art, and audio checks. For a complete command reference, read
+[`SCRIPTS.md`](SCRIPTS.md).
 
 ## 11. Issue Triage and Labels
 

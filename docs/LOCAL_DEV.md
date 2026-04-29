@@ -50,7 +50,7 @@ netstat -ano | findstr :3000
 taskkill /PID <pid> /F
 ```
 
-## macOS Npm Cache Corruption
+## macOS npm Cache Corruption
 
 If installs fail with cache or tarball errors, clear local install state and
 retry:
@@ -60,7 +60,7 @@ rm -rf node_modules ~/.npm/_cacache
 npm ci
 ```
 
-## Vitest Or Jsdom Install Warning
+## Vitest or jsdom Install Warning
 
 Vitest may mention optional peers during install. Treat warnings as noise if
 `npm run test` passes. If tests fail because `jsdom` is missing, rerun:

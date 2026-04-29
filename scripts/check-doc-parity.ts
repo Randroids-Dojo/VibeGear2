@@ -34,10 +34,13 @@ const agents = read("AGENTS.md");
 const contributing = read("docs/CONTRIBUTING.md");
 
 const sharedAnchors = [
-  "Create short-lived branches from `main` named `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`.",
+  "`feat/<slice>`",
+  "`fix/<slice>`",
+  "`chore/<slice>`",
+  "`docs/<slice>`",
   "<type>(<area>): <imperative summary>",
-  "Do not bypass checks with `--no-verify`.",
-  "Do not use em-dashes or en-dashes anywhere.",
+  "`--no-verify`",
+  "em-dashes or en-dashes",
 ];
 
 for (const anchor of sharedAnchors) {
