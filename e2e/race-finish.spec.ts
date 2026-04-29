@@ -274,6 +274,64 @@ test.describe("time trial PB persistence", () => {
   });
 });
 
+test.describe("quick race result persistence", () => {
+  test("finished quick race keeps economy and damage out of the save", async ({
+    page,
+  }) => {
+    test.setTimeout(70_000);
+
+    await page.goto("/");
+    await page.evaluate(
+      ({ key, save }) => window.localStorage.setItem(key, JSON.stringify(save)),
+      { key: SAVE_KEY, save: buildRaceDamageSave() },
+    );
+
+    await page.goto(
+      "/race?mode=quickRace&track=test/straight&weather=clear&car=sparrow-gt",
+    );
+    await expect(page.getByTestId("race-canvas")).toHaveAttribute(
+      "data-mode",
+      "quickRace",
+    );
+    await expect(page.getByTestId("race-field-size")).not.toHaveText("1");
+    const canvas = page.getByTestId("race-canvas-element");
+    await expect(canvas).toBeVisible();
+    await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+      timeout: 10_000,
+    });
+
+    await canvas.focus();
+    await page.keyboard.down("ArrowUp");
+    await expect(page).toHaveURL(/\/race\/results/, { timeout: 45_000 });
+    await page.keyboard.up("ArrowUp");
+
+    await expect(page.getByTestId("results-credits-awarded")).toHaveText("0 cr");
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw
+        ? (JSON.parse(raw) as {
+            garage?: {
+              credits?: number;
+              pendingDamage?: Record<
+                string,
+                { zones?: { body?: number }; total?: number }
+              >;
+            };
+            records?: Record<string, { bestLapMs?: number; bestRaceMs?: number }>;
+          })
+        : null;
+    }, SAVE_KEY);
+
+    expect(persisted?.garage?.credits).toBe(1000);
+    expect(
+      persisted?.garage?.pendingDamage?.["sparrow-gt"]?.zones?.body ?? 0,
+    ).toBe(0.33);
+    expect(persisted?.records?.["test/straight"]?.bestLapMs).toBeGreaterThan(0);
+    expect(persisted?.records?.["test/straight"]?.bestRaceMs).toBeGreaterThan(0);
+  });
+});
+
 function buildRaceDamageSave() {
   return {
     version: 3,

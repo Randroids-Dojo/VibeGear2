@@ -66,6 +66,11 @@ test.describe("title screen", () => {
     await expect(timeTrial).toHaveText("Time Trial");
     await expect(timeTrial).toHaveAttribute("href", "/time-trial");
 
+    const quickRace = page.getByTestId("menu-quick-race");
+    await expect(quickRace).toBeVisible();
+    await expect(quickRace).toHaveText("Quick Race");
+    await expect(quickRace).toHaveAttribute("href", "/quick-race");
+
     const daily = page.getByTestId("menu-daily");
     await expect(daily).toBeVisible();
     await expect(daily).toHaveText("Daily Challenge");
@@ -110,6 +115,17 @@ test.describe("title screen", () => {
     await expect(page.getByTestId("race-canvas")).toHaveAttribute(
       "data-mode",
       "timeTrial",
+    );
+  });
+
+  test("Quick Race link navigates to quick-race picker", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-quick-race").click();
+    await expect(page).toHaveURL(/\/quick-race$/);
+    await expect(page.getByTestId("quick-race-page")).toBeVisible();
+    await expect(page.getByTestId("quick-race-start")).toHaveAttribute(
+      "href",
+      /\/race\?mode=quickRace&track=.+&weather=.+&car=.+/,
     );
   });
 

@@ -21,6 +21,7 @@ export * from "./rng";
 export * from "./ghost";
 export * from "./ghostDriver";
 export * from "./timeTrial";
+export * from "./modes/quickRace";
 export * from "./assists";
 export * from "./difficultyPresets";
 export * from "./raceDamagePersistence";

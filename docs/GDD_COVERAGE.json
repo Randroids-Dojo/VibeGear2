@@ -207,6 +207,29 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-06-QUICK-RACE-MODE",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Quick Race lets the player choose an unlocked track, authored weather option, and owned car, then runs a single race with AI present, personal records enabled, and campaign economy and damage persistence disabled.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/quickRace.ts",
+        "src/app/quick-race/page.tsx",
+        "src/app/race/page.tsx",
+        "src/app/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/quickRace.test.ts",
+        "e2e/title-screen.spec.ts",
+        "e2e/race-finish.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-practice-quick-ad3ba399"]
+    },
+    {
       "id": "GDD-10-GRASS-RESTART-PHYSICS",
       "gddSections": [
         "docs/gdd/10-driving-model-and-physics.md",
