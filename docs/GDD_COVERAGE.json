@@ -879,6 +879,32 @@
       ]
     },
     {
+      "id": "GDD-26-DEV-TRACK-EDITOR",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Core authors have a dev-only, schema-backed track JSON editor with segment, checkpoint, spawn grid, import, export, validation, and live compile preview surfaces gated out of production.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        ".env.development.example",
+        "src/app/dev/track-editor/page.tsx",
+        "src/components/render/RoadCanvas.tsx",
+        "src/components/track-editor/"
+      ],
+      "testRefs": [
+        "src/app/dev/track-editor/__tests__/page.test.tsx",
+        "src/components/render/__tests__/RoadCanvas.test.tsx",
+        "src/components/track-editor/__tests__/TrackEditor.test.tsx",
+        "src/components/track-editor/__tests__/io.test.ts",
+        "src/components/track-editor/__tests__/trackEditorState.test.ts",
+        "e2e/track-editor-gate.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-mod-loader-e9b8b51f"]
+    },
+    {
       "id": "GDD-05-GARAGE-SUMMARY",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",
