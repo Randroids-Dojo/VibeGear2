@@ -139,6 +139,10 @@ import {
   type EngineAudioContextLike,
   type EngineRuntimeInput,
 } from "@/audio/engineRuntime";
+import {
+  ProceduralSfxRuntime,
+  type SfxAudioContextLike,
+} from "@/audio/sfx";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -202,6 +206,20 @@ function currentEngineAudioContext(): EngineAudioContextLike | null {
     return null;
   }
   return context as EngineAudioContextLike;
+}
+
+function currentSfxAudioContext(): SfxAudioContextLike | null {
+  const context = getAudioContext();
+  if (
+    context === null ||
+    !("createOscillator" in context) ||
+    !("createGain" in context) ||
+    !("currentTime" in context) ||
+    !("destination" in context)
+  ) {
+    return null;
+  }
+  return context as SfxAudioContextLike;
 }
 
 function createLayerCanvas(
@@ -828,6 +846,9 @@ function RaceCanvas({
     const engineAudio = new ProceduralEngineRuntime({
       context: currentEngineAudioContext,
     });
+    const raceSfx = new ProceduralSfxRuntime({
+      context: currentSfxAudioContext,
+    });
     let latestEngineInput: EngineRuntimeInput = {
       speed: 0,
       topSpeed: STARTER_STATS.topSpeed,
@@ -836,6 +857,7 @@ function RaceCanvas({
     let engineStartPending = false;
     let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
+    let lastCountdownSfxStep: number | null = null;
     const tryStartEngineAudio = (): void => {
       if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
         return;
@@ -866,6 +888,7 @@ function RaceCanvas({
       unbindEngineAudio();
       handleRef.current?.stop();
       engineAudio.stop();
+      raceSfx.stopAll();
       handleRef.current = null;
       sessionRef.current = null;
       inputManager.dispose();
@@ -896,6 +919,7 @@ function RaceCanvas({
       setPhase("countdown");
       setCountdownSecondsLeft(Math.ceil(config.countdownSec ?? 3));
       setResultMs(null);
+      lastCountdownSfxStep = null;
       setHudSnapshot({
         speed: 0,
         lap: 1,
@@ -1180,7 +1204,15 @@ function RaceCanvas({
         // reflects countdown / phase changes for Playwright.
         setPhase(session.race.phase);
         if (session.race.phase === "countdown") {
-          setCountdownSecondsLeft(Math.ceil(session.race.countdownRemainingSec));
+          const countdownStep = Math.ceil(session.race.countdownRemainingSec);
+          if (countdownStep !== lastCountdownSfxStep) {
+            lastCountdownSfxStep = countdownStep;
+            raceSfx.playCountdownTick({
+              step: countdownStep,
+              audio: persistedSettings.audio,
+            });
+          }
+          setCountdownSecondsLeft(countdownStep);
         } else if (session.race.phase === "finished") {
           setResultMs(Math.round(session.race.elapsed * 1000));
           // Natural finish wiring per F-038. The render callback fires
@@ -1263,6 +1295,12 @@ function RaceCanvas({
             stopRaceRuntime();
             router.push("/race/results");
           }
+        } else if (lastCountdownSfxStep !== 0) {
+          lastCountdownSfxStep = 0;
+          raceSfx.playCountdownTick({
+            step: 0,
+            audio: persistedSettings.audio,
+          });
         }
         setHudSnapshot({
           speed: hud.speed,
