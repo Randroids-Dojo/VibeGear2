@@ -6,6 +6,41 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Vercel Git deploy check hotfix
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) CI and deploy target.
+**Branch / PR:** `fix/vercel-git-deploy-check`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `.github/workflows/ci.yml`: replaced the token-based Vercel CLI
+  production deploy job with a production smoke check that waits for the
+  Vercel Git deployment to serve the pushed short SHA from `/api/version`.
+
+### Verified
+- `actionlint .github/workflows/ci.yml` green.
+- Local production smoke of `https://vibe-gear2.vercel.app` returned 200 for
+  `/`, `/world`, `/race`, `/quick-race`, `/race?mode=practice`, `/daily`,
+  `/options`, `/race/results`, and `/garage`, and returned 404 for
+  `/dev/track-editor`.
+- Local shell probe matched `/api/version` to merge commit `ce8448c`.
+
+### Decisions and assumptions
+- Vercel Git integration is the production deployment owner. The GitHub
+  workflow now verifies the deployed build instead of attempting a duplicate
+  CLI deployment with a separate token secret.
+
+### Coverage ledger
+- This is CI health work for §21. It does not add a new gameplay coverage
+  item.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Dev track editor
 
 **GDD sections touched:**

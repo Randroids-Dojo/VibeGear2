@@ -86,42 +86,39 @@ jobs:
         run: npm run bench:render
 
   deploy:
-    name: Deploy to Vercel (production)
+    name: Verify Vercel production deploy
     needs: verify
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Separate concurrency group with cancel-in-progress disabled: a queued
-    # deploy waits its turn instead of killing an in-flight one. Vercel can
-    # leave aliasing in a confused state if a deploy upload is interrupted.
+    # verification waits its turn instead of racing another production smoke.
     concurrency:
       group: deploy-prod
       cancel-in-progress: false
     environment:
       name: production
-      url: ${{ steps.vercel-deploy.outputs.url }}
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      url: https://vibe-gear2.vercel.app
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Pull Vercel environment
-        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build with Vercel CLI
-        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy prebuilt artefact
-        id: vercel-deploy
+      - name: Wait for Vercel Git deployment
+        env:
+          PRODUCTION_URL: https://vibe-gear2.vercel.app
         run: |
-          url="$(npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+          expected="${GITHUB_SHA::7}"
+          for attempt in {1..60}; do
+            version="$(node -e "fetch(process.env.PRODUCTION_URL + '/api/version', { cache: 'no-store' }).then(async (response) => { if (!response.ok) throw new Error(String(response.status)); const body = await response.json(); console.log(body.version ?? ''); }).catch(() => process.exit(1));" 2>/dev/null || true)"
+            status="$(node -e "fetch(process.env.PRODUCTION_URL, { redirect: 'manual', cache: 'no-store' }).then((response) => console.log(response.status)).catch(() => process.exit(1));" 2>/dev/null || true)"
+            echo "attempt=$attempt status=$status version=$version expected=$expected"
+            if [ "$status" = "200" ] && [ "$version" = "$expected" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Production did not report expected build id $expected" >&2
+          exit 1
