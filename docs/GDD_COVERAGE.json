@@ -826,6 +826,29 @@
       "followupRefs": ["F-049"]
     },
     {
+      "id": "GDD-20-AUDIO-OPTIONS-PANE",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The options screen exposes persisted master, music, and SFX sliders backed by the save audio settings and consumed by the audio mixer contract.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/options/page.tsx",
+        "src/components/options/AudioPane.tsx",
+        "src/components/options/audioPaneState.ts",
+        "src/components/options/optionsResetState.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/audioPaneState.test.ts",
+        "src/components/options/__tests__/optionsResetState.test.ts",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-19-KEY-REMAPPING",
       "gddSections": [
         "docs/gdd/19-controls-and-input.md",

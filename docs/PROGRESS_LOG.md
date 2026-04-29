@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Audio options pane
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) sound and music design,
+[§20](gdd/20-hud-and-ui-ux.md) settings,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline,
+[§22](gdd/22-data-schemas.md) save audio schema.
+**Branch / PR:** `feat/audio-options-pane`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/options/page.tsx`: replaced the Audio placeholder with a
+  shipped pane.
+- `src/components/options/AudioPane.tsx` and
+  `src/components/options/audioPaneState.ts`: added persisted master,
+  music, and SFX sliders backed by `SaveGame.settings.audio`.
+- `src/components/options/optionsResetState.ts`: made reset-to-defaults
+  own audio settings now that the pane has shipped.
+- `docs/GDD_COVERAGE.json`: added GDD-20-AUDIO-OPTIONS-PANE.
+
+### Verified
+- `npx vitest run src/components/options/__tests__/audioPaneState.test.ts src/components/options/__tests__/optionsResetState.test.ts src/app/options/__tests__/page.test.tsx`
+  green, 19 passed.
+- `npm run lint` green.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/options-screen.spec.ts --project=chromium`
+  green, 9 passed.
+- `npm run verify` green, 2438 passed.
+- `npm run test:e2e` green, 75 passed.
+
+### Decisions and assumptions
+- This slice persists the §20 mix controls only. It does not create or
+  resume the Web Audio context, and it does not start engine, SFX, or
+  music playback.
+- Slider values use the existing unit-interval save schema with 5
+  percent UI steps and two-decimal clamping in the pure helper.
+- Reset-to-defaults now resets audio because Audio is no longer a
+  placeholder pane.
+
+### Coverage ledger
+- GDD-20-AUDIO-OPTIONS-PANE covers master, music, and SFX settings UI,
+  save persistence, default fallback, clamping, and reset ownership.
+- Uncovered adjacent requirements: engine playback, SFX playback, music
+  playback, region stem metadata, and placeholder audio assets remain
+  under the §18 audio parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Audio context lifecycle primitives
 
 **GDD sections touched:**
