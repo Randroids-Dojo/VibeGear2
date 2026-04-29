@@ -17,7 +17,7 @@ surface state,
 surface effects,
 [§21](gdd/21-technical-design-for-web-implementation.md) audio
 runtime.
-**Branch / PR:** `feat/surface-audio-cues`, PR pending.
+**Branch / PR:** `feat/surface-audio-cues`, PR #87.
 **Status:** Implemented.
 
 ### Done
