@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { ModManifestSchema } from "@/data/schemas";
 
-import { isSafeModPath, loadModContent, loadModManifest, modFileUrl } from "../manifest";
+import {
+  isSafeModId,
+  isSafeModPath,
+  loadModContent,
+  loadModManifest,
+  modFileUrl,
+} from "../manifest";
 
 const track = {
   id: "community/harbor-day",
@@ -72,6 +78,15 @@ describe("ModManifestSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects path-like mod ids", () => {
+    const result = ModManifestSchema.safeParse({
+      ...manifest,
+      id: "community/pack",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects manifests without content references", () => {
     const result = ModManifestSchema.safeParse({
       ...manifest,
@@ -83,6 +98,14 @@ describe("ModManifestSchema", () => {
 });
 
 describe("mod loader", () => {
+  it("rejects path-like mod ids before building a URL", () => {
+    expect(isSafeModId("community-pack")).toBe(true);
+    expect(isSafeModId("community/pack")).toBe(false);
+    expect(() => modFileUrl("/mods", "community/pack", "manifest.json")).toThrow(
+      /unsafe mod id/u,
+    );
+  });
+
   it("normalizes safe mod file URLs under the mod folder", () => {
     expect(modFileUrl("/mods", "community-pack", "tracks/harbor-day.json")).toBe(
       "/mods/community-pack/tracks/harbor-day.json",
