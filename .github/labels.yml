@@ -1,0 +1,51 @@
+- name: physics
+  color: "1f77b4"
+  description: Driving model, collisions, traction, damage, and race simulation.
+
+- name: renderer
+  color: "5319e7"
+  description: Canvas road rendering, sprite atlases, HUD drawing, and visual effects.
+
+- name: ai
+  color: "0e8a16"
+  description: CPU opponents, racing lines, difficulty tuning, and traffic behavior.
+
+- name: ui-ux
+  color: "c5def5"
+  description: Screens, flows, controls, accessibility, and player-facing copy.
+
+- name: audio
+  color: "fbca04"
+  description: Music, sound effects, mixing, audio manifests, and playback bugs.
+
+- name: modding
+  color: "5319e7"
+  description: Data mods, schemas, loader behavior, starter packs, and community content.
+
+- name: content
+  color: "fef2c0"
+  description: Tracks, tours, cars, balance data, manifests, and authored game data.
+
+- name: legal-review
+  color: "b60205"
+  description: Originality, license, trademark, source provenance, or IP-safety review.
+
+- name: good-first-issue
+  color: "7057ff"
+  description: Small, well-scoped task suitable for first-time contributors.
+
+- name: help-wanted
+  color: "008672"
+  description: Maintainers would welcome outside contribution on this task.
+
+- name: performance
+  color: "006b75"
+  description: Frame time, bundle size, memory, loading, and profiling work.
+
+- name: bug
+  color: "d73a4a"
+  description: Broken behavior, regression, crash, or incorrect output.
+
+- name: design
+  color: "d876e3"
+  description: GDD, balance, UX, rule, roadmap, or game-design discussion.
