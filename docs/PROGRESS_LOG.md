@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 [§18](gdd/18-sound-and-music-design.md) tunnel audio shift,
 [§22](gdd/22-data-schemas.md) track segment metadata,
 [§24](gdd/24-content-plan.md) Iron Borough Rivet Tunnel.
-**Branch / PR:** `feat/tunnel-segments`, PR pending.
+**Branch / PR:** `feat/tunnel-segments`, PR #95.
 **Status:** Implemented.
 
 ### Done
