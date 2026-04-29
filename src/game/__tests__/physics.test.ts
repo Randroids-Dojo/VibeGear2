@@ -247,6 +247,18 @@ describe("step (off-road)", () => {
     expect(s.speed).toBeLessThanOrEqual(OFF_ROAD_CAP_M_PER_S);
   });
 
+  it("can launch from a full stop on grass under throttle", () => {
+    const start = freshState({
+      speed: 0,
+      x: ROAD.roadHalfWidth * RUMBLE_HALF_WIDTH_SCALE + 1,
+      surface: "grass",
+    });
+    const s = step(start, withInput({ throttle: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.speed).toBeGreaterThan(0);
+    expect(s.z).toBeGreaterThan(start.z);
+    expect(s.surface).toBe("grass");
+  });
+
   it("off-road for one frame does not damage state shape", () => {
     // No damage modelled yet; just verify we get back a usable CarState.
     const start = freshState({ speed: 30, x: ROAD.roadHalfWidth + 0.5 });

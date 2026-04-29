@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Grass restart physics fix
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) off-road slowdown and
+driving model, [§21](gdd/21-technical-design-for-web-implementation.md)
+deterministic physics.
+**Branch / PR:** `fix/grass-restart-stuck`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/physics.ts`: reordered off-road drag so it applies to the
+  incoming speed before throttle. A stopped car on grass can now build
+  forward speed while rolling cars still receive grass drag and the
+  off-road speed cap.
+- `src/game/physics.ts`: bumped `PHYSICS_VERSION` from 2 to 3 because
+  the integration order changed and old ghost recordings should not be
+  compared against the new physics math.
+- `src/game/__tests__/physics.test.ts`: added a regression test for
+  launching from a full stop on grass under throttle.
+
+### Verified
+- `npx vitest run src/game/__tests__/physics.test.ts src/game/__tests__/ghost.test.ts src/game/__tests__/ghostDriver.test.ts src/game/__tests__/timeTrial.test.ts`
+  green, 117 passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2458 passed.
+- `npm run test:e2e` green, 75 passed.
+
+### Decisions and assumptions
+- This is a physics integration-order fix, not an assist or traction
+  shortcut. The car still slows down on grass and remains capped by
+  `OFF_ROAD_CAP_M_PER_S`.
+
+### Coverage ledger
+- GDD-10-GRASS-RESTART-PHYSICS covers stopped-on-grass throttle
+  recovery, off-road drag preservation, speed-cap preservation, and the
+  physics-version bump for ghost compatibility.
+- Uncovered adjacent requirements: reverse gear, traction loss, spinout
+  recovery, jump landing behavior, surface-specific tire audio, and
+  per-surface VFX tuning remain under their respective gameplay,
+  audio, and visual-polish backlog dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Procedural nitro engage SFX runtime
 
 **GDD sections touched:**
