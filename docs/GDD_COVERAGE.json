@@ -1094,6 +1094,44 @@
       "followupRefs": ["F-052"]
     },
     {
+      "id": "GDD-16-VFX-FLASH-SHAKE",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Race rendering supports deterministic flash and light camera-shake VFX with a reduced-motion gate for shake.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/vfx.ts",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/vfx.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-visual-polish-7d31d112"]
+    },
+    {
+      "id": "GDD-16-OFF-ROAD-DUST",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Off-road driving can emit bounded deterministic dust particles from player surface and speed state, and the road renderer can draw the dust pool over road strips.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/dust.ts",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/dust.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-visual-polish-7d31d112"]
+    },
+    {
       "id": "GDD-25-LOOP-COVERAGE-LEDGER",
       "gddSections": [
         "docs/IMPLEMENTATION_PLAN.md",
