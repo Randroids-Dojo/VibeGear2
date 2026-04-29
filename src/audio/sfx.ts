@@ -53,6 +53,20 @@ export interface NitroEngageSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export interface GearShiftSfxInput {
+  readonly fromGear: number;
+  readonly toGear: number;
+  readonly audio: AudioSettings | undefined;
+}
+
+export interface LapCompleteSfxInput {
+  readonly audio: AudioSettings | undefined;
+}
+
+export interface ResultsStingerSfxInput {
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface ProceduralSfxRuntimeOptions {
   readonly context: () => SfxAudioContextLike | null;
   readonly baseGain?: number;
@@ -117,6 +131,40 @@ export class ProceduralSfxRuntime {
       gainScale: 0.75,
       durationSeconds: 0.18,
       endFrequency: 1460,
+    });
+  }
+
+  playGearShift(input: GearShiftSfxInput): boolean {
+    const shiftingUp = input.toGear >= input.fromGear;
+    return this.playTone({
+      audio: input.audio,
+      frequency: shiftingUp ? 420 : 560,
+      oscillatorType: "triangle",
+      gainScale: 0.45,
+      durationSeconds: 0.09,
+      endFrequency: shiftingUp ? 660 : 320,
+    });
+  }
+
+  playLapComplete(input: LapCompleteSfxInput): boolean {
+    return this.playTone({
+      audio: input.audio,
+      frequency: 740,
+      oscillatorType: "square",
+      gainScale: 0.7,
+      durationSeconds: 0.24,
+      endFrequency: 1110,
+    });
+  }
+
+  playResultsStinger(input: ResultsStingerSfxInput): boolean {
+    return this.playTone({
+      audio: input.audio,
+      frequency: 880,
+      oscillatorType: "square",
+      gainScale: 0.8,
+      durationSeconds: 0.34,
+      endFrequency: 1320,
     });
   }
 

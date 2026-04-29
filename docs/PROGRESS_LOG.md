@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Race milestone SFX events
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) required vehicle and race
+SFX,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio
+runtime.
+**Branch / PR:** `feat/race-sfx-events`, PR #86.
+**Status:** Implemented.
+
+### Done
+- `src/game/raceSession.ts`: added deterministic player audio events
+  for explicit manual gear shifts, lap completion before the final lap,
+  and race finish.
+- `src/audio/sfx.ts`: added procedural one-shot playback methods for
+  gear shift, lap complete, and results stinger cues through the shared
+  SFX mixer path.
+- `src/app/race/page.tsx`: routed the new race-session events into the
+  procedural SFX runtime.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-PROCEDURAL-RACE-MILESTONE-SFX.
+
+### Verified
+- `npx vitest run src/audio/sfx.test.ts src/game/__tests__/raceSession.test.ts`
+  green, 128 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2501 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- Gear-shift SFX fire for explicit manual shift input only. Automatic
+  transmission changes stay silent for this slice so routine auto shifts
+  do not spam event output every time the reducer crosses a threshold.
+- The results stinger is triggered by the player crossing the final line.
+  The later results screen can add a screen-enter stinger if needed.
+
+### Coverage ledger
+- GDD-18-PROCEDURAL-RACE-MILESTONE-SFX covers gear shift, lap complete,
+  and results stinger events from the required SFX list.
+- Uncovered adjacent requirements: brake scrub, tire squeal, spray or
+  snow hush SFX, weather audio stems, and true multi-stem music layering
+  remain under the §18 sound parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Sound and music runtime
 
 **GDD sections touched:**

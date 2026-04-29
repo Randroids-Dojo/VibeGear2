@@ -876,6 +876,9 @@ describe("stepRaceSession (transmission)", () => {
     session = stepRaceSession(session, shiftUpInput(), config, DT);
     expect(session.player.transmission.gear).toBe(3);
     expect(session.player.lastShiftUpPressed).toBe(true);
+    expect(session.audioEvents).toEqual([
+      { kind: "gearShift", carId: "player", fromGear: 2, toGear: 3 },
+    ]);
   });
 
   it("manual shiftUp held across ticks only fires once (no cascade)", () => {
@@ -897,6 +900,7 @@ describe("stepRaceSession (transmission)", () => {
     expect(session.player.transmission.gear).toBe(3);
     for (let i = 0; i < 10; i += 1) {
       session = stepRaceSession(session, shiftUpInput(), config, DT);
+      expect(session.audioEvents).toEqual([]);
     }
     expect(session.player.transmission.gear).toBe(3);
   });
@@ -940,6 +944,9 @@ describe("stepRaceSession (transmission)", () => {
     };
     session = stepRaceSession(session, shiftDownInput(), config, DT);
     expect(session.player.transmission.gear).toBe(3);
+    expect(session.audioEvents).toEqual([
+      { kind: "gearShift", carId: "player", fromGear: 4, toGear: 3 },
+    ]);
   });
 
   it("respects the gearbox upgrade tier when capping max gear", () => {
@@ -1673,8 +1680,42 @@ describe("stepRaceSession (§7 per-car DNF tracking + finishing order, F-028)", 
     expect(session.player.lapTimes.length).toBe(1);
     expect(session.player.lapTimes[0]).toBeGreaterThan(0);
     expect(session.player.finishedAtMs).not.toBeNull();
+    expect(session.audioEvents).toEqual([
+      { kind: "raceFinish", carId: "player" },
+    ]);
     // Race phase mirrors the player flip (existing behaviour).
     expect(session.race.phase).toBe("finished");
+  });
+
+  it("emits lap-complete SFX before the final lap", () => {
+    const track = loadTrack("test/straight");
+    const config: RaceSessionConfig = {
+      track,
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+      totalLaps: 2,
+    };
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: {
+          ...session.player.car,
+          z: track.totalLengthMeters - 0.1,
+          speed: 60,
+        },
+      },
+    };
+
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+
+    expect(session.race.phase).toBe("racing");
+    expect(session.race.lap).toBe(2);
+    expect(session.audioEvents).toEqual([
+      { kind: "lapComplete", carId: "player", lap: 1 },
+    ]);
   });
 
   it("appends per-lap durations across multi-lap races (cumulative-aware)", () => {

@@ -170,6 +170,65 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.18);
   });
 
+  it("plays gear shifts with direction-specific pitch movement", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(
+      runtime.playGearShift({ fromGear: 2, toGear: 3, audio: AUDIO }),
+    ).toBe(true);
+    expect(
+      runtime.playGearShift({ fromGear: 4, toGear: 3, audio: AUDIO }),
+    ).toBe(true);
+
+    expect(context.oscillators[0]?.type).toBe("triangle");
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      420,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(660, 0.09);
+    expect(context.oscillators[1]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      560,
+      0,
+    );
+    expect(
+      context.oscillators[1]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(320, 0.09);
+  });
+
+  it("plays lap and results stingers as longer rising cues", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(runtime.playLapComplete({ audio: AUDIO })).toBe(true);
+    expect(runtime.playResultsStinger({ audio: AUDIO })).toBe(true);
+
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      740,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(1110, 0.24);
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.24);
+    expect(context.oscillators[1]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      880,
+      0,
+    );
+    expect(
+      context.oscillators[1]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(1320, 0.34);
+    expect(context.oscillators[1]?.stop).toHaveBeenCalledWith(0.34);
+  });
+
   it("disconnects finished one-shots", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralSfxRuntime({ context: () => context });
