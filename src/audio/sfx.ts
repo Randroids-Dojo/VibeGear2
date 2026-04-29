@@ -67,6 +67,22 @@ export interface ResultsStingerSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export interface BrakeScrubSfxInput {
+  readonly speedFactor: number;
+  readonly audio: AudioSettings | undefined;
+}
+
+export interface TireSquealSfxInput {
+  readonly speedFactor: number;
+  readonly audio: AudioSettings | undefined;
+}
+
+export interface SurfaceHushSfxInput {
+  readonly surface: "wet" | "snow";
+  readonly speedFactor: number;
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface ProceduralSfxRuntimeOptions {
   readonly context: () => SfxAudioContextLike | null;
   readonly baseGain?: number;
@@ -165,6 +181,43 @@ export class ProceduralSfxRuntime {
       gainScale: 0.8,
       durationSeconds: 0.34,
       endFrequency: 1320,
+    });
+  }
+
+  playBrakeScrub(input: BrakeScrubSfxInput): boolean {
+    const speed = clampUnit(input.speedFactor);
+    return this.playTone({
+      audio: input.audio,
+      frequency: Math.round(170 + speed * 90),
+      oscillatorType: "sawtooth",
+      gainScale: 0.35 + speed * 0.25,
+      durationSeconds: 0.14,
+      endFrequency: Math.round(130 + speed * 70),
+    });
+  }
+
+  playTireSqueal(input: TireSquealSfxInput): boolean {
+    const speed = clampUnit(input.speedFactor);
+    return this.playTone({
+      audio: input.audio,
+      frequency: Math.round(860 + speed * 420),
+      oscillatorType: "triangle",
+      gainScale: 0.4 + speed * 0.3,
+      durationSeconds: 0.16,
+      endFrequency: Math.round(980 + speed * 520),
+    });
+  }
+
+  playSurfaceHush(input: SurfaceHushSfxInput): boolean {
+    const speed = clampUnit(input.speedFactor);
+    const snow = input.surface === "snow";
+    return this.playTone({
+      audio: input.audio,
+      frequency: Math.round((snow ? 260 : 360) + speed * (snow ? 80 : 140)),
+      oscillatorType: "sawtooth",
+      gainScale: 0.28 + speed * 0.22,
+      durationSeconds: snow ? 0.24 : 0.18,
+      endFrequency: Math.round((snow ? 210 : 290) + speed * (snow ? 70 : 110)),
     });
   }
 

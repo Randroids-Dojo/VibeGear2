@@ -117,6 +117,7 @@ import {
   isOffRoad,
   step,
   type CarState,
+  type Surface,
   type TrackContext,
 } from "./physics";
 import { EMPTY_PASSED_SET } from "./raceCheckpoints";
@@ -243,6 +244,27 @@ export interface RaceSessionRaceFinishAudioEvent {
   readonly carId: string;
 }
 
+export interface RaceSessionBrakeScrubAudioEvent {
+  readonly kind: "brakeScrub";
+  readonly carId: string;
+  readonly speedFactor: number;
+}
+
+export interface RaceSessionTireSquealAudioEvent {
+  readonly kind: "tireSqueal";
+  readonly carId: string;
+  readonly speedFactor: number;
+}
+
+export type RaceSessionSurfaceHushKind = "wet" | "snow";
+
+export interface RaceSessionSurfaceHushAudioEvent {
+  readonly kind: "surfaceHush";
+  readonly carId: string;
+  readonly surface: RaceSessionSurfaceHushKind;
+  readonly speedFactor: number;
+}
+
 type RaceSessionLapMilestoneAudioEvent =
   | RaceSessionLapCompleteAudioEvent
   | RaceSessionRaceFinishAudioEvent;
@@ -252,7 +274,10 @@ export type RaceSessionAudioEvent =
   | RaceSessionNitroAudioEvent
   | RaceSessionGearShiftAudioEvent
   | RaceSessionLapCompleteAudioEvent
-  | RaceSessionRaceFinishAudioEvent;
+  | RaceSessionRaceFinishAudioEvent
+  | RaceSessionBrakeScrubAudioEvent
+  | RaceSessionTireSquealAudioEvent
+  | RaceSessionSurfaceHushAudioEvent;
 
 export interface RaceSessionConfig {
   /** Compiled track to drive on. Frozen output of `compileTrack`. */
@@ -420,6 +445,12 @@ export interface RaceSessionPlayerCar {
   /** Edge-detection mirror of the prior tick's `shiftDown` input. */
   lastShiftDownPressed: boolean;
   /**
+   * Per-player audio gates for continuous-feel SFX. The session emits
+   * brake, tire, and surface hush cues only when a qualifying condition
+   * first becomes active, then re-arms the cue after the condition clears.
+   */
+  audioGates: RaceSessionAudioGates;
+  /**
    * Per-session §19 accessibility assist memory, threaded across ticks
    * by `applyAssists`. Initialised at session creation to
    * `INITIAL_ASSIST_MEMORY` and reset back to it the same tick the
@@ -514,6 +545,18 @@ export interface RaceSessionPlayerCar {
  */
 export type RaceCarStatus = "racing" | "finished" | "dnf";
 
+export interface RaceSessionAudioGates {
+  readonly brakeScrubActive: boolean;
+  readonly tireSquealActive: boolean;
+  readonly surfaceHushActive: RaceSessionSurfaceHushKind | null;
+}
+
+const INITIAL_AUDIO_GATES: RaceSessionAudioGates = Object.freeze({
+  brakeScrubActive: false,
+  tireSquealActive: false,
+  surfaceHushActive: null,
+});
+
 export interface RaceSessionState {
   race: RaceState;
   player: RaceSessionPlayerCar;
@@ -594,6 +637,10 @@ export const AI_GRID_SPACING_M = 5;
  */
 export const CAR_LENGTH_M = 4;
 export const CAR_WIDTH_M = 1.8;
+const BRAKE_SCRUB_SPEED_M_PER_S = 8;
+const TIRE_SQUEAL_SPEED_M_PER_S = 18;
+const TIRE_SQUEAL_STEER_THRESHOLD = 0.65;
+const SURFACE_HUSH_SPEED_M_PER_S = 10;
 
 /**
  * Reference top speed (m/s) used to normalise the §13 `speedFactor`
@@ -686,6 +733,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     }),
     lastShiftUpPressed: false,
     lastShiftDownPressed: false,
+    audioGates: { ...INITIAL_AUDIO_GATES },
     assistMemory: { ...INITIAL_ASSIST_MEMORY },
     assistBadge: null,
     weatherVisualReductionActive:
@@ -1728,16 +1776,26 @@ export function stepRaceSession(
     SEGMENT_LENGTH,
     nextTick,
   );
+  const playerSurfaceAudio = buildPlayerSurfaceAudioEvents({
+    gates: state.player.audioGates,
+    input: effectivePlayerInput,
+    car: nextPlayerCar,
+    status: nextPlayerStatus,
+    weather: trackWeather,
+    topSpeed: playerStats.topSpeed,
+  });
   const hasPlayerNonImpactAudioEvents =
     playerNitroEvents.length > 0 ||
     playerShiftEvents.length > 0 ||
-    playerLapEvents.length > 0;
+    playerLapEvents.length > 0 ||
+    playerSurfaceAudio.events.length > 0;
   const nextAudioEvents: ReadonlyArray<RaceSessionAudioEvent> =
     hasPlayerNonImpactAudioEvents
       ? [
           ...playerNitroEvents,
           ...playerShiftEvents,
           ...playerLapEvents,
+          ...playerSurfaceAudio.events,
           ...playerImpactEvents,
         ]
       : playerImpactEvents;
@@ -1765,6 +1823,7 @@ export function stepRaceSession(
       transmission: playerTransmission,
       lastShiftUpPressed: effectivePlayerInput.shiftUp,
       lastShiftDownPressed: effectivePlayerInput.shiftDown,
+      audioGates: playerSurfaceAudio.gates,
       assistMemory: assistResult.memory,
       assistBadge: assistResult.badge,
       weatherVisualReductionActive: assistResult.weatherVisualReductionActive,
@@ -1788,6 +1847,96 @@ export function stepRaceSession(
     weatherRngState: nextWeatherRngState,
     audioEvents: nextAudioEvents,
   };
+}
+
+function buildPlayerSurfaceAudioEvents(input: {
+  readonly gates: RaceSessionAudioGates;
+  readonly input: Input;
+  readonly car: Readonly<CarState>;
+  readonly status: RaceCarStatus;
+  readonly weather: WeatherOption;
+  readonly topSpeed: number;
+}): {
+  readonly gates: RaceSessionAudioGates;
+  readonly events: ReadonlyArray<RaceSessionAudioEvent>;
+} {
+  if (input.status !== "racing") {
+    return { gates: { ...INITIAL_AUDIO_GATES }, events: [] };
+  }
+
+  const speedFactor = speedFactorForAudio(input.car.speed, input.topSpeed);
+  const brakeScrubNow =
+    input.input.brake > 0 &&
+    input.car.speed >= BRAKE_SCRUB_SPEED_M_PER_S &&
+    input.car.surface !== "grass";
+  const tireSquealNow =
+    input.car.speed >= TIRE_SQUEAL_SPEED_M_PER_S &&
+    input.car.surface !== "grass" &&
+    (Math.abs(input.input.steer) >= TIRE_SQUEAL_STEER_THRESHOLD ||
+      input.input.handbrake);
+  const hushKind = surfaceHushKindForWeather(input.weather, input.car.surface);
+  const surfaceHushNow =
+    hushKind !== null && input.car.speed >= SURFACE_HUSH_SPEED_M_PER_S;
+
+  const events: RaceSessionAudioEvent[] = [];
+  if (brakeScrubNow && !input.gates.brakeScrubActive) {
+    events.push({
+      kind: "brakeScrub",
+      carId: PLAYER_CAR_ID,
+      speedFactor,
+    });
+  }
+  if (tireSquealNow && !input.gates.tireSquealActive) {
+    events.push({
+      kind: "tireSqueal",
+      carId: PLAYER_CAR_ID,
+      speedFactor,
+    });
+  }
+  if (
+    surfaceHushNow &&
+    hushKind !== null &&
+    input.gates.surfaceHushActive !== hushKind
+  ) {
+    events.push({
+      kind: "surfaceHush",
+      carId: PLAYER_CAR_ID,
+      surface: hushKind,
+      speedFactor,
+    });
+  }
+
+  return {
+    gates: {
+      brakeScrubActive: brakeScrubNow,
+      tireSquealActive: tireSquealNow,
+      surfaceHushActive: surfaceHushNow ? hushKind : null,
+    },
+    events,
+  };
+}
+
+function speedFactorForAudio(speed: number, topSpeed: number): number {
+  if (!Number.isFinite(speed) || !Number.isFinite(topSpeed) || topSpeed <= 0) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, speed / topSpeed));
+}
+
+function surfaceHushKindForWeather(
+  weather: WeatherOption,
+  surface: Surface,
+): RaceSessionSurfaceHushKind | null {
+  if (weather === "snow") return "snow";
+  if (
+    surface === "road" &&
+    (weather === "light_rain" ||
+      weather === "rain" ||
+      weather === "heavy_rain")
+  ) {
+    return "wet";
+  }
+  return null;
 }
 
 /**
@@ -1893,6 +2042,7 @@ function clonePlayerCar(
     transmission: { ...player.transmission },
     lastShiftUpPressed: player.lastShiftUpPressed,
     lastShiftDownPressed: player.lastShiftDownPressed,
+    audioGates: { ...player.audioGates },
     assistMemory: { ...player.assistMemory },
     assistBadge: player.assistBadge,
     weatherVisualReductionActive: player.weatherVisualReductionActive,

@@ -1043,6 +1043,162 @@ describe("stepRaceSession (transmission)", () => {
   });
 });
 
+describe("stepRaceSession (surface audio)", () => {
+  it("emits brake scrub once until braking clears", () => {
+    const config = buildConfig({ countdownSec: 0, ai: [] });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, speed: 24 },
+      },
+    };
+
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, brake: 1 },
+      config,
+      DT,
+    );
+    expect(session.audioEvents).toEqual([
+      { kind: "brakeScrub", carId: "player", speedFactor: expect.any(Number) },
+    ]);
+
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, brake: 1 },
+      config,
+      DT,
+    );
+    expect(session.audioEvents).toEqual([]);
+
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, speed: 24 },
+      },
+    };
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, brake: 1 },
+      config,
+      DT,
+    );
+    expect(session.audioEvents[0]?.kind).toBe("brakeScrub");
+  });
+
+  it("emits tire squeal once for high-speed steering until it clears", () => {
+    const config = buildConfig({ countdownSec: 0, ai: [] });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, speed: 28 },
+      },
+    };
+
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, throttle: 1, steer: 1 },
+      config,
+      DT,
+    );
+    expect(session.audioEvents).toEqual([
+      { kind: "tireSqueal", carId: "player", speedFactor: expect.any(Number) },
+    ]);
+    session = stepRaceSession(
+      session,
+      { ...NEUTRAL_INPUT, throttle: 1, steer: 1 },
+      config,
+      DT,
+    );
+    expect(session.audioEvents).toEqual([]);
+  });
+
+  it("emits wet and snow surface hush once per weather surface", () => {
+    const rainConfig = buildConfig({
+      countdownSec: 0,
+      ai: [],
+      track: trackWithWeather(["rain"]),
+      weather: "rain",
+    });
+    let rainSession = createRaceSession(rainConfig);
+    rainSession = {
+      ...rainSession,
+      player: {
+        ...rainSession.player,
+        car: { ...rainSession.player.car, speed: 18 },
+      },
+    };
+    rainSession = stepRaceSession(rainSession, fullThrottle(), rainConfig, DT);
+    expect(rainSession.audioEvents).toContainEqual({
+      kind: "surfaceHush",
+      carId: "player",
+      surface: "wet",
+      speedFactor: expect.any(Number),
+    });
+    rainSession = stepRaceSession(rainSession, fullThrottle(), rainConfig, DT);
+    expect(rainSession.audioEvents).toEqual([]);
+
+    const snowConfig = buildConfig({
+      countdownSec: 0,
+      ai: [],
+      track: trackWithWeather(["snow"]),
+      weather: "snow",
+    });
+    let snowSession = createRaceSession(snowConfig);
+    snowSession = {
+      ...snowSession,
+      player: {
+        ...snowSession.player,
+        car: { ...snowSession.player.car, speed: 18 },
+      },
+    };
+    snowSession = stepRaceSession(snowSession, fullThrottle(), snowConfig, DT);
+    expect(snowSession.audioEvents).toContainEqual({
+      kind: "surfaceHush",
+      carId: "player",
+      surface: "snow",
+      speedFactor: expect.any(Number),
+    });
+  });
+
+  it("re-arms surface hush when the hush kind changes", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      ai: [],
+      track: trackWithWeather(["rain", "snow"]),
+      weather: "snow",
+    });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        audioGates: {
+          ...session.player.audioGates,
+          surfaceHushActive: "wet",
+        },
+        car: { ...session.player.car, speed: 18 },
+      },
+    };
+
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+
+    expect(session.audioEvents).toContainEqual({
+      kind: "surfaceHush",
+      carId: "player",
+      surface: "snow",
+      speedFactor: expect.any(Number),
+    });
+    expect(session.player.audioGates.surfaceHushActive).toBe("snow");
+  });
+});
+
 describe("stepRaceSession (drafting)", () => {
   const FAST = DRAFT_MIN_SPEED_M_PER_S + 30;
 

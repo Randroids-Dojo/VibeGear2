@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Surface SFX cues
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) required vehicle and race
+SFX,
+[§10](gdd/10-driving-model-and-physics.md) braking, steering, and
+surface state,
+[§14](gdd/14-weather-and-environmental-systems.md) weather-aware
+surface effects,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio
+runtime.
+**Branch / PR:** `feat/surface-audio-cues`, PR #87.
+**Status:** Implemented.
+
+### Done
+- `src/game/raceSession.ts`: added deterministic player audio gates so
+  brake scrub, tire squeal, and wet or snow surface hush cues emit only
+  when their qualifying state first becomes active. The surface hush
+  gate tracks wet versus snow so weather kind changes can emit a fresh
+  cue while the speed gate stays active.
+- `src/audio/sfx.ts`: added procedural one-shot playback methods for
+  brake scrub, tire squeal, and wet or snow surface hush.
+- `src/app/race/page.tsx`: routed the new race-session events into the
+  procedural SFX runtime.
+- `docs/GDD_COVERAGE.json`: added GDD-18-PROCEDURAL-SURFACE-SFX.
+
+### Verified
+- `npx vitest run src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts src/audio/sfx.test.ts`
+  green, 142 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2506 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- Continuous-feel cues are gated in the pure session state rather than
+  emitted every tick. A cue re-arms only after its condition clears, so
+  live playback avoids per-frame one-shot spam.
+- Wet surface hush is limited to rainy road surfaces. Snow hush follows
+  snow weather on any surface because the road and shoulders are both
+  snow-covered in the current renderer.
+
+### Coverage ledger
+- GDD-18-PROCEDURAL-SURFACE-SFX covers brake scrub, tire squeal, and
+  spray or snow hush entries from the required SFX list.
+- Uncovered adjacent requirements: weather audio stems and true
+  multi-stem music layering remain under the §18 sound parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Race milestone SFX events
 
 **GDD sections touched:**
