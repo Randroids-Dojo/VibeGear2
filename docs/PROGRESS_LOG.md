@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Display options pane
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) Settings,
+[§22](gdd/22-data-schemas.md) save settings schema.
+**Branch / PR:** `feat/display-options-pane`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/components/options/DisplayPane.tsx`: added a shipped Display
+  pane that reads and persists the `displaySpeedUnit` save setting.
+- `src/components/options/displayPaneState.ts`: added pure display
+  pane helpers and schema-backed unit options.
+- `src/app/options/page.tsx`: replaced the Display placeholder with
+  the shipped pane.
+- `src/components/options/optionsResetState.ts`: reset now treats
+  speed unit as a shipped option and keeps unshipped settings intact.
+- `docs/GDD_COVERAGE.json`: added GDD-20-DISPLAY-OPTIONS-PANE and
+  updated the reset wording now that Display is shipped.
+
+### Verified
+- `npx vitest run src/components/options/__tests__/displayPaneState.test.ts src/components/options/__tests__/optionsResetState.test.ts src/app/options/__tests__/page.test.tsx scripts/__tests__/content-lint.test.ts`
+  green, 71 passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/options-screen.spec.ts` green, 10
+  passed.
+- `npm run verify` green, 2520 passed.
+
+### Decisions and assumptions
+- The first Display pane ships speed unit because the save schema and
+  race HUD already support it. Resolution, frame cap, pixel ratio, and
+  HUD scale remain under the performance and visual polish backlog.
+
+### Coverage ledger
+- GDD-20-DISPLAY-OPTIONS-PANE covers the §20 display settings entry
+  for persisted speed units.
+- Uncovered adjacent requirements: resolution, frame cap, pixel ratio,
+  HUD scale, and additional visual readability controls remain under
+  the performance, visual polish, and accessibility backlog slices.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Visual polish coverage closeout
 
 **GDD sections touched:**

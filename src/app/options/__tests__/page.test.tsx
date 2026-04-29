@@ -11,8 +11,8 @@ import { TAB_ORDER } from "../tabNav";
  * tab navigation is exercised by the Playwright spec
  * `e2e/options-screen.spec.ts`; the pure model is unit-tested in
  * `tabNav.test.ts`. This file pins the contract that the page emits the
- * test ids and dot-id placeholders that downstream slices and the e2e
- * suite key off.
+ * test ids, shipped panes, and placeholder dot ids that downstream
+ * slices and the e2e suite key off.
  */
 describe("OptionsPage", () => {
   const html = renderToStaticMarkup(createElement(OptionsPage));
@@ -50,17 +50,14 @@ describe("OptionsPage", () => {
     expect(audioTab?.[0]).toContain('aria-selected="false"');
   });
 
-  it("renders the Display panel with the polish dot id placeholder", () => {
+  it("renders the shipped Display panel shell", () => {
     expect(html).toContain('data-testid="options-panel-display"');
-    expect(html).toContain("VibeGear2-implement-visual-polish-7d31d112");
+    expect(html).toContain('data-testid="display-pane-loading"');
+    expect(html).not.toContain("VibeGear2-implement-visual-polish-7d31d112");
   });
 
-  it("cites every implementing dot id for the matching tab placeholder", () => {
-    // The active tab is Display, so only its dot id is in the rendered
-    // markup. The other dot ids live in TABS and are emitted when the
-    // pane is selected. We assert the constants exist in the bundle by
-    // checking the tab labels render and the Display dot id is present.
-    expect(html).toContain("VibeGear2-implement-visual-polish-7d31d112");
+  it("keeps the active placeholder dot id out of the shipped Display pane", () => {
+    expect(html).not.toContain("VibeGear2-implement-visual-polish-7d31d112");
   });
 
   it("enables the Reset to defaults button now that reset persistence has landed", () => {

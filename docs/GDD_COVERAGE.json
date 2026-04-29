@@ -1193,7 +1193,7 @@
         "docs/gdd/20-hud-and-ui-ux.md",
         "docs/gdd/22-data-schemas.md"
       ],
-      "requirement": "The options screen can reset shipped settings panes to defaults without overwriting settings owned by placeholder panes or profile data.",
+      "requirement": "The options screen can reset shipped settings panes to defaults without overwriting settings owned by unshipped panes or profile data.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "src/app/options/page.tsx",
@@ -1206,6 +1206,29 @@
         "e2e/options-screen.spec.ts"
       ],
       "followupRefs": ["F-049"]
+    },
+    {
+      "id": "GDD-20-DISPLAY-OPTIONS-PANE",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The options screen exposes persisted speed-unit display settings backed by save settings and consumed by race HUD state.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/options/page.tsx",
+        "src/components/options/DisplayPane.tsx",
+        "src/components/options/displayPaneState.ts",
+        "src/components/options/optionsResetState.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/displayPaneState.test.ts",
+        "src/components/options/__tests__/optionsResetState.test.ts",
+        "src/app/options/__tests__/page.test.tsx",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-hud-ui-6c1b130d"]
     },
     {
       "id": "GDD-20-AUDIO-OPTIONS-PANE",

@@ -25,9 +25,8 @@ test.describe("options screen", () => {
       "true",
     );
     await expect(page.getByTestId("options-panel-display")).toBeVisible();
-    await expect(page.getByTestId("options-panel-display-dot")).toContainText(
-      "VibeGear2-implement-visual-polish-7d31d112",
-    );
+    await expect(page.getByTestId("display-pane")).toBeVisible();
+    await expect(page.getByTestId("display-speed-unit-kph")).toBeChecked();
   });
 
   test("ArrowRight cycles through tabs and wraps", async ({ page }) => {
@@ -69,7 +68,7 @@ test.describe("options screen", () => {
     );
   });
 
-  test("Reset to defaults restores shipped settings and preserves placeholder-owned settings", async ({ page }) => {
+  test("Reset to defaults restores shipped settings and preserves unshipped settings", async ({ page }) => {
     await page.goto("/options");
 
     const reset = page.getByTestId("options-reset-defaults");
@@ -111,13 +110,35 @@ test.describe("options screen", () => {
     expect(persisted?.settings?.assists?.autoAccelerate).toBe(false);
     expect(persisted?.settings?.difficultyPreset).toBe("normal");
     expect(persisted?.profileName).toBe("Reset Proof");
-    expect(persisted?.settings?.displaySpeedUnit).toBe("mph");
+    expect(persisted?.settings?.displaySpeedUnit).toBe("kph");
     expect(persisted?.settings?.transmissionMode).toBe("manual");
     expect(persisted?.settings?.audio).toEqual({
       master: 1,
       music: 0.8,
       sfx: 0.9,
     });
+  });
+
+  test("Display speed unit persists and reloads", async ({ page }) => {
+    await page.goto("/options");
+
+    await expect(page.getByTestId("display-pane")).toBeVisible();
+    await expect(page.getByTestId("display-speed-unit-kph")).toBeChecked();
+
+    await page.getByTestId("display-speed-unit-mph").check();
+    await expect(page.getByTestId("display-status")).toContainText(
+      "Speed unit set",
+    );
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }, "vibegear2:save:v3");
+    expect(persisted?.settings?.displaySpeedUnit).toBe("mph");
+
+    await page.reload();
+    await expect(page.getByTestId("display-pane")).toBeVisible();
+    await expect(page.getByTestId("display-speed-unit-mph")).toBeChecked();
   });
 
   test("Audio mix sliders persist master, music, and SFX settings", async ({

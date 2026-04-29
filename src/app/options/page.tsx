@@ -3,11 +3,10 @@
 /**
  * Options screen scaffold (GDD §20 Settings, §19 Controls and input).
  *
- * Tabbed shell with six panes (Display, Audio, Controls, Accessibility,
- * Difficulty, Performance) per §20. Each pane renders a "Coming soon"
- * placeholder citing the dot id of the slice that lands its real
- * content, so the next agent can grep its dot id and find the exact
- * insertion point.
+ * Tabbed shell for the §20 settings categories. Shipped panes own
+ * their settings directly; placeholder panes cite the dot id of the
+ * slice that lands their real content, so the next agent can grep its
+ * dot id and find the exact insertion point.
  *
  * - The Reset to defaults button resets only fields owned by shipped
  *   panes. Placeholder-pane fields stay untouched until those panes land.
@@ -30,6 +29,7 @@ import { AccessibilityPane } from "@/components/options/AccessibilityPane";
 import { AudioPane } from "@/components/options/AudioPane";
 import { ControlsPane } from "@/components/options/ControlsPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
+import { DisplayPane } from "@/components/options/DisplayPane";
 import { ProfileSection } from "@/components/options/ProfileSection";
 import { resetShippedOptionsToDefaults } from "@/components/options/optionsResetState";
 import { defaultSave, loadSave, saveSave } from "@/persistence";
@@ -64,9 +64,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   {
     key: "display",
     label: "Display",
-    headline: "Display options coming soon",
-    body: "Resolution, frame cap, viewport scaling, and HUD scale will land alongside the visual polish slice.",
-    dotId: "VibeGear2-implement-visual-polish-7d31d112",
+    pane: () => <DisplayPane />,
   },
   {
     key: "audio",
