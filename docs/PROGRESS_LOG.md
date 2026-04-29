@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Placeholder car sprite sheet bank
+
+**GDD sections touched:**
+[§11](gdd/11-cars-and-stats.md) bundled car visual profiles,
+[§17](gdd/17-art-direction.md) car sprite grammar,
+[§24](gdd/24-content-plan.md) asset list,
+[§26](gdd/26-open-source-project-guidance.md) asset provenance.
+**Branch / PR:** `feat/placeholder-car-art`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `scripts/generate-placeholder-art.ts`: added generated placeholder
+  sprite sheets for every bundled car visual profile.
+- `public/art/cars/`: added six generated car sprite sheet SVG files.
+- `public/art.manifest.json`: listed every generated car sheet with
+  CC0 license, source, originality, and date metadata.
+- `scripts/__tests__/placeholder-art-bank.test.ts`: added coverage that
+  every bundled car visual profile has a shipped sprite sheet and
+  manifest entry.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-17-PLACEHOLDER-CAR-SPRITES.
+
+### Verified
+- `npm run art:generate` completed and reproduced the generated car
+  sheet manifest entries.
+- `npx vitest run scripts/__tests__/placeholder-art-bank.test.ts scripts/__tests__/check-art-manifest.test.ts`
+  green, 9 passed.
+- `npm run art:check` green.
+- No file under `public/art/` exceeds 32 KB; total art size is 224 KB.
+- `npm run verify` green, 2478 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- The existing `public/art/cars/sparrow.svg` remains in place for the
+  current runtime atlas. The generated `sparrow_gt.svg` file exists so
+  the authored car visual-profile id has a matching placeholder asset
+  before later renderer wiring consumes per-car sheets.
+
+### Coverage ledger
+- GDD-17-PLACEHOLDER-CAR-SPRITES covers placeholder car sprite sheets
+  for the six bundled car visual profiles.
+- Uncovered adjacent requirements: final car artwork, final per-region
+  prop volume, menu backgrounds, and production art replacement remain
+  under the placeholder-art parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Placeholder region art and manifest check
 
 **GDD sections touched:**

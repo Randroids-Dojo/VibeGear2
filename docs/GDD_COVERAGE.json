@@ -27,6 +27,24 @@
       "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
     },
     {
+      "id": "GDD-17-PLACEHOLDER-CAR-SPRITES",
+      "gddSections": [
+        "docs/gdd/11-cars-and-stats.md",
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Every bundled car visual profile has an original placeholder sprite sheet asset with 12 directional frames, damage variants, brake and nitro frames, and manifest provenance metadata.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art/cars/",
+        "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts"
+      ],
+      "testRefs": ["scripts/__tests__/placeholder-art-bank.test.ts"],
+      "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

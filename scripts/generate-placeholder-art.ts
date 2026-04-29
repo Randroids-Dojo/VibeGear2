@@ -38,6 +38,15 @@ const REGIONS: readonly RegionArt[] = [
   { id: "crown-circuit", sky: "#1c2345", horizon: "#55608a", near: "#2e355b", accent: "#ffd85a" },
 ];
 
+const CAR_SHEETS = [
+  { id: "sparrow_gt", body: "#f2c94c", glass: "#18243d", trim: "#111827", accent: "#ffe56e" },
+  { id: "breaker_s", body: "#d94f3f", glass: "#172033", trim: "#22191a", accent: "#ffb17a" },
+  { id: "vanta_xr", body: "#5d6ce1", glass: "#101a34", trim: "#141827", accent: "#a7e3ff" },
+  { id: "tempest_r", body: "#4bd77f", glass: "#142636", trim: "#102018", accent: "#d8ff6b" },
+  { id: "bastion_lm", body: "#d7dde6", glass: "#1f2b3a", trim: "#32363d", accent: "#f5d45f" },
+  { id: "nova_shade", body: "#5b4bd7", glass: "#14182b", trim: "#171326", accent: "#ff5bd6" },
+] as const;
+
 const HUD_ICONS = [
   "cash",
   "repair",
@@ -163,6 +172,52 @@ function roadsideSvg(): string {
   );
 }
 
+function carSheetSvg(car: (typeof CAR_SHEETS)[number]): string {
+  const skews = [0, 4, 8, 12, 8, 4, 0, -4, -8, -12, -8, -4];
+  const damageRows = [
+    { y: 16, id: "clean", extra: "" },
+    {
+      y: 48,
+      id: "dented",
+      extra: `<path d="M-23 -1 L-17 4 L-21 7" fill="none" stroke="${car.accent}" stroke-width="2" opacity="0.8"/>`,
+    },
+    {
+      y: 80,
+      id: "battered",
+      extra: `<path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="${car.trim}" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="${car.trim}" stroke-width="2"/>`,
+    },
+  ];
+  const dentedExtra = damageRows[1]?.extra ?? "";
+  const batteredExtra = damageRows[2]?.extra ?? "";
+  const frames: string[] = [];
+  for (const row of damageRows) {
+    for (let i = 0; i < skews.length; i += 1) {
+      frames.push(
+        `<g transform="translate(${32 + i * 64} ${row.y}) skewX(${skews[i]})"><use href="#shadow"/><use href="#${row.id}"/></g>`,
+      );
+    }
+  }
+  return svg(
+    768,
+    384,
+    [
+      '<rect width="768" height="384" fill="none"/>',
+      '<defs>',
+      '<g id="shadow"><ellipse cx="0" cy="13" rx="29" ry="5" fill="#10151f" opacity="0.55"/></g>',
+      `<g id="clean"><path d="M-27 12 L27 12 L21 -8 L12 -14 L-12 -14 L-21 -8 Z" fill="${car.body}"/><path d="M-14 -7 L14 -7 L9 4 L-9 4 Z" fill="${car.glass}"/><path d="M-22 7 L-12 7 L-12 11 L-22 11 Z" fill="#ff3d38"/><path d="M12 7 L22 7 L22 11 L12 11 Z" fill="#ff3d38"/><path d="M-24 12 L-18 15 L18 15 L24 12 Z" fill="${car.trim}"/><path d="M-18 -5 L18 -5" stroke="${car.accent}" stroke-width="2"/></g>`,
+      `<g id="dented"><use href="#clean"/>${dentedExtra}<rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>`,
+      `<g id="battered"><use href="#clean"/>${batteredExtra}<rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>`,
+      '<g id="brake"><use href="#clean"/><rect x="-24" y="6" width="13" height="6" fill="#ff4a44"/><rect x="11" y="6" width="13" height="6" fill="#ff4a44"/></g>',
+      '<g id="nitro"><use href="#clean"/><path d="M-14 15 L0 26 L14 15 Z" fill="#44d7ff" opacity="0.75"/><path d="M-8 15 L0 23 L8 15 Z" fill="#e75cff" opacity="0.8"/></g>',
+      "</defs>",
+      ...frames,
+      '<g transform="translate(32 112)"><use href="#shadow"/><use href="#brake"/></g>',
+      '<g transform="translate(96 112)"><use href="#shadow"/><use href="#nitro"/></g>',
+      `<text x="704" y="360" text-anchor="middle" font-family="monospace" font-size="16" font-weight="700" fill="${car.accent}">PLACEHOLDER</text>`,
+    ].join("\n"),
+  );
+}
+
 function hudIconSvg(id: string): string {
   const label = id.slice(0, 2).toUpperCase();
   return svg(
@@ -197,6 +252,12 @@ for (const region of REGIONS) {
     writeTextFile(relPath, backdropSvg(region, layer));
     addManifest(`backdrop:${region.id}:${layer}`, relPath.slice("public/".length));
   }
+}
+
+for (const car of CAR_SHEETS) {
+  const relPath = `public/art/cars/${car.id}.svg`;
+  writeTextFile(relPath, carSheetSvg(car));
+  addManifest(`car:${car.id}:sprite-sheet`, relPath.slice("public/".length));
 }
 
 writeTextFile("public/art/roadside/temperate.svg", roadsideSvg());
