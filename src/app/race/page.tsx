@@ -81,6 +81,7 @@ import {
   resetRaceSessionToLastCheckpoint,
   setRaceSessionWeather,
   OPEN_TUNNEL_STATE,
+  segmentAt,
   segmentIsTunnel,
   spawnGrid,
   startLoop,
@@ -508,18 +509,6 @@ function toMinimapCar(
   const progress = continuousIndex - Math.floor(continuousIndex);
   const { x, y } = projectCar(points, segmentIndex, progress);
   return { x, y, isPlayer };
-}
-
-function compiledSegmentAtZ(
-  track: CompiledTrack,
-  carZ: number,
-): CompiledTrack["segments"][number] | undefined {
-  if (track.totalCompiledSegments <= 0 || track.totalLengthMeters <= 0) {
-    return undefined;
-  }
-  const wrappedZ = ((carZ % track.totalLengthMeters) + track.totalLengthMeters) % track.totalLengthMeters;
-  const segmentIndex = Math.floor(wrappedZ / SEGMENT_LENGTH) % track.totalCompiledSegments;
-  return track.segments[segmentIndex];
 }
 
 /**
@@ -1201,7 +1190,7 @@ function RaceCanvas({
         lastSteerRef.current = input.steer;
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
-        const playerSegment = compiledSegmentAtZ(track.compiled, next.player.car.z);
+        const playerSegment = segmentAt(track.compiled, next.player.car.z);
         tunnelState = stepTunnelState({
           state: tunnelState,
           dtMs: dt * 1000,
