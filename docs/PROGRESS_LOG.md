@@ -13,7 +13,7 @@ Correct them by adding a new entry that references the old one.
 SFX,
 [§21](gdd/21-technical-design-for-web-implementation.md) audio
 runtime.
-**Branch / PR:** `feat/race-sfx-events`, PR pending.
+**Branch / PR:** `feat/race-sfx-events`, PR #86.
 **Status:** Implemented.
 
 ### Done
