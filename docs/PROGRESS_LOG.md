@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§21](gdd/21-technical-design-for-web-implementation.md) mod layer,
 [§22](gdd/22-data-schemas.md) mod manifest schema,
 [§26](gdd/26-open-source-project-guidance.md) data-only mod rules.
-**Branch / PR:** `feat/mod-loader`, PR pending.
+**Branch / PR:** `feat/mod-loader`, PR #98.
 **Status:** Implemented.
 
 ### Done
