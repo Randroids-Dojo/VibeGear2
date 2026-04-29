@@ -19,6 +19,9 @@ concurrency:
   group: ci-verify-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Lint, typecheck, unit, e2e
