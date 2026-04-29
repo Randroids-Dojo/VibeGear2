@@ -64,8 +64,8 @@ export class ProceduralEngineRuntime {
   private readonly smoothingSeconds: number;
 
   constructor(private readonly options: ProceduralEngineRuntimeOptions) {
-    this.baseGain = positiveOr(options.baseGain, DEFAULT_BASE_GAIN);
-    this.smoothingSeconds = positiveOr(
+    this.baseGain = nonNegativeOr(options.baseGain, DEFAULT_BASE_GAIN);
+    this.smoothingSeconds = nonNegativeOr(
       options.smoothingSeconds,
       DEFAULT_SMOOTHING_SECONDS,
     );
@@ -169,8 +169,8 @@ function setParam(
   param.value = value;
 }
 
-function positiveOr(value: number | undefined, fallback: number): number {
-  return value === undefined || !Number.isFinite(value) || value <= 0
+function nonNegativeOr(value: number | undefined, fallback: number): number {
+  return value === undefined || !Number.isFinite(value) || value < 0
     ? fallback
     : value;
 }

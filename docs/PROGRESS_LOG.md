@@ -28,13 +28,13 @@ Correct them by adding a new entry that references the old one.
 
 ### Verified
 - `npx vitest run src/audio/engineRuntime.test.ts src/audio/engine.test.ts src/audio/mixer.test.ts src/audio/context.test.ts`
-  green, 22 passed.
+  green, 23 passed after the review fix.
 - `npm run lint` green.
 - `npm run typecheck` green.
 - `npm run content-lint` green.
 - `npx playwright test e2e/race-demo.spec.ts --project=chromium`
   green, 3 passed.
-- `npm run verify` green, 2443 passed.
+- `npm run verify` green, 2444 passed.
 - `npm run test:e2e` green, 75 passed.
 
 ### Decisions and assumptions
