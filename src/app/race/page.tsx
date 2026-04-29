@@ -149,6 +149,11 @@ import {
   ProceduralSfxRuntime,
   type SfxAudioContextLike,
 } from "@/audio/sfx";
+import {
+  MusicRuntime,
+  raceMusicCue,
+  raceMusicIntensity,
+} from "@/audio/music";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -869,11 +874,21 @@ function RaceCanvas({
     const raceSfx = new ProceduralSfxRuntime({
       context: currentSfxAudioContext,
     });
+    const raceMusic = new MusicRuntime();
+    const raceMusicCueForSession = raceMusicCue({
+      trackId: track.id,
+      tourId: tourContext?.tourId,
+      mode,
+    });
     let latestEngineInput: EngineRuntimeInput = {
       speed: 0,
       topSpeed: STARTER_STATS.topSpeed,
       audio: persistedSettings.audio,
     };
+    let latestRaceMusicIntensity = raceMusicIntensity({
+      speed: 0,
+      topSpeed: STARTER_STATS.topSpeed,
+    });
     let engineStartPending = false;
     let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
@@ -888,6 +903,11 @@ function RaceCanvas({
         .then(() => {
           if (engineAudioTeardown) return;
           engineAudio.start(latestEngineInput);
+          raceMusic.play(
+            raceMusicCueForSession,
+            persistedSettings.audio,
+            latestRaceMusicIntensity,
+          );
         })
         .finally(() => {
           engineStartPending = false;
@@ -910,6 +930,7 @@ function RaceCanvas({
       handleRef.current?.stop();
       engineAudio.stop();
       raceSfx.stopAll();
+      raceMusic.stop();
       handleRef.current = null;
       sessionRef.current = null;
       inputManager.dispose();
@@ -1065,10 +1086,17 @@ function RaceCanvas({
           topSpeed: STARTER_STATS.topSpeed,
           audio: persistedSettings.audio,
         };
+        latestRaceMusicIntensity = raceMusicIntensity({
+          speed: session.player.car.speed,
+          topSpeed: STARTER_STATS.topSpeed,
+          nitroActive: session.player.nitro.activeRemainingSec > 0,
+          finalLap: session.race.lap >= session.race.totalLaps,
+        });
         const audioUpdateMs = performance.now();
         if (audioUpdateMs - lastEngineAudioUpdateMs >= 50) {
           lastEngineAudioUpdateMs = audioUpdateMs;
           engineAudio.update(latestEngineInput);
+          raceMusic.update(persistedSettings.audio, latestRaceMusicIntensity);
         }
         if (lastRaceSfxTick !== session.tick) {
           lastRaceSfxTick = session.tick;

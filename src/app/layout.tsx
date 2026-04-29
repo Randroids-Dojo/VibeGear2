@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { MenuMusicDirector } from "@/components/audio/MenuMusicDirector";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { UpdateBanner } from "@/components/update/UpdateBanner";
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <UpdateBanner />
+        <MenuMusicDirector />
         <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>
