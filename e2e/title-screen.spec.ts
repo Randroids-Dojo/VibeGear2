@@ -1,6 +1,47 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("title screen", () => {
+  test("keeps the title screen centered on short mobile viewports", async ({
+    page,
+  }) => {
+    const viewports = [
+      { width: 320, height: 568 },
+      { width: 390, height: 667 },
+    ];
+
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+
+      const metrics = await page.getByLabel("Title screen").evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          centerX: rect.left + rect.width / 2,
+          centerY: rect.top + rect.height / 2,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          scrollWidth: document.documentElement.scrollWidth,
+        };
+      });
+
+      expect(metrics.left).toBeGreaterThanOrEqual(0);
+      expect(metrics.top).toBeGreaterThanOrEqual(0);
+      expect(metrics.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+      expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight + 1);
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+      expect(
+        Math.abs(metrics.centerX - metrics.viewportWidth / 2),
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(metrics.centerY - metrics.viewportHeight / 2),
+      ).toBeLessThanOrEqual(12);
+    }
+  });
+
   test("renders the game title and main menu wiring", async ({ page }) => {
     await page.goto("/");
 
