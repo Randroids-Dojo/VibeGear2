@@ -102,6 +102,23 @@
       "followupRefs": ["VibeGear2-implement-placeholder-audio-94594c41"]
     },
     {
+      "id": "GDD-18-PLACEHOLDER-MUSIC-INTENSITY-STEMS",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The placeholder audio bank ships original drive and lead intensity stem files for every race region, with manifest provenance metadata for each generated file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/audio/music/stems/",
+        "public/audio/manifest.json",
+        "scripts/generate-placeholder-audio.ts"
+      ],
+      "testRefs": ["scripts/__tests__/placeholder-audio-bank.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-18-MUSIC-RUNTIME",
       "gddSections": [
         "docs/gdd/18-sound-and-music-design.md",

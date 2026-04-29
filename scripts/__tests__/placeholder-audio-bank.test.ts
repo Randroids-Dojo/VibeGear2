@@ -20,6 +20,10 @@ const MUSIC_IDS = [
   "crown-circuit",
 ] as const;
 
+const RACE_MUSIC_IDS = MUSIC_IDS.filter((id) => id !== "title");
+
+const MUSIC_INTENSITY_LAYERS = ["drive", "lead"] as const;
+
 const SFX_IDS = [
   "ui-hover",
   "ui-confirm",
@@ -62,6 +66,24 @@ describe("placeholder audio bank", () => {
       expect(entry?.originality).toContain("Original procedural placeholder audio");
     }
   });
+
+  it("ships race music intensity stem placeholders", () => {
+    const manifest = readManifest();
+    for (const id of RACE_MUSIC_IDS) {
+      for (const layer of MUSIC_INTENSITY_LAYERS) {
+        const entry = manifest.find(
+          (item) => item.id === `music-layer:${id}:${layer}`,
+        );
+        expect(entry?.path).toBe(`audio/music/stems/${id}-${layer}.opus`);
+        expect(
+          existsSync(path.join(PUBLIC_DIR, `audio/music/stems/${id}-${layer}.opus`)),
+        ).toBe(true);
+        expect(entry?.license).toBe("CC0");
+        expect(entry?.durationSeconds).toBe(4);
+      }
+    }
+  });
+
 
   it("ships the GDD SFX volume and UI set", () => {
     const manifest = readManifest();
