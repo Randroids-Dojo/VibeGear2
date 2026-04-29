@@ -603,6 +603,18 @@
       ]
     },
     {
+      "id": "GDD-20-GARAGE-NEXT-RACE-LAYOUT",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The garage next race card presents its explanatory copy and World Tour action as readable, non-overlapping controls at narrow desktop widths.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/app/garage/page.tsx"],
+      "testRefs": ["e2e/garage-summary.spec.ts"],
+      "followupRefs": ["VibeGear2-fix-overlapping-text-15d34dad"]
+    },
+    {
       "id": "GDD-13-GARAGE-REPAIR-PURCHASE",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",

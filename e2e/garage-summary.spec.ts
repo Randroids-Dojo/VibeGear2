@@ -143,6 +143,35 @@ test.describe("garage summary", () => {
     await expect(page.getByTestId("garage-upgrade-page")).toBeVisible();
   });
 
+  test("keeps next race text clear of the world tour action", async ({
+    page,
+  }) => {
+    await page.evaluate(
+      ({ key, save }) => window.localStorage.setItem(key, JSON.stringify(save)),
+      { key: SAVE_KEY, save: buildGarageSave() },
+    );
+
+    await page.setViewportSize({ width: 640, height: 720 });
+    await page.goto("/garage");
+
+    const card = page.getByTestId("garage-next-card");
+    const description = card.getByText(
+      "Pick the next World Tour event, then return here for repairs and upgrades between races.",
+    );
+    const action = card.getByTestId("garage-open-world-tour-link");
+
+    await expect(description).toBeVisible();
+    await expect(action).toBeVisible();
+
+    const descriptionBox = await description.boundingBox();
+    const actionBox = await action.boundingBox();
+    expect(descriptionBox).not.toBeNull();
+    expect(actionBox).not.toBeNull();
+    expect(descriptionBox!.y + descriptionBox!.height).toBeLessThan(
+      actionBox!.y,
+    );
+  });
+
   test("recovers a save with a missing active car through starter selection", async ({
     page,
   }) => {
