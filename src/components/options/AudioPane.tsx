@@ -163,7 +163,7 @@ const paneStyle: CSSProperties = {
 };
 
 const loadingStyle: CSSProperties = {
-  color: "#e8eef7",
+  color: "var(--muted, #aaa)",
 };
 
 const headerStyle: CSSProperties = {
@@ -173,25 +173,26 @@ const headerStyle: CSSProperties = {
 
 const headlineStyle: CSSProperties = {
   margin: 0,
+  color: "var(--fg, #ddd)",
   fontSize: "1.2rem",
 };
 
 const subtitleStyle: CSSProperties = {
   margin: 0,
   maxWidth: "44rem",
-  color: "#b8c4d6",
+  color: "var(--muted, #aaa)",
   lineHeight: 1.45,
 };
 
 const fieldsetStyle: CSSProperties = {
-  border: "1px solid rgba(162, 198, 255, 0.35)",
+  border: "1px solid var(--muted, #444)",
   borderRadius: "8px",
   padding: "1rem",
 };
 
 const legendStyle: CSSProperties = {
   padding: "0 0.4rem",
-  color: "#e8eef7",
+  color: "var(--accent, #8cf)",
   fontWeight: 700,
 };
 
@@ -221,17 +222,17 @@ const labelTextStyle: CSSProperties = {
 };
 
 const titleStyle: CSSProperties = {
-  color: "#f8fbff",
+  color: "var(--fg, #ddd)",
   fontWeight: 700,
 };
 
 const descStyle: CSSProperties = {
-  color: "#b8c4d6",
+  color: "var(--muted, #aaa)",
   lineHeight: 1.35,
 };
 
 const valueStyle: CSSProperties = {
-  color: "#f8fbff",
+  color: "var(--fg, #ddd)",
   fontVariantNumeric: "tabular-nums",
   minWidth: "3rem",
   textAlign: "right",
@@ -243,5 +244,5 @@ const sliderStyle: CSSProperties = {
 
 const statusStyle = (kind: PaneStatus["kind"]): CSSProperties => ({
   margin: 0,
-  color: kind === "error" ? "#ffb4b4" : "#c7f5d1",
+  color: kind === "error" ? "var(--danger, #ff8f8f)" : "var(--accent, #8cf)",
 });

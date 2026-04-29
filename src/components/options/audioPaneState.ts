@@ -8,7 +8,7 @@ export interface AudioControlSpec {
   readonly description: string;
 }
 
-export const AUDIO_SETTINGS_DEFAULTS: AudioSettings = Object.freeze({
+export const AUDIO_SETTINGS_DEFAULTS: Readonly<AudioSettings> = Object.freeze({
   master: 1,
   music: 0.8,
   sfx: 0.9,
