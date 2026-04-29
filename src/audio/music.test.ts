@@ -126,6 +126,34 @@ describe("MusicRuntime", () => {
     expect(elements[1]?.volume).toBeCloseTo(1 * 0.8 * 0.5);
   });
 
+  it("stops an older fading cue when another cue replaces it", () => {
+    let now = 0;
+    const elements: FakeMusicElement[] = [];
+    const runtime = new MusicRuntime({
+      nowSeconds: () => now,
+      fadeSeconds: 1,
+      createAudio: (src) => {
+        const element = new FakeMusicElement();
+        element.src = src;
+        elements.push(element);
+        return element;
+      },
+    });
+
+    runtime.play(MUSIC_CUES.title, AUDIO);
+    now = 1;
+    runtime.update(AUDIO);
+    runtime.play(MUSIC_CUES["velvet-coast"], AUDIO);
+    now = 1.25;
+    runtime.update(AUDIO);
+    runtime.play(MUSIC_CUES["iron-borough"], AUDIO);
+
+    expect(elements).toHaveLength(3);
+    expect(elements[0]?.pause).toHaveBeenCalledTimes(1);
+    expect(elements[0]?.volume).toBe(0);
+    expect(runtime.currentCueId()).toBe("iron-borough");
+  });
+
   it("updates playback rate from intensity", () => {
     const now = 1;
     const element = new FakeMusicElement();

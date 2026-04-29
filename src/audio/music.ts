@@ -175,6 +175,7 @@ export class MusicRuntime {
 
     const now = this.nowSeconds();
     if (this.active !== null) {
+      this.stopChannel(this.fadingOut);
       this.fadingOut = {
         ...this.active,
         startedAt: now,

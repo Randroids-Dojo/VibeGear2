@@ -36,9 +36,9 @@ pipeline,
 
 ### Verified
 - `npx vitest run src/audio/music.test.ts src/audio/mixer.test.ts src/audio/sfx.test.ts src/audio/engineRuntime.test.ts`
-  green, 32 passed.
+  green, 33 passed.
 - `npm run typecheck` green.
-- `npm run verify` green, 2497 passed.
+- `npm run verify` green, 2498 passed.
 - `npm run test:e2e` green, 79 passed.
 
 ### Decisions and assumptions

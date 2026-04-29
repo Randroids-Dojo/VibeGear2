@@ -50,13 +50,17 @@ export function MenuMusicDirector(): null {
 
     const update = (): void => {
       runtime.update(audioRef.current);
-      animationFrame = window.requestAnimationFrame(update);
+      if (runtime.isPlaying()) {
+        animationFrame = window.requestAnimationFrame(update);
+        return;
+      }
+      animationFrame = null;
     };
 
     const play = (): void => {
       armedRef.current = true;
-      runtime.play(titleMusicCue(), audioRef.current);
-      if (animationFrame === null) {
+      const started = runtime.play(titleMusicCue(), audioRef.current);
+      if (started && animationFrame === null) {
         animationFrame = window.requestAnimationFrame(update);
       }
     };
