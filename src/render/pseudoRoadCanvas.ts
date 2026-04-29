@@ -880,26 +880,38 @@ function weatherProjectionBands(
   strips: readonly Strip[],
   viewport: Viewport,
 ): readonly WeatherProjectionBand[] {
-  const edges = weatherProjectionEdges(strips)
-    .filter((edge) => edge.screenY >= -viewport.height * 0.1 && edge.screenY <= viewport.height * 1.1)
-    .sort((a, b) => b.screenY - a.screenY);
+  const minScreenY = -viewport.height * 0.1;
+  const maxScreenY = viewport.height * 1.1;
   const bands: WeatherProjectionBand[] = [];
-  for (let i = 0; i < edges.length - 1; i += 1) {
-    const near = edges[i]!;
-    const far = edges[i + 1]!;
+  let previousEdge: WeatherProjectionEdge | null = null;
+  let index = 0;
+
+  for (const edge of weatherProjectionEdges(strips)) {
+    if (edge.screenY < minScreenY || edge.screenY > maxScreenY) continue;
+    if (previousEdge === null) {
+      previousEdge = edge;
+      continue;
+    }
+
+    const near = previousEdge;
+    const far = edge;
     const topY = Math.max(0, Math.min(near.screenY, far.screenY));
     const bottomY = Math.min(viewport.height, Math.max(near.screenY, far.screenY));
     const height = bottomY - topY;
-    if (height < 1) continue;
-    bands.push({
-      index: i,
-      topY,
-      height,
-      depthAt: (y) => clampUnit((near.screenY - y) / Math.max(1, near.screenY - far.screenY)),
-      centerAt: (depth) => lerp(near.screenX, far.screenX, clampUnit(depth)),
-      halfWidthAt: (depth) => lerp(near.screenW, far.screenW, clampUnit(depth)),
-      scaleAt: (depth) => lerp(near.scale, far.scale, clampUnit(depth)),
-    });
+    if (height >= 1) {
+      bands.push({
+        index,
+        topY,
+        height,
+        depthAt: (y) => clampUnit((near.screenY - y) / Math.max(1, near.screenY - far.screenY)),
+        centerAt: (depth) => lerpNumber(near.screenX, far.screenX, clampUnit(depth)),
+        halfWidthAt: (depth) => lerpNumber(near.screenW, far.screenW, clampUnit(depth)),
+        scaleAt: (depth) => lerpNumber(near.scale, far.scale, clampUnit(depth)),
+      });
+      index += 1;
+    }
+
+    previousEdge = edge;
   }
   return bands;
 }
@@ -932,8 +944,12 @@ function weatherProjectionEdges(strips: readonly Strip[]): readonly WeatherProje
   return edges;
 }
 
-function isFiniteProjection(...values: readonly number[]): boolean {
-  const [screenX, screenY, screenW, scale] = values;
+function isFiniteProjection(
+  screenX: number,
+  screenY: number,
+  screenW: number,
+  scale: number,
+): boolean {
   return (
     Number.isFinite(screenX) &&
     Number.isFinite(screenY) &&
@@ -946,13 +962,14 @@ function isFiniteProjection(...values: readonly number[]): boolean {
   );
 }
 
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
 function hashUnit(seed: number): number {
-  const x = Math.sin(seed * 12.9898) * 43758.5453;
-  return x - Math.floor(x);
+  if (!Number.isFinite(seed)) return 0;
+
+  let x = Math.trunc(seed) | 0;
+  x = Math.imul(x ^ (x >>> 16), 0x21f0aaad);
+  x = Math.imul(x ^ (x >>> 15), 0x735a2d97);
+  x ^= x >>> 15;
+  return (x >>> 0) / 0x100000000;
 }
 
 function drawNightBloom(
