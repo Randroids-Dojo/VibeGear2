@@ -3,21 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CARS } from "@/data/cars";
-
-interface ManifestEntry {
-  id: string;
-  src: string;
-  path: string;
-  license: string;
-  originality: string;
-}
+import type { ArtManifestEntry } from "../check-art-manifest";
 
 const REPO_ROOT = process.cwd();
 const PUBLIC_DIR = path.join(REPO_ROOT, "public");
 const MANIFEST_PATH = path.join(PUBLIC_DIR, "art.manifest.json");
 
-function readManifest(): ManifestEntry[] {
-  return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as ManifestEntry[];
+function readManifest(): ArtManifestEntry[] {
+  return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as ArtManifestEntry[];
 }
 
 describe("placeholder art bank", () => {

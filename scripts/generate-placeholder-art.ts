@@ -187,8 +187,8 @@ function carSheetSvg(car: (typeof CAR_SHEETS)[number]): string {
       extra: `<path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="${car.trim}" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="${car.trim}" stroke-width="2"/>`,
     },
   ];
-  const dentedExtra = damageRows[1]?.extra ?? "";
-  const batteredExtra = damageRows[2]?.extra ?? "";
+  const dentedExtra = damageRows.find((row) => row.id === "dented")?.extra ?? "";
+  const batteredExtra = damageRows.find((row) => row.id === "battered")?.extra ?? "";
   const frames: string[] = [];
   for (const row of damageRows) {
     for (let i = 0; i < skews.length; i += 1) {
