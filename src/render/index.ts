@@ -8,5 +8,6 @@ export * from "./hudSplits";
 export * from "./parallax";
 export * from "./pseudoRoadCanvas";
 export * from "./spriteAtlas";
+export * from "./tunnelRenderer";
 export * from "./uiRenderer";
 export * from "./vfx";

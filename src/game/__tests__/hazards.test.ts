@@ -81,7 +81,7 @@ describe("evaluateHazards", () => {
     expect(effect.events[0]?.hit).toBeNull();
   });
 
-  it("ignores tunnel metadata until the tunnel slice consumes it", () => {
+  it("keeps tunnel metadata non-colliding for hazard physics", () => {
     const track = loadTrack("iron-borough/rivet-tunnel");
     const effect = evaluateHazards({
       car: car({ z: 505 }),

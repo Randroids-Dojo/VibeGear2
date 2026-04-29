@@ -80,6 +80,8 @@ export const TrackSegmentSchema = z.object({
   roadsideLeft: z.string().min(1),
   roadsideRight: z.string().min(1),
   hazards: z.array(slug),
+  inTunnel: z.boolean().optional(),
+  tunnelMaterial: slug.optional(),
 });
 export type TrackSegment = z.infer<typeof TrackSegmentSchema>;
 

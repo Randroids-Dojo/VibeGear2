@@ -40,6 +40,8 @@ interface SnapshotSegment {
   roadsideLeftId: string;
   roadsideRightId: string;
   hazardIds: readonly string[];
+  inTunnel?: boolean;
+  tunnelMaterialId?: string;
 }
 
 export interface CompiledTrackSnapshot {
@@ -66,6 +68,8 @@ function projectSegment(s: CompiledSegment): SnapshotSegment {
     roadsideLeftId: s.roadsideLeftId,
     roadsideRightId: s.roadsideRightId,
     hazardIds: [...s.hazardIds],
+    ...(s.inTunnel === true ? { inTunnel: true } : {}),
+    ...(s.tunnelMaterialId ? { tunnelMaterialId: s.tunnelMaterialId } : {}),
   };
 }
 

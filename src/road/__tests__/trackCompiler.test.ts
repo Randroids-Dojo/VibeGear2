@@ -117,6 +117,23 @@ describe("compileSegments (lower-level dev-page entry point)", () => {
     // Same array reference avoids per-frame allocation in the renderer.
     expect(compiled.segments[0]!.hazardIds).toBe(hazards);
   });
+
+  it("propagates tunnel segment metadata", () => {
+    const compiled = compileSegments([
+      seg({
+        len: 6,
+        inTunnel: true,
+        tunnelMaterial: "iron-borough/riveted-steel",
+      }),
+    ]);
+    expect(compiled.segments[0]!.inTunnel).toBe(true);
+    expect(compiled.segments[0]!.tunnelMaterialId).toBe("iron-borough/riveted-steel");
+  });
+
+  it("treats legacy tunnel hazards as tunnel segments", () => {
+    const compiled = compileSegments([seg({ len: 6, hazards: ["tunnel"] })]);
+    expect(compiled.segments[0]!.inTunnel).toBe(true);
+  });
 });
 
 describe("compileTrack (full-track entry point)", () => {
@@ -133,6 +150,27 @@ describe("compileTrack (full-track entry point)", () => {
     const compiled = compileTrack(t);
     expect(compiled.totalCompiledSegments).toBe(4);
     expect(compiled.segments[0]!.worldZ).toBe(0);
+  });
+
+  it("accepts authored tunnel fields in TrackSchema and full-track compilation", () => {
+    const t = track({
+      segments: [
+        seg({
+          len: 60,
+          inTunnel: true,
+          tunnelMaterial: "iron-borough/riveted-steel",
+        }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+      ],
+      lengthMeters: 240,
+    });
+    const parsed = TrackSchema.safeParse(t);
+    expect(parsed.success).toBe(true);
+    const compiled = compileTrack(t);
+    expect(compiled.segments[0]!.inTunnel).toBe(true);
+    expect(compiled.segments[0]!.tunnelMaterialId).toBe("iron-borough/riveted-steel");
   });
 
   it("compiles a 13 m authored segment to 3 compiled segments (ceil(13/6))", () => {

@@ -670,20 +670,30 @@
         "docs/gdd/09-track-design.md",
         "docs/gdd/14-weather-and-environmental-systems.md",
         "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/18-sound-and-music-design.md",
         "docs/gdd/22-data-schemas.md"
       ],
-      "requirement": "Projected tunnel hazard metadata drives a visual light-adaptation shift in the live road renderer without making tunnel hazards collide with the car.",
+      "requirement": "Authored tunnel segment metadata survives track compilation, drives visual light adaptation in the live road renderer, exposes a deterministic audio filter spec, and remains non-colliding for hazard physics.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
-        "src/render/pseudoRoadCanvas.ts"
+        "src/data/schemas.ts",
+        "src/road/trackCompiler.ts",
+        "src/game/tunnelState.ts",
+        "src/render/tunnelRenderer.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/audio/tunnelBus.ts",
+        "src/app/race/page.tsx",
+        "src/data/tracks/iron-borough-rivet-tunnel.json"
       ],
       "testRefs": [
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/game/__tests__/tunnelState.test.ts",
+        "src/render/__tests__/tunnelRenderer.test.ts",
         "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "src/audio/tunnelBus.test.ts",
         "src/game/__tests__/hazards.test.ts"
       ],
-      "followupRefs": [
-        "VibeGear2-implement-sound-music-1611f9dd"
-      ]
+      "followupRefs": []
     },
     {
       "id": "GDD-14-HEAT-SHIMMER",

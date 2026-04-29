@@ -50,6 +50,10 @@ export interface Viewport {
  * decoration ids for the strip. `hazardIds` is the same array reference
  * as the source authored segment's `hazards` array (frozen) to avoid
  * per-segment allocation.
+ *
+ * `inTunnel` and `tunnelMaterialId` are authored visual and audio metadata.
+ * `hazardIds` can still contain `tunnel` for older content, but the
+ * renderer and audio layer should prefer `inTunnel` once present.
  */
 export interface CompiledSegment {
   index: number;
@@ -60,6 +64,8 @@ export interface CompiledSegment {
   roadsideLeftId: string;
   roadsideRightId: string;
   hazardIds: readonly string[];
+  inTunnel?: boolean;
+  tunnelMaterialId?: string;
 }
 
 /**
