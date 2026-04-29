@@ -13,7 +13,7 @@ Correct them by adding a new entry that references the old one.
 [§20](gdd/20-hud-and-ui-ux.md) title menu and results,
 [§21](gdd/21-technical-design-for-web-implementation.md) runtime reuse,
 [§22](gdd/22-data-schemas.md) save records.
-**Branch / PR:** `feat/quick-race-mode`, PR pending.
+**Branch / PR:** `feat/quick-race-mode`, PR #93.
 **Status:** Implemented.
 
 ### Done
