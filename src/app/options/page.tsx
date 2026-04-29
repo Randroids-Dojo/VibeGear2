@@ -27,6 +27,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, ReactElement } from "react";
 
 import { AccessibilityPane } from "@/components/options/AccessibilityPane";
+import { AudioPane } from "@/components/options/AudioPane";
 import { ControlsPane } from "@/components/options/ControlsPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
 import { ProfileSection } from "@/components/options/ProfileSection";
@@ -70,9 +71,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   {
     key: "audio",
     label: "Audio",
-    headline: "Audio mix coming soon",
-    body: "Master, music, SFX, and engine bus volumes plus mute toggles ship with the sound and music systems.",
-    dotId: "VibeGear2-implement-sound-music-1611f9dd",
+    pane: () => <AudioPane />,
   },
   {
     key: "controls",

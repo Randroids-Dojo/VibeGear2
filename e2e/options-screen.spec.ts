@@ -114,9 +114,58 @@ test.describe("options screen", () => {
     expect(persisted?.settings?.displaySpeedUnit).toBe("mph");
     expect(persisted?.settings?.transmissionMode).toBe("manual");
     expect(persisted?.settings?.audio).toEqual({
-      master: 0.2,
-      music: 0.3,
-      sfx: 0.4,
+      master: 1,
+      music: 0.8,
+      sfx: 0.9,
+    });
+  });
+
+  test("Audio mix sliders persist master, music, and SFX settings", async ({
+    page,
+  }) => {
+    await page.goto("/options");
+    await page.getByTestId("options-tab-audio").click();
+
+    await expect(page.getByTestId("audio-pane")).toBeVisible();
+    await expect(page.getByTestId("audio-value-master")).toHaveText("100%");
+    await expect(page.getByTestId("audio-value-music")).toHaveText("80%");
+    await expect(page.getByTestId("audio-value-sfx")).toHaveText("90%");
+
+    const setSlider = async (testId: string, value: string) => {
+      await page.getByTestId(testId).evaluate((node, nextValue) => {
+        const input = node as HTMLInputElement;
+        const setter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )?.set;
+        if (!setter) throw new Error("HTMLInputElement value setter missing");
+        setter.call(input, nextValue);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }, value);
+    };
+
+    await setSlider("audio-slider-master", "0.45");
+    await expect(page.getByTestId("audio-value-master")).toHaveText("45%");
+    await expect(page.getByTestId("audio-status")).toContainText(
+      "Master set to 45%",
+    );
+
+    await setSlider("audio-slider-music", "0.65");
+    await expect(page.getByTestId("audio-value-music")).toHaveText("65%");
+
+    await setSlider("audio-slider-sfx", "0.25");
+    await expect(page.getByTestId("audio-value-sfx")).toHaveText("25%");
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }, "vibegear2:save:v3");
+
+    expect(persisted?.settings?.audio).toEqual({
+      master: 0.45,
+      music: 0.65,
+      sfx: 0.25,
     });
   });
 
