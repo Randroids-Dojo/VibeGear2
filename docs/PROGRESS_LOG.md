@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Visual polish coverage closeout
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) off-road feedback,
+[§16](gdd/16-rendering-and-visual-design.md) VFX and dust,
+[§19](gdd/19-controls-and-input.md) reduced motion,
+[§21](gdd/21-technical-design-for-web-implementation.md) deterministic
+rendering.
+**Branch / PR:** `docs/visual-polish-coverage`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `docs/GDD_COVERAGE.json`: added GDD-16-VFX-FLASH-SHAKE for the
+  already landed deterministic flash and shake renderer path.
+- `docs/GDD_COVERAGE.json`: added GDD-16-OFF-ROAD-DUST for the
+  already landed bounded dust particle pool and draw integration.
+- Confirmed the visual-polish parent dot's sprite atlas, parallax,
+  VFX, dust, and render benchmark scope has implementation and tests
+  on `main`.
+
+### Verified
+- `npx vitest run scripts/__tests__/content-lint.test.ts` green.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/GDD_COVERAGE.json','utf8'))"`
+  green.
+
+### Decisions and assumptions
+- This is a docs and task-ledger closeout slice. No runtime code changed
+  because the relevant render modules and tests were already present.
+- Region art theming and car FX sprite variants remain separate ready
+  backlog dots because they are broader than the visual-polish parent
+  slice described here.
+
+### Coverage ledger
+- GDD-16-VFX-FLASH-SHAKE covers deterministic flash and light
+  camera-shake VFX with reduced-motion handling.
+- GDD-16-OFF-ROAD-DUST covers deterministic off-road dust emission and
+  draw support.
+- Uncovered adjacent requirements: region art theme registry and car FX
+  sprite variants remain in separate ready dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Music intensity stem runtime
 
 **GDD sections touched:**
