@@ -1024,7 +1024,7 @@ strict literal replace, not a path rewrite.
 ## F-030: Provision Vercel KV and swap LEADERBOARD_BACKEND in production
 **Created:** 2026-04-26
 **Priority:** nice-to-have
-**Status:** open
+**Status:** obsolete (2026-04-29)
 **Notes:** The `feat/leaderboard-client` slice ships
 `src/leaderboard/client.ts` (gated by `NEXT_PUBLIC_LEADERBOARD_ENABLED`)
 and `src/leaderboard/store-vercel-kv.ts` (loaded dynamically via
@@ -1042,6 +1042,23 @@ deploy continues to use the noop store and `submitLap` short-circuits
 to the `disabled` sentinel client-side. The `KvLike` interface in
 `store-vercel-kv.ts` is narrow enough that an Upstash Redis swap is a
 one-line change if the KV pricing tier shifts before launch.
+
+Obsoleted by 2026-04-29 storage-provider review. Current Vercel docs say
+Vercel KV is no longer available for new projects and Redis should be
+provisioned through Marketplace integrations instead. The replacement
+decision is tracked by Q-011 and the implementation followup is F-069.
+
+## F-069: Select Marketplace Redis provider and wire production leaderboard backend
+**Created:** 2026-04-29
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Replaces F-030 after the Vercel KV sunset. Once Q-011 is answered,
+provision the selected Redis provider through Vercel Marketplace, install the
+matching SDK or REST client, update the current `store-vercel-kv` naming if
+the provider is not Vercel KV-compatible, set the production env vars, and
+verify one signed lap roundtrip through `/api/leaderboard/test%2Fstraight`.
+Do not start this slice until the dev approves the provider, pricing plan,
+and production environment changes.
 
 ## F-029: Playwright e2e race-finish spec
 **Created:** 2026-04-26

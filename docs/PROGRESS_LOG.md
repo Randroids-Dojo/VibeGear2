@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Leaderboard storage provider gate
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) leaderboard back end
+concept, [§24](gdd/24-content-plan.md) online leaderboard.
+**Branch / PR:** `docs/leaderboard-storage-gate`, PR #109.
+**Status:** Partial.
+
+### Done
+- Reviewed F-030 against current Vercel docs and found the requested Vercel
+  KV provisioning path is obsolete for new projects.
+- Marked F-030 obsolete and created F-069 for the replacement Marketplace
+  Redis implementation after dev approval.
+- Added Q-011 so the dev can choose the Redis provider or keep the noop
+  leaderboard backend for v1.0.
+
+### Verified
+- Vercel CLI is available locally as `vercel` 50.34.2.
+- Official Vercel docs reviewed:
+  https://vercel.com/docs/redis,
+  https://vercel.com/docs/marketplace-storage,
+  https://vercel.com/docs/environment-variables.
+- `npm run verify` green, 2593 passed.
+
+### Decisions and assumptions
+- No paid service was provisioned and no production env vars were changed.
+  The working agreement requires dev confirmation before those actions.
+
+### Coverage ledger
+- GDD-21-LEADERBOARD-STORAGE-GATE records the provider-selection gate for
+  production leaderboard storage.
+- Uncovered adjacent requirements: online leaderboard production storage is
+  blocked on Q-011 and tracked by F-069.
+
+### Followups created
+- F-069: Select Marketplace Redis provider and wire production leaderboard
+  backend.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: GitHub issue labels and starter tasks
 
 **GDD sections touched:**

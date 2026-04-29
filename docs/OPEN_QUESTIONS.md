@@ -9,6 +9,44 @@ they are part of the design history.
 
 ---
 
+## Q-011: Leaderboard storage provider after Vercel KV sunset
+
+**GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
+"leaderboard back end concept", [§24](gdd/24-content-plan.md) "Online
+leaderboard".
+**Status:** open
+**Asked in loop:** 2026-04-29
+
+**Question.** F-030 asked the agent to provision Vercel KV and flip
+`LEADERBOARD_BACKEND=vercel-kv` in production. Current Vercel docs say
+Vercel KV is no longer available for new projects, and Redis storage now
+comes through Marketplace integrations that inject env vars into the
+project. Which backend should the leaderboard use?
+
+- **(a) Upstash Redis through Vercel Marketplace (recommended).** Closest
+  successor to the old Vercel KV path. Vercel docs say old Vercel KV stores
+  were moved to Upstash Redis, and Marketplace storage docs name Upstash
+  Redis for key-value use cases. Requires dev approval for provider,
+  pricing plan, env injection, and production env flips.
+- **(b) Redis Cloud through Vercel Marketplace.** Also listed as a Vercel
+  Marketplace Redis option. Requires choosing a Redis provider and adapting
+  any env names or SDK calls that differ from the current `KvLike` adapter.
+- **(c) Keep the noop backend for v1.0.** No external service, no paid
+  integration, and no env change. Leaves online leaderboard as a later
+  post-v1.0 feature.
+- **(d) Use a non-Marketplace Redis or serverless data store.** Flexible,
+  but adds more manual credential handling and more docs work than the
+  Marketplace path.
+
+**Recommended default.** (a), but do not proceed without dev confirmation.
+This crosses the working-agreement gate for paid services and production
+environment changes. Once approved, create a replacement followup for the
+chosen provider and update the current `vercel-kv` adapter name if needed.
+
+**Blocking?** Yes for replacing F-030. It is not blocking local gameplay
+because the noop leaderboard path still deploys and the client remains
+feature-flagged off.
+
 ## Q-010: `tourTierScale` table for the §12 repair-cost formula
 
 **GDD reference:** [§12](gdd/12-upgrade-and-economy-system.md) "Repair
