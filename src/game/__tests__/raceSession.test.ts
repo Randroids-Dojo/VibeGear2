@@ -635,6 +635,24 @@ describe("stepRaceSession (sector timer)", () => {
     expect(session.sectorTimer.sectors[1]!.tickEntered).toBe(session.tick);
   });
 
+  it("stamps the most recent checkpoint for practice reset", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, z: 407, speed: 60 },
+      },
+    };
+
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+
+    expect(session.race.lastCheckpoint?.label).toBe("sector-1");
+    expect(session.race.lastCheckpoint?.carState.z).toBeGreaterThan(408);
+    expect(session.race.passedCheckpointsThisLap.has(68)).toBe(true);
+  });
+
   it("captures the previous lap as the baseline for the next lap", () => {
     const track = loadTrack("test/curve");
     const config: RaceSessionConfig = {

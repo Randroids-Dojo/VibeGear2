@@ -30,9 +30,11 @@ Correct them by adding a new entry that references the old one.
 - `npm run typecheck` green.
 - `npx vitest run src/game/__tests__/raceSessionActions.test.ts src/app/__tests__/page.test.tsx`
   green, 22 passed.
+- `npx vitest run src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts src/app/__tests__/page.test.tsx`
+  green, 141 passed after PR review fixes.
 - `npx playwright test e2e/title-screen.spec.ts --grep "Practice|main menu" e2e/practice-mode.spec.ts`
   green, 3 passed.
-- `npm run verify` green, 2526 passed.
+- `npm run verify` green, 2528 passed.
 - `npm run test:e2e` green, 84 passed.
 
 ### Decisions and assumptions

@@ -201,10 +201,25 @@ describe("setRaceSessionWeather", () => {
       },
     };
 
-    const swapped = setRaceSessionWeather(withTransition, "snow");
+    const swapped = setRaceSessionWeather(withTransition, "snow", [
+      "clear",
+      "snow",
+    ]);
 
     expect(swapped.weather).toEqual({ current: "snow", transitioning: null });
     expect(withTransition.weather.transitioning).not.toBeNull();
+  });
+
+  it("ignores weather that is not allowed by the active track", () => {
+    const session = createRaceSession({
+      ...buildConfig(),
+      weather: "clear",
+    });
+
+    const swapped = setRaceSessionWeather(session, "snow", ["clear"]);
+
+    expect(swapped.weather).toEqual(session.weather);
+    expect(swapped.weather).not.toBe(session.weather);
   });
 });
 

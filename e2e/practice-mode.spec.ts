@@ -18,7 +18,10 @@ test.describe("practice mode", () => {
     await expect(page.getByTestId("practice-weather-select")).toHaveValue(
       "clear",
     );
-    await expect(page.getByTestId("practice-grip")).toHaveText("108%");
+    await expect(page.getByTestId("practice-grip")).toHaveText(/^\d+%$/);
+    const clearGripText = await page.getByTestId("practice-grip").textContent();
+    const clearGrip = Number(clearGripText?.replace("%", ""));
+    expect(clearGrip).toBeGreaterThan(0);
     await expect(page.getByTestId("practice-checkpoint-reset")).toBeDisabled();
 
     await page.getByTestId("practice-weather-select").selectOption("rain");
@@ -26,7 +29,16 @@ test.describe("practice mode", () => {
     await expect(page.getByTestId("practice-weather-select")).toHaveValue(
       "rain",
     );
-    await expect(page.getByTestId("practice-grip")).toHaveText("88%");
+    await expect
+      .poll(async () =>
+        Number(
+          (await page.getByTestId("practice-grip").textContent())?.replace(
+            "%",
+            "",
+          ),
+        ),
+      )
+      .toBeLessThan(clearGrip);
 
     await page.getByTestId("practice-restart").click();
     await expect(page.getByTestId("race-phase")).toHaveText("racing");

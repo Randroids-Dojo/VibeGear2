@@ -136,7 +136,11 @@ export function resetRaceSessionToLastCheckpoint(
 export function setRaceSessionWeather(
   state: Readonly<RaceSessionState>,
   weather: WeatherOption,
+  allowedWeather: ReadonlyArray<WeatherOption>,
 ): RaceSessionState {
+  if (!allowedWeather.includes(weather)) {
+    return clonePure(state);
+  }
   return {
     ...clonePure(state),
     weather: { current: weather, transitioning: null },

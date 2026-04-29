@@ -788,7 +788,12 @@ function RaceCanvas({
       if (mode !== "practice") return;
       const session = sessionRef.current;
       if (!session) return;
-      sessionRef.current = setRaceSessionWeather(session, nextWeather);
+      if (!track.compiled.weatherOptions.includes(nextWeather)) return;
+      sessionRef.current = setRaceSessionWeather(
+        session,
+        nextWeather,
+        track.compiled.weatherOptions,
+      );
       setPracticeSnapshot((prev) =>
         prev === null
           ? prev
@@ -798,7 +803,7 @@ function RaceCanvas({
             },
       );
     },
-    [mode],
+    [mode, track],
   );
 
   const pauseActions = usePauseActions({
