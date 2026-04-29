@@ -6,6 +6,53 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Quick Race mode
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Quick race,
+[§20](gdd/20-hud-and-ui-ux.md) title menu and results,
+[§21](gdd/21-technical-design-for-web-implementation.md) runtime reuse,
+[§22](gdd/22-data-schemas.md) save records.
+**Branch / PR:** `feat/quick-race-mode`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/modes/quickRace.ts`: added pure Quick Race view and
+  race-href builders for unlocked tracks, authored weather, and owned
+  cars.
+- `src/app/quick-race/page.tsx`: added the Quick Race picker route.
+- `src/app/race/page.tsx`: added `mode=quickRace`, kept AI enabled,
+  applied the selected owned car stats, and reused the records-only
+  persistence path so campaign cash and damage are not written.
+- `src/app/page.tsx`: added the title-menu Quick Race entry.
+- `docs/GDD_COVERAGE.json`: added GDD-06-QUICK-RACE-MODE.
+
+### Verified
+- `npm run typecheck` green.
+- `npx vitest run src/game/modes/__tests__/quickRace.test.ts src/app/__tests__/page.test.tsx scripts/__tests__/content-lint.test.ts`
+  green, 67 passed.
+- `npx playwright test e2e/title-screen.spec.ts e2e/race-finish.spec.ts`
+  green, 14 passed.
+- `npm run verify` green, 2523 passed.
+
+### Decisions and assumptions
+- Quick Race uses the same records-only persistence path as Time Trial
+  but does not enable ghost recording. This keeps PB records while
+  preserving the no-campaign-economy rule from §6.
+
+### Coverage ledger
+- GDD-06-QUICK-RACE-MODE covers the first Quick Race picker and runtime
+  path.
+- Uncovered adjacent requirements: Practice mode restart, checkpoint
+  reset, telemetry overlay, and instant weather swap remain under the
+  same parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Display options pane
 
 **GDD sections touched:**

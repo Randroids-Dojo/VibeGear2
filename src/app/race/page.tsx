@@ -44,10 +44,12 @@ import { usePauseToggle } from "@/components/pause/usePauseToggle";
 import { saveRaceResult } from "@/components/results/raceResultStorage";
 import {
   AI_DRIVERS,
+  CARS,
   HAZARDS_BY_ID,
   TRACK_IDS,
   TRACK_RAW,
   getAIDriver,
+  getCar,
   getChampionship,
   loadTrack,
 } from "@/data";
@@ -409,9 +411,10 @@ function resolveTrack(
   return { id, runtimeId, version: parsed.version, compiled: loadTrack(runtimeId) };
 }
 
-type RaceMode = "race" | "timeTrial";
+type RaceMode = "race" | "timeTrial" | "quickRace";
 
 function resolveRaceMode(raw: string | null): RaceMode {
+  if (raw === "quickRace") return "quickRace";
   return raw === "timeTrial" ? "timeTrial" : "race";
 }
 
@@ -426,6 +429,21 @@ function resolveRaceWeather(
 
 function resolvePlayerTire(raw: string | null): TireKind | undefined {
   return raw === "wet" || raw === "dry" ? raw : undefined;
+}
+
+function resolveSessionCar(
+  save: SaveGame,
+  requestedCarId: string | null,
+): { id: string; stats: CarBaseStats } {
+  const fallbackId = save.garage.activeCarId;
+  const requestedIsOwned =
+    requestedCarId !== null && save.garage.ownedCars.includes(requestedCarId);
+  const carId = requestedIsOwned ? requestedCarId : fallbackId;
+  const car = getCar(carId) ?? getCar(fallbackId) ?? CARS[0];
+  if (car === undefined) {
+    return { id: fallbackId, stats: STARTER_STATS };
+  }
+  return { id: car.id, stats: car.baseStats };
 }
 
 /**
@@ -616,6 +634,7 @@ function RaceShell(): ReactElement {
   const modeRaw = search?.get("mode") ?? null;
   const weatherRaw = search?.get("weather") ?? null;
   const tireRaw = search?.get("tire") ?? null;
+  const carRaw = search?.get("car") ?? null;
   const tourId = search?.get("tour") ?? null;
   const raceIndexRaw = search?.get("raceIndex") ?? null;
   const tourContext = useMemo(
@@ -641,6 +660,7 @@ function RaceShell(): ReactElement {
       tourContext={tourContext}
       weather={weather}
       playerTire={playerTire}
+      selectedCarId={carRaw}
     />
   );
 }
@@ -652,6 +672,7 @@ interface RaceCanvasProps {
   tourContext: TourRaceContext | null;
   weather: RaceSessionConfig["weather"];
   playerTire: TireKind | undefined;
+  selectedCarId: string | null;
 }
 
 function RaceCanvas({
@@ -661,6 +682,7 @@ function RaceCanvas({
   tourContext,
   weather,
   playerTire,
+  selectedCarId,
 }: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -769,20 +791,24 @@ function RaceCanvas({
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
     const persistedKeyBindings = readKeyBindings(sessionSave);
-    const timeTrialEnabled = mode === "timeTrial";
-    const initialPlayerDamage = timeTrialEnabled
+    const ghostEnabled = mode === "timeTrial";
+    const recordsOnlyMode = mode === "timeTrial" || mode === "quickRace";
+    const economyEnabled = mode === "race";
+    const sessionCar = resolveSessionCar(sessionSave, selectedCarId);
+    const playerStats = sessionCar.stats;
+    const initialPlayerDamage = recordsOnlyMode
       ? PRISTINE_DAMAGE_STATE
       : pendingDamageForActiveCar(sessionSave);
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
-    const spawnedAi = timeTrialEnabled
+    const spawnedAi = ghostEnabled
       ? []
       : spawnGrid({
           trackSpawn: track.compiled.spawn,
           laneCount: track.compiled.laneCount,
           aiDrivers: resolveRaceAIDrivers(tourContext).map((driver) => ({
             driver,
-            stats: STARTER_STATS,
+            stats: playerStats,
           })),
           seed: raceSeed,
         });
@@ -790,7 +816,7 @@ function RaceCanvas({
     const config: RaceSessionConfig = {
       track: track.compiled,
       player: {
-        stats: STARTER_STATS,
+        stats: playerStats,
         assists: persistedAssists,
         difficultyPreset: persistedDifficulty,
         initialDamage: initialPlayerDamage,
@@ -807,7 +833,7 @@ function RaceCanvas({
     const resetTimeTrialRuntime = (): void => {
       ghostOverlayRef.current = null;
       ghostOverlayTickRef.current = null;
-      if (!timeTrialEnabled) {
+      if (!ghostEnabled) {
         ghostDriverRef.current = null;
         timeTrialRecorderRef.current = null;
         return;
@@ -815,12 +841,12 @@ function RaceCanvas({
       const currentGhost = timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
       ghostDriverRef.current = createGhostDriver({
         replay: currentGhost,
-        stats: STARTER_STATS,
+        stats: playerStats,
       });
       timeTrialRecorderRef.current = createTimeTrialRecorder({
         trackId: track.id,
         trackVersion: track.version,
-        carId: timeTrialSaveSnapshot.garage.activeCarId,
+        carId: sessionCar.id,
         seed: raceSeed,
         onFinalize: (replay) => {
           const latest = loadSave();
@@ -899,16 +925,16 @@ function RaceCanvas({
     const raceMusicCueForSession = raceMusicCue({
       trackId: track.id,
       tourId: tourContext?.tourId,
-      mode,
+      mode: mode === "quickRace" ? "race" : mode,
     });
     let latestEngineInput: EngineRuntimeInput = {
       speed: 0,
-      topSpeed: STARTER_STATS.topSpeed,
+      topSpeed: playerStats.topSpeed,
       audio: persistedSettings.audio,
     };
     let latestRaceMusicIntensity = raceMusicIntensity({
       speed: 0,
-      topSpeed: STARTER_STATS.topSpeed,
+      topSpeed: playerStats.topSpeed,
     });
     let latestWeatherMusicStem = weatherMusicStem(weather);
     let engineStartPending = false;
@@ -1040,14 +1066,14 @@ function RaceCanvas({
       // F-034: credit the wallet (DNF cars receive the §12 participation
       // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
       // the §20 results screen renders the actual wallet change.
-      const timeTrialCommit = timeTrialEnabled
+      const recordsOnlyCommit = recordsOnlyMode
         ? commitTimeTrialRecords({ result, fallbackSave: save })
         : null;
-      if (timeTrialCommit !== null) {
-        timeTrialSaveSnapshot = timeTrialCommit.save;
+      if (recordsOnlyCommit !== null) {
+        timeTrialSaveSnapshot = recordsOnlyCommit.save;
       }
-      const committed = timeTrialCommit
-        ? timeTrialCommit.result
+      const committed = recordsOnlyCommit
+        ? recordsOnlyCommit.result
         : commitRaceCredits({
             result,
             save,
@@ -1109,12 +1135,12 @@ function RaceCanvas({
         camera.x = session.player.car.x;
         latestEngineInput = {
           speed: session.player.car.speed,
-          topSpeed: STARTER_STATS.topSpeed,
+          topSpeed: playerStats.topSpeed,
           audio: persistedSettings.audio,
         };
         latestRaceMusicIntensity = raceMusicIntensity({
           speed: session.player.car.speed,
-          topSpeed: STARTER_STATS.topSpeed,
+          topSpeed: playerStats.topSpeed,
           nitroActive: session.player.nitro.activeRemainingSec > 0,
           finalLap: session.race.lap >= session.race.totalLaps,
         });
@@ -1140,7 +1166,7 @@ function RaceCanvas({
           upcomingCurvature(track.compiled.segments, camera.z, SEGMENT_LENGTH * 5),
         );
         if (
-          timeTrialEnabled &&
+          ghostEnabled &&
           session.race.phase === "racing" &&
           ghostDriverRef.current !== null &&
           ghostOverlayTickRef.current !== session.tick
@@ -1153,7 +1179,7 @@ function RaceCanvas({
             segments: track.compiled.segments,
           });
           ghostOverlayTickRef.current = session.tick;
-        } else if (!timeTrialEnabled || session.race.phase === "countdown") {
+        } else if (!ghostEnabled || session.race.phase === "countdown") {
           ghostOverlayRef.current = null;
           ghostOverlayTickRef.current = null;
         }
@@ -1217,16 +1243,16 @@ function RaceCanvas({
         const nitroUpgradeTier = nitroUpgradeTierForUpgrades(
           config.player.upgrades ?? null,
         );
-        const projectedCashDelta = timeTrialEnabled
-          ? undefined
-          : computeRaceReward({
+        const projectedCashDelta = economyEnabled
+          ? computeRaceReward({
               place: rankPosition(PLAYER_ID, cars),
               status: "finished",
               baseTrackReward: baseRewardForTrackDifficulty(
                 track.compiled.difficulty,
               ),
               difficulty: persistedDifficulty ?? "normal",
-            });
+            })
+          : undefined;
         const hud = deriveHudState({
           race: session.race,
           playerSpeedMetersPerSecond: session.player.car.speed,
@@ -1237,7 +1263,7 @@ function RaceCanvas({
           damage: session.player.damage,
           weather: renderWeather,
           weatherGripScalar: weatherGripScalarForState(
-            STARTER_STATS,
+            playerStats,
             session.weather,
             config.playerTire ?? "dry",
           ),
@@ -1343,14 +1369,14 @@ function RaceCanvas({
             // results screen will render. The `commitRaceCredits`
             // helper persists the merged save and mirrors the
             // wallet delta onto `RaceResult.creditsAwarded`.
-            const timeTrialCommit = timeTrialEnabled
+            const recordsOnlyCommit = recordsOnlyMode
               ? commitTimeTrialRecords({ result, fallbackSave: save })
               : null;
-            if (timeTrialCommit !== null) {
-              timeTrialSaveSnapshot = timeTrialCommit.save;
+            if (recordsOnlyCommit !== null) {
+              timeTrialSaveSnapshot = recordsOnlyCommit.save;
             }
-            const committed = timeTrialCommit
-              ? timeTrialCommit.result
+            const committed = recordsOnlyCommit
+              ? recordsOnlyCommit.result
               : commitRaceCredits({
                   result,
                   save,
@@ -1414,6 +1440,7 @@ function RaceCanvas({
     openPauseMenu,
     weather,
     playerTire,
+    selectedCarId,
   ]);
 
   return (
