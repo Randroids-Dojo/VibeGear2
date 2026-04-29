@@ -6,6 +6,65 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Placeholder audio bank
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) music and SFX direction,
+[§24](gdd/24-content-plan.md) audio asset list,
+[§25](gdd/25-development-roadmap.md) vertical-slice music pack,
+[§26](gdd/26-open-source-project-guidance.md) audio provenance.
+**Branch / PR:** `feat/placeholder-audio-bank`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `scripts/generate-placeholder-audio.ts`: added a deterministic
+  `ffmpeg`-backed generator for placeholder music, SFX, and weather
+  loop Opus files.
+- `public/audio/`: added 35 generated placeholder audio files: 9 music
+  loops, 22 SFX one-shots, and 4 weather loops.
+- `public/audio/manifest.json`: listed every generated audio file with
+  CC0 license, source, originality, duration, and sample-rate metadata.
+- `scripts/check-audio-manifest.ts`: added an audio provenance guard
+  that fails when public audio files lack manifest metadata.
+- `scripts/__tests__/check-audio-manifest.test.ts` and
+  `scripts/__tests__/placeholder-audio-bank.test.ts`: added coverage for
+  manifest validation, GDD audio asset counts, and the 2 MB budget.
+- `package.json`: added `audio:generate` and `audio:check`, and wired
+  `audio:check` into `npm run verify`.
+- `docs/GDD_COVERAGE.json`: added GDD-18-PLACEHOLDER-AUDIO-BANK.
+
+### Verified
+- `npm run audio:generate` completed and reproduced the generated audio
+  files.
+- `npx vitest run scripts/__tests__/check-audio-manifest.test.ts scripts/__tests__/placeholder-audio-bank.test.ts`
+  green, 9 passed.
+- `npm run audio:check` green.
+- `public/audio/` size is 320 KB.
+- `npm run audio:generate && git diff --exit-code -- public/audio public/audio/manifest.json`
+  green.
+- `npm run verify` green, 2489 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- The generated files are content-bank placeholders. Runtime playback
+  and final music composition remain in later sound-system slices.
+- CI validates the checked-in files and manifest without requiring
+  `ffmpeg`; `ffmpeg` is only needed to regenerate the bank locally.
+
+### Coverage ledger
+- GDD-18-PLACEHOLDER-AUDIO-BANK covers placeholder title music, eight
+  race themes, 20 to 30 SFX including UI sounds, weather loops, and
+  provenance metadata.
+- Uncovered adjacent requirements: runtime stem loading, dynamic music
+  layering, and final audio replacement remain under sound-system
+  followups.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Placeholder menu backgrounds
 
 **GDD sections touched:**

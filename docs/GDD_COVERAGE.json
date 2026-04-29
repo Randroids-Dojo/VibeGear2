@@ -80,6 +80,28 @@
       "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
     },
     {
+      "id": "GDD-18-PLACEHOLDER-AUDIO-BANK",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The placeholder audio bank ships original music loops, race themes, SFX, UI sounds, and weather loops with manifest provenance metadata for every audio file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/audio/",
+        "public/audio/manifest.json",
+        "scripts/generate-placeholder-audio.ts",
+        "scripts/check-audio-manifest.ts"
+      ],
+      "testRefs": [
+        "scripts/__tests__/placeholder-audio-bank.test.ts",
+        "scripts/__tests__/check-audio-manifest.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-placeholder-audio-94594c41"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",
