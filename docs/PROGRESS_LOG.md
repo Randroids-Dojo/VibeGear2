@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Music intensity stem assets
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) race music intensity layers
+and region themes,
+[§24](gdd/24-content-plan.md) placeholder content,
+[§26](gdd/26-open-source-project-guidance.md) asset provenance.
+**Branch / PR:** `feat/music-intensity-stem-assets`, PR #89.
+**Status:** Implemented.
+
+### Done
+- `scripts/generate-placeholder-audio.ts`: added generated `drive` and
+  `lead` music intensity layer stems for every race region.
+- `public/audio/music/stems/`: added 16 original placeholder intensity
+  stem files with manifest entries under `music-layer:<region>:<layer>`.
+- `scripts/__tests__/placeholder-audio-bank.test.ts`: verifies each
+  race region ships both intensity stem layers.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-PLACEHOLDER-MUSIC-INTENSITY-STEMS.
+
+### Verified
+- `npm run audio:generate` completed.
+- `npx vitest run scripts/__tests__/placeholder-audio-bank.test.ts scripts/__tests__/check-audio-manifest.test.ts`
+  green, 10 passed.
+- `npm run audio:check` green.
+- `npm run verify` green, 2510 passed.
+- Browser e2e not rerun because this slice only adds generated audio
+  assets, manifest rows, and asset-bank tests.
+
+### Decisions and assumptions
+- The existing regional music loop remains the base groove. The new
+  `drive` and `lead` files provide the second and third intensity
+  layers required by §18.
+- This slice creates source-controlled placeholder assets and manifest
+  coverage only. Runtime mixing of these stems remains the next sound
+  slice.
+
+### Coverage ledger
+- GDD-18-PLACEHOLDER-MUSIC-INTENSITY-STEMS covers placeholder assets
+  for the required 2 to 3 race music intensity layers.
+- Uncovered adjacent requirements: runtime mixing for the drive and
+  lead stems remains under the §18 sound parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Weather music stems
 
 **GDD sections touched:**

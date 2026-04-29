@@ -42,6 +42,10 @@ const MUSIC_REGIONS = [
   "crown-circuit",
 ] as const;
 
+const RACE_MUSIC_REGIONS = MUSIC_REGIONS.filter((id) => id !== "title");
+
+const MUSIC_INTENSITY_LAYERS = ["drive", "lead"] as const;
+
 const SFX_IDS = [
   "ui-hover",
   "ui-confirm",
@@ -77,6 +81,26 @@ function musicSpec(id: string, index: number): AudioAssetSpec {
     durationSeconds: id === "title" ? 6 : 4,
     frequencies: [root, root * 1.5, root * 2],
     volume: 0.18,
+  };
+}
+
+function musicIntensityLayerSpec(
+  region: string,
+  regionIndex: number,
+  layer: (typeof MUSIC_INTENSITY_LAYERS)[number],
+  layerIndex: number,
+): AudioAssetSpec {
+  const root = 150 + regionIndex * 19 + layerIndex * 31;
+  const layerGain = layer === "drive" ? 0.11 : 0.09;
+  return {
+    id: `music-layer:${region}:${layer}`,
+    path: `audio/music/stems/${region}-${layer}.opus`,
+    durationSeconds: 4,
+    frequencies:
+      layer === "drive"
+        ? [root, root * 1.25, root * 1.75]
+        : [root * 1.5, root * 2, root * 2.5],
+    volume: layerGain,
   };
 }
 
@@ -154,6 +178,11 @@ function generate(spec: AudioAssetSpec): AudioManifestEntry {
 
 const specs: AudioAssetSpec[] = [
   ...MUSIC_REGIONS.map(musicSpec),
+  ...RACE_MUSIC_REGIONS.flatMap((region, regionIndex) =>
+    MUSIC_INTENSITY_LAYERS.map((layer, layerIndex) =>
+      musicIntensityLayerSpec(region, regionIndex, layer, layerIndex),
+    ),
+  ),
   ...SFX_IDS.map(sfxSpec),
   ...WEATHER_IDS.map(weatherSpec),
 ];
