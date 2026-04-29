@@ -96,8 +96,12 @@ const IDENTITY_ASSIST_SCALARS: Readonly<AssistScalars> = Object.freeze({
  *     session resolves and forwards the player's preset scalars; the
  *     bump rejects v1 ghosts so the §20 PB compare layer never compares
  *     across pre-binding and post-binding math.
+ *   - 3: Off-road drag now applies to incoming speed before throttle.
+ *     This preserves grass slowdown while allowing a stopped off-road
+ *     car to launch under throttle instead of being clamped back to
+ *     zero by same-frame drag.
  */
-export const PHYSICS_VERSION = 2;
+export const PHYSICS_VERSION = 3;
 
 /**
  * Off-road handling tunables from §10 "Suggested tunable constants".
@@ -339,19 +343,6 @@ export function step(
   const topSpeedScalar = clamp(damageScalars.topSpeedScalar, 0, 1);
   const damagedTopSpeed = stats.topSpeed * topSpeedScalar;
 
-  if (throttle > 0) {
-    nextSpeed += stats.accel * throttle * draftBonus * accelMultiplier * dt;
-  }
-  if (brake > 0) {
-    // Brake decelerates toward zero. Never inverts velocity.
-    const delta = stats.brake * brake * dt;
-    nextSpeed = Math.max(0, nextSpeed - delta);
-  } else if (throttle === 0) {
-    // Coasting drag. Decays toward zero only; cannot push us below 0.
-    const delta = COASTING_DRAG_M_PER_S2 * dt;
-    nextSpeed = Math.max(0, nextSpeed - delta);
-  }
-
   // §28 difficulty preset scalars: identity when no preset is forwarded
   // so existing call sites keep their pre-binding behaviour. Each scalar
   // is clamped defensively against the §28 documented bands so a buggy
@@ -369,9 +360,23 @@ export function step(
     // forgiveness so a wide line is not race-ending).
     const dragDelta = OFF_ROAD_DRAG_M_PER_S2 * offRoadDragScale * dt;
     nextSpeed = Math.max(0, nextSpeed - dragDelta);
-    if (nextSpeed > OFF_ROAD_CAP_M_PER_S) {
-      nextSpeed = OFF_ROAD_CAP_M_PER_S;
-    }
+  }
+
+  if (throttle > 0) {
+    nextSpeed += stats.accel * throttle * draftBonus * accelMultiplier * dt;
+  }
+  if (brake > 0) {
+    // Brake decelerates toward zero. Never inverts velocity.
+    const delta = stats.brake * brake * dt;
+    nextSpeed = Math.max(0, nextSpeed - delta);
+  } else if (throttle === 0) {
+    // Coasting drag. Decays toward zero only; cannot push us below 0.
+    const delta = COASTING_DRAG_M_PER_S2 * dt;
+    nextSpeed = Math.max(0, nextSpeed - delta);
+  }
+
+  if (offRoad && nextSpeed > OFF_ROAD_CAP_M_PER_S) {
+    nextSpeed = OFF_ROAD_CAP_M_PER_S;
   }
 
   // Top-speed clamp last so accel cannot overshoot via accumulated dt.
