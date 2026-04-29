@@ -14,7 +14,7 @@ weather stem option,
 [§14](gdd/14-weather-and-environmental-systems.md) weather states,
 [§21](gdd/21-technical-design-for-web-implementation.md) audio
 runtime.
-**Branch / PR:** `feat/weather-music-stems`, PR pending.
+**Branch / PR:** `feat/weather-music-stems`, PR #88.
 **Status:** Implemented.
 
 ### Done
