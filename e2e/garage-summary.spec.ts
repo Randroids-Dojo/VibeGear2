@@ -167,8 +167,8 @@ test.describe("garage summary", () => {
     const actionBox = await action.boundingBox();
     expect(descriptionBox).not.toBeNull();
     expect(actionBox).not.toBeNull();
-    expect(descriptionBox!.y + descriptionBox!.height).toBeLessThan(
-      actionBox!.y,
+    expect(descriptionBox!.y + descriptionBox!.height).toBeLessThanOrEqual(
+      actionBox!.y + 0.5,
     );
   });
 

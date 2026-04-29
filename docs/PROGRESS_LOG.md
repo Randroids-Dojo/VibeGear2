@@ -6,6 +6,43 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Garage next race review cleanup
+
+**GDD sections touched:**
+[§5](gdd/05-core-gameplay-loop.md) garage loop,
+[§20](gdd/20-hud-and-ui-ux.md) garage layout and next race info.
+**Branch / PR:** `fix/garage-next-race-review-cleanup`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `e2e/garage-summary.spec.ts`: relaxed the next race layout regression
+  by half a pixel so the test fails on real overlap without depending on
+  platform sub-pixel rounding.
+- `docs/GDD_COVERAGE.json`: cleared the completed layout coverage item
+  followup list so it does not imply outstanding work.
+
+### Verified
+- `npx playwright test e2e/garage-summary.spec.ts --project=chromium`
+  green, 3 passed.
+- `npm run verify` green, 2458 passed.
+
+### Decisions and assumptions
+- This slice addresses the Copilot review threads left on PR #74 after
+  that PR merged.
+
+### Coverage ledger
+- GDD-20-GARAGE-NEXT-RACE-LAYOUT remains fully covered by the garage UI
+  code and browser regression test.
+- Uncovered adjacent requirements: full garage tab navigation, tire setup,
+  tour standings, stats or ghost UI, repair forecast details, and bottom
+  CTA row polish remain under their existing garage and UI backlog dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Garage next race layout fix
 
 **GDD sections touched:**
