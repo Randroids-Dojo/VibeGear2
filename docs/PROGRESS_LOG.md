@@ -38,8 +38,10 @@ Correct them by adding a new entry that references the old one.
   manifest.
 - `npm run art:check` green.
 - `npx vitest run scripts/__tests__/check-art-manifest.test.ts scripts/__tests__/content-lint.test.ts`
-  green, 58 passed.
+  green, 61 passed.
 - `npm run content-lint` green.
+- `npm run verify` green, 2476 passed.
+- `npm run test:e2e` green, 79 passed.
 
 ### Decisions and assumptions
 - This slice keeps placeholder art as SVG because the repo already uses

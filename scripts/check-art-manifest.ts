@@ -51,16 +51,17 @@ function normalizePublicPath(value: string): string {
   return stripped.startsWith("art/") ? stripped : `art/${stripped}`;
 }
 
-function readManifest(manifestPath: string): {
+function readManifest(manifestPath: string, repoRoot: string): {
   entries: ArtManifestEntry[];
   issues: ArtManifestIssue[];
 } {
+  const relManifestPath = path.relative(repoRoot, manifestPath).split(path.sep).join("/");
   if (!existsSync(manifestPath)) {
     return {
       entries: [],
       issues: [
         {
-          path: manifestPath,
+          path: relManifestPath,
           rule: "missing-manifest",
           detail: "public art manifest does not exist",
         },
@@ -73,7 +74,7 @@ function readManifest(manifestPath: string): {
       entries: [],
       issues: [
         {
-          path: manifestPath,
+          path: relManifestPath,
           rule: "invalid-manifest",
           detail: "public art manifest must be an array",
         },
@@ -87,7 +88,7 @@ export function checkArtManifest(repoRoot: string): ArtManifestIssue[] {
   const publicDir = path.join(repoRoot, "public");
   const artDir = path.join(publicDir, "art");
   const manifestPath = path.join(publicDir, "art.manifest.json");
-  const { entries, issues } = readManifest(manifestPath);
+  const { entries, issues } = readManifest(manifestPath, repoRoot);
   const assetPaths = new Set(
     walkFiles(artDir)
       .filter(isArtAsset)

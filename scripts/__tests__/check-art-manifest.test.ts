@@ -70,6 +70,56 @@ describe("checkArtManifest", () => {
     expect(rules).toContain("missing-originality");
   });
 
+  it("uses repo-relative paths for missing and invalid manifests", () => {
+    expect(checkArtManifest(repoRoot)).toEqual([
+      {
+        path: "public/art.manifest.json",
+        rule: "missing-manifest",
+        detail: "public art manifest does not exist",
+      },
+    ]);
+
+    write("public/art.manifest.json", "{}");
+    expect(checkArtManifest(repoRoot)).toEqual([
+      {
+        path: "public/art.manifest.json",
+        rule: "invalid-manifest",
+        detail: "public art manifest must be an array",
+      },
+    ]);
+  });
+
+  it("flags duplicate ids and manifest entries whose files are missing", () => {
+    write("public/art/backdrops/fixture/sky.svg", "<svg />");
+    manifest([
+      entry(),
+      entry({
+        src: "/art/backdrops/fixture/missing.svg",
+        path: "art/backdrops/fixture/missing.svg",
+      }),
+    ]);
+    const issues = checkArtManifest(repoRoot);
+    expect(issues).toContainEqual({
+      path: "art/backdrops/fixture/missing.svg",
+      rule: "duplicate-id",
+      detail: "duplicate id art:fixture",
+    });
+    expect(issues).toContainEqual({
+      path: "art/backdrops/fixture/missing.svg",
+      rule: "missing-file",
+      detail: "manifest entry references a file that is not under public/art",
+    });
+  });
+
+  it("flags invalid kind plus missing source and date metadata", () => {
+    write("public/art/backdrops/fixture/sky.svg", "<svg />");
+    manifest([entry({ kind: "audio", source: "", date: "" })]);
+    const rules = checkArtManifest(repoRoot).map((issue) => issue.rule);
+    expect(rules).toContain("invalid-kind");
+    expect(rules).toContain("missing-source");
+    expect(rules).toContain("missing-date");
+  });
+
   it("formats issues on one line", () => {
     expect(
       formatArtManifestIssue({
