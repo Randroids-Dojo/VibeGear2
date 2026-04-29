@@ -4,7 +4,6 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vh, 2rem);
-  overflow-x: hidden;
 }
 
 .titleScreen {
@@ -13,7 +12,7 @@
   align-items: center;
   gap: 1.5rem;
   text-align: center;
-  width: min(100%, 32rem);
+  width: 100%;
   max-width: 32rem;
 }
 

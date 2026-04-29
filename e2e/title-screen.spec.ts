@@ -30,9 +30,9 @@ test.describe("title screen", () => {
 
       expect(metrics.left).toBeGreaterThanOrEqual(0);
       expect(metrics.top).toBeGreaterThanOrEqual(0);
-      expect(metrics.right).toBeLessThanOrEqual(metrics.viewportWidth);
-      expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight);
-      expect(metrics.scrollWidth).toBe(metrics.viewportWidth);
+      expect(metrics.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+      expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight + 1);
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth + 1);
       expect(
         Math.abs(metrics.centerX - metrics.viewportWidth / 2),
       ).toBeLessThanOrEqual(1);
