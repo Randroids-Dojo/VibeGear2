@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+import { UpdateBanner } from "@/components/update/UpdateBanner";
 
 import "./globals.css";
 
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <UpdateBanner />
         <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>
