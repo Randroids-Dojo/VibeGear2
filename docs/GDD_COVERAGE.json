@@ -612,7 +612,7 @@
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": ["src/app/garage/page.tsx"],
       "testRefs": ["e2e/garage-summary.spec.ts"],
-      "followupRefs": ["VibeGear2-fix-overlapping-text-15d34dad"]
+      "followupRefs": []
     },
     {
       "id": "GDD-13-GARAGE-REPAIR-PURCHASE",
