@@ -6,6 +6,50 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Mobile title screen centering
+
+**GDD sections touched:**
+[§4](gdd/04-player-experience-goals.md) quick launch,
+[§20](gdd/20-hud-and-ui-ux.md) title-level menu UX.
+**Branch / PR:** `fix/mobile-title-centering`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/page.module.css`: switched the title shell to dynamic
+  viewport height with responsive outer padding so mobile browser
+  chrome does not push the centered layout out of frame.
+- `src/app/page.module.css`: added compact short-viewport menu spacing,
+  title sizing, and footer sizing for phone screens.
+- `e2e/title-screen.spec.ts`: added a short-mobile regression that
+  verifies the title screen is centered, fully visible, and does not
+  create horizontal overflow at 320 by 568 and 390 by 667.
+- `docs/GDD_COVERAGE.json`: added GDD-20-MOBILE-TITLE-CENTERING.
+
+### Verified
+- `npx playwright test e2e/title-screen.spec.ts --project=chromium`
+  green, 8 passed.
+- `npm run verify` green, 2458 passed.
+- `npm run test:e2e` green, 78 passed.
+
+### Decisions and assumptions
+- This slice keeps the existing title screen hierarchy and menu order.
+  It only changes responsive spacing and sizing for short mobile
+  viewports.
+
+### Coverage ledger
+- GDD-20-MOBILE-TITLE-CENTERING covers centered title-screen layout,
+  full visibility, and no horizontal overflow on short phone viewports.
+- Uncovered adjacent requirements: final title-screen art direction,
+  background media, full controller navigation polish, and full mobile
+  options presentation remain under existing UI, visual-polish, and
+  input backlog dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Disable game UI text selection
 
 **GDD sections touched:**
