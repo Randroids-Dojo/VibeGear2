@@ -34,3 +34,4 @@ export * from "./preRaceCard";
 // `@/game/raceBonuses` for the tour-completion / sponsor surfaces.
 export * from "./raceResult";
 export * from "./tourProgress";
+export * from "./tunnelState";

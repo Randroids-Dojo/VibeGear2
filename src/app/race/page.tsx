@@ -80,10 +80,15 @@ import {
   retireRaceSession,
   resetRaceSessionToLastCheckpoint,
   setRaceSessionWeather,
+  OPEN_TUNNEL_STATE,
+  segmentAt,
+  segmentIsTunnel,
   spawnGrid,
   startLoop,
   stepRaceSession,
+  stepTunnelState,
   totalProgress,
+  tunnelOcclusion,
   type LoopHandle,
   type RaceSessionAudioEvent,
   type RaceSessionConfig,
@@ -994,6 +999,7 @@ function RaceCanvas({
       topSpeed: playerStats.topSpeed,
     });
     let latestWeatherMusicStem = weatherMusicStem(weather);
+    let tunnelState = OPEN_TUNNEL_STATE;
     let engineStartPending = false;
     let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
@@ -1059,6 +1065,7 @@ function RaceCanvas({
       if (!handle) return;
       sessionRef.current = createRaceSession(config);
       resetTimeTrialRuntime();
+      tunnelState = OPEN_TUNNEL_STATE;
       // Re-arm the natural-finish guard so the restarted race can
       // route on its own finish. Must precede `handle.resume()` so the
       // first render tick after resume sees the fresh `false` latch.
@@ -1183,6 +1190,12 @@ function RaceCanvas({
         lastSteerRef.current = input.steer;
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
+        const playerSegment = segmentAt(track.compiled, next.player.car.z);
+        tunnelState = stepTunnelState({
+          state: tunnelState,
+          dtMs: dt * 1000,
+          inTunnel: playerSegment ? segmentIsTunnel(playerSegment) : false,
+        });
         timeTrialRecorderRef.current?.observe({
           phase: next.race.phase,
           tick: next.tick,
@@ -1262,6 +1275,9 @@ function RaceCanvas({
             tourContext?.tourId === "ember-steppe"
               ? { enabled: true, phaseMeters: camera.z }
               : undefined,
+          tunnelAdaptation: {
+            intensityScale: tunnelOcclusion(tunnelState),
+          },
           ghostCar: ghostOverlayRef.current
             ? {
                 ...ghostOverlayRef.current,

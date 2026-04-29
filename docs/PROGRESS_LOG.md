@@ -6,6 +6,65 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Tunnel segments
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) tunnel hazards and roadside scenery,
+[§16](gdd/16-rendering-and-visual-design.md) tunnel mouths and visual contrast,
+[§18](gdd/18-sound-and-music-design.md) tunnel audio shift,
+[§22](gdd/22-data-schemas.md) track segment metadata,
+[§24](gdd/24-content-plan.md) Iron Borough Rivet Tunnel.
+**Branch / PR:** `feat/tunnel-segments`, PR #95.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts` and `src/road/trackCompiler.ts`: added optional
+  `inTunnel` and `tunnelMaterial` authored segment fields and preserved them
+  on compiled segments.
+- `src/game/tunnelState.ts`: added a deterministic tunnel phase state
+  machine and segment detector.
+- `src/render/tunnelRenderer.ts`: extracted tunnel light-adaptation drawing
+  from the road drawer and made it prefer compiled tunnel metadata while
+  keeping legacy `tunnel` hazards compatible.
+- `src/audio/tunnelBus.ts`: added the pure tunnel low-pass and reverb send
+  spec for the future Web Audio wiring layer.
+- `src/app/race/page.tsx`: drives tunnel light adaptation from the player's
+  current tunnel phase instead of only from far visible road strips.
+- `src/data/tracks/iron-borough-rivet-tunnel.json`: marked the authored
+  tunnel segment with `inTunnel` and its material id.
+- `docs/GDD_COVERAGE.json`: expanded GDD-14-TUNNEL-LIGHT-ADAPTATION to
+  cover the segment metadata, renderer, audio spec, and non-colliding
+  hazard contract.
+
+### Verified
+- `npx vitest run src/game/__tests__/tunnelState.test.ts src/audio/tunnelBus.test.ts src/render/__tests__/tunnelRenderer.test.ts src/road/__tests__/trackCompiler.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 90 passed.
+- `npx vitest run scripts/__tests__/content-lint.test.ts src/road/__tests__/trackCompiler.golden.test.ts src/game/__tests__/hazards.test.ts`
+  green, 74 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2541 passed.
+- `npm run test:e2e` green, 84 passed.
+
+### Decisions and assumptions
+- Existing `hazards: ["tunnel"]` content remains compatible, but new content
+  should use `inTunnel` for the render and audio contract.
+- The Web Audio graph mutation is represented as a pure spec in this slice.
+  That keeps the tunnel audio behavior testable and avoids adding a second
+  runtime audio graph before the mixer grows a filter bus.
+
+### Coverage ledger
+- GDD-14-TUNNEL-LIGHT-ADAPTATION covers authored tunnel metadata,
+  non-colliding hazard behavior, live render light adaptation, and the
+  deterministic tunnel audio filter spec.
+- Uncovered adjacent requirements: authored tunnel-mouth sprite art remains
+  part of the broader roadside prop and region art backlog.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Practice mode
 
 **GDD sections touched:**

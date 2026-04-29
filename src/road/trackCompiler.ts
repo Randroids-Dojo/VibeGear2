@@ -135,6 +135,8 @@ export function compileTrack(track: Track): CompiledTrack {
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
+        inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
+        tunnelMaterialId: seg.tunnelMaterial,
       });
       cumulativeIndex += 1;
     }
@@ -316,6 +318,8 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
+        inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
+        tunnelMaterialId: seg.tunnelMaterial,
       });
       cumulativeIndex += 1;
     }
