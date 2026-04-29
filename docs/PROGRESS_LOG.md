@@ -13,7 +13,7 @@ Correct them by adding a new entry that references the old one.
 and region themes,
 [§24](gdd/24-content-plan.md) placeholder content,
 [§26](gdd/26-open-source-project-guidance.md) asset provenance.
-**Branch / PR:** `feat/music-intensity-stem-assets`, PR pending.
+**Branch / PR:** `feat/music-intensity-stem-assets`, PR #89.
 **Status:** Implemented.
 
 ### Done
