@@ -103,7 +103,6 @@ export class ProceduralSfxRuntime {
 
   stopAll(): void {
     for (const graph of Array.from(this.active)) {
-      graph.oscillator.stop();
       this.disconnect(graph);
     }
   }

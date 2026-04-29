@@ -194,7 +194,7 @@ function touchLayoutFor(viewport: Viewport): TouchLayout {
   };
 }
 
-function currentEngineAudioContext(): EngineAudioContextLike | null {
+function currentRaceAudioContext(): unknown | null {
   const context = getAudioContext();
   if (
     context === null ||
@@ -205,21 +205,17 @@ function currentEngineAudioContext(): EngineAudioContextLike | null {
   ) {
     return null;
   }
-  return context as EngineAudioContextLike;
+  return context;
+}
+
+function currentEngineAudioContext(): EngineAudioContextLike | null {
+  const context = currentRaceAudioContext();
+  return context === null ? null : (context as EngineAudioContextLike);
 }
 
 function currentSfxAudioContext(): SfxAudioContextLike | null {
-  const context = getAudioContext();
-  if (
-    context === null ||
-    !("createOscillator" in context) ||
-    !("createGain" in context) ||
-    !("currentTime" in context) ||
-    !("destination" in context)
-  ) {
-    return null;
-  }
-  return context as SfxAudioContextLike;
+  const context = currentRaceAudioContext();
+  return context === null ? null : (context as SfxAudioContextLike);
 }
 
 function createLayerCanvas(

@@ -101,8 +101,8 @@ describe("ProceduralSfxRuntime", () => {
     runtime.stopAll();
 
     expect(runtime.activeCount()).toBe(0);
-    expect(context.oscillators[0]?.stop).toHaveBeenCalledTimes(2);
-    expect(context.oscillators[1]?.stop).toHaveBeenCalledTimes(2);
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledTimes(1);
+    expect(context.oscillators[1]?.stop).toHaveBeenCalledTimes(1);
     expect(context.gains[0]?.disconnected).toBe(true);
     expect(context.gains[1]?.disconnected).toBe(true);
   });
