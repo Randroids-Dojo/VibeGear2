@@ -111,7 +111,10 @@ function NumberInput({
       min={min}
       max={max}
       step={step}
-      onChange={(event) => onChange(Number(event.currentTarget.value))}
+      onChange={(event) => {
+        const next = event.currentTarget.valueAsNumber;
+        if (Number.isFinite(next)) onChange(next);
+      }}
     />
   );
 }

@@ -19,7 +19,15 @@ export type TrackEditorValidation = TrackEditorOk | TrackEditorError;
 export function validateAndCompile(raw: unknown): TrackEditorValidation {
   const parsed = TrackSchema.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues.map((issue) => issue.message).join("; ") };
+    return {
+      ok: false,
+      message: parsed.error.issues
+        .map((issue) => {
+          const path = issue.path.length > 0 ? issue.path.join(".") : "track";
+          return `${path}: ${issue.message}`;
+        })
+        .join("; "),
+    };
   }
   try {
     return {

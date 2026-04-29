@@ -1,6 +1,6 @@
 import type { Track, TrackSegment, WeatherOption } from "@/data/schemas";
 import { WeatherOptionSchema } from "@/data/schemas";
-import { SEGMENT_LENGTH } from "@/road/constants";
+import { createDefaultSegment } from "./defaultTrack";
 
 export const WEATHER_OPTIONS: readonly WeatherOption[] = WeatherOptionSchema.options;
 
@@ -38,20 +38,11 @@ export function updateSegment(
 }
 
 export function addSegment(track: Track): Track {
+  const segment = createDefaultSegment();
   return {
     ...track,
-    lengthMeters: track.lengthMeters + SEGMENT_LENGTH,
-    segments: [
-      ...track.segments,
-      {
-        len: SEGMENT_LENGTH,
-        curve: 0,
-        grade: 0,
-        roadsideLeft: "default",
-        roadsideRight: "default",
-        hazards: [],
-      },
-    ],
+    lengthMeters: track.lengthMeters + segment.len,
+    segments: [...track.segments, segment],
   };
 }
 

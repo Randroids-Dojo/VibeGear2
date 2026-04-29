@@ -37,7 +37,12 @@ export function CheckpointPanel({ track, onChange }: CheckpointPanelProps) {
                 min={0}
                 max={Math.max(0, track.segments.length - 1)}
                 disabled={locked}
-                onChange={(event) => onChange(updateCheckpoint(track, index, { segmentIndex: Number(event.currentTarget.value) }))}
+                onChange={(event) => {
+                  const segmentIndex = event.currentTarget.valueAsNumber;
+                  if (Number.isFinite(segmentIndex)) {
+                    onChange(updateCheckpoint(track, index, { segmentIndex }));
+                  }
+                }}
               />
               <input
                 style={inputStyle}

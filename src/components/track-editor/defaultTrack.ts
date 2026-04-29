@@ -13,16 +13,16 @@ export const DEFAULT_TRACK: Track = {
   weatherOptions: ["clear"],
   difficulty: 1,
   segments: [
-    segment(),
-    segment(),
-    segment(),
-    segment(),
+    createDefaultSegment(),
+    createDefaultSegment(),
+    createDefaultSegment(),
+    createDefaultSegment(),
   ],
   checkpoints: [{ segmentIndex: 0, label: "start" }],
   spawn: { gridSlots: 8 },
 };
 
-function segment(): TrackSegment {
+export function createDefaultSegment(): TrackSegment {
   return {
     len: SEGMENT_LENGTH,
     curve: 0,

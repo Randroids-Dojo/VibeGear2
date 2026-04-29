@@ -14,8 +14,8 @@ export function WarningsPanel({ warnings, error }: WarningsPanelProps) {
       )}
       {warnings.length > 0 ? (
         <ul>
-          {warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
+          {warnings.map((warning, index) => (
+            <li key={`${index}-${warning}`}>{warning}</li>
           ))}
         </ul>
       ) : (
