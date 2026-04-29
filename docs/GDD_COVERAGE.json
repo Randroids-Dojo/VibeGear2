@@ -1155,7 +1155,7 @@
         "docs/gdd/16-rendering-and-visual-design.md",
         "docs/gdd/17-art-direction.md"
       ],
-      "requirement": "Live and ghost cars use original directional sprite atlas frames with damage, brake, nitro, wet spray, and snow trail variants.",
+      "requirement": "Live cars use original directional sprite atlas frames with damage, brake, nitro, wet spray, and snow trail variants. Ghost cars keep the directional atlas path.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/art/cars/sparrow.svg",

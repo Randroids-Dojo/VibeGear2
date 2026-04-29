@@ -18,7 +18,7 @@ Correct them by adding a new entry that references the old one.
 - `src/render/carSpriteCompositor.ts`: added the sprite-frame selection
   contract for damage, brake, nitro, wet spray, and snow trail variants.
 - `src/data/atlas/cars.json` and `public/art/cars/sparrow.svg`: added the
-  missing totalled, wet-trail, and snow-trail frame rows for the live atlas.
+  missing totaled, wet-trail, and snow-trail frame rows for the live atlas.
 - `src/render/pseudoRoadCanvas.ts` and `src/app/race/page.tsx`: wired live
   speed, brake, nitro, weather, and damage state into atlas FX selection.
 - `src/render/__tests__/carSpriteCompositor.test.ts`: added deterministic

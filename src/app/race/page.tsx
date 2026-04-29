@@ -709,6 +709,7 @@ function RaceCanvas({
   const ghostOverlayTickRef = useRef<number | null>(null);
   const timeTrialRecorderRef = useRef<TimeTrialRecorder | null>(null);
   const lastSteerRef = useRef<number>(0);
+  const lastBrakeRef = useRef<number>(0);
   const pauseInputHeldRef = useRef<boolean>(false);
   const carAtlasRef = useRef<LoadedAtlas | null>(null);
   // Imperative pause-menu effects, populated inside the loop effect
@@ -1188,6 +1189,7 @@ function RaceCanvas({
         }
         pauseInputHeldRef.current = input.pause;
         lastSteerRef.current = input.steer;
+        lastBrakeRef.current = input.brake;
         const next = stepRaceSession(session, input, config, dt);
         sessionRef.current = next;
         const playerSegment = segmentAt(track.compiled, next.player.car.z);
@@ -1289,7 +1291,7 @@ function RaceCanvas({
             atlas: carAtlasRef.current,
             frameIndex: playerFrameIndex,
             weather: renderWeather,
-            braking: session.player.audioGates.brakeScrubActive,
+            braking: lastBrakeRef.current > 0,
             nitroActive: session.player.nitro.activeRemainingSec > 0,
             speedMetersPerSecond: session.player.car.speed,
             damageTotal: session.player.damage.total,

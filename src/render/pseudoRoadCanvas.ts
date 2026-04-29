@@ -1076,18 +1076,6 @@ function drawPlayerCar(
         weather: car.weather,
         speedMetersPerSecond: car.speedMetersPerSecond ?? 0,
         damageTotal: car.damageTotal ?? 0,
-        spriteSet: car.spriteId
-          ? {
-              clean: car.spriteId,
-              damage1: car.spriteId,
-              damage2: car.spriteId,
-              damage3: car.spriteId,
-              brake: car.spriteId,
-              nitro: car.spriteId,
-              wetTrail: car.spriteId,
-              snowTrail: car.spriteId,
-            }
-          : undefined,
       }),
     );
     if (frames) {
