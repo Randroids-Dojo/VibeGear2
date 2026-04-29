@@ -313,6 +313,18 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-20-GAME-UI-SELECTION",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The game shell suppresses browser text selection on non-editable UI and race surfaces while keeping editable form controls selectable.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/app/globals.css"],
+      "testRefs": ["e2e/ui-selection.spec.ts"],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-14-WEATHER-GRIP-RUNTIME",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",

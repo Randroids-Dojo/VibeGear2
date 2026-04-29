@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Disable game UI text selection
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) game UI behavior,
+[§21](gdd/21-technical-design-for-web-implementation.md) web shell.
+**Branch / PR:** `fix/disable-game-ui-selection`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/app/globals.css`: disabled browser text selection across the game
+  shell and non-editable UI so dragging or swiping over HUD, menus, and
+  race surfaces does not highlight page text.
+- `src/app/globals.css`: preserved text selection for editable controls
+  such as inputs, textareas, selects, and contenteditable regions.
+- `src/app/globals.css`: restored selection for all non-false
+  contenteditable variants, including plaintext-only.
+- `e2e/ui-selection.spec.ts`: added browser coverage for race UI
+  selection suppression, daily share textarea selection, and
+  plaintext-only contenteditable selection.
+- `docs/GDD_COVERAGE.json`: added GDD-20-GAME-UI-SELECTION.
+
+### Verified
+- `npx playwright test e2e/ui-selection.spec.ts --project=chromium`
+  green, 1 passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2458 passed.
+- `npm run test:e2e` green, 77 passed.
+
+### Decisions and assumptions
+- Editable controls keep normal selection because the daily share
+  fallback, options forms, and profile import flows still need native
+  browser editing behavior.
+
+### Coverage ledger
+- GDD-20-GAME-UI-SELECTION covers global non-editable UI selection
+  suppression, race surface selection suppression, and editable control
+  selection preservation.
+- Uncovered adjacent requirements: final HUD scale options, display
+  frame-cap settings, full settings profile management polish, and
+  pointer-lock style input capture remain under existing UI and control
+  backlog dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Garage next race review cleanup
 
 **GDD sections touched:**
