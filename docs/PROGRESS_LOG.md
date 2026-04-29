@@ -13,7 +13,7 @@ Correct them by adding a new entry that references the old one.
 [§21](gdd/21-technical-design-for-web-implementation.md) local web tooling,
 [§22](gdd/22-data-schemas.md) track schema,
 [§26](gdd/26-open-source-project-guidance.md) contributor tooling.
-**Branch / PR:** `feat/track-editor`, PR pending.
+**Branch / PR:** `feat/track-editor`, PR #96.
 **Status:** Implemented.
 
 ### Done
