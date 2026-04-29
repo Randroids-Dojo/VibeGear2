@@ -6,6 +6,62 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Placeholder region art and manifest check
+
+**GDD sections touched:**
+[§17](gdd/17-art-direction.md) art direction,
+[§24](gdd/24-content-plan.md) asset list,
+[§26](gdd/26-open-source-project-guidance.md) asset provenance,
+[§27](gdd/27-risks-and-mitigations.md) asset burden.
+**Branch / PR:** `feat/placeholder-region-art`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `scripts/generate-placeholder-art.ts`: added a deterministic SVG
+  placeholder art generator for eight region backdrop packs, HUD icons,
+  effect sheets, and the roadside atlas asset.
+- `public/art/`: added generated placeholder SVG art and expanded
+  `public/art.manifest.json` with source, license, originality, and date
+  metadata for every shipped art asset.
+- `scripts/check-art-manifest.ts`: added a provenance guard that fails
+  when an art file is unlisted or lacks allowed license and originality
+  metadata.
+- `package.json`: added `art:generate` and `art:check`, and wired the
+  manifest check into `npm run verify`.
+- `src/data/atlas/roadside.json`: pointed the temperate roadside atlas
+  at the generated SVG asset.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-17-PLACEHOLDER-ART-MANIFEST.
+
+### Verified
+- `npm run art:generate` completed and reproduced the checked-in art
+  manifest.
+- `npm run art:check` green.
+- `npx vitest run scripts/__tests__/check-art-manifest.test.ts scripts/__tests__/content-lint.test.ts`
+  green, 61 passed.
+- `npm run content-lint` green.
+- `npm run verify` green, 2476 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- This slice keeps placeholder art as SVG because the repo already uses
+  SVG for the Sparrow atlas and the format avoids binary churn while the
+  final art pipeline is still open.
+
+### Coverage ledger
+- GDD-17-PLACEHOLDER-ART-MANIFEST covers placeholder region backdrops,
+  HUD icons, effect sheets, roadside atlas file presence, and manifest
+  provenance checks.
+- Uncovered adjacent requirements: the remaining five car sprite sets,
+  final per-region prop volume, menu backgrounds, and final production
+  art replacement remain under the placeholder-art parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Depth-aware weather particles
 
 **GDD sections touched:**

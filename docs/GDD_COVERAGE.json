@@ -2,6 +2,31 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-17-PLACEHOLDER-ART-MANIFEST",
+      "gddSections": [
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The placeholder art bank includes licensed and original region backdrops, HUD icons, effect sheets, and a roadside atlas asset, with a manifest check that fails when public art files lack provenance metadata.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art.manifest.json",
+        "public/art/backdrops/",
+        "public/art/effects/",
+        "public/art/hud/",
+        "public/art/roadside/temperate.svg",
+        "scripts/generate-placeholder-art.ts",
+        "scripts/check-art-manifest.ts"
+      ],
+      "testRefs": [
+        "scripts/__tests__/check-art-manifest.test.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

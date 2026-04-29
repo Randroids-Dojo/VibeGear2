@@ -16,8 +16,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "bench:render": "vitest run --config vitest.bench.config.ts",
+    "art:generate": "vite-node --script scripts/generate-placeholder-art.ts",
+    "art:check": "vite-node --script scripts/check-art-manifest.ts",
     "content-lint": "vite-node --script scripts/content-lint.ts",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run content-lint",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run content-lint && npm run art:check",
     "verify:full": "npm run verify && npm run test:e2e"
   },
   "dependencies": {
