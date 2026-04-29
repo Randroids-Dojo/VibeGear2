@@ -23,7 +23,9 @@ runtime.
 ### Done
 - `src/game/raceSession.ts`: added deterministic player audio gates so
   brake scrub, tire squeal, and wet or snow surface hush cues emit only
-  when their qualifying state first becomes active.
+  when their qualifying state first becomes active. The surface hush
+  gate tracks wet versus snow so weather kind changes can emit a fresh
+  cue while the speed gate stays active.
 - `src/audio/sfx.ts`: added procedural one-shot playback methods for
   brake scrub, tire squeal, and wet or snow surface hush.
 - `src/app/race/page.tsx`: routed the new race-session events into the
@@ -32,9 +34,9 @@ runtime.
 
 ### Verified
 - `npx vitest run src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts src/audio/sfx.test.ts`
-  green, 141 passed.
+  green, 142 passed.
 - `npm run typecheck` green.
-- `npm run verify` green, 2505 passed.
+- `npm run verify` green, 2506 passed.
 - `npm run test:e2e` green, 79 passed.
 
 ### Decisions and assumptions

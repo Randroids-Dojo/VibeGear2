@@ -548,13 +548,13 @@ export type RaceCarStatus = "racing" | "finished" | "dnf";
 export interface RaceSessionAudioGates {
   readonly brakeScrubActive: boolean;
   readonly tireSquealActive: boolean;
-  readonly surfaceHushActive: boolean;
+  readonly surfaceHushActive: RaceSessionSurfaceHushKind | null;
 }
 
 const INITIAL_AUDIO_GATES: RaceSessionAudioGates = Object.freeze({
   brakeScrubActive: false,
   tireSquealActive: false,
-  surfaceHushActive: false,
+  surfaceHushActive: null,
 });
 
 export interface RaceSessionState {
@@ -1893,7 +1893,11 @@ function buildPlayerSurfaceAudioEvents(input: {
       speedFactor,
     });
   }
-  if (surfaceHushNow && !input.gates.surfaceHushActive && hushKind !== null) {
+  if (
+    surfaceHushNow &&
+    hushKind !== null &&
+    input.gates.surfaceHushActive !== hushKind
+  ) {
     events.push({
       kind: "surfaceHush",
       carId: PLAYER_CAR_ID,
@@ -1906,7 +1910,7 @@ function buildPlayerSurfaceAudioEvents(input: {
     gates: {
       brakeScrubActive: brakeScrubNow,
       tireSquealActive: tireSquealNow,
-      surfaceHushActive: surfaceHushNow,
+      surfaceHushActive: surfaceHushNow ? hushKind : null,
     },
     events,
   };

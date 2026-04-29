@@ -1166,6 +1166,37 @@ describe("stepRaceSession (surface audio)", () => {
       speedFactor: expect.any(Number),
     });
   });
+
+  it("re-arms surface hush when the hush kind changes", () => {
+    const config = buildConfig({
+      countdownSec: 0,
+      ai: [],
+      track: trackWithWeather(["rain", "snow"]),
+      weather: "snow",
+    });
+    let session = createRaceSession(config);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        audioGates: {
+          ...session.player.audioGates,
+          surfaceHushActive: "wet",
+        },
+        car: { ...session.player.car, speed: 18 },
+      },
+    };
+
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+
+    expect(session.audioEvents).toContainEqual({
+      kind: "surfaceHush",
+      carId: "player",
+      surface: "snow",
+      speedFactor: expect.any(Number),
+    });
+    expect(session.player.audioGates.surfaceHushActive).toBe("snow");
+  });
 });
 
 describe("stepRaceSession (drafting)", () => {
