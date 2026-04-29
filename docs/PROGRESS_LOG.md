@@ -22,9 +22,9 @@ rendering.
   already landed deterministic flash and shake renderer path.
 - `docs/GDD_COVERAGE.json`: added GDD-16-OFF-ROAD-DUST for the
   already landed bounded dust particle pool and draw integration.
-- Confirmed the visual-polish parent dot's sprite atlas, parallax,
-  VFX, dust, and render benchmark scope has implementation and tests
-  on `main`.
+- Confirmed `main` already has implementations and tests for the
+  visual-polish parent dot's sprite atlas, parallax, VFX, dust, and
+  render benchmark scope.
 
 ### Verified
 - `npx vitest run scripts/__tests__/content-lint.test.ts` green.
