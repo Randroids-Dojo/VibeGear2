@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§16](gdd/16-rendering-and-visual-design.md) car sprites and VFX,
 [§17](gdd/17-art-direction.md) car asset guidance.
-**Branch / PR:** `feat/car-fx-sprite-frames`, PR pending.
+**Branch / PR:** `feat/car-fx-sprite-frames`, PR #101.
 **Status:** Implemented.
 
 ### Done
