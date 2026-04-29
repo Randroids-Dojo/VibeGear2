@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Weather music stems
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) dynamic audio layers and region
+weather stem option,
+[§14](gdd/14-weather-and-environmental-systems.md) weather states,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio
+runtime.
+**Branch / PR:** `feat/weather-music-stems`, PR #88.
+**Status:** Implemented.
+
+### Done
+- `src/audio/music.ts`: added weather stem metadata, weather-to-stem
+  selection, and a second fading music-runtime channel for rainy, heavy
+  rainy, foggy, and snowy ambient loops.
+- `src/app/race/page.tsx`: wired the race music runtime to start and
+  update the active weather stem from the session weather state.
+- `docs/GDD_COVERAGE.json`: added GDD-18-WEATHER-MUSIC-STEMS.
+
+### Verified
+- `npx vitest run src/audio/music.test.ts` green, 12 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2509 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- Weather stems ride the music bus instead of the SFX bus because §18
+  describes them as dynamic music layers and ambient pads.
+- Clear, overcast, and dusk races do not play a weather stem. Light
+  rain reuses the rain loop.
+
+### Coverage ledger
+- GDD-18-WEATHER-MUSIC-STEMS covers weather ambient pad or noise layer
+  and region weather stem option runtime support.
+- Uncovered adjacent requirements: true 2 to 3 intensity stem layering
+  remains under the §18 sound parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Surface SFX cues
 
 **GDD sections touched:**

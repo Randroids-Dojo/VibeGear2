@@ -120,6 +120,23 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-WEATHER-MUSIC-STEMS",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Race music supports optional weather stem loops for rainy, heavy rain, foggy, and snowy races through the persisted music mixer bus, with smooth fades as weather state changes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/music.ts",
+        "src/app/race/page.tsx",
+        "public/audio/weather/"
+      ],
+      "testRefs": ["src/audio/music.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",
