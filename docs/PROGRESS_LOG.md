@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Procedural countdown SFX runtime
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) vehicle and race SFX,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline.
+**Branch / PR:** `feat/procedural-countdown-sfx`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/audio/sfx.ts`: added a procedural SFX runtime for countdown and
+  go tones, with shared-context lookup, master and SFX mixer gain,
+  no-context no-op behavior, silent-mixer no-op behavior, and one-shot
+  teardown.
+- `src/app/race/page.tsx`: plays countdown tones on countdown step
+  changes, plays the go tone when racing begins, and stops active SFX
+  on race teardown.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-PROCEDURAL-COUNTDOWN-SFX.
+
+### Verified
+- `npx vitest run src/audio/sfx.test.ts src/audio/mixer.test.ts src/audio/context.test.ts src/audio/engineRuntime.test.ts`
+  green, 26 passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/race-demo.spec.ts --project=chromium`
+  green, 3 passed.
+- `npm run verify` green, 2452 passed.
+- `npm run test:e2e` green, 75 passed.
+
+### Decisions and assumptions
+- This slice ships procedural countdown and go tones only. It does not
+  add licensed audio assets, music stems, impact SFX, menu clicks, or
+  lap/result stingers.
+- Countdown playback uses the existing gesture-resumed shared audio
+  context. If the context has not been resumed yet, countdown SFX is a
+  no-op rather than creating audio outside a user gesture.
+- The numbered countdown uses triangle tones; the go tone uses a
+  brighter square tone.
+
+### Coverage ledger
+- GDD-18-PROCEDURAL-COUNTDOWN-SFX covers countdown and go SFX playback,
+  persisted master and SFX gain, no-context no-op behavior, silent SFX
+  no-op behavior, and race teardown cleanup.
+- Uncovered adjacent requirements: nitro, gear shift, brake scrub,
+  tire squeal, wall hit, car rub, weather hush, lap complete, results
+  stinger, music playback, region stem metadata, and placeholder audio
+  assets remain under the §18 audio parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Procedural engine runtime
 
 **GDD sections touched:**

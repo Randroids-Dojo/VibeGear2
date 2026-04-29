@@ -92,6 +92,24 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-PROCEDURAL-COUNTDOWN-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races play procedural countdown and go tones through the shared Web Audio context and persisted SFX mixer gain, while no-context and silent-mixer paths remain no-op.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/audio/sfx.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
