@@ -225,9 +225,30 @@ export interface RaceSessionNitroAudioEvent {
   readonly carId: string;
 }
 
+export interface RaceSessionGearShiftAudioEvent {
+  readonly kind: "gearShift";
+  readonly carId: string;
+  readonly fromGear: number;
+  readonly toGear: number;
+}
+
+export interface RaceSessionLapCompleteAudioEvent {
+  readonly kind: "lapComplete";
+  readonly carId: string;
+  readonly lap: number;
+}
+
+export interface RaceSessionRaceFinishAudioEvent {
+  readonly kind: "raceFinish";
+  readonly carId: string;
+}
+
 export type RaceSessionAudioEvent =
   | RaceSessionImpactAudioEvent
-  | RaceSessionNitroAudioEvent;
+  | RaceSessionNitroAudioEvent
+  | RaceSessionGearShiftAudioEvent
+  | RaceSessionLapCompleteAudioEvent
+  | RaceSessionRaceFinishAudioEvent;
 
 export interface RaceSessionConfig {
   /** Compiled track to drive on. Frozen output of `compileTrack`. */
@@ -1086,6 +1107,20 @@ export function stepRaceSession(
         dt,
       )
     : { ...state.player.transmission };
+  const playerShiftEvents: RaceSessionGearShiftAudioEvent[] =
+    playerIsRacing &&
+    state.player.transmission.mode === "manual" &&
+    (playerShiftUpEdge || playerShiftDownEdge) &&
+    playerTransmission.gear !== state.player.transmission.gear
+      ? [
+          {
+            kind: "gearShift",
+            carId: PLAYER_CAR_ID,
+            fromGear: state.player.transmission.gear,
+            toGear: playerTransmission.gear,
+          },
+        ]
+      : [];
   const playerGearMultiplier = gearAccelMultiplier(playerTransmission);
   const playerAccelMultiplier = playerNitroMultiplier * playerGearMultiplier;
 
@@ -1500,6 +1535,7 @@ export function stepRaceSession(
   let bestLapTimeMs = state.race.bestLapTimeMs;
   let nextPhase: RaceState["phase"] = state.race.phase;
   let nextPlayerLapTimes: ReadonlyArray<number> = state.player.lapTimes;
+  const playerLapEvents: RaceSessionAudioEvent[] = [];
   // Apply the §13 wreck flip before the lap-completion check so a car
   // that wrecked this tick cannot also pick up a finish (would-be lap
   // crossings on the wrecked tick are ignored, mirroring the §7 DNF
@@ -1540,6 +1576,16 @@ export function stepRaceSession(
         nextLap = state.race.totalLaps;
         nextPlayerStatus = "finished";
         nextPlayerFinishedAtMs = nextElapsedMs;
+        playerLapEvents.push({
+          kind: "raceFinish",
+          carId: PLAYER_CAR_ID,
+        });
+      } else {
+        playerLapEvents.push({
+          kind: "lapComplete",
+          carId: PLAYER_CAR_ID,
+          lap: nextLap - 1,
+        });
       }
     }
   }
@@ -1723,10 +1769,12 @@ export function stepRaceSession(
         : Array.from(nextBrokenHazards),
     weather: nextWeather,
     weatherRngState: nextWeatherRngState,
-    audioEvents:
-      playerNitroEvents.length === 0
-        ? playerImpactEvents
-        : [...playerNitroEvents, ...playerImpactEvents],
+    audioEvents: [
+      ...playerNitroEvents,
+      ...playerShiftEvents,
+      ...playerLapEvents,
+      ...playerImpactEvents,
+    ],
   };
 }
 

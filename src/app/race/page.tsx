@@ -243,6 +243,16 @@ function playRaceSfxEvents(
       });
     } else if (event.kind === "nitroEngage") {
       runtime.playNitroEngage({ audio });
+    } else if (event.kind === "gearShift") {
+      runtime.playGearShift({
+        fromGear: event.fromGear,
+        toGear: event.toGear,
+        audio,
+      });
+    } else if (event.kind === "lapComplete") {
+      runtime.playLapComplete({ audio });
+    } else if (event.kind === "raceFinish") {
+      runtime.playResultsStinger({ audio });
     }
   }
 }

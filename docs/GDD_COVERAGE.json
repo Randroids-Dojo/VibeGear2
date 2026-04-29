@@ -278,6 +278,25 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-PROCEDURAL-RACE-MILESTONE-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races emit player gear-shift, lap-complete, and race-finish cues from deterministic race-session state and play distinct procedural SFX one-shots through the shared SFX runtime.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceSession.ts",
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSession.test.ts",
+        "src/audio/sfx.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-14-OVERCAST-WEATHER-OPTION",
       "gddSections": [
         "docs/gdd/14-weather-and-environmental-systems.md",
