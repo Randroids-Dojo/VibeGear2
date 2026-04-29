@@ -90,6 +90,7 @@ import {
   createNitroForCar,
   getNitroAccelMultiplier,
   tickNitro,
+  type NitroStepResult,
   type NitroState,
 } from "./nitro";
 import { createRng, deserializeRng, serializeRng, splitRng } from "./rng";
@@ -219,7 +220,14 @@ export interface RaceSessionImpactAudioEvent {
   readonly speedFactor: number;
 }
 
-export type RaceSessionAudioEvent = RaceSessionImpactAudioEvent;
+export interface RaceSessionNitroAudioEvent {
+  readonly kind: "nitroEngage";
+  readonly carId: string;
+}
+
+export type RaceSessionAudioEvent =
+  | RaceSessionImpactAudioEvent
+  | RaceSessionNitroAudioEvent;
 
 export interface RaceSessionConfig {
   /** Compiled track to drive on. Frozen output of `compileTrack`. */
@@ -1034,7 +1042,11 @@ export function stepRaceSession(
         },
         dt,
       )
-    : { state: state.player.nitro };
+    : ({
+        state: state.player.nitro,
+        code: null,
+        isActive: state.player.nitro.activeRemainingSec > 0,
+      } satisfies NitroStepResult);
   const playerNitroMultiplier = getNitroAccelMultiplier(
     playerNitroResult.state,
     {
@@ -1042,6 +1054,10 @@ export function stepRaceSession(
       carNitroEfficiency: playerStats.nitroEfficiency,
     },
   );
+  const playerNitroEvents: RaceSessionNitroAudioEvent[] =
+    playerNitroResult.code === "started"
+      ? [{ kind: "nitroEngage", carId: PLAYER_CAR_ID }]
+      : [];
 
   // §10 transmission: advance the per-tick gear/RPM reducer using the
   // player's pre-physics speed and the rising-edge shift inputs. The
@@ -1707,7 +1723,10 @@ export function stepRaceSession(
         : Array.from(nextBrokenHazards),
     weather: nextWeather,
     weatherRngState: nextWeatherRngState,
-    audioEvents: playerImpactEvents,
+    audioEvents:
+      playerNitroEvents.length === 0
+        ? playerImpactEvents
+        : [...playerNitroEvents, ...playerImpactEvents],
   };
 }
 

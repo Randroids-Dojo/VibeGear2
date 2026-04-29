@@ -49,6 +49,10 @@ export interface ImpactSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export interface NitroEngageSfxInput {
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface ProceduralSfxRuntimeOptions {
   readonly context: () => SfxAudioContextLike | null;
   readonly baseGain?: number;
@@ -105,6 +109,17 @@ export class ProceduralSfxRuntime {
     });
   }
 
+  playNitroEngage(input: NitroEngageSfxInput): boolean {
+    return this.playTone({
+      audio: input.audio,
+      frequency: 980,
+      oscillatorType: "sawtooth",
+      gainScale: 0.75,
+      durationSeconds: 0.18,
+      endFrequency: 1460,
+    });
+  }
+
   stopAll(): void {
     for (const graph of Array.from(this.active)) {
       this.disconnect(graph);
@@ -117,6 +132,7 @@ export class ProceduralSfxRuntime {
     readonly oscillatorType: OscillatorType;
     readonly gainScale: number;
     readonly durationSeconds: number;
+    readonly endFrequency?: number;
   }): boolean {
     const gain = this.effectiveGain(input.audio);
     if (gain === 0) return false;
@@ -132,6 +148,9 @@ export class ProceduralSfxRuntime {
 
     oscillator.type = input.oscillatorType;
     setParam(oscillator.frequency, input.frequency, startTime);
+    if (input.endFrequency !== undefined) {
+      rampParam(oscillator.frequency, input.endFrequency, stopTime);
+    }
     setParam(output.gain, 0, startTime);
     rampParam(output.gain, gain * input.gainScale, startTime + 0.01);
     rampParam(output.gain, 0, stopTime);

@@ -224,18 +224,21 @@ function currentSfxAudioContext(): SfxAudioContextLike | null {
   return context === null ? null : (context as SfxAudioContextLike);
 }
 
-function playRaceImpactSfx(
+function playRaceSfxEvents(
   runtime: ProceduralSfxRuntime,
   events: ReadonlyArray<RaceSessionAudioEvent>,
   audio: AudioSettings | undefined,
 ): void {
   for (const event of events) {
-    if (event.kind !== "impact") continue;
-    runtime.playImpact({
-      hitKind: event.hitKind,
-      speedFactor: event.speedFactor,
-      audio,
-    });
+    if (event.kind === "impact") {
+      runtime.playImpact({
+        hitKind: event.hitKind,
+        speedFactor: event.speedFactor,
+        audio,
+      });
+    } else if (event.kind === "nitroEngage") {
+      runtime.playNitroEngage({ audio });
+    }
   }
 }
 
@@ -875,7 +878,7 @@ function RaceCanvas({
     let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
     let lastCountdownSfxStep: number | null = null;
-    let lastImpactSfxTick: number | null = null;
+    let lastRaceSfxTick: number | null = null;
     const tryStartEngineAudio = (): void => {
       if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
         return;
@@ -938,7 +941,7 @@ function RaceCanvas({
       setCountdownSecondsLeft(Math.ceil(config.countdownSec ?? 3));
       setResultMs(null);
       lastCountdownSfxStep = null;
-      lastImpactSfxTick = null;
+      lastRaceSfxTick = null;
       setHudSnapshot({
         speed: 0,
         lap: 1,
@@ -1067,9 +1070,9 @@ function RaceCanvas({
           lastEngineAudioUpdateMs = audioUpdateMs;
           engineAudio.update(latestEngineInput);
         }
-        if (lastImpactSfxTick !== session.tick) {
-          lastImpactSfxTick = session.tick;
-          playRaceImpactSfx(raceSfx, session.audioEvents, persistedSettings.audio);
+        if (lastRaceSfxTick !== session.tick) {
+          lastRaceSfxTick = session.tick;
+          playRaceSfxEvents(raceSfx, session.audioEvents, persistedSettings.audio);
         }
         const renderWeather = activeWeatherForState(session.weather);
 
