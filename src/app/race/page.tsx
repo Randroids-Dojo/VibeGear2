@@ -153,6 +153,7 @@ import {
   MusicRuntime,
   raceMusicCue,
   raceMusicIntensity,
+  weatherMusicStem,
 } from "@/audio/music";
 
 const VIEWPORT_WIDTH = 800;
@@ -909,6 +910,7 @@ function RaceCanvas({
       speed: 0,
       topSpeed: STARTER_STATS.topSpeed,
     });
+    let latestWeatherMusicStem = weatherMusicStem(weather);
     let engineStartPending = false;
     let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
@@ -927,6 +929,10 @@ function RaceCanvas({
             raceMusicCueForSession,
             persistedSettings.audio,
             latestRaceMusicIntensity,
+          );
+          raceMusic.playWeatherStem(
+            latestWeatherMusicStem,
+            persistedSettings.audio,
           );
         })
         .finally(() => {
@@ -1112,18 +1118,22 @@ function RaceCanvas({
           nitroActive: session.player.nitro.activeRemainingSec > 0,
           finalLap: session.race.lap >= session.race.totalLaps,
         });
+        const renderWeather = activeWeatherForState(session.weather);
+        latestWeatherMusicStem = weatherMusicStem(renderWeather);
         const audioUpdateMs = performance.now();
         if (audioUpdateMs - lastEngineAudioUpdateMs >= 50) {
           lastEngineAudioUpdateMs = audioUpdateMs;
           engineAudio.update(latestEngineInput);
           raceMusic.update(persistedSettings.audio, latestRaceMusicIntensity);
+          raceMusic.updateWeatherStem(
+            latestWeatherMusicStem,
+            persistedSettings.audio,
+          );
         }
         if (lastRaceSfxTick !== session.tick) {
           lastRaceSfxTick = session.tick;
           playRaceSfxEvents(raceSfx, session.audioEvents, persistedSettings.audio);
         }
-        const renderWeather = activeWeatherForState(session.weather);
-
         const strips = project(track.compiled.segments, camera, viewport);
         const playerFrameIndex = playerCarFrameIndex(
           lastSteerRef.current,
