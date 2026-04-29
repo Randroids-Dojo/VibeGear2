@@ -24,6 +24,13 @@
       <rect x="-22" y="7" width="10" height="4" fill="#b83232"/>
       <rect x="13" y="7" width="9" height="4" fill="#b83232"/>
     </g>
+    <g id="totaled">
+      <use href="#battered"/>
+      <path d="M-26 12 L-18 -4 L-6 8 L8 -6 L24 12" fill="none" stroke="#2b2f37" stroke-width="3"/>
+      <path d="M-18 2 L-8 -5 M11 -7 L21 2" stroke="#8a6a1b" stroke-width="2"/>
+      <rect x="-23" y="7" width="11" height="4" fill="#8f2626"/>
+      <rect x="12" y="7" width="10" height="4" fill="#8f2626"/>
+    </g>
     <g id="brake">
       <use href="#clean"/>
       <rect x="-24" y="6" width="13" height="6" fill="#ff4a44"/>
@@ -33,6 +40,17 @@
       <use href="#clean"/>
       <path d="M-14 15 L0 26 L14 15 Z" fill="#44d7ff" opacity="0.75"/>
       <path d="M-8 15 L0 23 L8 15 Z" fill="#e75cff" opacity="0.8"/>
+    </g>
+    <g id="wet-trail">
+      <path d="M-28 4 L-8 14 L-32 23 Z" fill="#d8f4ff" opacity="0.55"/>
+      <path d="M28 4 L8 14 L32 23 Z" fill="#d8f4ff" opacity="0.55"/>
+      <path d="M-22 13 L-3 19 M22 13 L3 19" stroke="#9fd7ef" stroke-width="2" opacity="0.7"/>
+    </g>
+    <g id="snow-trail">
+      <path d="M-24 9 L24 9 L34 24 L-34 24 Z" fill="#edf7ff" opacity="0.64"/>
+      <circle cx="-18" cy="17" r="2" fill="#ffffff" opacity="0.7"/>
+      <circle cx="0" cy="20" r="2" fill="#ffffff" opacity="0.7"/>
+      <circle cx="17" cy="16" r="2" fill="#ffffff" opacity="0.7"/>
     </g>
   </defs>
   <g transform="translate(32 16) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
@@ -73,4 +91,18 @@
   <g transform="translate(736 80) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
   <g transform="translate(32 112)"><use href="#shadow"/><use href="#brake"/></g>
   <g transform="translate(96 112)"><use href="#shadow"/><use href="#nitro"/></g>
+  <g transform="translate(32 144) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(96 144) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(160 144) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(224 144) skewX(12)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(288 144) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(352 144) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(416 144) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(480 144) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(544 144) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(608 144) skewX(-12)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(672 144) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(736 144) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
+  <g transform="translate(32 176)"><use href="#wet-trail"/></g>
+  <g transform="translate(96 176)"><use href="#snow-trail"/></g>
 </svg>

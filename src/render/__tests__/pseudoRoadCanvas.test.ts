@@ -251,6 +251,13 @@ function loadedCarAtlas(): LoadedAtlas {
           { x: 0, y: 0, w: 64, h: 32 },
           { x: 64, y: 0, w: 64, h: 32 },
         ],
+        sparrow_battered: [
+          { x: 320, y: 0, w: 64, h: 32 },
+          { x: 320, y: 32, w: 64, h: 32 },
+        ],
+        sparrow_brake: [{ x: 128, y: 0, w: 64, h: 32 }],
+        sparrow_nitro: [{ x: 192, y: 0, w: 64, h: 32 }],
+        sparrow_wet_trail: [{ x: 256, y: 0, w: 64, h: 32 }],
       },
     },
   };
@@ -1112,6 +1119,24 @@ describe("drawRoad player car overlay", () => {
     expect(draw!.dw).toBeCloseTo(width, 6);
     expect(draw!.dh).toBeCloseTo(width * 0.5, 6);
     expect(draw!.dx).toBeCloseTo(VIEWPORT.width / 2 - width / 2, 6);
+  });
+
+  it("draws atlas FX frames in compositor order", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: {
+        atlas: loadedCarAtlas(),
+        frameIndex: 1,
+        braking: true,
+        nitroActive: true,
+        weather: "heavy_rain",
+        speedMetersPerSecond: 20,
+        damageTotal: 0.55,
+      },
+    });
+
+    const draws = spy.calls.filter((c): c is DrawImageCall => c.type === "drawImage");
+    expect(draws.map((draw) => draw.sx)).toEqual([64, 256, 128, 192, 320]);
   });
 
   it("does not paint the live player car when omitted or null", () => {

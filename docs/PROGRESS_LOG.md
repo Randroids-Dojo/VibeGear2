@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Car FX sprite compositor
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) car sprites and VFX,
+[§17](gdd/17-art-direction.md) car asset guidance.
+**Branch / PR:** `feat/car-fx-sprite-frames`, PR #101.
+**Status:** Implemented.
+
+### Done
+- `src/render/carSpriteCompositor.ts`: added the sprite-frame selection
+  contract for damage, brake, nitro, wet spray, and snow trail variants.
+- `src/data/atlas/cars.json` and `public/art/cars/sparrow.svg`: added the
+  missing totaled, wet-trail, and snow-trail frame rows for the live atlas.
+- `src/render/pseudoRoadCanvas.ts` and `src/app/race/page.tsx`: wired live
+  speed, brake, nitro, weather, and damage state into atlas FX selection.
+- `src/render/__tests__/carSpriteCompositor.test.ts`: added deterministic
+  compositor coverage and once-only missing-frame logging coverage.
+
+### Verified
+- `npx vitest run src/render/__tests__/carSpriteCompositor.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/spriteAtlas.test.ts` green, 74 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2593 passed.
+- `npx playwright test e2e/race-demo.spec.ts e2e/practice-mode.spec.ts` green, 4 passed.
+- No-dash scan and `git diff --check` green.
+
+### Decisions and assumptions
+- The existing original Sparrow atlas remains the v1.0 live-car source for
+  the current runtime, so this slice extends that sheet instead of adding
+  separate PNG overlays.
+
+### Coverage ledger
+- GDD-16-CAR-SPRITE-ATLAS now covers the full §16 car FX frame set.
+- Uncovered adjacent requirements: per-car unique FX sheets for all six
+  playable cars remain future art-production work tracked by F-068.
+
+### Followups created
+- F-068: Add unique FX atlas sheets for all six playable cars.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Starter mod sample pack
 
 **GDD sections touched:**
