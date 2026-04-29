@@ -437,7 +437,12 @@ function lintReferencedModFiles(
   for (const ref of refs ?? []) {
     const abs = resolve(modDir, ref);
     const relFromMod = relative(modDir, abs);
-    if (relFromMod.startsWith("..") || isAbsolute(relFromMod)) {
+    const firstRelSegment = relFromMod.split(/[\\/]/, 1)[0];
+    if (
+      relFromMod === ".." ||
+      firstRelSegment === ".." ||
+      isAbsolute(relFromMod)
+    ) {
       hits.push({
         path: relative(input.repoRoot, manifestAbs),
         rule: "mod-manifest",

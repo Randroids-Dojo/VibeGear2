@@ -37,10 +37,10 @@ export interface LoadModOptions {
 }
 
 const EXECUTABLE_EXT_RE = /\.(?:js|mjs|cjs|ts|tsx|jsx|wasm|html?)$/iu;
-const MOD_ID_RE = /^[a-z0-9][a-z0-9_-]*$/u;
+const ModIdSchema = ModManifestSchema.shape.id;
 
 export function isSafeModId(modId: string): boolean {
-  return MOD_ID_RE.test(modId);
+  return ModIdSchema.safeParse(modId).success;
 }
 
 export function isSafeModPath(path: string): boolean {

@@ -442,6 +442,19 @@ describe("lintPublicModManifests", () => {
     expect(lintPublicModManifests({ repoRoot })).toEqual([]);
   });
 
+  it("accepts safe in-folder paths whose segment starts with two dots", () => {
+    writeFile(
+      "public/mods/community-pack/manifest.json",
+      JSON.stringify({
+        ...MOD_MANIFEST,
+        data: { tracks: ["..foo/harbor-day.json"] },
+      }),
+    );
+    writeFile("public/mods/community-pack/..foo/harbor-day.json", JSON.stringify(MOD_TRACK));
+
+    expect(lintPublicModManifests({ repoRoot })).toEqual([]);
+  });
+
   it("rejects a manifest whose id does not match its folder", () => {
     writeFile(
       "public/mods/community-pack/manifest.json",
