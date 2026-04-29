@@ -839,10 +839,17 @@ function RaceCanvas({
         return;
       }
       const currentGhost = timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
-      ghostDriverRef.current = createGhostDriver({
-        replay: currentGhost,
-        stats: playerStats,
-      });
+      const ghostCarStats =
+        currentGhost === null
+          ? playerStats
+          : getCar(currentGhost.carId)?.baseStats;
+      ghostDriverRef.current =
+        ghostCarStats === undefined
+          ? null
+          : createGhostDriver({
+              replay: currentGhost,
+              stats: ghostCarStats,
+            });
       timeTrialRecorderRef.current = createTimeTrialRecorder({
         trackId: track.id,
         trackVersion: track.version,

@@ -152,14 +152,20 @@ export default function QuickRacePage(): ReactElement {
               </select>
             </label>
 
-            <Link
-              href={href}
-              aria-disabled={!ready}
-              data-testid="quick-race-start"
-              style={startStyle}
-            >
-              Start quick race
-            </Link>
+            {ready ? (
+              <Link href={href} data-testid="quick-race-start" style={startStyle}>
+                Start quick race
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                data-testid="quick-race-start"
+                style={startStyle}
+              >
+                Start quick race
+              </button>
+            )}
           </div>
         )}
 
