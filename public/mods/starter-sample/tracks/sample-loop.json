@@ -1,0 +1,53 @@
+{
+  "id": "starter-sample/sample-loop",
+  "name": "Sample Loop",
+  "tourId": "starter-sample",
+  "author": "VibeGear2 Maintainers",
+  "version": 1,
+  "lengthMeters": 640,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "overcast"],
+  "difficulty": 1,
+  "segments": [
+    {
+      "len": 160,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    },
+    {
+      "len": 160,
+      "curve": 0.22,
+      "grade": 0.02,
+      "roadsideLeft": "tree_pine",
+      "roadsideRight": "sign_marker",
+      "hazards": []
+    },
+    {
+      "len": 160,
+      "curve": -0.18,
+      "grade": -0.02,
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "fence_post",
+      "hazards": ["traffic_cone"]
+    },
+    {
+      "len": 160,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "split-a" }
+  ],
+  "spawn": {
+    "gridSlots": 4
+  }
+}

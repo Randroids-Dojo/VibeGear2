@@ -900,6 +900,28 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-26-STARTER-MOD-SAMPLE",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The repo ships a small starter data mod under public/mods with a schema-valid manifest and track JSON, plus a browser smoke that loads the pack through the official data-only mod loader.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/mods/starter-sample/manifest.json",
+        "public/mods/starter-sample/README.md",
+        "public/mods/starter-sample/tracks/sample-loop.json",
+        "src/app/dev/mods/page.tsx",
+        "docs/MODDING.md"
+      ],
+      "testRefs": [
+        "e2e/mod-loader.spec.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
       "id": "GDD-26-DEV-TRACK-EDITOR",
       "gddSections": [
         "docs/gdd/09-track-design.md",

@@ -1,0 +1,12 @@
+{
+  "id": "starter-sample",
+  "name": "Starter Sample Pack",
+  "version": 1,
+  "author": "VibeGear2 Maintainers",
+  "license": "CC-BY-SA-4.0",
+  "originality": "Original sample data authored from scratch for VibeGear2.",
+  "description": "Small data-only sample pack for validating the mod loader.",
+  "data": {
+    "tracks": ["tracks/sample-loop.json"]
+  }
+}
