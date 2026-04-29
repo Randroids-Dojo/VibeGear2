@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Music intensity stem runtime
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) race music intensity layers,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio
+runtime.
+**Branch / PR:** `feat/music-intensity-stem-runtime`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/audio/music.ts`: added drive and lead stem metadata for every
+  race cue and extended race music intensity with per-layer mix values
+  driven by speed, nitro, and final-lap pressure.
+- `src/audio/music.ts`: extended `MusicRuntime` to start, update, fade,
+  and stop the regional drive and lead stems alongside the base race
+  music cue.
+- `src/audio/music.test.ts`: covers intensity stem mapping, mix
+  pressure, playback volumes, playback rate sync, and fade-out.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-MUSIC-INTENSITY-STEM-RUNTIME.
+
+### Verified
+- `npx vitest run src/audio/music.test.ts` green, 16 passed.
+- `npm run typecheck` green.
+- `npx vitest run src/audio/music.test.ts scripts/__tests__/content-lint.test.ts`
+  green, 70 passed.
+- `npm run verify` green, 2514 passed.
+- `npm run test:e2e` green, 79 passed.
+
+### Decisions and assumptions
+- The shipped regional loop is the base groove. Drive and lead are the
+  second and third layers, which satisfies the §18 2 to 3 intensity
+  layer requirement without adding a fourth live race music bus.
+- Intensity stems follow the base race cue playback rate so nitro and
+  final-lap pressure stay phase-compatible with the main loop.
+
+### Coverage ledger
+- GDD-18-MUSIC-INTENSITY-STEM-RUNTIME covers runtime mixing for the
+  required 2 to 3 race music intensity layers.
+- Uncovered adjacent requirements: none for §18 sound and music known
+  after this slice.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Music intensity stem assets
 
 **GDD sections touched:**

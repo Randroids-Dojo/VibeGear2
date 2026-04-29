@@ -154,6 +154,18 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-MUSIC-INTENSITY-STEM-RUNTIME",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Race music runtime mixes the regional base groove with drive and lead intensity stem loops, fading those stems from speed, nitro, and final-lap race pressure.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/audio/music.ts", "src/app/race/page.tsx"],
+      "testRefs": ["src/audio/music.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

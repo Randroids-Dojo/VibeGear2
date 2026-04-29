@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   MUSIC_CUES,
+  MUSIC_INTENSITY_STEMS,
   MusicRuntime,
   WEATHER_MUSIC_STEMS,
+  musicIntensityStemsFor,
   raceMusicCue,
   raceMusicIntensity,
   titleMusicCue,
@@ -42,6 +44,14 @@ describe("music cues", () => {
     expect(weatherMusicStem("fog")).toEqual(WEATHER_MUSIC_STEMS.fog);
     expect(weatherMusicStem("snow")).toEqual(WEATHER_MUSIC_STEMS.snow);
   });
+
+  it("maps race cues to drive and lead intensity stems", () => {
+    expect(musicIntensityStemsFor("title")).toEqual([]);
+    expect(musicIntensityStemsFor("velvet-coast")).toEqual([
+      MUSIC_INTENSITY_STEMS["velvet-coast"].drive,
+      MUSIC_INTENSITY_STEMS["velvet-coast"].lead,
+    ]);
+  });
 });
 
 describe("raceMusicIntensity", () => {
@@ -64,6 +74,22 @@ describe("raceMusicIntensity", () => {
 
     expect(escalated.volumeScale).toBeGreaterThan(baseline.volumeScale);
     expect(escalated.playbackRate).toBeGreaterThan(baseline.playbackRate);
+  });
+
+  it("raises intensity stem mix as race pressure increases", () => {
+    const idle = raceMusicIntensity({ speed: 0, topSpeed: 60 });
+    const fast = raceMusicIntensity({ speed: 55, topSpeed: 60 });
+    const finalLap = raceMusicIntensity({
+      speed: 55,
+      topSpeed: 60,
+      finalLap: true,
+    });
+
+    expect(idle.layerMix.drive).toBe(0);
+    expect(idle.layerMix.lead).toBe(0);
+    expect(fast.layerMix.drive).toBeGreaterThan(0);
+    expect(fast.layerMix.lead).toBeGreaterThan(0);
+    expect(finalLap.layerMix.lead).toBeGreaterThanOrEqual(fast.layerMix.lead);
   });
 });
 
@@ -180,6 +206,7 @@ describe("MusicRuntime", () => {
     runtime.play(MUSIC_CUES.title, AUDIO, {
       volumeScale: 1,
       playbackRate: 1.04,
+      layerMix: { drive: 0, lead: 0 },
     });
 
     expect(element.playbackRate).toBe(1.04);
@@ -256,6 +283,81 @@ describe("MusicRuntime", () => {
     expect(runtime.currentWeatherStemId()).toBeNull();
     expect(elements[1]?.pause).toHaveBeenCalledTimes(1);
     expect(elements[1]?.volume).toBe(0);
+  });
+
+  it("layers race intensity stems through the music bus", () => {
+    let now = 0;
+    const elements: FakeMusicElement[] = [];
+    const runtime = new MusicRuntime({
+      nowSeconds: () => now,
+      fadeSeconds: 1,
+      baseGain: 0.5,
+      createAudio: (src) => {
+        const element = new FakeMusicElement();
+        element.src = src;
+        elements.push(element);
+        return element;
+      },
+    });
+    const intensity = {
+      volumeScale: 1,
+      playbackRate: 1.03,
+      layerMix: { drive: 0.75, lead: 0.5 },
+    };
+
+    expect(runtime.play(MUSIC_CUES["velvet-coast"], AUDIO, intensity)).toBe(true);
+    expect(elements).toHaveLength(3);
+    expect(elements[1]?.src).toBe("/audio/music/stems/velvet-coast-drive.opus");
+    expect(elements[2]?.src).toBe("/audio/music/stems/velvet-coast-lead.opus");
+    expect(runtime.currentIntensityStemIds()).toEqual([
+      "velvet-coast:drive",
+      "velvet-coast:lead",
+    ]);
+
+    now = 1;
+    runtime.update(AUDIO, intensity);
+    expect(elements[1]?.volume).toBeCloseTo(1 * 0.8 * 0.5 * 0.58 * 0.75);
+    expect(elements[2]?.volume).toBeCloseTo(1 * 0.8 * 0.5 * 0.5 * 0.5);
+    expect(elements[1]?.playbackRate).toBe(1.03);
+    expect(elements[2]?.playbackRate).toBe(1.03);
+  });
+
+  it("fades intensity stems out when the mix clears", () => {
+    let now = 0;
+    const elements: FakeMusicElement[] = [];
+    const runtime = new MusicRuntime({
+      nowSeconds: () => now,
+      fadeSeconds: 1,
+      baseGain: 0.5,
+      createAudio: (src) => {
+        const element = new FakeMusicElement();
+        element.src = src;
+        elements.push(element);
+        return element;
+      },
+    });
+    const active = {
+      volumeScale: 1,
+      playbackRate: 1,
+      layerMix: { drive: 1, lead: 1 },
+    };
+    const quiet = {
+      volumeScale: 1,
+      playbackRate: 1,
+      layerMix: { drive: 0, lead: 0 },
+    };
+
+    runtime.play(MUSIC_CUES["velvet-coast"], AUDIO, active);
+    now = 1;
+    runtime.update(AUDIO, active);
+    runtime.update(AUDIO, quiet);
+    expect(runtime.currentIntensityStemIds()).toEqual([]);
+    expect(elements[1]?.volume).toBeCloseTo(1 * 0.8 * 0.5 * 0.58);
+
+    now = 2;
+    runtime.update(AUDIO, quiet);
+    expect(elements[1]?.pause).toHaveBeenCalledTimes(1);
+    expect(elements[2]?.pause).toHaveBeenCalledTimes(1);
   });
 });
 
