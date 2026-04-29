@@ -10,7 +10,7 @@ Correct them by adding a new entry that references the old one.
 
 **GDD sections touched:**
 [§21](gdd/21-technical-design-for-web-implementation.md) CI and deploy target.
-**Branch / PR:** `fix/vercel-git-deploy-check`, PR pending.
+**Branch / PR:** `fix/vercel-git-deploy-check`, PR #97.
 **Status:** Implemented.
 
 ### Done
