@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Dev track editor
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track shape and segment authoring,
+[§21](gdd/21-technical-design-for-web-implementation.md) local web tooling,
+[§22](gdd/22-data-schemas.md) track schema,
+[§26](gdd/26-open-source-project-guidance.md) contributor tooling.
+**Branch / PR:** `feat/track-editor`, PR #96.
+**Status:** Implemented.
+
+### Done
+- `src/app/dev/track-editor/page.tsx`: added a dev-only route gated by
+  `NODE_ENV !== "production"` and `NEXT_PUBLIC_VG_FEATURE_TRACK_EDITOR=1`.
+- `src/components/track-editor/`: added a schema-backed track editor for
+  metadata, weather options, spawn grid slots, segment rows, tunnel metadata,
+  hazards, checkpoints, import, export, compile status, and warnings.
+- `src/components/render/RoadCanvas.tsx`: added a small reusable road canvas
+  wrapper for editor previews.
+- `.env.development.example`: documented the feature flag needed to enable
+  the local editor.
+- `docs/GDD_COVERAGE.json`: added GDD-26-DEV-TRACK-EDITOR.
+
+### Verified
+- `npx vitest run src/components/track-editor/__tests__/trackEditorState.test.ts src/components/track-editor/__tests__/io.test.ts src/app/dev/track-editor/__tests__/page.test.tsx src/components/track-editor/__tests__/TrackEditor.test.tsx src/components/render/__tests__/RoadCanvas.test.tsx`
+  green, 17 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npx playwright test e2e/track-editor-gate.spec.ts` green, 1 passed.
+- `npm run verify` green, 2558 passed.
+- `npm run test:e2e` green, 85 passed.
+- Browser smoke with `NEXT_PUBLIC_VG_FEATURE_TRACK_EDITOR=1 npm run dev`
+  loaded `/dev/track-editor`, rendered the canvas, added a segment and
+  checkpoint, and reported zero console errors.
+
+### Decisions and assumptions
+- The editor is intentionally local and dev-only. Public mod loading remains
+  owned by `VibeGear2-implement-mod-loader-e9b8b51f`.
+- `lengthMeters` stays editable, but add and remove segment actions keep it
+  aligned with authored segment length so the default export remains clean.
+
+### Coverage ledger
+- GDD-26-DEV-TRACK-EDITOR covers the internal authoring editor surface and
+  production gate.
+- Uncovered adjacent requirements: runtime mod loading and public mod
+  manifest validation remain in the mod loader dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Tunnel segments
 
 **GDD sections touched:**
