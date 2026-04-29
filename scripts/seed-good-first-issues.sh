@@ -1,14 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo="${GITHUB_REPOSITORY:-Randroids-Dojo/VibeGear2}"
-
 require_gh() {
   if ! command -v gh >/dev/null 2>&1; then
     echo "gh CLI is required" >&2
     exit 1
   fi
 }
+
+require_gh
+
+repo="${GITHUB_REPOSITORY:-}"
+if [ -z "$repo" ]; then
+  repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)"
+fi
+if [ -z "$repo" ]; then
+  echo "Could not determine GitHub repo. Set GITHUB_REPOSITORY=owner/name." >&2
+  exit 1
+fi
 
 ensure_label() {
   local name="$1"
@@ -22,6 +31,51 @@ ensure_label() {
   else
     gh label create "$name" --repo "$repo" --color "$color" --description "$description" >/dev/null
   fi
+}
+
+sync_labels_from_yaml() {
+  node - .github/labels.yml <<'NODE'
+const fs = require("fs");
+
+const yamlPath = process.argv[2];
+const input = fs.readFileSync(yamlPath, "utf8");
+const labels = [];
+let current = null;
+
+function unquote(value) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+for (const line of input.split(/\r?\n/)) {
+  let match = line.match(/^- name: (.+)$/);
+  if (match) {
+    if (current) labels.push(current);
+    current = { name: unquote(match[1]) };
+    continue;
+  }
+  match = line.match(/^  color: (.+)$/);
+  if (match && current) {
+    current.color = unquote(match[1]);
+    continue;
+  }
+  match = line.match(/^  description: (.+)$/);
+  if (match && current) {
+    current.description = unquote(match[1]);
+  }
+}
+if (current) labels.push(current);
+
+for (const label of labels) {
+  if (!label.name || !label.color || !label.description) {
+    throw new Error(`Incomplete label entry in ${yamlPath}`);
+  }
+  console.log(`${label.name}\t${label.color}\t${label.description}`);
+}
+NODE
 }
 
 issue_exists() {
@@ -49,21 +103,9 @@ create_issue_if_missing() {
   gh issue create --repo "$repo" --title "$title" --label "$labels" --body "$body"
 }
 
-require_gh
-
-ensure_label "physics" "1f77b4" "Driving model, collisions, traction, damage, and race simulation."
-ensure_label "renderer" "5319e7" "Canvas road rendering, sprite atlases, HUD drawing, and visual effects."
-ensure_label "ai" "0e8a16" "CPU opponents, racing lines, difficulty tuning, and traffic behavior."
-ensure_label "ui-ux" "c5def5" "Screens, flows, controls, accessibility, and player-facing copy."
-ensure_label "audio" "fbca04" "Music, sound effects, mixing, audio manifests, and playback bugs."
-ensure_label "modding" "5319e7" "Data mods, schemas, loader behavior, starter packs, and community content."
-ensure_label "content" "fef2c0" "Tracks, tours, cars, balance data, manifests, and authored game data."
-ensure_label "legal-review" "b60205" "Originality, license, trademark, source provenance, or IP-safety review."
-ensure_label "good-first-issue" "7057ff" "Small, well-scoped task suitable for first-time contributors."
-ensure_label "help-wanted" "008672" "Maintainers would welcome outside contribution on this task."
-ensure_label "performance" "006b75" "Frame time, bundle size, memory, loading, and profiling work."
-ensure_label "bug" "d73a4a" "Broken behavior, regression, crash, or incorrect output."
-ensure_label "design" "d876e3" "GDD, balance, UX, rule, roadmap, or game-design discussion."
+while IFS=$'\t' read -r name color description; do
+  ensure_label "$name" "$color" "$description"
+done < <(sync_labels_from_yaml)
 
 create_issue_if_missing \
   "Add a schema-valid starter track variation" \
