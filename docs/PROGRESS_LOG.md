@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 [§19](gdd/19-controls-and-input.md) reduced motion,
 [§21](gdd/21-technical-design-for-web-implementation.md) deterministic
 rendering.
-**Branch / PR:** `docs/visual-polish-coverage`, PR pending.
+**Branch / PR:** `docs/visual-polish-coverage`, PR #91.
 **Status:** Implemented.
 
 ### Done
