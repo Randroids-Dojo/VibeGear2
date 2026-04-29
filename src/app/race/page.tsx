@@ -52,7 +52,12 @@ import {
   loadTrack,
 } from "@/data";
 import carsAtlasFixture from "@/data/atlas/cars.json";
-import { AtlasMetaSchema, TrackSchema, type Track } from "@/data/schemas";
+import {
+  AtlasMetaSchema,
+  TrackSchema,
+  type AudioSettings,
+  type Track,
+} from "@/data/schemas";
 import {
   applyTimeTrialResult,
   buildFinalCarInputsFromSession,
@@ -76,6 +81,7 @@ import {
   stepRaceSession,
   totalProgress,
   type LoopHandle,
+  type RaceSessionAudioEvent,
   type RaceSessionConfig,
   type RaceSessionState,
   type RankedCar,
@@ -216,6 +222,21 @@ function currentEngineAudioContext(): EngineAudioContextLike | null {
 function currentSfxAudioContext(): SfxAudioContextLike | null {
   const context = currentRaceAudioContext();
   return context === null ? null : (context as SfxAudioContextLike);
+}
+
+function playRaceImpactSfx(
+  runtime: ProceduralSfxRuntime,
+  events: ReadonlyArray<RaceSessionAudioEvent>,
+  audio: AudioSettings | undefined,
+): void {
+  for (const event of events) {
+    if (event.kind !== "impact") continue;
+    runtime.playImpact({
+      hitKind: event.hitKind,
+      speedFactor: event.speedFactor,
+      audio,
+    });
+  }
 }
 
 function createLayerCanvas(
@@ -854,6 +875,7 @@ function RaceCanvas({
     let engineAudioTeardown = false;
     let lastEngineAudioUpdateMs = 0;
     let lastCountdownSfxStep: number | null = null;
+    let lastImpactSfxTick: number | null = null;
     const tryStartEngineAudio = (): void => {
       if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
         return;
@@ -916,6 +938,7 @@ function RaceCanvas({
       setCountdownSecondsLeft(Math.ceil(config.countdownSec ?? 3));
       setResultMs(null);
       lastCountdownSfxStep = null;
+      lastImpactSfxTick = null;
       setHudSnapshot({
         speed: 0,
         lap: 1,
@@ -1043,6 +1066,10 @@ function RaceCanvas({
         if (audioUpdateMs - lastEngineAudioUpdateMs >= 50) {
           lastEngineAudioUpdateMs = audioUpdateMs;
           engineAudio.update(latestEngineInput);
+        }
+        if (lastImpactSfxTick !== session.tick) {
+          lastImpactSfxTick = session.tick;
+          playRaceImpactSfx(raceSfx, session.audioEvents, persistedSettings.audio);
         }
         const renderWeather = activeWeatherForState(session.weather);
 

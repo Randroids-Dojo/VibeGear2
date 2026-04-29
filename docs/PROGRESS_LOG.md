@@ -6,6 +6,62 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Procedural impact SFX runtime
+
+**GDD sections touched:**
+[§18](gdd/18-sound-and-music-design.md) vehicle and race SFX,
+[§21](gdd/21-technical-design-for-web-implementation.md) audio pipeline.
+**Branch / PR:** `feat/procedural-impact-sfx`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/game/raceSession.ts`: added transient per-tick player impact
+  audio events emitted from the deterministic damage pass for car,
+  wall, hazard, and rub-style hit kinds.
+- `src/audio/sfx.ts`: added procedural impact tones with hit-kind
+  specific oscillator shape, duration, pitch, and gain scaling.
+- `src/app/race/page.tsx`: plays each player impact event once per
+  simulation tick through the existing shared audio context and SFX
+  mixer settings.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-18-PROCEDURAL-IMPACT-SFX.
+
+### Verified
+- `npx vitest run src/audio/sfx.test.ts src/game/__tests__/raceSession.test.ts`
+  green, 124 passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npx vitest run src/audio/sfx.test.ts src/game/__tests__/raceSession.test.ts src/game/__tests__/raceSessionActions.test.ts`
+  green, 133 passed.
+- `npm run build` green and postbuild source-map scrub completed.
+- `npm run verify` green, 2456 passed.
+- `npm run test:e2e` green, 75 passed.
+
+### Decisions and assumptions
+- This slice plays local player impacts only. AI-only contact stays
+  silent until a field-mix or spectator audio policy exists.
+- Off-road persistent damage is not emitted as an impact cue because it
+  represents continuous surface punishment; the §18 off-road rumble and
+  weather hush layers remain under the sound parent dot.
+- The race session exposes transient event data while keeping physics
+  deterministic. Audio playback remains a page-level side effect.
+
+### Coverage ledger
+- GDD-18-PROCEDURAL-IMPACT-SFX covers player impact cue emission,
+  car-contact playback, wall or hazard hit playback, rub-style tone
+  shaping, persisted SFX gain use, no-context no-op behavior, silent
+  SFX no-op behavior, and race teardown cleanup.
+- Uncovered adjacent requirements: nitro engage, gear shift, brake
+  scrub, tire squeal, spray or snow hush, lap complete, results
+  stinger, music playback, region stem metadata, and placeholder audio
+  assets remain under the §18 audio parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Procedural countdown SFX runtime
 
 **GDD sections touched:**

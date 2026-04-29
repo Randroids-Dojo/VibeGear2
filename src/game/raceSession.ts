@@ -212,6 +212,15 @@ export interface RaceSessionAI {
   upgrades?: Readonly<CarUpgradeTiers> | null;
 }
 
+export interface RaceSessionImpactAudioEvent {
+  readonly kind: "impact";
+  readonly carId: string;
+  readonly hitKind: HitKind;
+  readonly speedFactor: number;
+}
+
+export type RaceSessionAudioEvent = RaceSessionImpactAudioEvent;
+
 export interface RaceSessionConfig {
   /** Compiled track to drive on. Frozen output of `compileTrack`. */
   track: CompiledTrack;
@@ -521,6 +530,12 @@ export interface RaceSessionState {
   weather: WeatherState;
   /** Serialized deterministic PRNG state reserved for weather transitions. */
   weatherRngState: number;
+  /**
+   * Transient per-tick audio cues emitted by the pure race reducer. The
+   * runtime may play them once per tick, but replays and tests can ignore
+   * them without affecting physics determinism.
+   */
+  audioEvents: ReadonlyArray<RaceSessionAudioEvent>;
 }
 
 /**
@@ -708,6 +723,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     brokenHazards: [],
     weather,
     weatherRngState: serializeRng(weatherRng),
+    audioEvents: [],
   };
 }
 
@@ -872,6 +888,7 @@ export function stepRaceSession(
         brokenHazards: state.brokenHazards,
         weather: cloneWeatherState(state.weather),
         weatherRngState: state.weatherRngState,
+        audioEvents: [],
       };
     }
     // Lights out. Flip to racing, zero the tick clock, reset the sector
@@ -899,6 +916,7 @@ export function stepRaceSession(
       brokenHazards: state.brokenHazards,
       weather: cloneWeatherState(state.weather),
       weatherRngState: state.weatherRngState,
+      audioEvents: [],
     };
     return stepRaceSession(promoted, playerInput, config, dt);
   }
@@ -1394,6 +1412,14 @@ export function stepRaceSession(
       hitsByCarId.set(b.id, bHits);
     }
   }
+  const playerImpactEvents = (hitsByCarId.get(PLAYER_CAR_ID) ?? []).map(
+    (hit): RaceSessionImpactAudioEvent => ({
+      kind: "impact",
+      carId: PLAYER_CAR_ID,
+      hitKind: hit.kind,
+      speedFactor: hit.speedFactor,
+    }),
+  );
   // Helper: advance one car's damage by the off-road drip + the
   // accumulated `carHit` events. Returns the post-update damage and
   // whether the car wrecked this tick (so the caller can flip status).
@@ -1681,6 +1707,7 @@ export function stepRaceSession(
         : Array.from(nextBrokenHazards),
     weather: nextWeather,
     weatherRngState: nextWeatherRngState,
+    audioEvents: playerImpactEvents,
   };
 }
 
@@ -1724,6 +1751,7 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
     brokenHazards: state.brokenHazards.slice(),
     weather: cloneWeatherState(state.weather),
     weatherRngState: state.weatherRngState,
+    audioEvents: state.audioEvents.slice(),
   };
 }
 
