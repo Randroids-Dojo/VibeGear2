@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-28: Slice: Depth-aware weather particles
+
+**GDD sections touched:**
+[§14](gdd/14-weather-and-environmental-systems.md) weather visual effects,
+[§16](gdd/16-rendering-and-visual-design.md) pseudo-3D rendering,
+[§21](gdd/21-technical-design-for-web-implementation.md) renderer layer.
+**Branch / PR:** `feat/weather-depth-particles`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/render/pseudoRoadCanvas.ts`: moved rain streaks and snow
+  particles onto projected road strip bands so they follow road depth,
+  camera framing, foreground extension, and curve offsets.
+- `src/render/pseudoRoadCanvas.ts`: added fog banding over projected
+  road depth while keeping the existing broad draw-distance fade and
+  readability floor.
+- `src/render/__tests__/pseudoRoadCanvas.test.ts`: added projected
+  strip fixtures for weather effect tests and updated assertions to pin
+  depth-scaled rain, snow, and fog behaviour.
+- `docs/GDD_COVERAGE.json`: added
+  GDD-14-WEATHER-DEPTH-PARTICLES.
+
+### Verified
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 48 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2458 passed.
+- `npm run test:e2e` green, 78 passed.
+
+### Decisions and assumptions
+- Road sheen and roadside whitening remain surface effects because §14
+  calls them out as road and roadside cues, not airborne particles.
+- Dusk and night bloom remain screen-space glare effects. This slice
+  targets rain, snow, and fog, which are the weather effects that need
+  road-depth parallax.
+
+### Coverage ledger
+- GDD-14-WEATHER-DEPTH-PARTICLES covers projected rain streaks,
+  projected snow particles, and projected fog bands.
+- Uncovered adjacent requirements: final authored weather sprite
+  sheets, per-region weather art, and wind-specific particle drift
+  remain under visual-polish and content backlog dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-28: Slice: Mobile title screen centering
 
 **GDD sections touched:**

@@ -166,6 +166,77 @@ function makeCanvasSpy(): CanvasSpy {
  * because it is independent of the strip array.
  */
 const EMPTY_STRIPS: readonly Strip[] = [];
+const WEATHER_STRIPS: readonly Strip[] = [
+  strip({
+    segment: {
+      index: 0,
+      worldZ: 0,
+      curve: 0,
+      grade: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
+    },
+    screenX: 420,
+    screenY: 430,
+    screenW: 300,
+    scale: 1.2,
+    foreground: {
+      screenX: 420,
+      screenY: 480,
+      screenW: 380,
+    },
+  }),
+  strip({
+    segment: {
+      index: 1,
+      worldZ: 100,
+      curve: 0,
+      grade: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
+    },
+    screenX: 460,
+    screenY: 320,
+    screenW: 180,
+    scale: 0.8,
+  }),
+  strip({
+    segment: {
+      index: 2,
+      worldZ: 200,
+      curve: 0,
+      grade: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
+    },
+    screenX: 500,
+    screenY: 210,
+    screenW: 92,
+    scale: 0.42,
+  }),
+  strip({
+    segment: {
+      index: 3,
+      worldZ: 300,
+      curve: 0,
+      grade: 0,
+      authoredIndex: 0,
+      roadsideLeftId: "default",
+      roadsideRightId: "default",
+      hazardIds: [],
+    },
+    screenX: 530,
+    screenY: 145,
+    screenW: 48,
+    scale: 0.24,
+  }),
+];
 
 function loadedCarAtlas(): LoadedAtlas {
   return {
@@ -1057,7 +1128,7 @@ describe("drawRoad player car overlay", () => {
 describe("drawRoad weather effects", () => {
   it("paints deterministic heavy-rain streaks over the road layer", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "heavy_rain" },
     });
 
@@ -1077,14 +1148,19 @@ describe("drawRoad weather effects", () => {
     expect(sheen[1]!.globalAlpha).toBeCloseTo(RAIN_ROAD_SHEEN_MAX_ALPHA * 0.55, 6);
     expect(streaks).toHaveLength(92);
     expect(streaks[0]!.globalAlpha).toBeCloseTo(0.34, 6);
-    expect(streaks[0]!.w).toBe(2);
-    expect(streaks[0]!.h).toBe(18);
+    const averageX = streaks.reduce((sum, streak) => sum + streak.x, 0) / streaks.length;
+    expect(averageX).toBeGreaterThan(330);
+    expect(averageX).toBeLessThan(560);
+    expect(streaks[0]!.y).toBeGreaterThanOrEqual(0);
+    expect(streaks[0]!.y).toBeLessThanOrEqual(VIEWPORT.height);
+    expect(streaks[0]!.w).toBeGreaterThanOrEqual(1);
+    expect(streaks[0]!.h).toBeGreaterThan(8);
     expect(spy.finalAlpha()).toBeCloseTo(1, 6);
   });
 
   it("scales road sheen for standard rain", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "rain" },
     });
 
@@ -1102,7 +1178,7 @@ describe("drawRoad weather effects", () => {
 
   it("scales road sheen for light rain", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "light_rain" },
     });
 
@@ -1120,7 +1196,7 @@ describe("drawRoad weather effects", () => {
 
   it("reduces rain density when visual weather reduction is enabled", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "heavy_rain", visualReduction: true },
     });
 
@@ -1146,7 +1222,7 @@ describe("drawRoad weather effects", () => {
 
   it("applies the particle intensity slider to rain density", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "heavy_rain", particleIntensity: 0.5 },
     });
 
@@ -1206,7 +1282,7 @@ describe("drawRoad weather effects", () => {
 
   it("paints snow particles and roadside whitening", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "snow" },
     });
 
@@ -1234,8 +1310,8 @@ describe("drawRoad weather effects", () => {
         c.type === "fillRect" && c.fillStyle === "#f4fbff",
     );
     expect(flakes).toHaveLength(54);
-    expect(flakes[0]!.w).toBe(3);
-    expect(flakes[1]!.w).toBe(2);
+    expect(Math.max(...flakes.map((flake) => flake.w))).toBeGreaterThan(2);
+    expect(Math.min(...flakes.map((flake) => flake.w))).toBeLessThanOrEqual(2);
     expect(flakes[0]!.globalAlpha).toBeCloseTo(0.72, 6);
   });
 
@@ -1258,7 +1334,7 @@ describe("drawRoad weather effects", () => {
 
   it("paints fog as a draw-distance fade without changing clear weather", () => {
     const fog = makeCanvasSpy();
-    drawRoad(fog.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(fog.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "fog" },
     });
 
@@ -1266,12 +1342,14 @@ describe("drawRoad weather effects", () => {
       (c): c is FillRectCall =>
         c.type === "fillRect" && c.fillStyle === "#cbd7e1",
     );
-    expect(fogRects).toHaveLength(2);
-    expect(fogRects[0]!.x).toBe(0);
-    expect(fogRects[0]!.y).toBe(0);
-    expect(fogRects[0]!.w).toBe(VIEWPORT.width);
-    expect(fogRects[0]!.h).toBeCloseTo(VIEWPORT.height * 0.72, 6);
-    expect(fogRects[0]!.globalAlpha).toBeCloseTo(
+    expect(fogRects.length).toBeGreaterThan(2);
+    expect(fogRects.some((rect) => rect.y > 0 && rect.h < VIEWPORT.height * 0.5)).toBe(true);
+    const broadFog = fogRects.at(-2)!;
+    expect(broadFog.x).toBe(0);
+    expect(broadFog.y).toBe(0);
+    expect(broadFog.w).toBe(VIEWPORT.width);
+    expect(broadFog.h).toBeCloseTo(VIEWPORT.height * 0.72, 6);
+    expect(broadFog.globalAlpha).toBeCloseTo(
       Math.min(0.5, (1 - visibilityForWeather("fog")) * 0.72),
       6,
     );
@@ -1301,7 +1379,7 @@ describe("drawRoad weather effects", () => {
 
   it("uses the fog readability floor to reduce fog overlay alpha", () => {
     const spy = makeCanvasSpy();
-    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
       weatherEffects: { weather: "fog", fogFloorClamp: 0.8 },
     });
 
@@ -1309,8 +1387,9 @@ describe("drawRoad weather effects", () => {
       (c): c is FillRectCall =>
         c.type === "fillRect" && c.fillStyle === "#cbd7e1",
     );
-    expect(fogRects).toHaveLength(2);
-    expect(fogRects[0]!.globalAlpha).toBeCloseTo(
+    expect(fogRects.length).toBeGreaterThan(2);
+    const broadFog = fogRects.at(-2)!;
+    expect(broadFog.globalAlpha).toBeCloseTo(
       Math.min(0.5, (1 - 0.8) * 0.72),
       6,
     );

@@ -366,7 +366,7 @@ export function drawRoad(
   }
 
   if (options.weatherEffects) {
-    drawWeatherEffects(ctx, viewport, options.weatherEffects);
+    drawWeatherEffects(ctx, viewport, strips, options.weatherEffects);
   }
 
   drawHeatShimmer(ctx, viewport, options.heatShimmer);
@@ -549,6 +549,7 @@ function drawPoleSprite(
 function drawWeatherEffects(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
+  strips: readonly Strip[],
   effects: NonNullable<DrawRoadOptions["weatherEffects"]>,
 ): void {
   if (viewport.width <= 0 || viewport.height <= 0) return;
@@ -558,13 +559,13 @@ function drawWeatherEffects(
     case "light_rain":
     case "rain":
     case "heavy_rain":
-      drawRainEffects(ctx, viewport, effects.weather, settings.particleIntensity);
+      drawRainEffects(ctx, viewport, strips, effects.weather, settings.particleIntensity);
       return;
     case "snow":
-      drawSnowEffects(ctx, viewport, settings.particleIntensity);
+      drawSnowEffects(ctx, viewport, strips, settings.particleIntensity);
       return;
     case "fog":
-      drawFogFade(ctx, viewport, settings.alphaScale, settings.fogFloorClamp);
+      drawFogFade(ctx, viewport, strips, settings.alphaScale, settings.fogFloorClamp);
       return;
     case "dusk":
     case "night":
@@ -680,12 +681,13 @@ function resolveWeatherEffectSettings(
 function drawRainEffects(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
+  strips: readonly Strip[],
   weather: Extract<WeatherOption, "light_rain" | "rain" | "heavy_rain">,
   intensity: number,
 ): void {
   if (intensity <= 0) return;
   drawRainRoadSheen(ctx, viewport, weather, intensity);
-  drawRainStreaks(ctx, viewport, weather, intensity);
+  drawRainStreaks(ctx, viewport, strips, weather, intensity);
 }
 
 function drawRainRoadSheen(
@@ -725,12 +727,14 @@ function drawRainRoadSheen(
 function drawRainStreaks(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
+  strips: readonly Strip[],
   weather: Extract<WeatherOption, "light_rain" | "rain" | "heavy_rain">,
   intensity: number,
 ): void {
+  const bands = weatherProjectionBands(strips, viewport);
   const baseCount = weather === "heavy_rain" ? 92 : weather === "rain" ? 58 : 32;
   const count = Math.round(baseCount * intensity);
-  if (count <= 0) return;
+  if (count <= 0 || bands.length === 0) return;
   const alpha = (weather === "heavy_rain" ? 0.34 : weather === "rain" ? 0.26 : 0.18) * intensity;
   const prevFill = ctx.fillStyle;
   const prevAlpha = ctx.globalAlpha;
@@ -738,10 +742,16 @@ function drawRainStreaks(
     ctx.globalAlpha = alpha;
     ctx.fillStyle = "#cfefff";
     for (let i = 0; i < count; i++) {
-      const x = ((i * 73) % Math.max(1, viewport.width + 80)) - 40;
-      const y = (i * 47) % Math.max(1, viewport.height);
-      const h = weather === "heavy_rain" ? 18 : 13;
-      ctx.fillRect(x, y, 2, h);
+      const band = bands[i % bands.length]!;
+      const depthSeed = hashUnit(i * 131 + band.index * 17);
+      const widthSeed = hashUnit(i * 199 + band.index * 29);
+      const y = band.topY + depthSeed * band.height;
+      const depth = band.depthAt(y);
+      const x = band.centerAt(depth) + (widthSeed * 2 - 1) * band.halfWidthAt(depth) * 1.4;
+      const scale = Math.max(0.45, Math.min(1.45, band.scaleAt(depth) * 1.1));
+      const h = (weather === "heavy_rain" ? 18 : 13) * scale;
+      const w = Math.max(1, Math.round(1 + scale));
+      ctx.fillRect(x, y, w, h);
     }
   } finally {
     ctx.fillStyle = prevFill;
@@ -752,19 +762,25 @@ function drawRainStreaks(
 function drawSnowParticles(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
+  strips: readonly Strip[],
   intensity: number,
 ): void {
+  const bands = weatherProjectionBands(strips, viewport);
   const count = Math.round(54 * intensity);
-  if (count <= 0) return;
+  if (count <= 0 || bands.length === 0) return;
   const prevFill = ctx.fillStyle;
   const prevAlpha = ctx.globalAlpha;
   try {
     ctx.globalAlpha = 0.72 * intensity;
     ctx.fillStyle = "#f4fbff";
     for (let i = 0; i < count; i++) {
-      const size = i % 5 === 0 ? 3 : 2;
-      const x = (i * 89) % Math.max(1, viewport.width);
-      const y = (i * 53) % Math.max(1, viewport.height);
+      const band = bands[i % bands.length]!;
+      const depthSeed = hashUnit(i * 149 + band.index * 23);
+      const widthSeed = hashUnit(i * 181 + band.index * 31);
+      const y = band.topY + depthSeed * band.height;
+      const depth = band.depthAt(y);
+      const size = Math.max(1, Math.round((i % 5 === 0 ? 3 : 2) * band.scaleAt(depth)));
+      const x = band.centerAt(depth) + (widthSeed * 2 - 1) * band.halfWidthAt(depth) * 1.55;
       ctx.fillRect(x, y, size, size);
     }
   } finally {
@@ -776,11 +792,12 @@ function drawSnowParticles(
 function drawSnowEffects(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
+  strips: readonly Strip[],
   intensity: number,
 ): void {
   if (intensity <= 0) return;
   drawSnowRoadsideWhitening(ctx, viewport, intensity);
-  drawSnowParticles(ctx, viewport, intensity);
+  drawSnowParticles(ctx, viewport, strips, intensity);
 }
 
 function drawSnowRoadsideWhitening(
@@ -814,15 +831,25 @@ function drawSnowRoadsideWhitening(
 function drawFogFade(
   ctx: CanvasRenderingContext2D,
   viewport: Viewport,
+  strips: readonly Strip[],
   intensity: number,
   fogFloorClamp: number,
 ): void {
   const visibility = Math.max(visibilityForWeather("fog"), fogFloorClamp);
+  const bands = weatherProjectionBands(strips, viewport);
   const prevFill = ctx.fillStyle;
   const prevAlpha = ctx.globalAlpha;
   try {
-    ctx.globalAlpha = Math.min(0.5, (1 - visibility) * 0.72 * intensity);
     ctx.fillStyle = "#cbd7e1";
+    for (let i = bands.length - 1; i >= 0; i--) {
+      const band = bands[i]!;
+      const distance = bands.length <= 1 ? 1 : i / (bands.length - 1);
+      const alpha = Math.min(0.24, (1 - visibility) * intensity * (0.1 + distance * 0.28));
+      if (alpha <= 0) continue;
+      ctx.globalAlpha = alpha;
+      ctx.fillRect(0, band.topY, viewport.width, band.height);
+    }
+    ctx.globalAlpha = Math.min(0.5, (1 - visibility) * 0.72 * intensity);
     ctx.fillRect(0, 0, viewport.width, viewport.height * 0.72);
     ctx.globalAlpha = Math.min(0.28, (1 - visibility) * 0.4 * intensity);
     ctx.fillRect(0, viewport.height * 0.48, viewport.width, viewport.height * 0.34);
@@ -830,6 +857,102 @@ function drawFogFade(
     ctx.fillStyle = prevFill;
     ctx.globalAlpha = prevAlpha;
   }
+}
+
+interface WeatherProjectionBand {
+  index: number;
+  topY: number;
+  height: number;
+  depthAt(y: number): number;
+  centerAt(depth: number): number;
+  halfWidthAt(depth: number): number;
+  scaleAt(depth: number): number;
+}
+
+interface WeatherProjectionEdge {
+  screenX: number;
+  screenY: number;
+  screenW: number;
+  scale: number;
+}
+
+function weatherProjectionBands(
+  strips: readonly Strip[],
+  viewport: Viewport,
+): readonly WeatherProjectionBand[] {
+  const edges = weatherProjectionEdges(strips)
+    .filter((edge) => edge.screenY >= -viewport.height * 0.1 && edge.screenY <= viewport.height * 1.1)
+    .sort((a, b) => b.screenY - a.screenY);
+  const bands: WeatherProjectionBand[] = [];
+  for (let i = 0; i < edges.length - 1; i += 1) {
+    const near = edges[i]!;
+    const far = edges[i + 1]!;
+    const topY = Math.max(0, Math.min(near.screenY, far.screenY));
+    const bottomY = Math.min(viewport.height, Math.max(near.screenY, far.screenY));
+    const height = bottomY - topY;
+    if (height < 1) continue;
+    bands.push({
+      index: i,
+      topY,
+      height,
+      depthAt: (y) => clampUnit((near.screenY - y) / Math.max(1, near.screenY - far.screenY)),
+      centerAt: (depth) => lerp(near.screenX, far.screenX, clampUnit(depth)),
+      halfWidthAt: (depth) => lerp(near.screenW, far.screenW, clampUnit(depth)),
+      scaleAt: (depth) => lerp(near.scale, far.scale, clampUnit(depth)),
+    });
+  }
+  return bands;
+}
+
+function weatherProjectionEdges(strips: readonly Strip[]): readonly WeatherProjectionEdge[] {
+  const edges: WeatherProjectionEdge[] = [];
+  for (const strip of strips) {
+    if (!strip.visible) continue;
+    if (!isFiniteProjection(strip.screenX, strip.screenY, strip.screenW, strip.scale)) continue;
+    if (strip.foreground && isFiniteProjection(
+      strip.foreground.screenX,
+      strip.foreground.screenY,
+      strip.foreground.screenW,
+      strip.scale,
+    )) {
+      edges.push({
+        screenX: strip.foreground.screenX,
+        screenY: strip.foreground.screenY,
+        screenW: strip.foreground.screenW,
+        scale: Math.max(strip.scale, 1),
+      });
+    }
+    edges.push({
+      screenX: strip.screenX,
+      screenY: strip.screenY,
+      screenW: strip.screenW,
+      scale: strip.scale,
+    });
+  }
+  return edges;
+}
+
+function isFiniteProjection(...values: readonly number[]): boolean {
+  const [screenX, screenY, screenW, scale] = values;
+  return (
+    Number.isFinite(screenX) &&
+    Number.isFinite(screenY) &&
+    typeof screenW === "number" &&
+    typeof scale === "number" &&
+    Number.isFinite(screenW) &&
+    Number.isFinite(scale) &&
+    screenW > 0 &&
+    scale > 0
+  );
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function hashUnit(seed: number): number {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
 }
 
 function drawNightBloom(
