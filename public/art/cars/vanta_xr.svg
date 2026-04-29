@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 768 384" role="img" aria-label="VibeGear2 placeholder art">
+<rect width="768" height="384" fill="none"/>
+<defs>
+<g id="shadow"><ellipse cx="0" cy="13" rx="29" ry="5" fill="#10151f" opacity="0.55"/></g>
+<g id="clean"><path d="M-27 12 L27 12 L21 -8 L12 -14 L-12 -14 L-21 -8 Z" fill="#5d6ce1"/><path d="M-14 -7 L14 -7 L9 4 L-9 4 Z" fill="#101a34"/><path d="M-22 7 L-12 7 L-12 11 L-22 11 Z" fill="#ff3d38"/><path d="M12 7 L22 7 L22 11 L12 11 Z" fill="#ff3d38"/><path d="M-24 12 L-18 15 L18 15 L24 12 Z" fill="#141827"/><path d="M-18 -5 L18 -5" stroke="#a7e3ff" stroke-width="2"/></g>
+<g id="dented"><use href="#clean"/><path d="M-23 -1 L-17 4 L-21 7" fill="none" stroke="#a7e3ff" stroke-width="2" opacity="0.8"/><rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>
+<g id="battered"><use href="#clean"/><path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="#141827" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="#141827" stroke-width="2"/><rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>
+<g id="brake"><use href="#clean"/><rect x="-24" y="6" width="13" height="6" fill="#ff4a44"/><rect x="11" y="6" width="13" height="6" fill="#ff4a44"/></g>
+<g id="nitro"><use href="#clean"/><path d="M-14 15 L0 26 L14 15 Z" fill="#44d7ff" opacity="0.75"/><path d="M-8 15 L0 23 L8 15 Z" fill="#e75cff" opacity="0.8"/></g>
+</defs>
+<g transform="translate(32 16) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(96 16) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(160 16) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(224 16) skewX(12)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(288 16) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(352 16) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(416 16) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(480 16) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(544 16) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(608 16) skewX(-12)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(672 16) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(736 16) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(32 48) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(96 48) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(160 48) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(224 48) skewX(12)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(288 48) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(352 48) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(416 48) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(480 48) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(544 48) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(608 48) skewX(-12)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(672 48) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(736 48) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(32 80) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(96 80) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(160 80) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(224 80) skewX(12)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(288 80) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(352 80) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(416 80) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(480 80) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(544 80) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(608 80) skewX(-12)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(672 80) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(736 80) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(32 112)"><use href="#shadow"/><use href="#brake"/></g>
+<g transform="translate(96 112)"><use href="#shadow"/><use href="#nitro"/></g>
+<text x="704" y="360" text-anchor="middle" font-family="monospace" font-size="16" font-weight="700" fill="#a7e3ff">PLACEHOLDER</text>
+</svg>
