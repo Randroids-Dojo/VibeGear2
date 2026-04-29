@@ -980,6 +980,21 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-21-LEADERBOARD-STORAGE-GATE",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "Online leaderboard production storage must use a currently available provider and must not be provisioned until the dev approves the provider, pricing plan, and production environment changes.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "docs/OPEN_QUESTIONS.md",
+        "docs/FOLLOWUPS.md",
+        "docs/PROGRESS_LOG.md"
+      ],
+      "followupRefs": ["F-069"]
+    },
+    {
       "id": "GDD-05-GARAGE-SUMMARY",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",
