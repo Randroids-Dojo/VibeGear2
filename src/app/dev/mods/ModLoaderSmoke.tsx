@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 
 import { loadModContent } from "@/mods";
 
+/**
+ * Dev-only mod-loader smoke for `/dev/mods`, exercised by
+ * `e2e/mod-loader.spec.ts` and intentionally not linked from user-facing UI.
+ */
 type SmokeState =
   | { status: "loading" }
   | { status: "ready"; modId: string; trackId: string; trackCount: number }

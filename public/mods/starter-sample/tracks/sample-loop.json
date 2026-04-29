@@ -14,32 +14,32 @@
       "len": 160,
       "curve": 0,
       "grade": 0,
-      "roadsideLeft": "grass",
-      "roadsideRight": "grass",
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
       "hazards": []
     },
     {
       "len": 160,
       "curve": 0.22,
       "grade": 0.02,
-      "roadsideLeft": "tree",
-      "roadsideRight": "sign",
+      "roadsideLeft": "tree_pine",
+      "roadsideRight": "sign_marker",
       "hazards": []
     },
     {
       "len": 160,
       "curve": -0.18,
       "grade": -0.02,
-      "roadsideLeft": "rock",
-      "roadsideRight": "fence",
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "fence_post",
       "hazards": ["traffic_cone"]
     },
     {
       "len": 160,
       "curve": 0,
       "grade": 0,
-      "roadsideLeft": "grass",
-      "roadsideRight": "grass",
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
       "hazards": []
     }
   ],
