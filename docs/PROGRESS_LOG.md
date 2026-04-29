@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Data mod loader
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) mod layer,
+[§22](gdd/22-data-schemas.md) mod manifest schema,
+[§26](gdd/26-open-source-project-guidance.md) data-only mod rules.
+**Branch / PR:** `feat/mod-loader`, PR pending.
+**Status:** Implemented.
+
+### Done
+- `src/data/schemas.ts`: added the strict mod manifest schema with author,
+  license, originality, data refs, optional asset refs, safe relative paths,
+  and executable-reference rejection.
+- `src/mods/manifest.ts`: added a browser-safe data mod loader for
+  `/mods/<mod-id>/manifest.json` and referenced track, car, upgrade, AI
+  driver, and championship JSON.
+- `scripts/content-lint.ts`: added a public mod manifest pass that validates
+  manifests, folder-id matches, referenced file existence, and referenced data
+  schemas.
+- `docs/MODDING.md` and §22: documented the official data-only manifest shape
+  and validation rules.
+
+### Verified
+- `npx vitest run src/mods/__tests__/manifest.test.ts scripts/__tests__/content-lint.test.ts`
+  green, 72 passed.
+- `npx vitest run src/mods/__tests__/manifest.test.ts src/data/schemas.test.ts`
+  green, 60 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2580 passed.
+
+### Decisions and assumptions
+- The first loader is a pure data loader. It validates mod packs but does not
+  mount a public mod browser or let mods run executable code.
+- Manifest `id` must match the folder name. That keeps `/mods/<id>/` URLs and
+  manifest identity aligned for future public listings.
+
+### Coverage ledger
+- GDD-26-DATA-MOD-LOADER covers the data-only mod manifest schema, safe path
+  validation, loader, docs, and content-lint enforcement.
+- Uncovered adjacent requirements: public mod browser submission and legal
+  review UI remain future slices.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: added the mod manifest JSON schema and
+  loader validation contract.
+
 ## 2026-04-29: Slice: Vercel Git deploy check hotfix
 
 **GDD sections touched:**

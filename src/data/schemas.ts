@@ -435,6 +435,70 @@ export const SponsorObjectiveSchema = z.object({
 });
 export type SponsorObjective = z.infer<typeof SponsorObjectiveSchema>;
 
+// Mod manifest --------------------------------------------------------------
+
+export const ModLicenseSchema = z.enum([
+  "CC-BY-SA-4.0",
+  "CC-BY-4.0",
+  "CC0-1.0",
+  "public-domain",
+]);
+export type ModLicense = z.infer<typeof ModLicenseSchema>;
+
+const modPath = z
+  .string()
+  .min(1)
+  .regex(/^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\\)[A-Za-z0-9._/-]+$/u, {
+    message: "mod paths must be relative, stay inside the mod folder, and use forward slashes",
+  })
+  .refine((value) => !/^[A-Za-z][A-Za-z0-9+.-]*:/u.test(value), {
+    message: "mod paths must not include a URL scheme",
+  })
+  .refine((value) => !/\.(?:js|mjs|cjs|ts|tsx|jsx|wasm|html?)$/iu.test(value), {
+    message: "data-only mods cannot reference executable files",
+  })
+  .refine((value) => value.split("/").every((part) => part.length > 0 && part !== "."), {
+    message: "mod paths must not contain empty or current-directory segments",
+  });
+
+export const ModDataRefsSchema = z
+  .object({
+    tracks: z.array(modPath).optional(),
+    cars: z.array(modPath).optional(),
+    upgrades: z.array(modPath).optional(),
+    aiDrivers: z.array(modPath).optional(),
+    championships: z.array(modPath).optional(),
+  })
+  .strict()
+  .refine((refs) => Object.values(refs).some((list) => list && list.length > 0), {
+    message: "mod manifest must reference at least one data file",
+  });
+export type ModDataRefs = z.infer<typeof ModDataRefsSchema>;
+
+export const ModAssetRefsSchema = z
+  .object({
+    art: z.array(modPath).optional(),
+    audio: z.array(modPath).optional(),
+  })
+  .strict()
+  .optional();
+export type ModAssetRefs = z.infer<typeof ModAssetRefsSchema>;
+
+export const ModManifestSchema = z
+  .object({
+    id: slug,
+    name: z.string().min(1),
+    version: positiveInt,
+    author: z.string().min(1),
+    license: ModLicenseSchema,
+    originality: z.string().min(20),
+    description: z.string().min(1).optional(),
+    data: ModDataRefsSchema,
+    assets: ModAssetRefsSchema,
+  })
+  .strict();
+export type ModManifest = z.infer<typeof ModManifestSchema>;
+
 // Save-game -----------------------------------------------------------------
 
 export const SpeedUnitSchema = z.enum(["kph", "mph"]);

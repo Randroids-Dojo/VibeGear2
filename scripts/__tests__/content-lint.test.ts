@@ -2,9 +2,9 @@
  * Unit tests for `scripts/content-lint.ts`.
  *
  * The script is the automated enforcement of `docs/LEGAL_SAFETY.md`
- * section 9. These tests cover the four rules that live in the script
+ * section 9. These tests cover the rules that live in the script
  * (binary-without-manifest, track-real-circuit-name,
- * car-manufacturer-name, topgear-text) plus the pure helpers
+ * car-manufacturer-name, topgear-text, mod-manifest) plus the pure helpers
  * (`buildDenylistRegex`, `findDenylistHit`, `formatHit`,
  * `isBinaryAssetPath`) so adding a future rule does not have to relearn
  * the matcher semantics.
@@ -34,6 +34,7 @@ import {
   lintLatestProgressLogCoverage,
   lintBinaryManifest,
   lintCarNames,
+  lintPublicModManifests,
   lintTopGearText,
   lintTrackNames,
   runContentLint,
@@ -388,6 +389,105 @@ describe("lintTopGearText", () => {
     const hits = lintTopGearText({ repoRoot });
     expect(hits).toHaveLength(1);
     expect(hits[0]?.detail).toContain("Snowblind");
+  });
+});
+
+// lintPublicModManifests ----------------------------------------------------
+
+const MOD_TRACK = {
+  id: "community/harbor-day",
+  name: "Harbor Day",
+  tourId: "community",
+  author: "modder",
+  version: 1,
+  lengthMeters: 180,
+  laps: 1,
+  laneCount: 3,
+  weatherOptions: ["clear"],
+  difficulty: 1,
+  segments: [
+    {
+      len: 180,
+      curve: 0,
+      grade: 0,
+      roadsideLeft: "grass",
+      roadsideRight: "grass",
+      hazards: [],
+    },
+  ],
+  checkpoints: [{ segmentIndex: 0, label: "start" }],
+  spawn: { gridSlots: 2 },
+};
+
+const MOD_MANIFEST = {
+  id: "community-pack",
+  name: "Community Pack",
+  version: 1,
+  author: "A. Contributor",
+  license: "CC-BY-SA-4.0",
+  originality: "Original data authored from scratch for this project.",
+  data: {
+    tracks: ["tracks/harbor-day.json"],
+  },
+};
+
+describe("lintPublicModManifests", () => {
+  it("returns no hits when public/mods does not exist", () => {
+    expect(lintPublicModManifests({ repoRoot })).toEqual([]);
+  });
+
+  it("accepts a valid data-only public mod", () => {
+    writeFile("public/mods/community-pack/manifest.json", JSON.stringify(MOD_MANIFEST));
+    writeFile("public/mods/community-pack/tracks/harbor-day.json", JSON.stringify(MOD_TRACK));
+
+    expect(lintPublicModManifests({ repoRoot })).toEqual([]);
+  });
+
+  it("rejects a manifest whose id does not match its folder", () => {
+    writeFile(
+      "public/mods/community-pack/manifest.json",
+      JSON.stringify({ ...MOD_MANIFEST, id: "other-pack" }),
+    );
+    writeFile("public/mods/community-pack/tracks/harbor-day.json", JSON.stringify(MOD_TRACK));
+
+    const hits = lintPublicModManifests({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.rule).toBe("mod-manifest");
+    expect(hits[0]?.detail).toContain("does not match folder");
+  });
+
+  it("rejects missing referenced data files", () => {
+    writeFile("public/mods/community-pack/manifest.json", JSON.stringify(MOD_MANIFEST));
+
+    const hits = lintPublicModManifests({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.detail).toContain("does not exist");
+  });
+
+  it("rejects referenced data that fails its schema", () => {
+    writeFile("public/mods/community-pack/manifest.json", JSON.stringify(MOD_MANIFEST));
+    writeFile(
+      "public/mods/community-pack/tracks/harbor-day.json",
+      JSON.stringify({ ...MOD_TRACK, segments: [] }),
+    );
+
+    const hits = lintPublicModManifests({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.detail).toContain("track schema validation failed");
+  });
+
+  it("rejects executable references through manifest validation", () => {
+    writeFile(
+      "public/mods/community-pack/manifest.json",
+      JSON.stringify({
+        ...MOD_MANIFEST,
+        data: { tracks: ["tracks/run.js"] },
+      }),
+    );
+
+    const hits = lintPublicModManifests({ repoRoot });
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.detail).toContain("manifest schema validation failed");
   });
 });
 
