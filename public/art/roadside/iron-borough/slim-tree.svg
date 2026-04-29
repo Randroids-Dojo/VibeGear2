@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<rect width="128" height="128" fill="none"/>
+<ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
+<rect x="59" y="72" width="10" height="40" fill="#6b4a2e"/>
+<path d="M64 16 L40 88 L88 88 Z" fill="#343a40"/>
+<path d="M64 8 L46 66 L82 66 Z" fill="#535b60" opacity="0.9"/>
+<rect x="48" y="68" width="10" height="6" fill="#f5cf69" opacity="0.35"/>
+<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#f5cf69">PLACEHOLDER</text>
+</svg>

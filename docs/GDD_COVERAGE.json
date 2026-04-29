@@ -45,6 +45,24 @@
       "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
     },
     {
+      "id": "GDD-17-PLACEHOLDER-ROADSIDE-PROPS",
+      "gddSections": [
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The placeholder art bank ships 80 to 120 original roadside prop assets distributed across all eight regions, with manifest provenance metadata for every prop file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art/roadside/",
+        "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts"
+      ],
+      "testRefs": ["scripts/__tests__/placeholder-art-bank.test.ts"],
+      "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

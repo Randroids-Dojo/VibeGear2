@@ -8,6 +8,16 @@ import type { ArtManifestEntry } from "../check-art-manifest";
 const REPO_ROOT = process.cwd();
 const PUBLIC_DIR = path.join(REPO_ROOT, "public");
 const MANIFEST_PATH = path.join(PUBLIC_DIR, "art.manifest.json");
+const REGION_IDS = [
+  "velvet-coast",
+  "iron-borough",
+  "ember-steppe",
+  "breakwater-isles",
+  "glass-ridge",
+  "neon-meridian",
+  "moss-frontier",
+  "crown-circuit",
+] as const;
 
 function readManifest(): ArtManifestEntry[] {
   return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as ArtManifestEntry[];
@@ -32,6 +42,22 @@ describe("placeholder art bank", () => {
     for (const entry of carEntries) {
       expect(entry.license).toBe("CC0");
       expect(entry.originality).toContain("Original geometric placeholder art");
+    }
+  });
+
+  it("ships the GDD roadside prop volume across every region", () => {
+    const propEntries = readManifest().filter((entry) => entry.id.startsWith("roadside:"));
+    const regionalProps = propEntries.filter((entry) => entry.path.split("/").length === 4);
+    expect(regionalProps.length).toBeGreaterThanOrEqual(80);
+    expect(regionalProps.length).toBeLessThanOrEqual(120);
+    for (const regionId of REGION_IDS) {
+      const entries = regionalProps.filter((entry) => entry.path.startsWith(`art/roadside/${regionId}/`));
+      expect(entries.length).toBeGreaterThanOrEqual(10);
+      for (const entry of entries) {
+        expect(existsSync(path.join(PUBLIC_DIR, entry.path))).toBe(true);
+        expect(entry.license).toBe("CC0");
+        expect(entry.originality).toContain("Original geometric placeholder art");
+      }
     }
   });
 });
