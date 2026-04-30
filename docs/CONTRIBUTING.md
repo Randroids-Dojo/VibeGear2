@@ -119,9 +119,10 @@ schema-first. Lint warnings block merge. Content-lint violations block merge.
 Do not bypass checks with `--no-verify`.
 
 For setup, use the reproducible install flow in [`LOCAL_DEV.md`](LOCAL_DEV.md)
-with `npm ci`. Use `npm run verify` to run the full validation suite for code,
-docs, art, and audio checks. For a complete command reference, read
-[`SCRIPTS.md`](SCRIPTS.md).
+with `npm ci`. Use `npm run verify` for the baseline CI-equivalent validation
+suite covering code, docs, art, and audio checks. For Playwright browser
+coverage, run `npm run verify:full` or `npm run test:e2e`. For a complete
+command reference, read [`SCRIPTS.md`](SCRIPTS.md).
 
 ## 11. Issue Triage and Labels
 
@@ -156,7 +157,7 @@ starter tasks.
 1. Clone the repo and install dependencies:
 
    ```sh
-   npm install
+   npm ci
    npx playwright install chromium
    npm run dev
    ```
