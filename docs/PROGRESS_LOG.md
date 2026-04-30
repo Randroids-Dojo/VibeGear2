@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Glass Ridge track set
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track design,
+[§22](gdd/22-data-schemas.md) track schema, and
+[§24](gdd/24-content-plan.md) full v1.0 content.
+**Branch / PR:** `feat/glass-ridge-tracks`, PR #135.
+**Status:** Implemented.
+
+### Done
+- Added the four planned Glass Ridge tracks from the §24 World Tour list:
+  Whitepass, Frostrelay, Hollow Crest, and Summit Echo.
+- Registered the new tracks in the browser-safe track catalogue.
+- Tightened content tests so the authored World Tour set through
+  Glass Ridge must resolve in both the track catalogue and championship
+  cross-reference tests.
+- Added machine-checkable coverage for the Glass Ridge track set.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/data/regions/__tests__/regions-content.test.ts src/data/__tests__/content-budget.test.ts src/road/__tests__/trackCompiler.test.ts src/road/__tests__/trackCompiler.golden.test.ts`
+  green, 143 tests passed.
+- `npm run content-lint` green.
+- `npm run docs:check` green.
+- `npm run verify` green, 2708 Vitest tests passed.
+- `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
+  green, 3 tests passed.
+
+### Decisions and assumptions
+- Kept Glass Ridge weather to the region profile values already in
+  `src/data/regions/glass-ridge.json`: `snow`, `fog`, and `dusk`.
+- Used the existing alpine hazard palette (`snow_buildup`, `tunnel`, and
+  occasional `traffic_cone`) plus existing renderer-supported roadside ids
+  so this slice stays content-only.
+
+### Coverage ledger
+- GDD-24-GLASS-RIDGE-TRACK-SET covers the four fifth-tour bundled track
+  JSON files, catalogue registration, and content validation.
+- Uncovered adjacent requirements: the remaining three v1.0 World Tour
+  regions still need authored track JSON before strict championship track
+  resolution can be enabled.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Breakwater Isles track set
 
 **GDD sections touched:**

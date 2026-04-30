@@ -1,0 +1,27 @@
+{
+  "id": "glass-ridge/frostrelay",
+  "name": "Frostrelay",
+  "tourId": "glass-ridge",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1980,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["dusk", "snow"],
+  "difficulty": 4,
+  "segments": [
+    { "len": 260, "curve": 0.08, "grade": 0.01, "roadsideLeft": "light_pole", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 240, "curve": 0.18, "grade": 0.05, "roadsideLeft": "tree_pine", "roadsideRight": "rock_boulder", "hazards": ["snow_buildup"] },
+    { "len": 260, "curve": -0.2, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 280, "curve": 0.06, "grade": -0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "light_pole", "hazards": ["traffic_cone"] },
+    { "len": 240, "curve": -0.14, "grade": 0.06, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": ["snow_buildup"] },
+    { "len": 320, "curve": 0.12, "grade": -0.03, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 380, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "tree_pine", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "relay-rise" },
+    { "segmentIndex": 5, "label": "frost-runout" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

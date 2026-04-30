@@ -1034,6 +1034,32 @@
       "followupRefs": ["VibeGear2-implement-breakwater-isles-c55d6f60"]
     },
     {
+      "id": "GDD-24-GLASS-RIDGE-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Glass Ridge World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and alpine hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/glass-ridge-whitepass.json",
+        "src/data/tracks/glass-ridge-frostrelay.json",
+        "src/data/tracks/glass-ridge-hollow-crest.json",
+        "src/data/tracks/glass-ridge-summit-echo.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-glass-ridge-1dfc8d6b"]
+    },
+    {
       "id": "GDD-19-MOBILE-RACE-INPUT",
       "gddSections": [
         "docs/gdd/19-controls-and-input.md",

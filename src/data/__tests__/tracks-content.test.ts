@@ -37,6 +37,10 @@ const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
   "breakwater-isles/storm-span",
   "breakwater-isles/gull-point",
   "breakwater-isles/sealight-shelf",
+  "glass-ridge/whitepass",
+  "glass-ridge/frostrelay",
+  "glass-ridge/hollow-crest",
+  "glass-ridge/summit-echo",
 ];
 
 const EXPECTED_IDS = [
@@ -48,6 +52,10 @@ const EXPECTED_IDS = [
   "ember-steppe/dustbreak-causeway",
   "ember-steppe/mesa-coil",
   "ember-steppe/redglass-straight",
+  "glass-ridge/frostrelay",
+  "glass-ridge/hollow-crest",
+  "glass-ridge/summit-echo",
+  "glass-ridge/whitepass",
   "iron-borough/foundry-mile",
   "iron-borough/freightline-ring",
   "iron-borough/outer-exchange",
@@ -66,7 +74,7 @@ describe("track catalogue", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
-  it("registers the authored World Tour track set through Breakwater Isles", () => {
+  it("registers the authored World Tour track set through Glass Ridge", () => {
     for (const id of EXPECTED_AUTHORED_TOUR_TRACK_IDS) {
       expect(TRACK_IDS).toContain(id);
     }
@@ -216,5 +224,43 @@ describe("§24 Breakwater Isles track set", () => {
     expect([...weather].sort()).toEqual(["heavy_rain", "overcast", "rain"]);
     expect(hazards.has("puddle")).toBe(true);
     expect(hazards.has("slick_paint")).toBe(true);
+  });
+});
+
+describe("§24 Glass Ridge track set", () => {
+  const glassRidgeTrackIds = EXPECTED_AUTHORED_TOUR_TRACK_IDS.filter((id) =>
+    id.startsWith("glass-ridge/"),
+  );
+
+  it("covers all four planned Glass Ridge tracks", () => {
+    expect(glassRidgeTrackIds).toEqual([
+      "glass-ridge/whitepass",
+      "glass-ridge/frostrelay",
+      "glass-ridge/hollow-crest",
+      "glass-ridge/summit-echo",
+    ]);
+    for (const id of glassRidgeTrackIds) {
+      expect(TRACK_IDS).toContain(id);
+    }
+  });
+
+  it("uses the Glass Ridge region weather profile and alpine hazards", () => {
+    const tracks = glassRidgeTrackIds.map((id) =>
+      TrackSchema.parse(TRACK_RAW[id]),
+    );
+    const weather = new Set<string>();
+    const hazards = new Set<string>();
+    for (const track of tracks) {
+      expect(track.tourId).toBe("glass-ridge");
+      expect(track.laps).toBe(1);
+      expect(track.laneCount).toBe(3);
+      for (const option of track.weatherOptions) weather.add(option);
+      for (const segment of track.segments) {
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+    expect([...weather].sort()).toEqual(["dusk", "fog", "snow"]);
+    expect(hazards.has("snow_buildup")).toBe(true);
+    expect(hazards.has("tunnel")).toBe(true);
   });
 });
