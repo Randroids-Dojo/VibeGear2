@@ -982,6 +982,32 @@
       ]
     },
     {
+      "id": "GDD-24-EMBER-STEPPE-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Ember Steppe World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and desert hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/ember-steppe-redglass-straight.json",
+        "src/data/tracks/ember-steppe-mesa-coil.json",
+        "src/data/tracks/ember-steppe-dustbreak-causeway.json",
+        "src/data/tracks/ember-steppe-cinder-gate.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-ember-steppe-5d879662"]
+    },
+    {
       "id": "GDD-19-MOBILE-RACE-INPUT",
       "gddSections": [
         "docs/gdd/19-controls-and-input.md",

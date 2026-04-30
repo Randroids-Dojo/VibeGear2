@@ -763,6 +763,42 @@ describe("drawRoad roadside sprites", () => {
     expect(fillRects.some((call) => call.fillStyle === "#1b3a20")).toBe(true);
   });
 
+  it("paints Ember Steppe roadside ids instead of skipping them", () => {
+    const spy = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 440,
+        screenW: 260,
+        segment: {
+          ...strip({}).segment,
+          index: 0,
+          roadsideLeftId: "rock_spire",
+          roadsideRightId: "default",
+        },
+      }),
+      strip({
+        screenY: 300,
+        screenW: 110,
+        segment: {
+          ...strip({}).segment,
+          index: 5,
+          roadsideLeftId: "default",
+          roadsideRightId: "heat_sign",
+        },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {});
+
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === "#767c82")).toBe(true);
+
+    const fillRects = spy.calls.filter(
+      (c): c is FillRectCall => c.type === "fillRect",
+    );
+    expect(fillRects.some((call) => call.fillStyle === "#e7d24d")).toBe(true);
+  });
+
   it("draws cached palette recoloured atlas roadside sprites", () => {
     const spy = makeCanvasSpy();
     const cache = new PaletteCache<CanvasImageSource>(4);

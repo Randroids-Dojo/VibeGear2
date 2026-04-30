@@ -1,0 +1,27 @@
+{
+  "id": "ember-steppe/cinder-gate",
+  "name": "Cinder Gate",
+  "tourId": "ember-steppe",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1920,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "fog"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 240, "curve": 0.04, "grade": 0.02, "roadsideLeft": "rock_spire", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 240, "curve": -0.16, "grade": 0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "heat_sign", "hazards": ["gravel_band"] },
+    { "len": 280, "curve": 0.2, "grade": -0.02, "roadsideLeft": "heat_sign", "roadsideRight": "rock_spire", "hazards": ["sign_marker"] },
+    { "len": 280, "curve": -0.08, "grade": 0.05, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 260, "curve": 0.14, "grade": -0.05, "roadsideLeft": "rock_spire", "roadsideRight": "heat_sign", "hazards": ["traffic_cone"] },
+    { "len": 260, "curve": -0.12, "grade": 0.01, "roadsideLeft": "rock_boulder", "roadsideRight": "sign_marker", "hazards": ["gravel_band"] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "heat_sign", "roadsideRight": "rock_spire", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "cinder-cut" },
+    { "segmentIndex": 5, "label": "gate" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

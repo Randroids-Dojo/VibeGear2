@@ -1,0 +1,27 @@
+{
+  "id": "ember-steppe/dustbreak-causeway",
+  "name": "Dustbreak Causeway",
+  "tourId": "ember-steppe",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1860,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "fog"],
+  "difficulty": 4,
+  "segments": [
+    { "len": 260, "curve": 0, "grade": 0, "roadsideLeft": "heat_sign", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 220, "curve": -0.1, "grade": -0.01, "roadsideLeft": "rock_boulder", "roadsideRight": "rock_spire", "hazards": ["gravel_band"] },
+    { "len": 280, "curve": 0.12, "grade": 0.02, "roadsideLeft": "rock_spire", "roadsideRight": "heat_sign", "hazards": [] },
+    { "len": 240, "curve": 0, "grade": 0.05, "roadsideLeft": "sign_marker", "roadsideRight": "rock_boulder", "hazards": ["traffic_cone"] },
+    { "len": 300, "curve": -0.14, "grade": -0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 260, "curve": 0.1, "grade": 0.01, "roadsideLeft": "heat_sign", "roadsideRight": "rock_spire", "hazards": ["gravel_band"] },
+    { "len": 300, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "heat_sign", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 3, "label": "causeway" },
+    { "segmentIndex": 5, "label": "dustbreak" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

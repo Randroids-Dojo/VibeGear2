@@ -27,7 +27,19 @@ const EXPECTED_MVP_TRACK_IDS = [
   "iron-borough/outer-exchange",
 ];
 
+const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
+  ...EXPECTED_MVP_TRACK_IDS,
+  "ember-steppe/redglass-straight",
+  "ember-steppe/mesa-coil",
+  "ember-steppe/dustbreak-causeway",
+  "ember-steppe/cinder-gate",
+];
+
 const EXPECTED_IDS = [
+  "ember-steppe/cinder-gate",
+  "ember-steppe/dustbreak-causeway",
+  "ember-steppe/mesa-coil",
+  "ember-steppe/redglass-straight",
   "iron-borough/foundry-mile",
   "iron-borough/freightline-ring",
   "iron-borough/outer-exchange",
@@ -46,8 +58,8 @@ describe("track catalogue", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
-  it("registers the two-tour §24 MVP track set", () => {
-    for (const id of EXPECTED_MVP_TRACK_IDS) {
+  it("registers the authored World Tour track set through Ember Steppe", () => {
+    for (const id of EXPECTED_AUTHORED_TOUR_TRACK_IDS) {
       expect(TRACK_IDS).toContain(id);
     }
   });
@@ -122,5 +134,41 @@ describe("§24 MVP track set", () => {
         track.segments.some((segment) => segment.grade !== 0),
       ),
     ).toBe(true);
+  });
+});
+
+describe("§24 Ember Steppe track set", () => {
+  const emberTrackIds = EXPECTED_AUTHORED_TOUR_TRACK_IDS.filter((id) =>
+    id.startsWith("ember-steppe/"),
+  );
+
+  it("covers all four planned Ember Steppe tracks", () => {
+    expect(emberTrackIds).toEqual([
+      "ember-steppe/redglass-straight",
+      "ember-steppe/mesa-coil",
+      "ember-steppe/dustbreak-causeway",
+      "ember-steppe/cinder-gate",
+    ]);
+    for (const id of emberTrackIds) {
+      expect(TRACK_IDS).toContain(id);
+    }
+  });
+
+  it("uses the Ember Steppe region weather profile and desert hazards", () => {
+    const tracks = emberTrackIds.map((id) => TrackSchema.parse(TRACK_RAW[id]));
+    const weather = new Set<string>();
+    const hazards = new Set<string>();
+    for (const track of tracks) {
+      expect(track.tourId).toBe("ember-steppe");
+      expect(track.laps).toBe(1);
+      expect(track.laneCount).toBe(3);
+      for (const option of track.weatherOptions) weather.add(option);
+      for (const segment of track.segments) {
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+    expect([...weather].sort()).toEqual(["clear", "fog"]);
+    expect(hazards.has("gravel_band")).toBe(true);
+    expect(hazards.has("traffic_cone")).toBe(true);
   });
 });
