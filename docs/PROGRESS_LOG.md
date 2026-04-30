@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 constraints and testing approach, [§25](gdd/25-development-roadmap.md)
 v1.0 CI coverage, and [§27](gdd/27-risks-and-mitigations.md) browser
 performance.
-**Branch / PR:** `chore/ci-quality-gates`, PR pending.
+**Branch / PR:** `chore/ci-quality-gates`, PR #116.
 **Status:** Implemented.
 
 ### Done
