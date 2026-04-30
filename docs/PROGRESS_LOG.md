@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 and performance constraints, [§25](gdd/25-development-roadmap.md) v1.0
 browser compatibility matrix, and [§27](gdd/27-risks-and-mitigations.md)
 browser performance.
-**Branch / PR:** `chore/cross-browser-verification`, PR pending.
+**Branch / PR:** `chore/cross-browser-verification`, PR #113.
 **Status:** Implemented.
 
 ### Done
