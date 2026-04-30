@@ -63,7 +63,7 @@ test.describe("options profile pane", () => {
       version: number;
       profileName: string;
     };
-    expect(contents.version).toBe(3);
+    expect(contents.version).toBe(4);
     expect(contents.profileName).toBe("Player");
   });
 
