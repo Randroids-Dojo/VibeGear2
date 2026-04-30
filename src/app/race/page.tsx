@@ -126,6 +126,10 @@ import {
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
 import { playerCarFrameIndex } from "@/render/carFrame";
+import {
+  clampDevicePixelRatio,
+  resolveGraphicsSettings,
+} from "@/render/graphicsSettings";
 import { loadAtlas, type LoadedAtlas } from "@/render/spriteAtlas";
 import { drawMinimap, type MinimapCar } from "@/render/hudMinimap";
 import type { ParallaxLayer } from "@/render/parallax";
@@ -194,11 +198,12 @@ function minimapBoxFor(viewport: Viewport): { x: number; y: number; w: number; h
 function resizeCanvasBackingStore(
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
+  pixelRatioCap = 2,
 ): Viewport {
   const rect = canvas.getBoundingClientRect();
   const width = Math.max(1, Math.round(rect.width || VIEWPORT_WIDTH));
   const height = Math.max(1, Math.round(rect.height || VIEWPORT_HEIGHT));
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = clampDevicePixelRatio(window.devicePixelRatio || 1, pixelRatioCap);
   const backingWidth = Math.max(1, Math.round(width * dpr));
   const backingHeight = Math.max(1, Math.round(height * dpr));
   if (canvas.width !== backingWidth) canvas.width = backingWidth;
@@ -843,6 +848,7 @@ function RaceCanvas({
         : defaultSave().settings;
     const persistedAssists = persistedSettings.assists;
     const persistedDifficulty = persistedSettings.difficultyPreset;
+    const graphics = resolveGraphicsSettings(persistedSettings.graphics);
     const persistedKeyBindings = readKeyBindings(sessionSave);
     const practiceMode = mode === "practice";
     const ghostEnabled = mode === "timeTrial";
@@ -946,7 +952,7 @@ function RaceCanvas({
       z: 0,
       depth: CAMERA_DEPTH,
     };
-    let viewport = resizeCanvasBackingStore(canvas, ctx);
+    let viewport = resizeCanvasBackingStore(canvas, ctx, graphics.pixelRatioCap);
     setTouchLayout(touchLayoutFor(viewport));
     let parallaxLayers = createTemperateParallaxLayers(viewport);
 
@@ -962,7 +968,7 @@ function RaceCanvas({
     const totalLength = track.compiled.totalLengthMeters;
 
     const resize = (): void => {
-      viewport = resizeCanvasBackingStore(canvas, ctx);
+      viewport = resizeCanvasBackingStore(canvas, ctx, graphics.pixelRatioCap);
       setTouchLayout(touchLayoutFor(viewport));
       parallaxLayers = createTemperateParallaxLayers(viewport);
       minimapBox = minimapBoxFor(viewport);
@@ -1236,7 +1242,9 @@ function RaceCanvas({
           lastRaceSfxTick = session.tick;
           playRaceSfxEvents(raceSfx, session.audioEvents, persistedSettings.audio);
         }
-        const strips = project(track.compiled.segments, camera, viewport);
+        const strips = project(track.compiled.segments, camera, viewport, {
+          drawDistance: graphics.drawDistanceSegments,
+        });
         const playerFrameIndex = playerCarFrameIndex(
           lastSteerRef.current,
           upcomingCurvature(track.compiled.segments, camera.z, SEGMENT_LENGTH * 5),
@@ -1280,6 +1288,7 @@ function RaceCanvas({
           tunnelAdaptation: {
             intensityScale: tunnelOcclusion(tunnelState),
           },
+          spriteDensityFactor: graphics.spriteDensityFactor,
           ghostCar: ghostOverlayRef.current
             ? {
                 ...ghostOverlayRef.current,

@@ -5,7 +5,7 @@ import { defaultSave } from "@/persistence";
 import { resetShippedOptionsToDefaults } from "../optionsResetState";
 
 describe("resetShippedOptionsToDefaults", () => {
-  it("resets assists, audio, display, and difficulty to defaults", () => {
+  it("resets assists, audio, display, difficulty, key bindings, and graphics to defaults", () => {
     const save = defaultSave();
     const customised = {
       ...save,
@@ -19,6 +19,12 @@ describe("resetShippedOptionsToDefaults", () => {
         audio: { master: 0.25, music: 0.35, sfx: 0.45 },
         difficultyPreset: "hard" as const,
         displaySpeedUnit: "mph" as const,
+        graphics: {
+          mode: "manual" as const,
+          drawDistance: "low" as const,
+          spriteDensity: 0.25 as const,
+          pixelRatioCap: 1 as const,
+        },
       },
     };
 
@@ -30,6 +36,7 @@ describe("resetShippedOptionsToDefaults", () => {
       expect(result.save.settings.audio).toEqual(defaultSave().settings.audio);
       expect(result.save.settings.difficultyPreset).toBe("normal");
       expect(result.save.settings.displaySpeedUnit).toBe("kph");
+      expect(result.save.settings.graphics).toEqual(defaultSave().settings.graphics);
     }
   });
 
@@ -52,6 +59,12 @@ describe("resetShippedOptionsToDefaults", () => {
         keyBindings: {
           throttle: ["KeyI"],
           brake: ["KeyK"],
+        },
+        graphics: {
+          mode: "manual" as const,
+          drawDistance: "low" as const,
+          spriteDensity: 0.25 as const,
+          pixelRatioCap: 1 as const,
         },
         assists: {
           ...save.settings.assists,
@@ -80,6 +93,7 @@ describe("resetShippedOptionsToDefaults", () => {
       expect(result.save.settings.keyBindings).toEqual(
         defaultSave().settings.keyBindings,
       );
+      expect(result.save.settings.graphics).toEqual(defaultSave().settings.graphics);
     }
   });
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AccessibilitySettingsSchema,
   AudioSettingsSchema,
+  GraphicsSettingsSchema,
   KeyBindingsSchema,
   SaveGameSettingsSchema,
 } from "@/data/schemas";
@@ -182,6 +183,30 @@ describe("KeyBindingsSchema", () => {
   });
 });
 
+describe("GraphicsSettingsSchema", () => {
+  it("accepts the §27 performance controls", () => {
+    expect(
+      GraphicsSettingsSchema.safeParse({
+        mode: "manual",
+        drawDistance: "medium",
+        spriteDensity: 0.5,
+        pixelRatioCap: 1.5,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects unsupported performance control values", () => {
+    expect(
+      GraphicsSettingsSchema.safeParse({
+        mode: "manual",
+        drawDistance: "extreme",
+        spriteDensity: 0.6,
+        pixelRatioCap: 3,
+      }).success,
+    ).toBe(false);
+  });
+});
+
 describe("SaveGameSettingsSchema (v2 expansion)", () => {
   const minimumV1Compat = {
     displaySpeedUnit: "kph",
@@ -217,6 +242,12 @@ describe("SaveGameSettingsSchema (v2 expansion)", () => {
           weatherFlashReduction: false,
         },
         keyBindings: { accelerate: ["ArrowUp"] },
+        graphics: {
+          mode: "auto",
+          drawDistance: "high",
+          spriteDensity: 1,
+          pixelRatioCap: 2,
+        },
       }).success,
     ).toBe(true);
   });

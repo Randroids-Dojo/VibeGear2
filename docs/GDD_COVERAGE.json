@@ -1467,6 +1467,37 @@
         "e2e/options-screen.spec.ts"
       ],
       "followupRefs": ["F-014"]
+    },
+    {
+      "id": "GDD-27-PERFORMANCE-SETTINGS",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The options screen exposes persisted draw distance, sprite density, and pixel-ratio caps, and the race renderer consumes those settings at session start.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/options/PerformancePane.tsx",
+        "src/components/options/performancePaneState.ts",
+        "src/render/graphicsSettings.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/options/page.tsx",
+        "src/app/race/page.tsx",
+        "src/persistence/migrations/v3ToV4.ts",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/performancePaneState.test.ts",
+        "src/components/options/__tests__/PerformancePane.test.tsx",
+        "src/render/__tests__/graphicsSettings.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "src/persistence/migrations/v3ToV4.test.ts",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-performance-settings-2de5d437"]
     }
   ]
 }

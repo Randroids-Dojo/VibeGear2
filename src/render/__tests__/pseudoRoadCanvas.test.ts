@@ -748,6 +748,33 @@ describe("drawRoad roadside sprites", () => {
     ).toHaveLength(2);
   });
 
+  it("maps roadside sprite density to fixed opportunity slots", () => {
+    const strips: readonly Strip[] = [0, 10, 20, 30].map((index) =>
+      strip({
+        screenY: 440 - index,
+        screenW: 260 - index,
+        segment: {
+          ...strip({}).segment,
+          index,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "default",
+        },
+      }),
+    );
+    const treeCountFor = (spriteDensityFactor: number): number => {
+      const spy = makeCanvasSpy();
+      drawRoad(spy.ctx, strips, VIEWPORT, { spriteDensityFactor });
+      return spy.calls.filter(
+        (c): c is FillCall => c.type === "fill" && c.fillStyle === "#245c2f",
+      ).length;
+    };
+
+    expect(treeCountFor(1)).toBe(4);
+    expect(treeCountFor(0.75)).toBe(3);
+    expect(treeCountFor(0.5)).toBe(2);
+    expect(treeCountFor(0.25)).toBe(1);
+  });
+
   it("skips the default roadside id", () => {
     const spy = makeCanvasSpy();
     const strips: readonly Strip[] = [

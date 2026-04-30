@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Performance settings
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) performance targets,
+[§20](gdd/20-hud-and-ui-ux.md) Settings,
+[§21](gdd/21-technical-design-for-web-implementation.md) performance
+constraints, [§22](gdd/22-data-schemas.md) SaveGame settings, and
+[§27](gdd/27-risks-and-mitigations.md) browser performance.
+**Branch / PR:** `feat/performance-settings`, PR #112.
+**Status:** Implemented.
+
+### Done
+- Added persisted graphics settings for auto or manual draw distance, sprite
+  density, and pixel-ratio caps.
+- Added the Performance options pane and reset-to-defaults coverage.
+- Wired race startup to resolve graphics settings, cap canvas DPR, adjust
+  projection draw distance, and thin roadside sprites deterministically.
+- Added v3 to v4 save migration coverage.
+
+### Verified
+- `npx vitest run src/render/__tests__/graphicsSettings.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/components/options/__tests__/performancePaneState.test.ts src/components/options/__tests__/PerformancePane.test.tsx src/components/options/__tests__/optionsResetState.test.ts src/data/__tests__/settings-schema.test.ts src/persistence/migrations/v3ToV4.test.ts src/persistence/migrations/migrations.test.ts src/persistence/save.test.ts` green, 129 passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/options-screen.spec.ts` green, 11 passed.
+- `npm run verify` green, 2609 passed.
+
+### Decisions and assumptions
+- Graphics settings are sampled when a race starts, matching the existing
+  controls and accessibility settings flow. Mid-race setting changes apply on
+  the next race mount.
+
+### Coverage ledger
+- GDD-27-PERFORMANCE-SETTINGS covers the §27 browser-performance controls.
+- Uncovered adjacent requirements: cross-browser verification of the final
+  settings matrix remains tracked by `VibeGear2-implement-cross-browser-7cf643ce`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Contributor dev experience review follow-up
 
 **GDD sections touched:**

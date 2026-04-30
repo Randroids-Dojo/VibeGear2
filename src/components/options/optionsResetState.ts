@@ -23,6 +23,7 @@ export function resetShippedOptionsToDefaults(
       difficultyPreset: defaults.settings.difficultyPreset,
       displaySpeedUnit: defaults.settings.displaySpeedUnit,
       keyBindings: defaults.settings.keyBindings,
+      graphics: defaults.settings.graphics,
     },
   };
 
@@ -33,7 +34,8 @@ export function resetShippedOptionsToDefaults(
     next.settings.difficultyPreset === save.settings.difficultyPreset &&
     next.settings.displaySpeedUnit === save.settings.displaySpeedUnit &&
     JSON.stringify(next.settings.keyBindings) ===
-      JSON.stringify(save.settings.keyBindings)
+      JSON.stringify(save.settings.keyBindings) &&
+    JSON.stringify(next.settings.graphics) === JSON.stringify(save.settings.graphics)
   ) {
     return { kind: "noop", reason: "already-default" };
   }

@@ -95,7 +95,7 @@ test.describe("options screen", () => {
         screenShakeScale: 0.25,
       };
       window.localStorage.setItem(key, JSON.stringify(save));
-    }, "vibegear2:save:v3");
+    }, "vibegear2:save:v4");
 
     await reset.click();
     await expect(page.getByTestId("options-reset-status")).toContainText(
@@ -105,7 +105,7 @@ test.describe("options screen", () => {
     const persisted = await page.evaluate((key) => {
       const raw = window.localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
-    }, "vibegear2:save:v3");
+    }, "vibegear2:save:v4");
 
     expect(persisted?.settings?.assists?.autoAccelerate).toBe(false);
     expect(persisted?.settings?.difficultyPreset).toBe("normal");
@@ -133,7 +133,7 @@ test.describe("options screen", () => {
     const persisted = await page.evaluate((key) => {
       const raw = window.localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
-    }, "vibegear2:save:v3");
+    }, "vibegear2:save:v4");
     expect(persisted?.settings?.displaySpeedUnit).toBe("mph");
 
     await page.reload();
@@ -181,7 +181,7 @@ test.describe("options screen", () => {
     const persisted = await page.evaluate((key) => {
       const raw = window.localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
-    }, "vibegear2:save:v3");
+    }, "vibegear2:save:v4");
 
     expect(persisted?.settings?.audio).toEqual({
       master: 0.45,
@@ -212,7 +212,7 @@ test.describe("options screen", () => {
     const persisted = await page.evaluate((key) => {
       const raw = window.localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
-    }, "vibegear2:save:v3");
+    }, "vibegear2:save:v4");
     expect(persisted?.settings?.keyBindings?.nitro).toEqual(["KeyN"]);
 
     await page.getByTestId("controls-remap-brake").click();
@@ -247,6 +247,35 @@ test.describe("options screen", () => {
     const speed = Number(speedText);
     expect(Number.isFinite(speed)).toBe(true);
     expect(speed).toBeGreaterThan(0);
+  });
+
+  test("Performance settings persist and reload", async ({ page }) => {
+    await page.goto("/options");
+    await page.getByTestId("options-tab-performance").click();
+
+    await expect(page.getByTestId("performance-pane")).toBeVisible();
+    await page.getByTestId("performance-mode-auto").uncheck();
+    await page.getByTestId("performance-draw-distance").selectOption("medium");
+    await page.getByTestId("performance-sprite-density").selectOption("0.5");
+    await page.getByTestId("performance-pixel-ratio").selectOption("1");
+
+    const persisted = await page.evaluate((key) => {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    }, "vibegear2:save:v4");
+    expect(persisted?.settings?.graphics).toEqual({
+      mode: "manual",
+      drawDistance: "medium",
+      spriteDensity: 0.5,
+      pixelRatioCap: 1,
+    });
+
+    await page.reload();
+    await page.getByTestId("options-tab-performance").click();
+    await expect(page.getByTestId("performance-mode-auto")).not.toBeChecked();
+    await expect(page.getByTestId("performance-draw-distance")).toHaveValue("medium");
+    await expect(page.getByTestId("performance-sprite-density")).toHaveValue("0.5");
+    await expect(page.getByTestId("performance-pixel-ratio")).toHaveValue("1");
   });
 
   test("Back to title link returns to /", async ({ page }) => {

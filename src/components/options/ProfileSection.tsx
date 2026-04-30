@@ -140,7 +140,7 @@ export function ProfileSection(): ReactElement {
         setSave(result.save);
         return;
       }
-      setSave(result.save);
+      setSave(writeResult.save);
       setStatus({
         kind: "info",
         message: `Imported profile from ${file.name}.`,

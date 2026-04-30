@@ -22,6 +22,7 @@
 
 import { SaveGameSchema, type SaveGame } from "@/data/schemas";
 import { DEFAULT_KEY_BINDINGS } from "@/game/input";
+import { DEFAULT_GRAPHICS_SETTINGS } from "@/render/graphicsSettings";
 
 import { CURRENT_SAVE_VERSION, migrate } from "./migrations";
 import {
@@ -52,7 +53,7 @@ export type SaveLoadFailure =
   | "migration-failed";
 
 export type SaveWriteOutcome =
-  | { kind: "ok" }
+  | { kind: "ok"; save: SaveGame }
   | { kind: "error"; reason: "no-storage" | "quota-exceeded" | "serialization-failed" };
 
 /**
@@ -125,6 +126,7 @@ export function defaultSave(): SaveGame {
       // §19 key bindings: clone the runtime defaults into a plain object
       // so the persisted shape stays mutable and JSON-serialisable.
       keyBindings: cloneDefaultKeyBindings(),
+      graphics: { ...DEFAULT_GRAPHICS_SETTINGS },
     },
     garage: {
       credits: 0,
@@ -280,7 +282,7 @@ export function saveSave(state: SaveGame, io: SaveIO = {}): SaveWriteOutcome {
 
   try {
     storage.setItem(storageKey(CURRENT_SAVE_VERSION), serialized);
-    return { kind: "ok" };
+    return { kind: "ok", save: validated.data };
   } catch (error) {
     if (isQuotaExceeded(error)) {
       logger.warn("localStorage quota exceeded", error);

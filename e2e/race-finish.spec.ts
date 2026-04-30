@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const SAVE_KEY = "vibegear2:save:v3";
+const SAVE_KEY = "vibegear2:save:v4";
 
 /**
  * Natural race-finish e2e per F-038. Drives a single-lap race on
@@ -334,7 +334,7 @@ test.describe("quick race result persistence", () => {
 
 function buildRaceDamageSave() {
   return {
-    version: 3,
+    version: 4,
     profileName: "RaceDamageTester",
     settings: {
       displaySpeedUnit: "kph",

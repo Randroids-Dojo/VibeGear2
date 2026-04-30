@@ -672,6 +672,19 @@ export const KeyBindingsSchema = z.record(
 );
 export type KeyBindings = z.infer<typeof KeyBindingsSchema>;
 
+export const GraphicsSettingsSchema = z.object({
+  mode: z.enum(["auto", "manual"]),
+  drawDistance: z.enum(["low", "medium", "high", "ultra"]),
+  spriteDensity: z.union([
+    z.literal(0.25),
+    z.literal(0.5),
+    z.literal(0.75),
+    z.literal(1),
+  ]),
+  pixelRatioCap: z.union([z.literal(1), z.literal(1.5), z.literal(2)]),
+});
+export type GraphicsSettings = z.infer<typeof GraphicsSettingsSchema>;
+
 export const SaveGameSettingsSchema = z.object({
   displaySpeedUnit: SpeedUnitSchema,
   assists: AssistSettingsSchema,
@@ -706,6 +719,11 @@ export const SaveGameSettingsSchema = z.object({
    * fall back to the defaults when a key is missing.
    */
   keyBindings: KeyBindingsSchema.optional(),
+  /**
+   * §27 browser-performance controls. Optional so v3 saves migrate cleanly;
+   * the v3ToV4 migrator and `defaultSave()` fill the documented defaults.
+   */
+  graphics: GraphicsSettingsSchema.optional(),
 });
 export type SaveGameSettings = z.infer<typeof SaveGameSettingsSchema>;
 
