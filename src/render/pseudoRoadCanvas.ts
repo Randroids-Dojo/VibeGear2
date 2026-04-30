@@ -199,6 +199,9 @@ export interface DrawRoadOptions {
     atlas: LoadedAtlas;
     palette?: RegionPalette;
     cache?: PaletteCache<CanvasImageSource>;
+    inFlight?: Set<string>;
+    failed?: Set<string>;
+    onRecolourError?: (key: string, error: unknown) => void;
   } | null;
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
@@ -273,6 +276,9 @@ const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
   guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.5, minHeight: 5 },
   water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.42, minHeight: 5 },
 };
+
+const DEFAULT_RECOLOUR_IN_FLIGHT = new Set<string>();
+const DEFAULT_RECOLOUR_FAILED = new Set<string>();
 
 const FALLBACK_COLORS: RoadColors = {
   skyTop: DEFAULT_COLORS.skyTop,
@@ -547,7 +553,7 @@ function drawRoadsideAtlasSprite(
   const image = roadsideAtlas.atlas.image;
   if (!image) return false;
 
-  let keyFrameIndex = frameIndex;
+  let keyFrameIndex: number;
   let sprite: ReturnType<typeof frame>;
   try {
     const count = spriteFrameCount(roadsideAtlas.atlas, spriteId);
@@ -569,9 +575,22 @@ function drawRoadsideAtlasSprite(
       return true;
     }
     if (roadsideAtlas.cache) {
-      void recolourFrameToImageBitmap(image, sprite, roadsideAtlas.palette).then((recoloured) => {
-        roadsideAtlas.cache?.set(key, recoloured);
-      });
+      const inFlight = roadsideAtlas.inFlight ?? DEFAULT_RECOLOUR_IN_FLIGHT;
+      const failed = roadsideAtlas.failed ?? DEFAULT_RECOLOUR_FAILED;
+      if (!inFlight.has(key) && !failed.has(key)) {
+        inFlight.add(key);
+        void recolourFrameToImageBitmap(image, sprite, roadsideAtlas.palette)
+          .then((recoloured) => {
+            roadsideAtlas.cache?.set(key, recoloured);
+          })
+          .catch((error: unknown) => {
+            failed.add(key);
+            roadsideAtlas.onRecolourError?.(key, error);
+          })
+          .finally(() => {
+            inFlight.delete(key);
+          });
+      }
     }
   }
 

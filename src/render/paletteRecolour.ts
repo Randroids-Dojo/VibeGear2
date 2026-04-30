@@ -9,7 +9,13 @@ import type { AtlasFrame } from "@/data/schemas";
 export interface ImageDataLike {
   width: number;
   height: number;
-  data: Uint8ClampedArray;
+  data: Uint8ClampedArray<ArrayBufferLike>;
+}
+
+export interface RecolouredImageData {
+  width: number;
+  height: number;
+  data: Uint8ClampedArray<ArrayBuffer>;
 }
 
 export type PaletteIndexMap = Readonly<Record<string, RegionPaletteSlot>>;
@@ -34,7 +40,7 @@ export function recolourImageData(
   source: ImageDataLike,
   palette: RegionPalette,
   indexMap: PaletteIndexMap = DEFAULT_PALETTE_INDEX_MAP,
-): ImageDataLike {
+): RecolouredImageData {
   if (source.data.length !== source.width * source.height * 4) {
     throw new RangeError("image data length does not match width and height");
   }
@@ -44,7 +50,7 @@ export function recolourImageData(
     targets.set(slot, parseHexColor(palette.slots[slot]));
   }
 
-  const data = new Uint8ClampedArray(source.data);
+  const data: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(source.data);
   for (let i = 0; i < data.length; i += 4) {
     const alpha = data[i + 3];
     if (alpha === 0) continue;
@@ -91,9 +97,7 @@ export async function recolourFrameToImageBitmap(
   ctx.drawImage(image, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
   const imageData = ctx.getImageData(0, 0, frame.w, frame.h);
   const recoloured = recolourImageData(imageData, palette, indexMap);
-  const output = new Uint8ClampedArray(recoloured.data.length);
-  output.set(recoloured.data);
-  ctx.putImageData(new ImageData(output as ImageDataArray, recoloured.width, recoloured.height), 0, 0);
+  ctx.putImageData(new ImageData(recoloured.data, recoloured.width, recoloured.height), 0, 0);
 
   if (typeof createImageBitmap === "function") {
     return createImageBitmap(canvas);
