@@ -14,7 +14,7 @@ Correct them by adding a new entry that references the old one.
 [§21](gdd/21-technical-design-for-web-implementation.md) performance
 constraints, [§22](gdd/22-data-schemas.md) SaveGame settings, and
 [§27](gdd/27-risks-and-mitigations.md) browser performance.
-**Branch / PR:** `feat/performance-settings`, PR TBD.
+**Branch / PR:** `feat/performance-settings`, PR #112.
 **Status:** Implemented.
 
 ### Done
