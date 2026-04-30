@@ -23,21 +23,19 @@ async function focusByTab(page: Page, testId: string, maxTabs = 24): Promise<voi
   throw new Error(`Could not focus ${testId} with Tab`);
 }
 
-async function canvasHasNonBackgroundPixels(page: Page): Promise<boolean> {
+async function canvasHasSpatialVariation(page: Page): Promise<boolean> {
   return page.getByTestId("race-canvas-element").evaluate((node) => {
     const canvas = node as HTMLCanvasElement;
     const ctx = canvas.getContext("2d");
     if (!ctx) return false;
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let variedPixels = 0;
-    for (let i = 0; i < data.length; i += 16) {
+    const colors = new Set<string>();
+    for (let i = 0; i < data.length; i += 64) {
       const r = data[i] ?? 0;
       const g = data[i + 1] ?? 0;
       const b = data[i + 2] ?? 0;
-      if (Math.max(r, g, b) - Math.min(r, g, b) >= 12) {
-        variedPixels += 1;
-        if (variedPixels >= 200) return true;
-      }
+      colors.add(`${r >> 4}:${g >> 4}:${b >> 4}`);
+      if (colors.size >= 12) return true;
     }
     return false;
   });
@@ -63,7 +61,7 @@ test.describe("cross-browser compatibility smoke", () => {
     await expect(
       page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches),
     ).resolves.toBe(true);
-    await expect.poll(() => canvasHasNonBackgroundPixels(page)).toBe(true);
+    await expect.poll(() => canvasHasSpatialVariation(page)).toBe(true);
   });
 
   test("keeps the race surface inside a Steam Deck viewport", async ({
