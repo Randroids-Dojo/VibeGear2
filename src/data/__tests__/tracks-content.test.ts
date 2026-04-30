@@ -45,6 +45,10 @@ const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
   "neon-meridian/prism-cut",
   "neon-meridian/skyline-drain",
   "neon-meridian/afterglow-run",
+  "moss-frontier/pine-switchback",
+  "moss-frontier/millstream",
+  "moss-frontier/wetroot-drive",
+  "moss-frontier/mistbarrow",
 ];
 
 const EXPECTED_IDS = [
@@ -64,6 +68,10 @@ const EXPECTED_IDS = [
   "iron-borough/freightline-ring",
   "iron-borough/outer-exchange",
   "iron-borough/rivet-tunnel",
+  "moss-frontier/millstream",
+  "moss-frontier/mistbarrow",
+  "moss-frontier/pine-switchback",
+  "moss-frontier/wetroot-drive",
   "neon-meridian/afterglow-run",
   "neon-meridian/arc-boulevard",
   "neon-meridian/prism-cut",
@@ -82,7 +90,7 @@ describe("track catalogue", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
-  it("registers the authored World Tour track set through Neon Meridian", () => {
+  it("registers the authored World Tour track set through Moss Frontier", () => {
     for (const id of EXPECTED_AUTHORED_TOUR_TRACK_IDS) {
       expect(TRACK_IDS).toContain(id);
     }
@@ -309,5 +317,44 @@ describe("§24 Neon Meridian track set", () => {
     expect(hazards.has("slick_paint")).toBe(true);
     expect(hazards.has("puddle")).toBe(true);
     expect(hazards.has("tunnel")).toBe(true);
+  });
+});
+
+describe("§24 Moss Frontier track set", () => {
+  const mossFrontierTrackIds = EXPECTED_AUTHORED_TOUR_TRACK_IDS.filter((id) =>
+    id.startsWith("moss-frontier/"),
+  );
+
+  it("covers all four planned Moss Frontier tracks", () => {
+    expect(mossFrontierTrackIds).toEqual([
+      "moss-frontier/pine-switchback",
+      "moss-frontier/millstream",
+      "moss-frontier/wetroot-drive",
+      "moss-frontier/mistbarrow",
+    ]);
+    for (const id of mossFrontierTrackIds) {
+      expect(TRACK_IDS).toContain(id);
+    }
+  });
+
+  it("uses the Moss Frontier region weather profile and wet forest hazards", () => {
+    const tracks = mossFrontierTrackIds.map((id) =>
+      TrackSchema.parse(TRACK_RAW[id]),
+    );
+    const weather = new Set<string>();
+    const hazards = new Set<string>();
+    for (const track of tracks) {
+      expect(track.tourId).toBe("moss-frontier");
+      expect(track.laps).toBe(1);
+      expect(track.laneCount).toBe(3);
+      for (const option of track.weatherOptions) weather.add(option);
+      for (const segment of track.segments) {
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+    expect([...weather].sort()).toEqual(["fog", "heavy_rain", "rain"]);
+    expect(hazards.has("puddle")).toBe(true);
+    expect(hazards.has("gravel_band")).toBe(true);
+    expect(hazards.has("slick_paint")).toBe(true);
   });
 });

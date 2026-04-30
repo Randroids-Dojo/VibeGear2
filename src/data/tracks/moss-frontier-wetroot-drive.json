@@ -1,0 +1,27 @@
+{
+  "id": "moss-frontier/wetroot-drive",
+  "name": "Wetroot Drive",
+  "tourId": "moss-frontier",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2200,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["heavy_rain", "fog"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 300, "curve": -0.04, "grade": 0.01, "roadsideLeft": "tree_pine", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 260, "curve": 0.18, "grade": 0.02, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": ["puddle"] },
+    { "len": 260, "curve": -0.2, "grade": 0.04, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": ["gravel_band"] },
+    { "len": 320, "curve": 0.1, "grade": -0.03, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["puddle"] },
+    { "len": 280, "curve": -0.18, "grade": -0.02, "roadsideLeft": "rock_boulder", "roadsideRight": "fence_post", "hazards": ["slick_paint"] },
+    { "len": 320, "curve": 0.16, "grade": 0.02, "roadsideLeft": "tree_pine", "roadsideRight": "sign_marker", "hazards": ["gravel_band"] },
+    { "len": 460, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "root-rise" },
+    { "segmentIndex": 5, "label": "bog-exit" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

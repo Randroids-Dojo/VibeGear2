@@ -1,0 +1,27 @@
+{
+  "id": "moss-frontier/millstream",
+  "name": "Millstream",
+  "tourId": "moss-frontier",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1980,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["rain", "heavy_rain"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 280, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 260, "curve": -0.14, "grade": -0.01, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": ["puddle"] },
+    { "len": 240, "curve": 0.16, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["slick_paint"] },
+    { "len": 300, "curve": -0.08, "grade": 0.03, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": ["puddle"] },
+    { "len": 260, "curve": 0.18, "grade": -0.02, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 300, "curve": -0.2, "grade": 0.01, "roadsideLeft": "rock_boulder", "roadsideRight": "sign_marker", "hazards": ["gravel_band"] },
+    { "len": 340, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 3, "label": "mill-bridge" },
+    { "segmentIndex": 5, "label": "waterwheel" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

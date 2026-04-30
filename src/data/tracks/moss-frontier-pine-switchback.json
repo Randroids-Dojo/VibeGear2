@@ -1,0 +1,27 @@
+{
+  "id": "moss-frontier/pine-switchback",
+  "name": "Pine Switchback",
+  "tourId": "moss-frontier",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2100,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["fog", "rain"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 260, "curve": 0.04, "grade": 0.01, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 240, "curve": 0.2, "grade": 0.03, "roadsideLeft": "tree_pine", "roadsideRight": "sign_marker", "hazards": ["gravel_band"] },
+    { "len": 260, "curve": -0.22, "grade": 0.04, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": ["puddle"] },
+    { "len": 280, "curve": 0.18, "grade": -0.02, "roadsideLeft": "rock_boulder", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 300, "curve": -0.16, "grade": -0.03, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": ["gravel_band"] },
+    { "len": 340, "curve": 0.08, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["puddle"] },
+    { "len": 420, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "upper-switch" },
+    { "segmentIndex": 5, "label": "pine-fall" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

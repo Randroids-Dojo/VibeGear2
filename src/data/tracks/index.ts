@@ -26,6 +26,10 @@ import neonMeridianAfterglowRun from "./neon-meridian-afterglow-run.json";
 import neonMeridianArcBoulevard from "./neon-meridian-arc-boulevard.json";
 import neonMeridianPrismCut from "./neon-meridian-prism-cut.json";
 import neonMeridianSkylineDrain from "./neon-meridian-skyline-drain.json";
+import mossFrontierMillstream from "./moss-frontier-millstream.json";
+import mossFrontierMistbarrow from "./moss-frontier-mistbarrow.json";
+import mossFrontierPineSwitchback from "./moss-frontier-pine-switchback.json";
+import mossFrontierWetrootDrive from "./moss-frontier-wetroot-drive.json";
 import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
 import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
 import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
@@ -55,6 +59,10 @@ export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "neon-meridian/prism-cut": neonMeridianPrismCut,
   "neon-meridian/skyline-drain": neonMeridianSkylineDrain,
   "neon-meridian/afterglow-run": neonMeridianAfterglowRun,
+  "moss-frontier/pine-switchback": mossFrontierPineSwitchback,
+  "moss-frontier/millstream": mossFrontierMillstream,
+  "moss-frontier/wetroot-drive": mossFrontierWetrootDrive,
+  "moss-frontier/mistbarrow": mossFrontierMistbarrow,
   "velvet-coast/harbor-run": velvetCoastHarborRun,
   "velvet-coast/sunpier-loop": velvetCoastSunpierLoop,
   "velvet-coast/cliffline-arc": velvetCoastClifflineArc,
