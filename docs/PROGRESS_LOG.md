@@ -6,6 +6,61 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Daily Challenge result share
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Community challenge,
+[§20](gdd/20-hud-and-ui-ux.md) results screen, and
+[§21](gdd/21-technical-design-for-web-implementation.md) local runtime.
+**Branch / PR:** `feat/daily-result-share`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Extended Daily Challenge race links with the UTC date key, seed, and
+  recommended car class so the race can identify a daily run after the
+  route hop.
+- Added an optional Daily Challenge marker to `RaceResult` and carried it
+  through both natural-finish and retire result handoffs for marked
+  Time Trial runs.
+- Rendered a Daily Challenge share panel on the results screen when a
+  marked result is present. The copied text uses the player's actual
+  best lap when available.
+- Added the machine-checkable coverage ledger row for the result-share
+  requirement.
+
+### Verified
+- `npx vitest run src/game/modes/__tests__/dailyChallenge.test.ts src/game/__tests__/raceResult.test.ts`
+  green, 71 tests passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/results-screen.spec.ts --project=chromium -g "Daily Challenge share|all seven"`
+  green, 2 tests passed.
+- `npm run build` green.
+- `npm run verify` green, 2660 Vitest tests passed.
+- `grep -rn $'\u2014\|\u2013' src/game/modes/dailyChallenge.ts src/game/modes/__tests__/dailyChallenge.test.ts src/game/raceResult.ts src/game/__tests__/raceResult.test.ts src/app/race/page.tsx src/app/race/results/page.tsx e2e/results-screen.spec.ts docs/GDD_COVERAGE.json docs/PROGRESS_LOG.md`
+  returned nothing.
+
+### Decisions and assumptions
+- Kept Daily Challenge as a marked Time Trial run rather than adding a
+  separate race mode. That preserves the no-economy, no-damage path and
+  keeps the slice focused on the missing share-result handoff.
+- A marked Daily Challenge without a completed lap still renders the
+  existing `no result` share text.
+
+### Coverage ledger
+- GDD-06-DAILY-CHALLENGE-RESULT-SHARE covers the Daily Challenge result
+  marker, result-screen share panel, and actual-best-lap share string.
+- Uncovered adjacent requirements: developer benchmark display,
+  downloaded ghost selection, and UTC-midnight fake-clock e2e remain
+  under the §6 modes parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Node 24 GitHub Actions runtime
 
 **Branch / PR:** `chore/node24-github-actions`, PR pending.

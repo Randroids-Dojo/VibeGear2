@@ -56,6 +56,7 @@ import {
   computeRaceReward,
   DNF_PARTICIPATION_CREDITS,
 } from "./economy";
+import type { DailyChallengeSelection } from "./modes/dailyChallenge";
 import {
   computeBonuses,
   sponsorBonus,
@@ -197,6 +198,10 @@ export interface RecordsUpdatePatch {
  *   - `recordsUpdated`: optional patch the caller applies if the mode
  *     records PBs. `null` when no PB was set or when the player did not
  *     complete a single timed lap.
+ *
+ *   - `dailyChallenge`: optional marker carried from the Daily Challenge
+ *     entry route. Results uses it to render a share string based on the
+ *     actual run instead of the pre-race placeholder.
  */
 export interface RaceResult {
   trackId: string;
@@ -213,6 +218,7 @@ export interface RaceResult {
   fastestLap: FinalRaceState["fastestLap"];
   nextRace: NextRaceCard | null;
   tourProgress?: TourResultProgress | null;
+  dailyChallenge?: DailyChallengeSelection | null;
   recordsUpdated: RecordsUpdatePatch | null;
 }
 
@@ -283,6 +289,8 @@ export interface BuildRaceResultInput {
    * sponsor predicate fails closed (no bonus credited).
    */
   sponsorContext?: SponsorEvaluationContext | null;
+  /** Daily Challenge marker carried from the entry route, if any. */
+  dailyChallenge?: DailyChallengeSelection | null;
 }
 
 const ZERO_DAMAGE: DamageDelta = Object.freeze({ engine: 0, tires: 0, body: 0 });
@@ -338,6 +346,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     currentTrackIndex,
     sponsor = null,
     sponsorContext = null,
+    dailyChallenge = null,
   } = input;
 
   // Resolve the per-track base reward. Caller override wins; otherwise
@@ -472,6 +481,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     fastestLap: finalState.fastestLap,
     nextRace,
     tourProgress,
+    dailyChallenge,
     recordsUpdated,
   };
 }

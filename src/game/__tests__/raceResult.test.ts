@@ -602,6 +602,25 @@ describe("buildRaceResult: records patch", () => {
   });
 });
 
+describe("buildRaceResult: Daily Challenge marker", () => {
+  it("carries the Daily Challenge marker without changing records logic", () => {
+    const dailyChallenge = {
+      dateKey: "2026-04-30",
+      seed: 123456,
+      trackId: "test-circuit",
+      weather: "rain" as const,
+      carClass: "balance" as const,
+    };
+    const result = buildRaceResult(makeInput({ dailyChallenge }));
+
+    expect(result.dailyChallenge).toEqual(dailyChallenge);
+    expect(result.recordsUpdated).toEqual({
+      trackId: "test-circuit",
+      bestLapMs: 30_000,
+    });
+  });
+});
+
 describe("buildRaceResult: purity and determinism", () => {
   it("does not mutate frozen inputs", () => {
     const final = Object.freeze(makeFinalState());

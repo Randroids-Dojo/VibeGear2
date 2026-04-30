@@ -47,6 +47,8 @@ import {
   clearRaceResult,
   loadRaceResult,
 } from "@/components/results/raceResultStorage";
+import { DailyShareButton } from "@/app/daily/DailyShareButton";
+import { formatDailyChallengeShareText } from "@/game/modes/dailyChallenge";
 import type { RaceResult } from "@/game/raceResult";
 import type { FinalCarRecord } from "@/game/raceRules";
 
@@ -134,6 +136,9 @@ function ResultsView(props: ResultsViewProps): ReactElement {
   );
   const playerFinished = playerRow?.status === "finished";
   const playerBestLapMs = playerRow?.bestLapMs ?? null;
+  const dailyShareText = result.dailyChallenge
+    ? formatDailyChallengeShareText(result.dailyChallenge, playerBestLapMs)
+    : null;
   const tourProgress = result.tourProgress ?? null;
   const continueTourHref =
     result.nextRace && tourProgress && tourProgress.nextRaceIndex !== null
@@ -248,6 +253,19 @@ function ResultsView(props: ResultsViewProps): ReactElement {
             bestLapMs={playerBestLapMs}
             playerFinished={playerFinished}
           />
+
+          {dailyShareText ? (
+            <section
+              data-testid="results-daily-share"
+              style={dailySharePanelStyle}
+              aria-labelledby="results-daily-share-title"
+            >
+              <h3 id="results-daily-share-title" style={subHeading}>
+                Daily Challenge
+              </h3>
+              <DailyShareButton text={dailyShareText} />
+            </section>
+          ) : null}
         </div>
       </section>
 
@@ -449,6 +467,12 @@ const fastestStyle: CSSProperties = {
 const nextStyle: CSSProperties = {
   margin: 0,
   fontSize: "0.95rem",
+};
+
+const dailySharePanelStyle: CSSProperties = {
+  display: "grid",
+  gap: "0.5rem",
+  marginTop: "0.2rem",
 };
 
 const ctaRowStyle: CSSProperties = {

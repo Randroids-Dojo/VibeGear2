@@ -125,6 +125,9 @@ describe("dailyChallengeRaceHref", () => {
     expect(href).toContain("mode=timeTrial");
     expect(href).toContain(`track=${encodeURIComponent(challenge.trackId)}`);
     expect(href).toContain(`weather=${challenge.weather}`);
+    expect(href).toContain(`daily=${challenge.dateKey}`);
+    expect(href).toContain(`dailySeed=${challenge.seed}`);
+    expect(href).toContain(`carClass=${challenge.carClass}`);
   });
 });
 

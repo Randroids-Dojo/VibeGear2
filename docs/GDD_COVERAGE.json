@@ -208,6 +208,28 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-06-DAILY-CHALLENGE-RESULT-SHARE",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Finished Daily Challenge runs carry the fixed daily marker into the race result and render a copyable share string based on the actual best lap.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/dailyChallenge.ts",
+        "src/game/raceResult.ts",
+        "src/app/race/page.tsx",
+        "src/app/race/results/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/dailyChallenge.test.ts",
+        "src/game/__tests__/raceResult.test.ts",
+        "e2e/results-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-result-backed-4fece8d6"]
+    },
+    {
       "id": "GDD-06-TIME-TRIAL-PB-RECORDS",
       "gddSections": [
         "docs/gdd/06-game-modes.md",
