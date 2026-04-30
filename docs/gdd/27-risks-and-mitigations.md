@@ -10,3 +10,4 @@
 | Asset burden | Region variety demands lots of content | Palette-driven reuse, modular prop kits, background layering |
 | Community moderation | Open mods can invite unsafe uploads | Manual curation, manifest requirements, report tools |
 | Cross-tab save corruption | Two open tabs of the deployed build can each persist the same `SaveGame` and clobber the other | Last-write-wins with a monotonic `writeCounter` advisory plus a `storage` event listener and `focus` revalidate per `docs/gdd/21-technical-design-for-web-implementation.md` "Cross-tab consistency" |
+| User-reported client crashes | A browser-specific render or input crash can be hard for the dev to reproduce from a screenshot alone | In-memory opt-in client error capture with a hidden `?errors=1` panel and copyable error report. No telemetry or network sink is enabled by default |

@@ -52,6 +52,15 @@ describe("formatErrorReport", () => {
     expect(report.split("\n").length).toBeGreaterThan(1);
   });
 
+  it("includes recent client errors when provided", () => {
+    const report = formatErrorReport({
+      error: new Error("x"),
+      recentClientErrors: '[{"message":"captured"}]',
+    });
+    expect(report).toContain("Recent client errors:");
+    expect(report).toContain('"captured"');
+  });
+
   it("survives a value that throws inside JSON.stringify", () => {
     const cyclic: { self?: unknown } = {};
     cyclic.self = cyclic;

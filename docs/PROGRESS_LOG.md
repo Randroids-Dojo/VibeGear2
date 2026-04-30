@@ -6,6 +6,63 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Opt-in client error capture
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) build identity
+for error reports and [§27](gdd/27-risks-and-mitigations.md) risk
+mitigation.
+**Branch / PR:** `feat/opt-in-error-reporting`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added an in-memory client error capture module for `window.error` and
+  `window.unhandledrejection`.
+- Added deterministic dedupe by message plus stack prefix, a 32-entry
+  ring buffer, count tracking, build id, build version, and user agent
+  stamping.
+- Kept the default sink empty, with no fetch or XHR path unless a future
+  caller provides an explicit `ErrorSink`.
+- Added a hidden client-only `?errors=1` panel that shows recent errors,
+  copies the JSON report, and clears the in-memory buffer.
+- Wired the root app shell to install capture once and mounted the
+  hidden panel outside the error boundary so it survives fallback
+  rendering.
+- Extended the existing error boundary report to include the recent
+  capture buffer.
+
+### Verified
+- `npx vitest run src/app/__tests__/errorCapture.test.ts src/app/__tests__/DevErrorPanel.test.tsx src/components/error/__tests__/ErrorBoundary.test.tsx src/components/error/__tests__/formatErrorReport.test.ts`
+  green, 20 passed.
+- `npx playwright test e2e/error-boundary.spec.ts` green, 4 passed.
+- `npm run lint` green.
+- `npm run typecheck` green.
+- `npm run docs:check` green.
+- `npm run verify` green, 2652 passed.
+
+### Decisions and assumptions
+- No network sink ships in this slice. That keeps the feature outside
+  the working-agreement telemetry gate and matches the dot's no-telemetry
+  default.
+- The ring buffer is memory-only, not saved to localStorage. It does not
+  touch the cross-tab save protocol or player save data.
+- The panel is query-flagged instead of menu-linked so normal players do
+  not see debugging chrome.
+
+### Coverage ledger
+- GDD-27-CLIENT-ERROR-CAPTURE covers user-reported client crashes with a
+  manual copy path, build identity, dedupe, and no default telemetry.
+- Uncovered adjacent requirements: a self-hosted or third-party sink is
+  deliberately deferred behind Q-012.
+
+### Followups created
+None.
+
+### GDD edits
+- Added the §27 "User-reported client crashes" risk row.
+
+---
+
 ## 2026-04-30: Slice: Palette-driven sprite recolour system
 
 **GDD sections touched:**

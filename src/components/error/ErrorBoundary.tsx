@@ -23,6 +23,8 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { getGlobalErrorCapture, formatCapturedErrors } from "@/app/errorCapture";
+
 import { formatErrorReport } from "./formatErrorReport";
 
 export interface ErrorBoundaryProps {
@@ -60,6 +62,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   override componentDidCatch(error: unknown, info: ErrorInfo): void {
     this.setState({ componentStack: info.componentStack ?? null });
+    getGlobalErrorCapture().capture(error);
     // Mirror the error to the console so devtools still surfaces it.
     // The boundary is the sole consumer that matters for the user; this
     // log exists only for the developer's own debugging.
@@ -76,7 +79,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (!hasError) {
       return this.props.children;
     }
-    const report = formatErrorReport({ error, componentStack });
+    const recent = getGlobalErrorCapture().getRecent();
+    const report = formatErrorReport({
+      error,
+      componentStack,
+      recentClientErrors: recent.length > 0 ? formatCapturedErrors(recent) : null,
+    });
     if (this.props.fallback) {
       return this.props.fallback(error, report, this.reset);
     }

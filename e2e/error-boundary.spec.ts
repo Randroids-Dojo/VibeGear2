@@ -63,4 +63,16 @@ test.describe("error boundary", () => {
     // (a click that threw would have unmounted the tree).
     await expect(page.getByTestId("error-boundary-fallback")).toBeVisible();
   });
+
+  test("dev error panel appears only behind the query flag", async ({ page }) => {
+    await page.goto("/dev/throw?errors=1");
+    await expect(page.getByTestId("error-boundary-fallback")).toBeVisible();
+
+    const panel = page.getByTestId("dev-error-panel");
+    await expect(panel).toBeVisible();
+    await expect(page.getByTestId("dev-error-count")).toHaveText("1");
+    await expect(page.getByTestId("dev-error-log")).toContainText(
+      "Forced render throw from /dev/throw",
+    );
+  });
 });

@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { UpdateBanner } from "@/components/update/UpdateBanner";
 
 import "./globals.css";
+import { ErrorCaptureClient } from "./ErrorCaptureClient";
 
 export const metadata: Metadata = {
   title: "VibeGear2",
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <UpdateBanner />
         <MenuMusicDirector />
+        <ErrorCaptureClient />
         <ErrorBoundary>{children}</ErrorBoundary>
       </body>
     </html>

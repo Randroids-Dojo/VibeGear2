@@ -18,10 +18,12 @@ export interface ErrorReportInput {
   error: unknown;
   /** React's component stack ("\n    in Foo (at ...)\n    in Bar"). */
   componentStack?: string | null;
+  /** Optional in-memory capture buffer snapshot. */
+  recentClientErrors?: string | null;
 }
 
 export function formatErrorReport(input: ErrorReportInput): string {
-  const { error, componentStack } = input;
+  const { error, componentStack, recentClientErrors } = input;
   const lines: string[] = ["VibeGear2 error report"];
 
   if (error instanceof Error) {
@@ -40,6 +42,12 @@ export function formatErrorReport(input: ErrorReportInput): string {
     lines.push("");
     lines.push("Component stack:");
     lines.push(componentStack.trim());
+  }
+
+  if (recentClientErrors && recentClientErrors.trim().length > 0) {
+    lines.push("");
+    lines.push("Recent client errors:");
+    lines.push(recentClientErrors.trim());
   }
 
   return lines.join("\n");
