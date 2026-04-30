@@ -1532,6 +1532,31 @@
         "README.md"
       ],
       "followupRefs": ["VibeGear2-implement-browser-61518e15"]
+    },
+    {
+      "id": "GDD-27-CI-QUALITY-GATES",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The release hardening path gates CI with production-build bundle budgets, Lighthouse performance and accessibility scores, and axe coverage for core routes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        ".github/workflows/ci.yml",
+        "package.json",
+        "scripts/check-bundle-budget.ts",
+        "scripts/check-lighthouse.ts",
+        "docs/SCRIPTS.md",
+        "docs/COMPATIBILITY_MATRIX.md"
+      ],
+      "testRefs": [
+        "e2e/accessibility-gate.spec.ts",
+        "scripts/check-bundle-budget.ts",
+        "scripts/check-lighthouse.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-ci-bundle-57af4a04"]
     }
   ]
 }

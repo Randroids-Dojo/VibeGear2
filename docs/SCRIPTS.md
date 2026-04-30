@@ -16,6 +16,9 @@ Run commands from the repository root.
 | `test:e2e` | Runs Playwright against a production build. | Before PRs that touch routes, UI, race flow, or persistence. | Browser flow, routing, build, or selector regression. |
 | `test:e2e:cross-browser` | Runs the compatibility smoke on Chromium, Firefox, and WebKit. | Before browser hardening or release PRs. | A core route, canvas boot, keyboard path, or browser API differs across engines. |
 | `test:e2e:ui` | Opens the Playwright UI runner. | Debugging a failing e2e test locally. | Playwright cannot launch or the app is not built correctly. |
+| `quality:bundle` | Checks route and total static gzip budgets from the Next app build manifest. | After `npm run build`, before release or performance PRs. | A route or total static asset budget regressed. |
+| `quality:lighthouse` | Starts the production build and runs Lighthouse on core routes. | After `npm run build`, before release or performance PRs. | Performance, accessibility, or best-practices score fell below the release gate. |
+| `quality:gates` | Runs bundle and Lighthouse quality gates. | In CI after the production build. | Bundle budget or Lighthouse release gate failed. |
 | `bench:render` | Runs the render benchmark suite. | Renderer, sprite, parallax, road, HUD, or VFX PRs. | Perf harness failure or a large frame-time regression. |
 | `art:generate` | Regenerates placeholder art assets. | Only when intentionally refreshing generated art. | Art generator or manifest contract changed. |
 | `art:check` | Validates art manifest coverage. | Before PRs that touch art. | Missing manifest entry, bad path, or invalid art metadata. |
@@ -33,6 +36,7 @@ Run commands from the repository root.
 | First local confidence pass | `npm run verify` |
 | Browser or route change | `npm run verify:full` |
 | Cross-browser hardening | `npm run test:e2e:cross-browser` |
+| Release quality gates | `npm run build && npm run quality:gates` |
 | Renderer change | `npm run verify && npm run bench:render` |
 | Docs-only change | `npm run docs:check && npm run content-lint` |
 | Art change | `npm run art:check` |

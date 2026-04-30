@@ -6,6 +6,63 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: CI quality gates
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) performance targets,
+[§21](gdd/21-technical-design-for-web-implementation.md) performance
+constraints and testing approach, [§25](gdd/25-development-roadmap.md)
+v1.0 CI coverage, and [§27](gdd/27-risks-and-mitigations.md) browser
+performance.
+**Branch / PR:** `chore/ci-quality-gates`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `quality:bundle`, `quality:lighthouse`, and `quality:gates`
+  scripts.
+- Added a bundle-budget checker for the title, race, world, garage, options,
+  and total static asset gzip budgets.
+- Added a Lighthouse gate for title, practice race, garage, and options.
+- Added an axe Playwright gate for title, world, garage, options, and
+  practice race.
+- Wired CI to run the bundle and Lighthouse quality gates after the
+  production build.
+- Raised the title build-version footer contrast so the new axe gate passes.
+- Recorded the quality-gate coverage ledger entry and script catalogue rows.
+
+### Verified
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run quality:bundle` green.
+- `npm run quality:lighthouse` green.
+- `npx playwright test e2e/accessibility-gate.spec.ts --project=chromium`
+  green, 5 passed.
+- `npm run verify` green, 2609 passed.
+- `npm run test:e2e` green, 92 passed.
+- `npm run test:e2e:cross-browser` green, 12 passed.
+
+### Decisions and assumptions
+- Initial bundle budgets use the current production build with release
+  headroom: route budgets range from 260 to 310 KiB gzip and total static
+  assets are capped at 760 KiB gzip.
+- Lighthouse gates require performance at least 0.70, accessibility at least
+  0.90, and best practices at least 0.90 across the core release routes.
+- Axe blocks only critical and serious violations so the gate catches release
+  blockers without turning every advisory into a merge blocker.
+
+### Coverage ledger
+- GDD-27-CI-QUALITY-GATES covers the §21 performance bench expectation,
+  §25 CI coverage deliverable, and §27 browser performance mitigation gates.
+- Uncovered adjacent requirements: tagged release and the pending manual
+  browser matrix rows remain tracked by
+  `VibeGear2-implement-tagged-release-b3d30084`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Browser compatibility matrix
 
 **GDD sections touched:**
