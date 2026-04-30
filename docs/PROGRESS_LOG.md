@@ -6,6 +6,46 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Tagged release v0.1.0
+
+**GDD sections touched:**
+[§25](gdd/25-development-roadmap.md) v1.0 hardening and
+[§26](gdd/26-open-source-project-guidance.md) release packaging.
+**Branch / PR:** `chore/tagged-release-v0.1.0`, PR pending.
+**Status:** Prepared.
+
+### Done
+- Bumped `package.json` and `package-lock.json` to `0.1.0`.
+- Added `CHANGELOG.md` with release highlights and every shipped slice listed
+  from the progress log.
+- Confirmed no open `blocks-release` followups before preparing the release
+  branch.
+
+### Verified
+- `npm run verify` green, 2609 passed.
+- `npm run build && npm run quality:gates && npm run test:e2e` green, 92
+  Playwright tests passed.
+- `npm run test:e2e:cross-browser` green, 12 passed.
+- Post-merge release steps remain: tag the merge commit as `v0.1.0`, push the
+  tag, wait for main deploy verification, and smoke-test the deployed build.
+
+### Decisions and assumptions
+- The release tag is created after this PR lands so `v0.1.0` points at the
+  exact version-bump merge commit on `main`.
+
+### Coverage ledger
+- GDD-25-BROWSER-COMPATIBILITY-MATRIX, GDD-27-CROSS-BROWSER-SMOKE, and
+  GDD-27-CI-QUALITY-GATES provide the release-hardening evidence this release
+  packages.
+- Uncovered adjacent requirements: real Edge on Windows remains pending in
+  the manual browser matrix until a Windows host is available.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-30: Slice: CI quality gates
 
 **GDD sections touched:**
