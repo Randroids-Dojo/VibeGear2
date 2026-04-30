@@ -76,6 +76,12 @@ describe("defaultSave", () => {
     const { SaveGameSchema } = await import("@/data/schemas");
     expect(SaveGameSchema.safeParse(defaultSave()).success).toBe(true);
   });
+
+  it("seeds separate PB and downloaded ghost maps", () => {
+    const save = defaultSave();
+    expect(save.ghosts).toEqual({});
+    expect(save.downloadedGhosts).toEqual({});
+  });
 });
 
 describe("loadSave", () => {

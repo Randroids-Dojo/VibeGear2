@@ -30,6 +30,43 @@ test.describe("time trial launch page", () => {
       "href",
       "/race?mode=timeTrial&track=velvet-coast%2Fharbor-run&weather=clear",
     );
+
+    await expect(
+      page.getByTestId("time-trial-downloaded-ghost-velvet-coast/harbor-run"),
+    ).toHaveText("No time");
+    await page
+      .getByTestId("time-trial-import-ghost-velvet-coast/harbor-run")
+      .setInputFiles({
+        name: "harbor-run-rival.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(
+          JSON.stringify({
+            formatVersion: 1,
+            physicsVersion: 1,
+            fixedStepMs: 16.666666666666668,
+            trackId: "velvet-coast/harbor-run",
+            trackVersion: 1,
+            carId: "sparrow-gt",
+            seed: 123,
+            totalTicks: 1860,
+            finalTimeMs: 31_000,
+            truncated: false,
+            deltas: [],
+          }),
+        ),
+      });
+    await expect(page.getByTestId("time-trial-ghost-import-status")).toHaveText(
+      "Imported downloaded ghost for Harbor Run.",
+    );
+    await expect(
+      page.getByTestId("time-trial-downloaded-ghost-velvet-coast/harbor-run"),
+    ).toHaveText("00:31.000");
+    await expect(
+      page.getByTestId("time-trial-start-downloaded-ghost-velvet-coast/harbor-run"),
+    ).toHaveAttribute(
+      "href",
+      "/race?mode=timeTrial&track=velvet-coast%2Fharbor-run&weather=clear&ghost=downloaded",
+    );
   });
 });
 
@@ -82,6 +119,7 @@ function buildSeedSave() {
       },
     },
     ghosts: {},
+    downloadedGhosts: {},
     writeCounter: 0,
   };
 }

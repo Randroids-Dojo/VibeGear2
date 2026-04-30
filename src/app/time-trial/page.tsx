@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -11,21 +12,26 @@ import {
 
 import {
   TRACK_RAW,
+  GhostReplaySchema,
   TrackSchema,
   getChampionship,
   type SaveGame,
   type Track,
   type WeatherOption,
 } from "@/data";
-import { buildTimeTrialView } from "@/game/modes/timeTrialTargets";
+import {
+  acceptDownloadedGhost,
+  buildTimeTrialView,
+} from "@/game/modes/timeTrialTargets";
 import { formatLapTime } from "@/render/hudSplits";
-import { defaultSave, loadSave } from "@/persistence";
+import { defaultSave, loadSave, saveSave } from "@/persistence";
 
 const CHAMPIONSHIP_ID = "world-tour-standard";
 const TRACKS_BY_ID = buildTrackMap();
 
 export default function TimeTrialPage(): ReactElement {
   const [save, setSave] = useState<SaveGame | null>(null);
+  const [importStatus, setImportStatus] = useState<string>("");
 
   useEffect(() => {
     const loaded = loadSave();
@@ -40,6 +46,53 @@ export default function TimeTrialPage(): ReactElement {
       tracksById: TRACKS_BY_ID,
     });
   }, [save]);
+
+  const importDownloadedGhost = useCallback(
+    async (
+      track: { readonly id: string; readonly name: string; readonly version: number },
+      file: File | null,
+    ): Promise<void> => {
+      if (!file || !save) return;
+      setImportStatus(`Importing ${file.name}.`);
+      let payload: unknown;
+      try {
+        payload = JSON.parse(await file.text());
+      } catch {
+        setImportStatus("Ghost import failed: file is not valid JSON.");
+        return;
+      }
+      const parsed = GhostReplaySchema.safeParse(payload);
+      if (!parsed.success) {
+        setImportStatus("Ghost import failed: replay schema is invalid.");
+        return;
+      }
+      if (
+        !acceptDownloadedGhost({
+          trackId: track.id,
+          trackVersion: track.version,
+          ghost: parsed.data,
+        })
+      ) {
+        setImportStatus(`Ghost import failed: replay is not for ${track.name}.`);
+        return;
+      }
+      const nextSave: SaveGame = {
+        ...save,
+        downloadedGhosts: {
+          ...(save.downloadedGhosts ?? {}),
+          [track.id]: parsed.data,
+        },
+      };
+      const write = saveSave(nextSave);
+      if (write.kind !== "ok") {
+        setImportStatus("Ghost import failed: save could not be written.");
+        return;
+      }
+      setSave(nextSave);
+      setImportStatus(`Imported downloaded ghost for ${track.name}.`);
+    },
+    [save],
+  );
 
   return (
     <main data-testid="time-trial-page" style={pageStyle}>
@@ -59,6 +112,11 @@ export default function TimeTrialPage(): ReactElement {
           <p data-testid="time-trial-loading">Loading Time Trial tracks.</p>
         ) : (
           <div style={trackListStyle}>
+            {importStatus ? (
+              <p data-testid="time-trial-ghost-import-status" style={statusStyle}>
+                {importStatus}
+              </p>
+            ) : null}
             {view.tracks.map((track) => (
               <article
                 key={track.id}
@@ -107,7 +165,43 @@ export default function TimeTrialPage(): ReactElement {
                       {formatWeather(track.weatherOptions[0] ?? "clear")}
                     </dd>
                   </div>
+                  <div style={statStyle}>
+                    <dt style={statLabelStyle}>Downloaded ghost</dt>
+                    <dd
+                      data-testid={`time-trial-downloaded-ghost-${track.id}`}
+                      style={statValueStyle}
+                    >
+                      {formatOptionalTime(track.downloadedGhostTimeMs)}
+                    </dd>
+                  </div>
                 </dl>
+
+                <div style={ghostActionStyle}>
+                  <label style={ghostImportStyle}>
+                    <span>Import ghost</span>
+                    <input
+                      data-testid={`time-trial-import-ghost-${track.id}`}
+                      type="file"
+                      accept="application/json,.json"
+                      onChange={(event) => {
+                        void importDownloadedGhost(
+                          track,
+                          event.currentTarget.files?.[0] ?? null,
+                        );
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                  {track.startDownloadedGhostHref ? (
+                    <Link
+                      href={track.startDownloadedGhostHref}
+                      data-testid={`time-trial-start-downloaded-ghost-${track.id}`}
+                      style={ghostStartStyle}
+                    >
+                      Start downloaded ghost
+                    </Link>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>
@@ -188,6 +282,11 @@ const trackListStyle: CSSProperties = {
   gap: "12px",
 };
 
+const statusStyle: CSSProperties = {
+  margin: 0,
+  color: "#d7e5f7",
+};
+
 const trackRowStyle: CSSProperties = {
   display: "grid",
   gap: "16px",
@@ -238,6 +337,25 @@ const statValueStyle: CSSProperties = {
   margin: 0,
   fontSize: "1rem",
   fontWeight: 800,
+};
+
+const ghostActionStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+};
+
+const ghostImportStyle: CSSProperties = {
+  display: "grid",
+  gap: "6px",
+  color: "#cbd5e1",
+};
+
+const ghostStartStyle: CSSProperties = {
+  color: "#93c5fd",
+  fontWeight: 700,
 };
 
 const startStyle: CSSProperties = {
