@@ -6,6 +6,43 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: v0.2 release branch activation docs
+
+**GDD sections touched:**
+[§25](gdd/25-development-roadmap.md) v1.0 stable release branch.
+**Branch / PR:** `docs/v0.2-release-branch-active`, PR TBD.
+**Status:** Implemented.
+
+### Done
+- Updated `docs/RELEASES.md` so `release/v0.2` is listed as the active stable
+  branch instead of a planned target.
+- Recorded the active branch base as `269f890`, the PR #140 merge commit.
+- Documented that the branch was created after `v0.2.0` production smoke and
+  after release branch CI support landed.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `git diff --check` green.
+- Changed-file diff scan for em-dashes and en-dashes clean.
+
+### Decisions and assumptions
+- Kept `v0.2.0` as the release tag while using `269f890` as the branch base,
+  because PR #140 added only release support docs and CI wiring after the tag.
+
+### Coverage ledger
+- GDD-25-STABLE-RELEASE-BRANCH remains the active coverage row for the stable
+  release branch deliverable.
+- Uncovered adjacent requirements: none.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: v0.2 stable release branch
 
 **GDD sections touched:**
