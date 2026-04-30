@@ -99,6 +99,7 @@ export function PauseOverlay(props: PauseOverlayProps): ReactElement | null {
                 onClick={entry.handler}
                 disabled={entry.handler === undefined}
                 data-testid={`pause-${entry.id}`}
+                tabIndex={entry.handler === undefined ? -1 : 0}
                 style={buttonStyle(entry.handler === undefined)}
               >
                 {entry.label}

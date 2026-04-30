@@ -14,6 +14,7 @@ Run commands from the repository root.
 | `test` | Runs the Vitest unit suite once. | Before pushing logic, data, or docs-lint changes. | A unit, content-lint, route, or pure renderer invariant broke. |
 | `test:watch` | Runs Vitest in watch mode. | While iterating locally. | Same as `test`, but reruns after edits. |
 | `test:e2e` | Runs Playwright against a production build. | Before PRs that touch routes, UI, race flow, or persistence. | Browser flow, routing, build, or selector regression. |
+| `test:e2e:cross-browser` | Runs the compatibility smoke on Chromium, Firefox, and WebKit. | Before browser hardening or release PRs. | A core route, canvas boot, keyboard path, or browser API differs across engines. |
 | `test:e2e:ui` | Opens the Playwright UI runner. | Debugging a failing e2e test locally. | Playwright cannot launch or the app is not built correctly. |
 | `bench:render` | Runs the render benchmark suite. | Renderer, sprite, parallax, road, HUD, or VFX PRs. | Perf harness failure or a large frame-time regression. |
 | `art:generate` | Regenerates placeholder art assets. | Only when intentionally refreshing generated art. | Art generator or manifest contract changed. |
@@ -31,6 +32,7 @@ Run commands from the repository root.
 | --- | --- |
 | First local confidence pass | `npm run verify` |
 | Browser or route change | `npm run verify:full` |
+| Cross-browser hardening | `npm run test:e2e:cross-browser` |
 | Renderer change | `npm run verify && npm run bench:render` |
 | Docs-only change | `npm run docs:check && npm run content-lint` |
 | Art change | `npm run art:check` |
