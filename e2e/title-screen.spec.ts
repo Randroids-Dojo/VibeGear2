@@ -113,14 +113,13 @@ test.describe("title screen", () => {
     await expect(page.getByTestId("world-page")).toBeVisible();
   });
 
-  test("Time Trial link navigates to time-trial race mode", async ({ page }) => {
+  test("Time Trial link navigates to the time-trial launch page", async ({
+    page,
+  }) => {
     await page.goto("/");
     await page.getByTestId("menu-time-trial").click();
-    await expect(page).toHaveURL(/\/race\?mode=timeTrial$/);
-    await expect(page.getByTestId("race-canvas")).toHaveAttribute(
-      "data-mode",
-      "timeTrial",
-    );
+    await expect(page).toHaveURL(/\/time-trial$/);
+    await expect(page.getByTestId("time-trial-page")).toBeVisible();
   });
 
   test("Quick Race link navigates to quick-race picker", async ({ page }) => {

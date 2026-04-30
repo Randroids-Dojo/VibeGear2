@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Time Trial benchmark launch page
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Time Trial,
+[§20](gdd/20-hud-and-ui-ux.md) entry UI, and
+[§21](gdd/21-technical-design-for-web-implementation.md) local runtime.
+**Branch / PR:** `feat/time-trial-benchmarks`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Replaced the `/time-trial` redirect with a launch page that lists
+  unlocked Time Trial tracks.
+- Added a pure Time Trial view builder that carries saved PB lap and
+  race records, official benchmark targets, default weather, and
+  race-start links.
+- Added official benchmark targets for the current bundled Velvet Coast
+  and Iron Borough tracks.
+- Updated title-screen navigation coverage to expect the launch page.
+- Added the machine-checkable coverage ledger row for the Time Trial
+  benchmark-launch requirement.
+
+### Verified
+- `npx vitest run src/game/modes/__tests__/timeTrialTargets.test.ts`
+  green, 5 tests passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/time-trial.spec.ts e2e/title-screen.spec.ts --project=chromium -g "time trial|Time Trial"`
+  green, 2 tests passed.
+- `npm run lint` green.
+- `npm run verify` green, 2665 Vitest tests passed.
+
+### Decisions and assumptions
+- Treated developer benchmarks as display-only official targets. They do
+  not gate progression and do not replace PB persistence.
+- Kept downloaded ghost selection out of this slice so the Time Trial
+  entry surface could land as a PR-sized change.
+
+### Coverage ledger
+- GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH covers unlocked track listing,
+  personal best display, developer benchmark display, and Time Trial
+  start links.
+- Uncovered adjacent requirements: downloaded ghost selection and
+  UTC-midnight fake-clock e2e remain under the §6 modes parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Daily Challenge result share
 
 **GDD sections touched:**
