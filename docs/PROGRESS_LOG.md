@@ -14,7 +14,8 @@ Correct them by adding a new entry that references the old one.
 and performance constraints, [§25](gdd/25-development-roadmap.md) v1.0
 browser compatibility matrix, and [§27](gdd/27-risks-and-mitigations.md)
 browser performance.
-**Branch / PR:** `chore/cross-browser-verification`, PR #113.
+**Branch / PR:** `chore/cross-browser-verification`, PR #113;
+`fix/cross-browser-review`, PR #114.
 **Status:** Implemented.
 
 ### Done
@@ -28,6 +29,9 @@ browser performance.
 - Made title menu links and pause-menu actions explicit tab stops so the
   keyboard path is reliable across the WebKit profile.
 - Added `docs/COMPATIBILITY_MATRIX.md` and a GDD coverage ledger entry.
+- Addressed PR #113 review feedback by preserving native title-link
+  semantics, making the cross-browser script shell portable, and using a
+  spatial canvas variation check.
 
 ### Verified
 - `npm run verify` green, 2609 passed.
