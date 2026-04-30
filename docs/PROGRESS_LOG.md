@@ -6,6 +6,42 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Contributor dev experience review follow-up
+
+**GDD sections touched:**
+[§26](gdd/26-open-source-project-guidance.md) contribution guidelines and
+project structure.
+**Branch / PR:** `docs/contributor-review-followup`, PR #111.
+**Status:** Implemented.
+
+### Done
+- Addressed merged PR #110 review feedback by consolidating duplicate branch
+  and `--no-verify` guidance.
+- Normalized npm and jsdom capitalization in contributor docs.
+- Simplified `docs:check` shared anchors to stable tokens instead of full
+  prose sentences.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2593 passed.
+
+### Decisions and assumptions
+- Since PR #110 was merged with unresolved Copilot review threads, this slice
+  closes those comments as follow-up work instead of leaving them as backlog
+  drift.
+
+### Coverage ledger
+- GDD-26-DEVELOPER-ONBOARDING remains the relevant coverage entry.
+- Uncovered adjacent requirements: formal code of conduct remains TBD in
+  `docs/CONTRIBUTING.md`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Contributor dev experience docs
 
 **GDD sections touched:**

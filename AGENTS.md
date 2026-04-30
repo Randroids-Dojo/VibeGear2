@@ -59,12 +59,10 @@ The Game Design Document is the source of truth for what VibeGear2 is. Before pr
 
 Implementation work runs the loop in `IMPLEMENTATION_PLAN.md` §4. Each loop iteration is one ship-shaped slice that fits in a single PR.
 
-- Branch off `main` as `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`. One branch per slice. Delete after merge.
-- Create short-lived branches from `main` named `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`.
+- Create one short-lived branch per slice from `main`, named `feat/<slice>`, `fix/<slice>`, `chore/<slice>`, or `docs/<slice>`. Delete it after merge.
 - Never push directly to `main`. Always go through a PR.
 - Commit messages follow the `<type>(<area>): <imperative summary>` format from `WORKING_AGREEMENT.md` §3. Lead the body with *why*, not *what*.
-- Never `--amend` a pushed commit. Never `--no-verify`. Never force-push `main` or any branch with someone else's commits on it.
-- Do not bypass checks with `--no-verify`.
+- Never `--amend` a pushed commit. Do not bypass checks with `--no-verify`. Never force-push `main` or any branch with someone else's commits on it.
 - PR title mirrors the slice title. PR body links the GDD section(s) implemented, the matching `PROGRESS_LOG.md` entry, the test plan, and any followups created.
 - Wait for CI green before merging. Squash-merge into `main` unless the slice deliberately benefits from preserving history.
 

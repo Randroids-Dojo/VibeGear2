@@ -1,4 +1,4 @@
-# Npm Scripts
+# npm Scripts
 
 This page is the quick reference for every script in `package.json`.
 Run commands from the repository root.
