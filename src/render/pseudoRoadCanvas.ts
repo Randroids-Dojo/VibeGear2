@@ -277,6 +277,8 @@ const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
   marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.85, minHeight: 8 },
   guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.5, minHeight: 5 },
   water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.42, minHeight: 5 },
+  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 0.95, minHeight: 9 },
+  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.8, minHeight: 8 },
 };
 
 const DEFAULT_RECOLOUR_IN_FLIGHT = new Set<string>();

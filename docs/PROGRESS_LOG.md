@@ -30,10 +30,12 @@ Correct them by adding a new entry that references the old one.
   green, 123 tests passed.
 - `npx vitest run src/data/__tests__/hazards-content.test.ts src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts`
   green, 60 tests passed after replacing invalid hazard ids.
+- `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/data/__tests__/hazards-content.test.ts`
+  green, 113 tests passed after adding Ember Steppe roadside renderer support.
 - `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
   green, 3 tests passed.
 - `npm run content-lint` green.
-- `npm run verify` green, 2687 Vitest tests passed.
+- `npm run verify` green, 2688 Vitest tests passed.
 
 ### Decisions and assumptions
 - Kept Ember Steppe weather to `clear` and `fog` because the region
