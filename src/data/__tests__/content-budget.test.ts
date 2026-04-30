@@ -139,7 +139,7 @@ describe("content budget: tracks", () => {
   });
 
   it("meets the MVP minimum once content lands beyond the test stubs", () => {
-    // During the MVP window only the two `test/*` tracks are authored.
+    // During the MVP window only `test-*` fixture tracks are authored.
     // Once the first MVP track lands, this assertion flips to enforce the
     // §24 minimum. The gate keeps the test green during the build-out and
     // turns into a regression guard the moment real content ships.
