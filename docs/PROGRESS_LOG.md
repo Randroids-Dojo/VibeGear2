@@ -36,8 +36,8 @@ Correct them by adding a new entry that references the old one.
 ### Coverage ledger
 - GDD-25-V0-2-0-RELEASE-REFRESH covers the package metadata, changelog, and
   progress log for the content-complete World Tour build.
-- Uncovered adjacent requirements: the `v0.2.0` tag and post-tag production
-  smoke happen after this PR merges.
+- Uncovered adjacent requirements: create the `v0.2.0` tag after this PR
+  merges, then run post-tag production smoke.
 
 ### Followups created
 None.
