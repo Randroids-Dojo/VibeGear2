@@ -37,7 +37,6 @@ release PR:
 
 ## Deferred Gates
 
-`VibeGear2-implement-ci-bundle-57af4a04` owns the heavier release gates:
-bundle-size budget, Lighthouse performance and accessibility checks, and axe
-coverage. This file tracks the compatibility smoke and manual release matrix
-only.
+The CI quality-gates slice owns the heavier release gates: bundle-size budget,
+Lighthouse performance and accessibility checks, and axe coverage. This file
+tracks the compatibility smoke and manual release matrix only.

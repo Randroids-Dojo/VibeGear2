@@ -16,6 +16,9 @@
     "test:e2e": "playwright test",
     "test:e2e:cross-browser": "node scripts/run-cross-browser-e2e.mjs",
     "test:e2e:ui": "playwright test --ui",
+    "quality:bundle": "vite-node --script scripts/check-bundle-budget.ts",
+    "quality:lighthouse": "vite-node --script scripts/check-lighthouse.ts",
+    "quality:gates": "npm run quality:bundle && npm run quality:lighthouse",
     "bench:render": "vitest run --config vitest.bench.config.ts",
     "art:generate": "vite-node --script scripts/generate-placeholder-art.ts",
     "art:check": "vite-node --script scripts/check-art-manifest.ts",
@@ -33,14 +36,17 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
     "@playwright/test": "^1.48.0",
     "@types/node": "^22.7.0",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "chrome-launcher": "^1.2.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.0.0",
     "jsdom": "^25.0.1",
+    "lighthouse": "^12.8.2",
     "typescript": "^5.6.2",
     "vitest": "^2.1.1"
   },
