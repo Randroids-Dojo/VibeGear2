@@ -532,10 +532,10 @@ const CPU_DIFFICULTY_TARGETS: Readonly<
     { paceScalar: number; recoveryScalar: number; mistakeScalar: number }
   >
 > = {
-  easy: { paceScalar: 0.92, recoveryScalar: 0.95, mistakeScalar: 1.4 },
-  normal: { paceScalar: 1.0, recoveryScalar: 1.0, mistakeScalar: 1.0 },
-  hard: { paceScalar: 1.05, recoveryScalar: 1.03, mistakeScalar: 0.7 },
-  master: { paceScalar: 1.09, recoveryScalar: 1.05, mistakeScalar: 0.45 },
+  easy: { paceScalar: 0.92, recoveryScalar: 1.0, mistakeScalar: 1.4 },
+  normal: { paceScalar: 1.0, recoveryScalar: 0.6, mistakeScalar: 1.0 },
+  hard: { paceScalar: 1.05, recoveryScalar: 0.25, mistakeScalar: 0.7 },
+  master: { paceScalar: 1.09, recoveryScalar: 0.0, mistakeScalar: 0.45 },
 };
 
 describe("§23 CPU difficulty modifiers", () => {
@@ -578,10 +578,23 @@ describe("§23 CPU difficulty modifiers", () => {
     }
   });
 
-  it("Normal sits at identity for every column", () => {
+  it("recoveryScalar is monotonically non-increasing across the ladder", () => {
+    const ladder: ReadonlyArray<PlayerDifficultyPreset> = [
+      "easy",
+      "normal",
+      "hard",
+      "master",
+    ];
+    for (let i = 1; i < ladder.length; i += 1) {
+      const prev = CPU_DIFFICULTY_MODIFIERS[ladder[i - 1]!];
+      const curr = CPU_DIFFICULTY_MODIFIERS[ladder[i]!];
+      expect(curr.recoveryScalar).toBeLessThanOrEqual(prev.recoveryScalar + TOL);
+    }
+  });
+
+  it("Normal sits at identity for pace and mistakes", () => {
     const normal = CPU_DIFFICULTY_MODIFIERS.normal;
     expect(normal.paceScalar).toBeCloseTo(1, 9);
-    expect(normal.recoveryScalar).toBeCloseTo(1, 9);
     expect(normal.mistakeScalar).toBeCloseTo(1, 9);
   });
 

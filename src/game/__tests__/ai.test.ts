@@ -28,6 +28,10 @@ import {
   type AIState,
   type PlayerView,
 } from "@/game/ai";
+import {
+  AI_ARCHETYPE_BEHAVIOURS,
+  AI_ARCHETYPE_ORDER,
+} from "@/game/aiArchetypes";
 import { getCpuModifiers } from "@/game/aiDifficulty";
 import { INITIAL_CAR_STATE, type CarState } from "@/game/physics";
 import { createRaceState, type RaceState } from "@/game/raceState";
@@ -96,7 +100,50 @@ function freshCar(overrides: Partial<CarState> = {}): CarState {
 
 const PLAYER_FAR_BEHIND: PlayerView = { car: freshCar({ z: -50, speed: 30 }) };
 
+function archetypeDriver(
+  archetype: AIDriver["archetype"],
+  overrides: Partial<AIDriver> = {},
+): AIDriver {
+  return {
+    ...CLEAN_LINE_DRIVER,
+    id: `ai_${archetype}_test`,
+    displayName: `${archetype} test`,
+    archetype,
+    ...overrides,
+  };
+}
+
 // Tests --------------------------------------------------------------------
+
+describe("AI_ARCHETYPE_BEHAVIOURS", () => {
+  it("covers every §15 archetype slot in stable order", () => {
+    expect(AI_ARCHETYPE_ORDER).toEqual([
+      "nitro_burst",
+      "clean_line",
+      "aggressive",
+      "defender",
+      "wet_specialist",
+      "endurance",
+    ]);
+    expect(
+      AI_ARCHETYPE_ORDER.map((id) => AI_ARCHETYPE_BEHAVIOURS[id].gddName),
+    ).toEqual([
+      "Rocket starter",
+      "Clean line",
+      "Bully",
+      "Cautious",
+      "Chaotic",
+      "Enduro",
+    ]);
+  });
+
+  it("keeps each behaviour entry frozen", () => {
+    expect(Object.isFrozen(AI_ARCHETYPE_BEHAVIOURS)).toBe(true);
+    for (const id of AI_ARCHETYPE_ORDER) {
+      expect(Object.isFrozen(AI_ARCHETYPE_BEHAVIOURS[id])).toBe(true);
+    }
+  });
+});
 
 describe("tickAI (countdown)", () => {
   it("returns NEUTRAL_INPUT during countdown", () => {
@@ -249,6 +296,139 @@ describe("tickAI (cornering)", () => {
     );
     expect(result.input.brake).toBeGreaterThan(0);
     expect(result.input.throttle).toBe(0);
+  });
+});
+
+describe("tickAI (§15 archetype behaviours)", () => {
+  it("rocket starter launches faster early and fades late", () => {
+    const clean = archetypeDriver("clean_line", { paceScalar: 0.75 });
+    const rocket = archetypeDriver("nitro_burst", { paceScalar: 0.75 });
+    const earlyClean = tickAI(
+      clean,
+      freshAi(),
+      freshCar({ z: 60, speed: 20 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const earlyRocket = tickAI(
+      rocket,
+      freshAi(),
+      freshCar({ z: 60, speed: 20 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const lateClean = tickAI(
+      clean,
+      freshAi(),
+      freshCar({ z: 1000, speed: 20 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const lateRocket = tickAI(
+      rocket,
+      freshAi(),
+      freshCar({ z: 1000, speed: 20 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(earlyRocket.nextAiState.targetSpeed).toBeGreaterThan(
+      earlyClean.nextAiState.targetSpeed,
+    );
+    expect(lateRocket.nextAiState.targetSpeed).toBeLessThan(
+      lateClean.nextAiState.targetSpeed,
+    );
+  });
+
+  it("bully drivers pressure toward nearby traffic", () => {
+    const clean = archetypeDriver("clean_line");
+    const bully = archetypeDriver("aggressive", { aggression: 1 });
+    const aiCar = freshCar({ x: 0, z: 300, speed: 30 });
+    const playerNearbyRight: PlayerView = {
+      car: freshCar({ x: 3, z: 312, speed: 30 }),
+    };
+    const cleanTick = tickAI(
+      clean,
+      freshAi(),
+      aiCar,
+      playerNearbyRight,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const bullyTick = tickAI(
+      bully,
+      freshAi(),
+      aiCar,
+      playerNearbyRight,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(bullyTick.input.steer).toBeGreaterThan(cleanTick.input.steer);
+  });
+
+  it("cautious drivers brake earlier for the same sweeper", () => {
+    const clean = archetypeDriver("clean_line");
+    const cautious = archetypeDriver("defender");
+    const aiCar = freshCar({ z: 900, speed: 45 });
+    const cleanTick = tickAI(
+      clean,
+      freshAi(),
+      aiCar,
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const cautiousTick = tickAI(
+      cautious,
+      freshAi(),
+      aiCar,
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(cautiousTick.nextAiState.targetSpeed).toBeLessThan(
+      cleanTick.nextAiState.targetSpeed,
+    );
+    expect(cautiousTick.input.brake).toBeGreaterThan(cleanTick.input.brake);
+  });
+
+  it("chaotic drivers produce more seeded lane mistakes than enduro drivers", () => {
+    const chaotic = archetypeDriver("wet_specialist", { mistakeRate: 0.2 });
+    const enduro = archetypeDriver("endurance", { mistakeRate: 0.2 });
+    const countSteeringMistakes = (driver: AIDriver): number => {
+      let count = 0;
+      for (let seed = 1; seed <= 160; seed += 1) {
+        const result = tickAI(
+          driver,
+          freshAi({ seed }),
+          freshCar({ speed: 20, z: seed * 6 }),
+          PLAYER_FAR_BEHIND,
+          STRAIGHT_TRACK,
+          RACING,
+          STARTER_STATS,
+        );
+        if (result.input.steer !== 0) count += 1;
+      }
+      return count;
+    };
+
+    expect(countSteeringMistakes(chaotic)).toBeGreaterThan(
+      countSteeringMistakes(enduro),
+    );
   });
 });
 
@@ -608,7 +788,7 @@ describe("tickAI (§23 CPU difficulty mistakeScalar and recoveryScalar)", () => 
     expect(countMistakes(2)).toBeGreaterThan(countMistakes(1));
   });
 
-  it("Master recovery term is larger than Easy under matched trailing gap", () => {
+  it("Easy recovery term is larger than Master under matched trailing gap", () => {
     const easyRecoveryOnly = {
       ...getCpuModifiers("easy"),
       paceScalar: 1,
@@ -648,8 +828,48 @@ describe("tickAI (§23 CPU difficulty mistakeScalar and recoveryScalar)", () => 
       masterRecoveryOnly,
     );
 
-    expect(master.nextAiState.targetSpeed).toBeGreaterThan(
-      easy.nextAiState.targetSpeed,
+    expect(easy.nextAiState.targetSpeed).toBeGreaterThan(
+      master.nextAiState.targetSpeed,
+    );
+  });
+
+  it("Master disables the light catch-up term", () => {
+    const masterRecoveryOnly = {
+      ...getCpuModifiers("master"),
+      paceScalar: 1,
+      mistakeScalar: 1,
+    };
+    const aiCar = freshCar({ z: 900, speed: 30 });
+    const playerAhead: PlayerView = {
+      car: freshCar({ z: aiCar.z + 240, speed: 30 }),
+    };
+    const withoutGap = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      aiCar,
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      masterRecoveryOnly,
+    );
+    const withGap = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      aiCar,
+      playerAhead,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      masterRecoveryOnly,
+    );
+
+    expect(withGap.nextAiState.targetSpeed).toBe(
+      withoutGap.nextAiState.targetSpeed,
     );
   });
 });

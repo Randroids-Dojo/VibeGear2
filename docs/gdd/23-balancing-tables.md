@@ -131,10 +131,10 @@ scalars rather than tire grip.
 
 | Difficulty | Pace scalar | Recovery scalar | Mistake scalar |
 | --- | --- | --- | --- |
-| Easy | 0.92 | 0.95 | 1.40 |
-| Normal | 1.00 | 1.00 | 1.00 |
-| Hard | 1.05 | 1.03 | 0.70 |
-| Master | 1.09 | 1.05 | 0.45 |
+| Easy | 0.92 | 1.00 | 1.40 |
+| Normal | 1.00 | 0.60 | 1.00 |
+| Hard | 1.05 | 0.25 | 0.70 |
+| Master | 1.09 | 0.00 | 0.45 |
 
 ## Track difficulty rating rubric
 
