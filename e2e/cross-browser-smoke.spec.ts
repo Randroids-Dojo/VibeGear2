@@ -11,7 +11,7 @@ const CORE_ROUTES: ReadonlyArray<{
   { path: "/race?mode=practice", testId: "race-canvas" },
 ];
 
-async function focusByTab(page: Page, testId: string, maxTabs = 24): Promise<void> {
+async function focusByTab(page: Page, testId: string, maxTabs = 40): Promise<void> {
   for (let i = 0; i < maxTabs; i += 1) {
     await page.keyboard.press("Tab");
     const activeTestId = await page.evaluate(() => {

@@ -15,6 +15,8 @@ import { expect, test } from "@playwright/test";
  *     route hops to `/`.
  *   - Settings: open the menu mid-race, click Settings, assert the
  *     route hops to `/options`.
+ *   - Ghosts: open the menu mid-race, click Ghosts, assert the route
+ *     hops to `/time-trial`.
  */
 
 test.describe("pause actions", () => {
@@ -99,6 +101,22 @@ test.describe("pause actions", () => {
 
     await expect(page).toHaveURL(/\/options$/);
     await expect(page.getByTestId("options-page")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
+  test("Ghosts routes to the Time Trial ghost surface", async ({ page }) => {
+    await page.goto("/race");
+    await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+      timeout: 10_000,
+    });
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("pause-overlay")).toBeVisible();
+    await page.getByTestId("pause-ghosts").click();
+
+    await expect(page).toHaveURL(/\/time-trial$/);
+    await expect(page.getByTestId("time-trial-page")).toBeVisible({
       timeout: 5_000,
     });
   });

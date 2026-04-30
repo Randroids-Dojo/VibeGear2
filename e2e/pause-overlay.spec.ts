@@ -92,12 +92,11 @@ test.describe("pause overlay", () => {
     await expect(page.getByTestId("pause-overlay")).toBeVisible();
 
     // The dot ships restart / retire / exit-to-title plus settings
-    // wiring; those buttons should be visible and clickable. Leaderboard
-    // remains disabled here because it does not have a target route yet.
+    // and ghost wiring; those buttons should be visible and clickable.
     await expect(page.getByTestId("pause-restart")).toBeEnabled();
     await expect(page.getByTestId("pause-retire")).toBeEnabled();
     await expect(page.getByTestId("pause-exit")).toBeEnabled();
     await expect(page.getByTestId("pause-settings")).toBeEnabled();
-    await expect(page.getByTestId("pause-leaderboard")).toBeDisabled();
+    await expect(page.getByTestId("pause-ghosts")).toBeEnabled();
   });
 });

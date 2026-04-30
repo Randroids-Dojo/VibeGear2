@@ -702,6 +702,31 @@
       ]
     },
     {
+      "id": "GDD-20-PAUSE-GHOSTS-ACTION",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race pause menu exposes the leaderboard or ghost slot as a working local Ghosts action that tears down the race runtime and routes to the Time Trial ghost surface.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/pause/usePauseActions.ts",
+        "src/components/pause/PauseOverlay.tsx",
+        "src/app/race/page.tsx",
+        "src/app/time-trial/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/pause/__tests__/usePauseActions.test.tsx",
+        "e2e/pause-actions.spec.ts",
+        "e2e/pause-overlay.spec.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-pause-ghosts-c7f0391b",
+        "F-070",
+        "Q-011"
+      ]
+    },
+    {
       "id": "GDD-20-MOBILE-TITLE-CENTERING",
       "gddSections": [
         "docs/gdd/04-player-experience-goals.md",
