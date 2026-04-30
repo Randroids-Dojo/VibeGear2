@@ -78,6 +78,9 @@ export function dailyChallengeRaceHref(
     mode: "timeTrial",
     track: challenge.trackId,
     weather: challenge.weather,
+    daily: challenge.dateKey,
+    dailySeed: `${challenge.seed}`,
+    carClass: challenge.carClass,
   });
   return `/race?${params.toString()}`;
 }

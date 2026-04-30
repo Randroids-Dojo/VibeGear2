@@ -106,11 +106,13 @@ import {
   nitroUpgradeTierForUpgrades,
 } from "@/game/nitro";
 import {
+  CarClassSchema,
   WeatherOptionSchema,
   type AIDriver,
   type CarBaseStats,
   type WeatherOption,
 } from "@/data/schemas";
+import type { DailyChallengeSelection } from "@/game/modes/dailyChallenge";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
@@ -441,6 +443,32 @@ function resolveRaceWeather(
   return track.compiled.weatherOptions.includes(parsed.data) ? parsed.data : undefined;
 }
 
+function resolveDailyChallengeMarker(input: {
+  mode: RaceMode;
+  dateKey: string | null;
+  seed: string | null;
+  carClass: string | null;
+  trackId: string;
+  weather: RaceSessionConfig["weather"];
+}): DailyChallengeSelection | null {
+  if (input.mode !== "timeTrial") return null;
+  if (input.weather === undefined) return null;
+  if (input.dateKey === null || !/^\d{4}-\d{2}-\d{2}$/.test(input.dateKey)) {
+    return null;
+  }
+  const seed = Number(input.seed);
+  if (!Number.isSafeInteger(seed) || seed < 0) return null;
+  const carClass = CarClassSchema.safeParse(input.carClass);
+  if (!carClass.success) return null;
+  return {
+    dateKey: input.dateKey,
+    seed,
+    trackId: input.trackId,
+    weather: input.weather,
+    carClass: carClass.data,
+  };
+}
+
 function resolvePlayerTire(raw: string | null): TireKind | undefined {
   return raw === "wet" || raw === "dry" ? raw : undefined;
 }
@@ -656,6 +684,9 @@ function RaceShell(): ReactElement {
   const weatherRaw = search?.get("weather") ?? null;
   const tireRaw = search?.get("tire") ?? null;
   const carRaw = search?.get("car") ?? null;
+  const dailyDateKeyRaw = search?.get("daily") ?? null;
+  const dailySeedRaw = search?.get("dailySeed") ?? null;
+  const dailyCarClassRaw = search?.get("carClass") ?? null;
   const tourId = search?.get("tour") ?? null;
   const raceIndexRaw = search?.get("raceIndex") ?? null;
   const tourContext = useMemo(
@@ -672,6 +703,18 @@ function RaceShell(): ReactElement {
     () => resolveRaceWeather(weatherRaw, track),
     [track, weatherRaw],
   );
+  const dailyChallenge = useMemo(
+    () =>
+      resolveDailyChallengeMarker({
+        mode,
+        dateKey: dailyDateKeyRaw,
+        seed: dailySeedRaw,
+        carClass: dailyCarClassRaw,
+        trackId: track.id,
+        weather,
+      }),
+    [dailyCarClassRaw, dailyDateKeyRaw, dailySeedRaw, mode, track.id, weather],
+  );
   const playerTire = useMemo(() => resolvePlayerTire(tireRaw), [tireRaw]);
   return (
     <RaceCanvas
@@ -682,6 +725,7 @@ function RaceShell(): ReactElement {
       weather={weather}
       playerTire={playerTire}
       selectedCarId={carRaw}
+      dailyChallenge={dailyChallenge}
     />
   );
 }
@@ -694,6 +738,7 @@ interface RaceCanvasProps {
   weather: RaceSessionConfig["weather"];
   playerTire: TireKind | undefined;
   selectedCarId: string | null;
+  dailyChallenge: DailyChallengeSelection | null;
 }
 
 function RaceCanvas({
@@ -704,6 +749,7 @@ function RaceCanvas({
   weather,
   playerTire,
   selectedCarId,
+  dailyChallenge,
 }: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1133,6 +1179,7 @@ function RaceCanvas({
         championship: tourContext?.championship,
         tourId: tourContext?.tourId,
         currentTrackIndex: tourContext?.raceIndex,
+        dailyChallenge,
       });
       // F-034: credit the wallet (DNF cars receive the §12 participation
       // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
@@ -1457,6 +1504,7 @@ function RaceCanvas({
               championship: tourContext?.championship,
               tourId: tourContext?.tourId,
               currentTrackIndex: tourContext?.raceIndex,
+              dailyChallenge,
             });
             // F-034: credit the wallet from the same numbers the
             // results screen will render. The `commitRaceCredits`
@@ -1552,6 +1600,7 @@ function RaceCanvas({
     weather,
     playerTire,
     selectedCarId,
+    dailyChallenge,
   ]);
 
   return (

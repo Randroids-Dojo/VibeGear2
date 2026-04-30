@@ -79,6 +79,19 @@ const SEED_TOUR_RESULT = {
   },
 };
 
+const SEED_DAILY_RESULT = {
+  ...SEED_RESULT,
+  trackId: "velvet-coast/harbor-run",
+  creditsAwarded: 0,
+  dailyChallenge: {
+    dateKey: "2026-04-30",
+    seed: 123456,
+    trackId: "velvet-coast/harbor-run",
+    weather: "rain",
+    carClass: "balance",
+  },
+};
+
 test.describe("race results screen", () => {
   test("renders all seven §20 fields and both CTAs", async ({ page }) => {
     await page.goto("/race/results");
@@ -190,6 +203,30 @@ test.describe("race results screen", () => {
     await expect(page).toHaveURL(
       /\/race\?track=velvet-coast%2Fsunpier-loop&tour=velvet-coast&raceIndex=1$/,
     );
+  });
+
+  test("renders result-backed Daily Challenge share text", async ({
+    context,
+    page,
+  }) => {
+    await page.goto("/race/results");
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+      origin: new URL(page.url()).origin,
+    });
+    await page.evaluate(
+      ([key, payload]) => {
+        sessionStorage.setItem(key, payload);
+      },
+      [STORAGE_KEY, JSON.stringify(SEED_DAILY_RESULT)] as const,
+    );
+    await page.reload();
+
+    await expect(page.getByTestId("results-daily-share")).toBeVisible();
+    await expect(page.getByTestId("daily-share-text")).toHaveValue(
+      /VibeGear2 Daily 2026-04-30 0:30.000 velvet-coast\/harbor-run rain balance/,
+    );
+    await page.getByTestId("daily-share").click();
+    await expect(page.getByTestId("daily-share-status")).toHaveText("Copied");
   });
 
   test("direct nav with no result renders the empty fallback", async ({
