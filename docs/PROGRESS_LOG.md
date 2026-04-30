@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Node 24 GitHub Actions runtime
+
+**Branch / PR:** `chore/node24-github-actions`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Updated CI workflow actions that execute on GitHub's action runtime:
+  `actions/checkout` to `v6`, `actions/setup-node` to `v6`, and
+  `actions/upload-artifact` to `v7`.
+- Updated the label sync workflow to use `actions/checkout@v6` and
+  `crazy-max/ghaction-github-labeler@v6`.
+- Kept the project verification runtime pinned to Node 20. The warning was
+  about the action runtime, not the Vite and test runtime for the game.
+
+### Verified
+- `ruby -e "require 'yaml'; ['.github/workflows/ci.yml','.github/workflows/labels.yml'].each { |f| YAML.load_file(f); puts \"#{f}: ok\" }"`
+  green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npm run lint` green.
+- `grep -rn $'\u2014\|\u2013' .github/workflows/ci.yml .github/workflows/labels.yml docs/PROGRESS_LOG.md`
+  returned nothing.
+
+### Decisions and assumptions
+- Treated the GitHub Actions annotation as a maintenance blocker because
+  Node.js 20 action runtime compatibility changes begin on June 2, 2026 and
+  removal is scheduled for September 16, 2026.
+- Did not change `node-version: 20` in CI. That belongs in a separate
+  runtime upgrade slice if the project decides to move the app toolchain.
+
+### Coverage ledger
+- No GDD coverage change. This is CI maintenance.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Region art theme registry
 
 **GDD sections touched:**
