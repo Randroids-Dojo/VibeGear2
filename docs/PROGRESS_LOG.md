@@ -30,6 +30,8 @@ Correct them by adding a new entry that references the old one.
 - `npm run typecheck` green.
 - `npx playwright test e2e/pause-actions.spec.ts e2e/pause-overlay.spec.ts --project=chromium`
   green, 9 tests passed.
+- `PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit -g "keyboard-only"`
+  green, 1 test passed.
 - `npm run lint` green.
 - `npm run content-lint` green.
 - `npm run verify` green, 2672 Vitest tests passed.
