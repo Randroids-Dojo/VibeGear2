@@ -10,10 +10,9 @@
  * independent concerns lets the same overlay reuse from the title-screen
  * preview and the title-screen "settings" hop later.
  *
- * Phase 2+ scope: only resume / restart / retire / settings / leaderboard /
- * exit are listed here. The settings and leaderboard buttons are inert in
- * this slice (their target pages do not exist yet) and report through the
- * status callback so the parent can decide what to render.
+ * Phase 2+ scope: resume / restart / retire / settings / ghosts /
+ * exit are listed here. Ghosts uses the existing Time Trial surface until
+ * an online leaderboard provider is approved.
  *
  * Manual verification: this slice does not ship a Playwright runner, so
  * the rendered tree is exercised via the dev road page at `/dev/road`
@@ -33,8 +32,8 @@ export interface PauseOverlayActions {
   onRetire?: () => void;
   /** Open settings. Inert until the settings page lands. */
   onSettings?: () => void;
-  /** Open leaderboard. Inert until the leaderboard page lands. */
-  onLeaderboard?: () => void;
+  /** Open the local ghost management surface. */
+  onGhosts?: () => void;
   /** Exit to the title screen. */
   onExitToTitle?: () => void;
 }
@@ -50,7 +49,7 @@ interface MenuEntry {
 }
 
 export function PauseOverlay(props: PauseOverlayProps): ReactElement | null {
-  const { open, onResume, onRestart, onRetire, onSettings, onLeaderboard, onExitToTitle } = props;
+  const { open, onResume, onRestart, onRetire, onSettings, onGhosts, onExitToTitle } = props;
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const resumeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -75,7 +74,7 @@ export function PauseOverlay(props: PauseOverlayProps): ReactElement | null {
     { id: "restart", label: "Restart race", handler: onRestart },
     { id: "retire", label: "Retire race", handler: onRetire },
     { id: "settings", label: "Settings", handler: onSettings },
-    { id: "leaderboard", label: "Leaderboard", handler: onLeaderboard },
+    { id: "ghosts", label: "Ghosts", handler: onGhosts },
     { id: "exit", label: "Exit to title", handler: onExitToTitle },
   ];
 

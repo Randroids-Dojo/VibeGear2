@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Hook that wraps the five wired §20 pause-menu actions per dot
+ * Hook that wraps the six wired §20 pause-menu actions per dot
  * `VibeGear2-implement-restart-retire-888c712b`.
  *
  * `<PauseOverlay />` accepts `onResume`, `onRestart`, `onRetire`,
- * `onSettings`, `onLeaderboard`, `onExitToTitle`. The race route used to
- * supply only `onResume` (the other three were left undefined so the
+ * `onSettings`, `onGhosts`, `onExitToTitle`. The race route used to
+ * supply only `onResume` (the other actions were left undefined so the
  * buttons rendered disabled). This hook is the single binding the race /
  * quick-race / time-trial / practice surfaces all reuse so the wiring
  * does not drift across pages.
@@ -36,6 +36,8 @@
  *     leak across the route hop.
  *   - Settings while paused: the parent disposes the live runtime before
  *     routing to `/options`, matching exit-to-title teardown.
+ *   - Ghosts while paused: the parent disposes the live runtime before
+ *     routing to `/time-trial`, where local PB and downloaded ghosts live.
  *   - Restart after finish: the parent disables the button by passing
  *     `onRestartImpl: null`; the hook surfaces `onRestart: undefined`
  *     in that case so `<PauseOverlay />`'s self-disable contract
@@ -70,6 +72,11 @@ export interface UsePauseActionsOptions {
    * button for surfaces that do not have a settings target.
    */
   onSettingsImpl?: (() => void) | null;
+  /**
+   * Tear down the loop and route to the local ghost surface. `null`
+   * disables the button for surfaces that do not have a ghost target.
+   */
+  onGhostsImpl?: (() => void) | null;
 }
 
 export interface UsePauseActionsResult {
@@ -83,6 +90,8 @@ export interface UsePauseActionsResult {
   onExitToTitle?: () => void;
   /** Wrapper around `onSettingsImpl`, or `undefined` when the impl is null. */
   onSettings?: () => void;
+  /** Wrapper around `onGhostsImpl`, or `undefined` when the impl is null. */
+  onGhosts?: () => void;
 }
 
 /**
@@ -103,6 +112,7 @@ export function usePauseActions(
     onRetireImpl,
     onExitToTitleImpl,
     onSettingsImpl,
+    onGhostsImpl,
   } = options;
 
   const onResume = useCallback(() => {
@@ -129,6 +139,11 @@ export function usePauseActions(
     onSettingsImpl?.();
   }, [closeMenu, onSettingsImpl]);
 
+  const onGhosts = useCallback(() => {
+    closeMenu();
+    onGhostsImpl?.();
+  }, [closeMenu, onGhostsImpl]);
+
   return useMemo(
     () => ({
       onResume,
@@ -136,6 +151,7 @@ export function usePauseActions(
       onRetire: onRetireImpl ? onRetire : undefined,
       onExitToTitle: onExitToTitleImpl ? onExitToTitle : undefined,
       onSettings: onSettingsImpl ? onSettings : undefined,
+      onGhosts: onGhostsImpl ? onGhosts : undefined,
     }),
     [
       onResume,
@@ -143,10 +159,12 @@ export function usePauseActions(
       onRetire,
       onExitToTitle,
       onSettings,
+      onGhosts,
       onRestartImpl,
       onRetireImpl,
       onExitToTitleImpl,
       onSettingsImpl,
+      onGhostsImpl,
     ],
   );
 }

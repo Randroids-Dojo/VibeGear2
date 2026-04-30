@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Pause ghosts action
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Time Trial ghosts and
+[§20](gdd/20-hud-and-ui-ux.md) Pause menu.
+**Branch / PR:** `feat/pause-ghosts-action`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Changed the pause menu's combined leaderboard or ghost slot into a
+  Ghosts action with a concrete local target.
+- Extended the shared pause-action hook with `onGhostsImpl`, keeping
+  the close-then-invoke ordering used by the other pause actions.
+- Wired the live race route to stop the runtime, audio, input, and loop
+  before routing from the pause menu to `/time-trial`.
+- Marked F-070 done and added the machine-checkable coverage ledger row
+  for the pause Ghosts action.
+
+### Verified
+- `npx vitest run src/components/pause/__tests__/usePauseActions.test.tsx`
+  green, 8 tests passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/pause-actions.spec.ts e2e/pause-overlay.spec.ts --project=chromium`
+  green, 9 tests passed.
+- `npm run lint` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2672 Vitest tests passed.
+
+### Decisions and assumptions
+- Chose the local Ghosts target over an online Leaderboard target because
+  Time Trial PB and downloaded ghost management already ships, while
+  online leaderboard storage remains blocked by Q-011.
+
+### Coverage ledger
+- GDD-20-PAUSE-GHOSTS-ACTION covers the working pause Ghosts action.
+- Uncovered adjacent requirements: online leaderboard storage remains
+  deferred under Q-011.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Pause settings action
 
 **GDD sections touched:**

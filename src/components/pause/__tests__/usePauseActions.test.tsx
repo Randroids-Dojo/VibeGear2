@@ -90,6 +90,18 @@ describe("usePauseActions", () => {
     );
   });
 
+  it("onGhosts closes the menu then invokes the ghosts impl", () => {
+    const closeMenu = vi.fn();
+    const onGhostsImpl = vi.fn();
+    const result = captureActions({ closeMenu, onGhostsImpl });
+    result.onGhosts?.();
+    expect(closeMenu).toHaveBeenCalledTimes(1);
+    expect(onGhostsImpl).toHaveBeenCalledTimes(1);
+    expect(closeMenu.mock.invocationCallOrder[0]).toBeLessThan(
+      onGhostsImpl.mock.invocationCallOrder[0]!,
+    );
+  });
+
   it("returns undefined for any handler whose impl is null so PauseOverlay disables the button", () => {
     const closeMenu = vi.fn();
     const result = captureActions({
@@ -98,11 +110,13 @@ describe("usePauseActions", () => {
       onRetireImpl: null,
       onExitToTitleImpl: null,
       onSettingsImpl: null,
+      onGhostsImpl: null,
     });
     expect(result.onRestart).toBeUndefined();
     expect(result.onRetire).toBeUndefined();
     expect(result.onExitToTitle).toBeUndefined();
     expect(result.onSettings).toBeUndefined();
+    expect(result.onGhosts).toBeUndefined();
     // onResume is always provided.
     expect(typeof result.onResume).toBe("function");
   });
@@ -114,5 +128,6 @@ describe("usePauseActions", () => {
     expect(result.onRetire).toBeUndefined();
     expect(result.onExitToTitle).toBeUndefined();
     expect(result.onSettings).toBeUndefined();
+    expect(result.onGhosts).toBeUndefined();
   });
 });
