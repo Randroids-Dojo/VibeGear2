@@ -7,6 +7,7 @@ const result = spawnSync(
     "--project=cross-browser-chromium",
     "--project=cross-browser-firefox",
     "--project=cross-browser-webkit",
+    ...process.argv.slice(2),
   ],
   {
     env: { ...process.env, PLAYWRIGHT_CROSS_BROWSER: "1" },
