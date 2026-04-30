@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: v0.2 stable release branch
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) CI and deploy target,
+and [§25](gdd/25-development-roadmap.md) v1.0 stable release branch.
+**Branch / PR:** `chore/v0.2-stable-release-branch`, PR #140.
+**Status:** Implemented.
+
+### Done
+- Added `docs/RELEASES.md` with the stable release branch contract, planned
+  `release/v0.2` target, creation commands, smoke checklist, and backport
+  rules.
+- Updated CI so pushes and PRs targeting `release/*` branches run verification
+  while production deploy remains restricted to `main`.
+- Linked release branch docs from `README.md`.
+- Added GDD coverage for the §25 stable release branch deliverable.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `git diff --check` green.
+- Changed-file diff scan for em-dashes and en-dashes clean.
+- `npm run verify` green, 2737 Vitest tests passed.
+
+### Decisions and assumptions
+- Treat `release/v0.2` as a support branch for the content-complete World Tour
+  release candidate because the `v0.2.0` tag already passed production smoke.
+- Do not deploy release branch pushes to production. `main` remains the only
+  deploy branch per the working agreement.
+
+### Coverage ledger
+- GDD-25-STABLE-RELEASE-BRANCH covers the release branch process docs,
+  backport PR checks, and release branch CI trigger.
+- Uncovered adjacent requirements: create and push
+  `release/v0.2` from the merged release-branch docs commit, then watch its
+  CI run.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: v0.2.0 content-complete release refresh
 
 **GDD sections touched:**
