@@ -57,6 +57,10 @@ are documented in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) and
 "Run workflow" button on the CI workflow with `run_bench=true`; it is
 informational and never gates a merge or deploy.
 
+Stable release branches are documented in [`docs/RELEASES.md`](docs/RELEASES.md).
+`release/*` branches run CI for backport confidence, but production deploys
+remain gated to `main`.
+
 ## Supported Browsers
 
 The current support and release-smoke evidence matrix lives in

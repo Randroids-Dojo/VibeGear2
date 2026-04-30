@@ -1874,6 +1874,21 @@
         "docs/PROGRESS_LOG.md"
       ],
       "followupRefs": ["VibeGear2-prepare-v0-2-3715851c"]
+    },
+    {
+      "id": "GDD-25-STABLE-RELEASE-BRANCH",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The v1.0 release process has a stable release branch contract, a documented v0.2 branch target, and CI coverage for release branch backport verification without production deployment.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "docs/RELEASES.md",
+        ".github/workflows/ci.yml",
+        "README.md"
+      ],
+      "followupRefs": ["VibeGear2-implement-v0-2-cdf8bf7a"]
     }
   ]
 }
