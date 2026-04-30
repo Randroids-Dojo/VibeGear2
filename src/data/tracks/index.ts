@@ -14,6 +14,10 @@
 import testCurve from "./test-curve.json";
 import testElevation from "./test-elevation.json";
 import testStraight from "./test-straight.json";
+import breakwaterIslesGullPoint from "./breakwater-isles-gull-point.json";
+import breakwaterIslesSealightShelf from "./breakwater-isles-sealight-shelf.json";
+import breakwaterIslesStormSpan from "./breakwater-isles-storm-span.json";
+import breakwaterIslesTidewire from "./breakwater-isles-tidewire.json";
 import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
 import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
 import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
@@ -31,6 +35,10 @@ export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "test/straight": testStraight,
   "test/curve": testCurve,
   "test/elevation": testElevation,
+  "breakwater-isles/tidewire": breakwaterIslesTidewire,
+  "breakwater-isles/storm-span": breakwaterIslesStormSpan,
+  "breakwater-isles/gull-point": breakwaterIslesGullPoint,
+  "breakwater-isles/sealight-shelf": breakwaterIslesSealightShelf,
   "velvet-coast/harbor-run": velvetCoastHarborRun,
   "velvet-coast/sunpier-loop": velvetCoastSunpierLoop,
   "velvet-coast/cliffline-arc": velvetCoastClifflineArc,

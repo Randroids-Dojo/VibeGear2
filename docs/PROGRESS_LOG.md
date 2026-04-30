@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Breakwater Isles track set
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track design,
+[§22](gdd/22-data-schemas.md) track schema, and
+[§24](gdd/24-content-plan.md) full v1.0 content.
+**Branch / PR:** `feat/breakwater-isles-tracks`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added the four planned Breakwater Isles tracks from the §24 World Tour
+  list: Tidewire, Storm Span, Gull Point, and Sealight Shelf.
+- Registered the new tracks in the browser-safe track catalogue.
+- Tightened content tests so the authored World Tour set through
+  Breakwater Isles must resolve in both the track catalogue and
+  championship cross-reference tests.
+- Added machine-checkable coverage for the Breakwater Isles track set.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/data/regions/__tests__/regions-content.test.ts src/data/__tests__/content-budget.test.ts src/road/__tests__/trackCompiler.test.ts src/road/__tests__/trackCompiler.golden.test.ts`
+  green, 133 tests passed.
+- `npm run content-lint` green.
+- `npm run docs:check` green.
+- `npm run verify` green, 2698 Vitest tests passed.
+- `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
+  green, 3 tests passed.
+
+### Decisions and assumptions
+- Kept Breakwater Isles weather to the region profile values already in
+  `src/data/regions/breakwater-isles.json`: `rain`, `heavy_rain`, and
+  `overcast`.
+- Used the existing wet hazard palette (`puddle` and `slick_paint`) plus
+  existing renderer-supported coastal roadside ids so this slice stays
+  content-only.
+
+### Coverage ledger
+- GDD-24-BREAKWATER-ISLES-TRACK-SET covers the four fourth-tour bundled
+  track JSON files, catalogue registration, and content validation.
+- Uncovered adjacent requirements: the remaining four v1.0 World Tour
+  regions still need authored track JSON before strict championship
+  track resolution can be enabled.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: WebKit keyboard smoke hotfix
 
 **GDD sections touched:**

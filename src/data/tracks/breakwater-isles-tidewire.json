@@ -1,0 +1,27 @@
+{
+  "id": "breakwater-isles/tidewire",
+  "name": "Tidewire",
+  "tourId": "breakwater-isles",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1880,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["rain", "overcast"],
+  "difficulty": 3,
+  "segments": [
+    { "len": 280, "curve": 0, "grade": 0, "roadsideLeft": "marina_signs", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 220, "curve": 0.1, "grade": 0.01, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },
+    { "len": 240, "curve": -0.08, "grade": 0.03, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 240, "curve": 0.14, "grade": -0.02, "roadsideLeft": "light_pole", "roadsideRight": "marina_signs", "hazards": ["slick_paint"] },
+    { "len": 260, "curve": -0.16, "grade": 0.02, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },
+    { "len": 300, "curve": 0.04, "grade": -0.01, "roadsideLeft": "marina_signs", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 340, "curve": 0, "grade": 0, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "tidewire" },
+    { "segmentIndex": 5, "label": "harbor-return" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}
