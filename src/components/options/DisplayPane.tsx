@@ -45,10 +45,7 @@ export function DisplayPane(): ReactElement {
   const persist = useCallback((next: SaveGame, successMessage: string) => {
     const writeResult = saveSave(next);
     if (writeResult.kind === "ok") {
-      setSave({
-        ...next,
-        writeCounter: (next.writeCounter ?? 0) + 1,
-      });
+      setSave(writeResult.save);
       setStatus({ kind: "info", message: successMessage });
       return;
     }

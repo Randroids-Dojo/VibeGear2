@@ -69,11 +69,12 @@ export function ControlsPane(): ReactElement {
         return;
       }
 
-      setSave(result.save);
       const write = saveSave(result.save);
       if (write.kind === "ok") {
+        setSave(write.save);
         setStatus({ kind: "info", message: `${label} binding saved.` });
       } else {
+        setSave(result.save);
         setStatus({
           kind: "error",
           message: `Save failed (${write.reason}); change kept in memory only.`,
@@ -88,12 +89,13 @@ export function ControlsPane(): ReactElement {
   const onReset = useCallback(() => {
     if (!save) return;
     const next = resetKeyBindings(save);
-    setSave(next);
     setListeningAction(null);
     const write = saveSave(next);
     if (write.kind === "ok") {
+      setSave(write.save);
       setStatus({ kind: "info", message: "Key bindings reset to defaults." });
     } else {
+      setSave(next);
       setStatus({
         kind: "error",
         message: `Save failed (${write.reason}); defaults kept in memory only.`,

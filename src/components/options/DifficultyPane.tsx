@@ -84,15 +84,16 @@ export function DifficultyPane(): ReactElement {
       if (!save) return;
       const result = applyPresetSelection(save, preset);
       if (result.kind === "noop") return;
-      setSave(result.save);
       const writeResult = saveSave(result.save);
       const label = getPresetSpec(preset).label;
       if (writeResult.kind === "ok") {
+        setSave(writeResult.save);
         setStatus({
           kind: "info",
           message: `Difficulty preset set to ${label}.`,
         });
       } else {
+        setSave(result.save);
         setStatus({
           kind: "error",
           message: `Save failed (${writeResult.reason}); change kept in memory only.`,

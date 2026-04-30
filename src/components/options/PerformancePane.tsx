@@ -45,10 +45,7 @@ export function PerformancePane(): ReactElement {
   const persist = useCallback((next: SaveGame, message: string) => {
     const result = saveSave(next);
     if (result.kind === "ok") {
-      setSave({
-        ...next,
-        writeCounter: (next.writeCounter ?? 0) + 1,
-      });
+      setSave(result.save);
       setStatus({ kind: "info", message });
       return;
     }

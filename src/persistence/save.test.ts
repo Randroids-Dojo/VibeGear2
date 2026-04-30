@@ -175,6 +175,7 @@ describe("saveSave", () => {
     const state = defaultSave();
     const result = saveSave(state, { storage, logger });
     expect(result.kind).toBe("ok");
+    expect(result.kind === "ok" ? result.save.writeCounter : null).toBe(1);
 
     const raw = storage.getItem(storageKey(CURRENT_SAVE_VERSION));
     expect(raw).not.toBeNull();

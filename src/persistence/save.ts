@@ -53,7 +53,7 @@ export type SaveLoadFailure =
   | "migration-failed";
 
 export type SaveWriteOutcome =
-  | { kind: "ok" }
+  | { kind: "ok"; save: SaveGame }
   | { kind: "error"; reason: "no-storage" | "quota-exceeded" | "serialization-failed" };
 
 /**
@@ -282,7 +282,7 @@ export function saveSave(state: SaveGame, io: SaveIO = {}): SaveWriteOutcome {
 
   try {
     storage.setItem(storageKey(CURRENT_SAVE_VERSION), serialized);
-    return { kind: "ok" };
+    return { kind: "ok", save: validated.data };
   } catch (error) {
     if (isQuotaExceeded(error)) {
       logger.warn("localStorage quota exceeded", error);
