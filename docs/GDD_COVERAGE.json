@@ -680,6 +680,28 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-20-PAUSE-SETTINGS-ACTION",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race pause menu exposes Settings as a working action that tears down the race runtime and routes to the options screen.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/pause/usePauseActions.ts",
+        "src/components/pause/PauseOverlay.tsx",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/pause/__tests__/usePauseActions.test.tsx",
+        "e2e/pause-actions.spec.ts",
+        "e2e/pause-overlay.spec.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-pause-settings-626c3ecf",
+        "F-070"
+      ]
+    },
+    {
       "id": "GDD-20-MOBILE-TITLE-CENTERING",
       "gddSections": [
         "docs/gdd/04-player-experience-goals.md",

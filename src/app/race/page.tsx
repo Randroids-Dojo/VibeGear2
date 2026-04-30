@@ -784,6 +784,7 @@ function RaceCanvas({
   const restartFnRef = useRef<(() => void) | null>(null);
   const retireFnRef = useRef<(() => void) | null>(null);
   const exitFnRef = useRef<(() => void) | null>(null);
+  const settingsFnRef = useRef<(() => void) | null>(null);
   // Per-mount guard for the natural finish wiring. The render callback
   // fires every frame, so without this latch a `phase === "finished"`
   // tick would call `saveRaceResult` and `router.push` on every frame
@@ -848,6 +849,9 @@ function RaceCanvas({
   const onExitToTitleImpl = useCallback(() => {
     exitFnRef.current?.();
   }, []);
+  const onSettingsImpl = useCallback(() => {
+    settingsFnRef.current?.();
+  }, []);
   const onPracticeCheckpointReset = useCallback(() => {
     if (mode !== "practice") return;
     const session = sessionRef.current;
@@ -882,6 +886,7 @@ function RaceCanvas({
     onRestartImpl: phase === "finished" ? null : onRestartImpl,
     onRetireImpl: phase === "finished" ? null : onRetireImpl,
     onExitToTitleImpl,
+    onSettingsImpl,
   });
 
   useEffect(() => {
@@ -1247,6 +1252,11 @@ function RaceCanvas({
     exitFnRef.current = (): void => {
       stopRaceRuntime();
       router.push("/");
+    };
+
+    settingsFnRef.current = (): void => {
+      stopRaceRuntime();
+      router.push("/options");
     };
 
     handleRef.current = startLoop({

@@ -91,14 +91,13 @@ test.describe("pause overlay", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("pause-overlay")).toBeVisible();
 
-    // The dot ships the restart / retire / exit-to-title wiring; all
-    // three buttons should now be visible and clickable. Settings and
-    // leaderboard remain disabled here because the page does not pass
-    // their handlers yet (their target routes land in later slices).
+    // The dot ships restart / retire / exit-to-title plus settings
+    // wiring; those buttons should be visible and clickable. Leaderboard
+    // remains disabled here because it does not have a target route yet.
     await expect(page.getByTestId("pause-restart")).toBeEnabled();
     await expect(page.getByTestId("pause-retire")).toBeEnabled();
     await expect(page.getByTestId("pause-exit")).toBeEnabled();
-    await expect(page.getByTestId("pause-settings")).toBeDisabled();
+    await expect(page.getByTestId("pause-settings")).toBeEnabled();
     await expect(page.getByTestId("pause-leaderboard")).toBeDisabled();
   });
 });

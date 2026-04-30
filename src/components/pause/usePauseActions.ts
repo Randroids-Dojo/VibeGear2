@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Hook that wraps the four §20 pause-menu actions per dot
+ * Hook that wraps the five wired §20 pause-menu actions per dot
  * `VibeGear2-implement-restart-retire-888c712b`.
  *
  * `<PauseOverlay />` accepts `onResume`, `onRestart`, `onRetire`,
@@ -34,6 +34,8 @@
  *   - Exit to title while paused: `onExitToTitleImpl` disposes the
  *     loop before navigating so a torn-down rAF / audio handle cannot
  *     leak across the route hop.
+ *   - Settings while paused: the parent disposes the live runtime before
+ *     routing to `/options`, matching exit-to-title teardown.
  *   - Restart after finish: the parent disables the button by passing
  *     `onRestartImpl: null`; the hook surfaces `onRestart: undefined`
  *     in that case so `<PauseOverlay />`'s self-disable contract
@@ -63,6 +65,11 @@ export interface UsePauseActionsOptions {
    * for symmetry with the other two actions).
    */
   onExitToTitleImpl?: (() => void) | null;
+  /**
+   * Tear down the loop and route to settings. `null` disables the
+   * button for surfaces that do not have a settings target.
+   */
+  onSettingsImpl?: (() => void) | null;
 }
 
 export interface UsePauseActionsResult {
@@ -74,6 +81,8 @@ export interface UsePauseActionsResult {
   onRetire?: () => void;
   /** Wrapper around `onExitToTitleImpl`, or `undefined` when the impl is null. */
   onExitToTitle?: () => void;
+  /** Wrapper around `onSettingsImpl`, or `undefined` when the impl is null. */
+  onSettings?: () => void;
 }
 
 /**
@@ -88,7 +97,13 @@ export interface UsePauseActionsResult {
 export function usePauseActions(
   options: UsePauseActionsOptions,
 ): UsePauseActionsResult {
-  const { closeMenu, onRestartImpl, onRetireImpl, onExitToTitleImpl } = options;
+  const {
+    closeMenu,
+    onRestartImpl,
+    onRetireImpl,
+    onExitToTitleImpl,
+    onSettingsImpl,
+  } = options;
 
   const onResume = useCallback(() => {
     closeMenu();
@@ -109,21 +124,29 @@ export function usePauseActions(
     onExitToTitleImpl?.();
   }, [closeMenu, onExitToTitleImpl]);
 
+  const onSettings = useCallback(() => {
+    closeMenu();
+    onSettingsImpl?.();
+  }, [closeMenu, onSettingsImpl]);
+
   return useMemo(
     () => ({
       onResume,
       onRestart: onRestartImpl ? onRestart : undefined,
       onRetire: onRetireImpl ? onRetire : undefined,
       onExitToTitle: onExitToTitleImpl ? onExitToTitle : undefined,
+      onSettings: onSettingsImpl ? onSettings : undefined,
     }),
     [
       onResume,
       onRestart,
       onRetire,
       onExitToTitle,
+      onSettings,
       onRestartImpl,
       onRetireImpl,
       onExitToTitleImpl,
+      onSettingsImpl,
     ],
   );
 }

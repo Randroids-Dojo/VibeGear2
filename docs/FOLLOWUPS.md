@@ -10,6 +10,18 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-070: Wire pause leaderboard or ghost action to a target surface
+**Created:** 2026-04-30
+**Priority:** polish
+**Status:** open
+**Notes:** The pause Settings action now routes to `/options`, but the
+§20 pause menu still disables `Leaderboard`. Decide whether the
+leaderboard or ghost pause action should open a lightweight in-race
+panel, jump to a track leaderboard view, or remain unavailable until
+online leaderboard storage is approved. Keep this separate from the
+Settings action so the pause menu can ship one working target at a
+time.
+
 ## F-068: Add unique FX atlas sheets for all six playable cars
 **Created:** 2026-04-29
 **Priority:** polish

@@ -6,6 +6,53 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Pause settings action
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) Pause menu and Settings.
+**Branch / PR:** `feat/pause-settings-action`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Extended the shared pause-action hook with a Settings action that
+  closes the menu before invoking the page-owned navigation effect.
+- Wired the live race route to stop the race runtime, audio, input, and
+  loop before routing from the pause menu to `/options`.
+- Updated pause overlay and pause action e2e coverage so Settings is a
+  working route target instead of a disabled menu item.
+- Added the machine-checkable coverage ledger row for the pause Settings
+  action.
+
+### Verified
+- `npx vitest run src/components/pause/__tests__/usePauseActions.test.tsx`
+  green, 7 tests passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/pause-actions.spec.ts e2e/pause-overlay.spec.ts --project=chromium`
+  green, 8 tests passed.
+- `npm run lint` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2671 Vitest tests passed.
+
+### Decisions and assumptions
+- Treated Settings like Exit to title for teardown: the live runtime is
+  stopped before the route hop so audio, input, and animation callbacks
+  do not survive into `/options`.
+- Kept the pause Leaderboard action disabled because there is no
+  route-level target for an in-race leaderboard or ghost view yet.
+
+### Coverage ledger
+- GDD-20-PAUSE-SETTINGS-ACTION covers the working pause Settings action.
+- Uncovered adjacent requirements: F-070 tracks the remaining pause
+  leaderboard or ghost target.
+
+### Followups created
+- F-070: Wire pause leaderboard or ghost action to a target surface.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Daily Challenge UTC fake-clock e2e
 
 **GDD sections touched:**
