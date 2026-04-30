@@ -1,0 +1,27 @@
+{
+  "id": "crown-circuit/embassy-loop",
+  "name": "Embassy Loop",
+  "tourId": "crown-circuit",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2240,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "rain"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 320, "curve": 0.04, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 280, "curve": 0.18, "grade": 0.02, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": ["slick_paint"] },
+    { "len": 280, "curve": -0.16, "grade": 0.01, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 320, "curve": 0.14, "grade": -0.02, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["traffic_cone"] },
+    { "len": 300, "curve": -0.18, "grade": 0.03, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 340, "curve": 0.08, "grade": -0.01, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": ["puddle"] },
+    { "len": 400, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "embassy-row" },
+    { "segmentIndex": 5, "label": "flag-rise" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

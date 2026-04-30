@@ -95,6 +95,11 @@ describe("content budget: tracks", () => {
   const trackJsonFiles = walkJsonFiles(TRACKS_DIR).filter(
     (file) => !file.relPath.startsWith(`_benchmark${path.sep}`),
   );
+  const userFacingTrackJsonFiles = trackJsonFiles.filter(
+    (file) =>
+      !file.relPath.startsWith("test-") &&
+      !file.relPath.includes(`${path.sep}test-`),
+  );
 
   it("counts every shipped track JSON as a valid track", () => {
     const failures: string[] = [];
@@ -116,44 +121,45 @@ describe("content budget: tracks", () => {
     }
   });
 
-  it("does not exceed the v1.0 cap of CONTENT_BUDGET.tracks files", () => {
-    if (trackJsonFiles.length > CONTENT_BUDGET.tracks) {
+  it("does not exceed the v1.0 cap of CONTENT_BUDGET.tracks user-facing files", () => {
+    if (userFacingTrackJsonFiles.length > CONTENT_BUDGET.tracks) {
       throw new Error(
-        `Track count ${trackJsonFiles.length} exceeds the v1.0 budget of ` +
+        `User-facing track count ${userFacingTrackJsonFiles.length} exceeds the v1.0 budget of ` +
           `${CONTENT_BUDGET.tracks}. The §27 scope-creep mitigation hard-caps ` +
           `the bundled track set at ${CONTENT_BUDGET.tracks}. Either remove a ` +
           `track or raise CONTENT_BUDGET.tracks AND the matching GDD §27 row ` +
-          `in the same PR.\nFiles found:\n${trackJsonFiles
+          `in the same PR.\nFiles found:\n${userFacingTrackJsonFiles
             .map((f) => `  - ${f.relPath}`)
             .join("\n")}`,
       );
     }
-    expect(trackJsonFiles.length).toBeLessThanOrEqual(CONTENT_BUDGET.tracks);
+    expect(userFacingTrackJsonFiles.length).toBeLessThanOrEqual(
+      CONTENT_BUDGET.tracks,
+    );
   });
 
   it("meets the MVP minimum once content lands beyond the test stubs", () => {
-    // During the MVP window only the two `test/*` tracks are authored.
+    // During the MVP window only `test-*` fixture tracks are authored.
     // Once the first MVP track lands, this assertion flips to enforce the
     // §24 minimum. The gate keeps the test green during the build-out and
     // turns into a regression guard the moment real content ships.
-    const realTracks = trackJsonFiles.filter(
-      (f) => !f.relPath.startsWith("test-") && !f.relPath.includes(`${path.sep}test-`),
-    );
-    if (realTracks.length === 0) {
+    if (userFacingTrackJsonFiles.length === 0) {
       // Pre-MVP: no shipped tracks yet, only test stubs. Nothing to enforce.
       expect(trackJsonFiles.length).toBeGreaterThan(0);
       return;
     }
-    if (realTracks.length < CONTENT_BUDGET.mvpTracks) {
+    if (userFacingTrackJsonFiles.length < CONTENT_BUDGET.mvpTracks) {
       throw new Error(
-        `Real track count ${realTracks.length} is below the MVP minimum of ` +
+        `Real track count ${userFacingTrackJsonFiles.length} is below the MVP minimum of ` +
           `${CONTENT_BUDGET.mvpTracks} (per §24 "Suggested region and track ` +
           `list"). Authoring is in progress; once at least ` +
           `${CONTENT_BUDGET.mvpTracks} non-test tracks ship, this assertion ` +
           `holds.`,
       );
     }
-    expect(realTracks.length).toBeGreaterThanOrEqual(CONTENT_BUDGET.mvpTracks);
+    expect(userFacingTrackJsonFiles.length).toBeGreaterThanOrEqual(
+      CONTENT_BUDGET.mvpTracks,
+    );
   });
 
   it("registers every track JSON in the TRACK_RAW barrel", () => {

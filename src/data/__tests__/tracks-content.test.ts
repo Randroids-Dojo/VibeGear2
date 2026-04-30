@@ -49,6 +49,10 @@ const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
   "moss-frontier/millstream",
   "moss-frontier/wetroot-drive",
   "moss-frontier/mistbarrow",
+  "crown-circuit/embassy-loop",
+  "crown-circuit/victory-causeway",
+  "crown-circuit/grand-meridian",
+  "crown-circuit/final-horizon",
 ];
 
 const EXPECTED_IDS = [
@@ -56,6 +60,10 @@ const EXPECTED_IDS = [
   "breakwater-isles/sealight-shelf",
   "breakwater-isles/storm-span",
   "breakwater-isles/tidewire",
+  "crown-circuit/embassy-loop",
+  "crown-circuit/final-horizon",
+  "crown-circuit/grand-meridian",
+  "crown-circuit/victory-causeway",
   "ember-steppe/cinder-gate",
   "ember-steppe/dustbreak-causeway",
   "ember-steppe/mesa-coil",
@@ -90,7 +98,7 @@ describe("track catalogue", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
-  it("registers the authored World Tour track set through Moss Frontier", () => {
+  it("registers the full authored World Tour track set", () => {
     for (const id of EXPECTED_AUTHORED_TOUR_TRACK_IDS) {
       expect(TRACK_IDS).toContain(id);
     }
@@ -356,5 +364,44 @@ describe("§24 Moss Frontier track set", () => {
     expect(hazards.has("puddle")).toBe(true);
     expect(hazards.has("gravel_band")).toBe(true);
     expect(hazards.has("slick_paint")).toBe(true);
+  });
+});
+
+describe("§24 Crown Circuit track set", () => {
+  const crownCircuitTrackIds = EXPECTED_AUTHORED_TOUR_TRACK_IDS.filter((id) =>
+    id.startsWith("crown-circuit/"),
+  );
+
+  it("covers all four planned Crown Circuit tracks", () => {
+    expect(crownCircuitTrackIds).toEqual([
+      "crown-circuit/embassy-loop",
+      "crown-circuit/victory-causeway",
+      "crown-circuit/grand-meridian",
+      "crown-circuit/final-horizon",
+    ]);
+    for (const id of crownCircuitTrackIds) {
+      expect(TRACK_IDS).toContain(id);
+    }
+  });
+
+  it("uses the Crown Circuit region weather profile and finale hazards", () => {
+    const tracks = crownCircuitTrackIds.map((id) =>
+      TrackSchema.parse(TRACK_RAW[id]),
+    );
+    const weather = new Set<string>();
+    const hazards = new Set<string>();
+    for (const track of tracks) {
+      expect(track.tourId).toBe("crown-circuit");
+      expect(track.laps).toBe(1);
+      expect(track.laneCount).toBe(3);
+      for (const option of track.weatherOptions) weather.add(option);
+      for (const segment of track.segments) {
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+    expect([...weather].sort()).toEqual(["clear", "fog", "rain", "snow"]);
+    expect(hazards.has("slick_paint")).toBe(true);
+    expect(hazards.has("puddle")).toBe(true);
+    expect(hazards.has("snow_buildup")).toBe(true);
   });
 });

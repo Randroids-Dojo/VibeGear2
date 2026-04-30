@@ -7,12 +7,7 @@
  *   "Suggested region and track list",
  * - hold monotonic non-increasing `requiredStanding` values across tours
  *   (later tours never raise the bar above an earlier tour),
- * - reference only track ids that resolve in `TRACK_RAW` once the full
- *   32-track content set lands. During the MVP window, the cross-reference
- *   test runs in permissive mode by default (since the track set is being
- *   authored across sibling slices). Set
- *   `STRICT_CHAMPIONSHIP_TRACKS=1` to fail on any unresolved id; remove
- *   the permissive branch entirely once §24 ships.
+ * - reference only track ids that resolve in `TRACK_RAW`.
  *
  * Adding a championship: drop a JSON in `src/data/championships/`,
  * register it in `src/data/championships/index.ts`, and add an
@@ -33,13 +28,6 @@ import { SPONSOR_OBJECTIVES_BY_ID } from "@/data/sponsors";
 import { TRACK_RAW } from "@/data/tracks";
 
 const WORLD_TOUR_ID = "world-tour-standard";
-
-// MVP phase guard: full track set ships across sibling slices. Default to
-// permissive so the suite is green during the content build-out window.
-// Flip via `STRICT_CHAMPIONSHIP_TRACKS=1` to enforce full resolution; the
-// permissive branch goes away once §24 content fully ships.
-const STRICT_TRACK_RESOLUTION =
-  process.env.STRICT_CHAMPIONSHIP_TRACKS === "1";
 
 describe("championship catalogue", () => {
   it("exposes the canonical World Tour championship", () => {
@@ -133,30 +121,13 @@ describe("world-tour-standard structure", () => {
 describe("world-tour-standard track id cross-references", () => {
   const wt = getChampionship(WORLD_TOUR_ID);
   const allTrackIds = wt.tours.flatMap((t) => t.tracks);
-  const mvpTrackIds = wt.tours.slice(0, 2).flatMap((t) => t.tracks);
   const hasBundledTrack = (id: string) =>
     Object.prototype.hasOwnProperty.call(TRACK_RAW, id);
   const unresolved = allTrackIds.filter((id) => !hasBundledTrack(id));
 
-  if (STRICT_TRACK_RESOLUTION) {
-    it("resolves every referenced track id in TRACK_RAW (strict mode)", () => {
-      expect(unresolved).toEqual([]);
-    });
-  } else {
-    it("resolves every authored §24 track id through Moss Frontier", () => {
-      const authoredTrackIds = wt.tours.slice(0, 7).flatMap((t) => t.tracks);
-      expect(authoredTrackIds.filter((id) => !hasBundledTrack(id))).toEqual([]);
-    });
-
-    it("permits unresolved track ids during the MVP content window", () => {
-      // Phase guard: full 32-track set is authored in sibling slices.
-      // The presence of unresolved ids is expected; this assertion still
-      // runs to catch regressions that drop already-authored tracks.
-      const resolvedCount = allTrackIds.length - unresolved.length;
-      expect(resolvedCount).toBeGreaterThanOrEqual(mvpTrackIds.length);
-      expect(allTrackIds.length).toBe(32);
-    });
-  }
+  it("resolves every referenced track id in TRACK_RAW", () => {
+    expect(unresolved).toEqual([]);
+  });
 });
 
 describe("world-tour-standard sponsor roster cross-references", () => {

@@ -1,0 +1,27 @@
+{
+  "id": "crown-circuit/grand-meridian",
+  "name": "Grand Meridian",
+  "tourId": "crown-circuit",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2480,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["fog", "snow"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 340, "curve": 0.02, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 320, "curve": 0.18, "grade": 0.05, "roadsideLeft": "guardrail", "roadsideRight": "rock_boulder", "hazards": ["snow_buildup"] },
+    { "len": 300, "curve": -0.2, "grade": 0.03, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 340, "curve": 0.14, "grade": -0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "light_pole", "hazards": ["snow_buildup"] },
+    { "len": 320, "curve": -0.16, "grade": -0.02, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 360, "curve": 0.1, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": ["traffic_cone"] },
+    { "len": 500, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "meridian-climb" },
+    { "segmentIndex": 5, "label": "broadcast-row" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

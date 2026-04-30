@@ -30,6 +30,10 @@ import mossFrontierMillstream from "./moss-frontier-millstream.json";
 import mossFrontierMistbarrow from "./moss-frontier-mistbarrow.json";
 import mossFrontierPineSwitchback from "./moss-frontier-pine-switchback.json";
 import mossFrontierWetrootDrive from "./moss-frontier-wetroot-drive.json";
+import crownCircuitEmbassyLoop from "./crown-circuit-embassy-loop.json";
+import crownCircuitFinalHorizon from "./crown-circuit-final-horizon.json";
+import crownCircuitGrandMeridian from "./crown-circuit-grand-meridian.json";
+import crownCircuitVictoryCauseway from "./crown-circuit-victory-causeway.json";
 import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
 import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
 import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
@@ -63,6 +67,10 @@ export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "moss-frontier/millstream": mossFrontierMillstream,
   "moss-frontier/wetroot-drive": mossFrontierWetrootDrive,
   "moss-frontier/mistbarrow": mossFrontierMistbarrow,
+  "crown-circuit/embassy-loop": crownCircuitEmbassyLoop,
+  "crown-circuit/victory-causeway": crownCircuitVictoryCauseway,
+  "crown-circuit/grand-meridian": crownCircuitGrandMeridian,
+  "crown-circuit/final-horizon": crownCircuitFinalHorizon,
   "velvet-coast/harbor-run": velvetCoastHarborRun,
   "velvet-coast/sunpier-loop": velvetCoastSunpierLoop,
   "velvet-coast/cliffline-arc": velvetCoastClifflineArc,
