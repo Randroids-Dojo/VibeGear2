@@ -213,6 +213,11 @@ function runBenchmark(entry: BenchmarkCase): BenchmarkResult {
   const compiled = compileTrack(entry.track);
   const replay = recordReplay(entry, car.baseStats);
   const player = createPlayer(replay);
+  if (player.mismatchReason !== null) {
+    throw new Error(
+      `${entry.track.id} benchmark replay rejected: ${player.mismatchReason}`,
+    );
+  }
 
   let carState: CarState = { ...INITIAL_CAR_STATE };
   const samples: BenchmarkResult["samples"] = {
@@ -222,7 +227,10 @@ function runBenchmark(entry: BenchmarkCase): BenchmarkResult {
   };
 
   for (let frame = 0; frame < MAX_FRAMES; frame += 1) {
-    const replayInput = player.readNext(frame) ?? NEUTRAL_INPUT;
+    const replayInput = player.readNext(frame);
+    if (replayInput === null) {
+      throw new Error(`${entry.track.id} benchmark replay unexpectedly returned null`);
+    }
     carState = step(
       carState,
       replayInput,

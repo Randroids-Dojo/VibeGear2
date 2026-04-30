@@ -96,7 +96,7 @@ describe("content budget: tracks", () => {
     (file) => !file.relPath.startsWith(`_benchmark${path.sep}`),
   );
 
-  it("counts every JSON under src/data/tracks as a valid track", () => {
+  it("counts every shipped track JSON as a valid track", () => {
     const failures: string[] = [];
     for (const file of trackJsonFiles) {
       const parsed = TrackSchema.safeParse(readJson(file.absPath));
