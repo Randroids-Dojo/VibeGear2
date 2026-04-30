@@ -27,6 +27,20 @@ async function focusByTab(page: Page, testId: string, maxTabs = 40): Promise<voi
   throw new Error(`Could not focus ${testId} with Tab`);
 }
 
+async function focusByTestId(page: Page, testId: string): Promise<void> {
+  const target = page.getByTestId(testId);
+  await expect(target).toBeVisible();
+  await target.focus();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        return active instanceof HTMLElement ? active.dataset.testid ?? null : null;
+      }),
+    )
+    .toBe(testId);
+}
+
 async function canvasHasSpatialVariation(page: Page): Promise<boolean> {
   return page.getByTestId("race-canvas-element").evaluate((node) => {
     const canvas = node as HTMLCanvasElement;
@@ -110,7 +124,7 @@ test.describe("cross-browser compatibility smoke", () => {
 
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("pause-overlay")).toBeVisible();
-    await focusByTab(page, "pause-exit");
+    await focusByTestId(page, "pause-exit");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByTestId("menu-garage")).toBeVisible();

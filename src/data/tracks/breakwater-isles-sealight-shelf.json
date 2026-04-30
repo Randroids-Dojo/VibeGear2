@@ -1,0 +1,27 @@
+{
+  "id": "breakwater-isles/sealight-shelf",
+  "name": "Sealight Shelf",
+  "tourId": "breakwater-isles",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2120,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["heavy_rain", "overcast"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 280, "curve": 0.04, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "marina_signs", "hazards": [] },
+    { "len": 260, "curve": -0.16, "grade": 0.05, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },
+    { "len": 300, "curve": 0.12, "grade": -0.04, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": ["slick_paint"] },
+    { "len": 280, "curve": 0.2, "grade": 0.03, "roadsideLeft": "marina_signs", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 280, "curve": -0.22, "grade": -0.05, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },
+    { "len": 320, "curve": 0.1, "grade": 0.01, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": ["traffic_cone"] },
+    { "len": 400, "curve": 0, "grade": 0, "roadsideLeft": "water_wall", "roadsideRight": "marina_signs", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "shelf-drop" },
+    { "segmentIndex": 5, "label": "sealight" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

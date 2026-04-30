@@ -33,9 +33,17 @@ const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
   "ember-steppe/mesa-coil",
   "ember-steppe/dustbreak-causeway",
   "ember-steppe/cinder-gate",
+  "breakwater-isles/tidewire",
+  "breakwater-isles/storm-span",
+  "breakwater-isles/gull-point",
+  "breakwater-isles/sealight-shelf",
 ];
 
 const EXPECTED_IDS = [
+  "breakwater-isles/gull-point",
+  "breakwater-isles/sealight-shelf",
+  "breakwater-isles/storm-span",
+  "breakwater-isles/tidewire",
   "ember-steppe/cinder-gate",
   "ember-steppe/dustbreak-causeway",
   "ember-steppe/mesa-coil",
@@ -58,7 +66,7 @@ describe("track catalogue", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
-  it("registers the authored World Tour track set through Ember Steppe", () => {
+  it("registers the authored World Tour track set through Breakwater Isles", () => {
     for (const id of EXPECTED_AUTHORED_TOUR_TRACK_IDS) {
       expect(TRACK_IDS).toContain(id);
     }
@@ -170,5 +178,43 @@ describe("§24 Ember Steppe track set", () => {
     expect([...weather].sort()).toEqual(["clear", "fog"]);
     expect(hazards.has("gravel_band")).toBe(true);
     expect(hazards.has("traffic_cone")).toBe(true);
+  });
+});
+
+describe("§24 Breakwater Isles track set", () => {
+  const breakwaterTrackIds = EXPECTED_AUTHORED_TOUR_TRACK_IDS.filter((id) =>
+    id.startsWith("breakwater-isles/"),
+  );
+
+  it("covers all four planned Breakwater Isles tracks", () => {
+    expect(breakwaterTrackIds).toEqual([
+      "breakwater-isles/tidewire",
+      "breakwater-isles/storm-span",
+      "breakwater-isles/gull-point",
+      "breakwater-isles/sealight-shelf",
+    ]);
+    for (const id of breakwaterTrackIds) {
+      expect(TRACK_IDS).toContain(id);
+    }
+  });
+
+  it("uses the Breakwater Isles region weather profile and wet hazards", () => {
+    const tracks = breakwaterTrackIds.map((id) =>
+      TrackSchema.parse(TRACK_RAW[id]),
+    );
+    const weather = new Set<string>();
+    const hazards = new Set<string>();
+    for (const track of tracks) {
+      expect(track.tourId).toBe("breakwater-isles");
+      expect(track.laps).toBe(1);
+      expect(track.laneCount).toBe(3);
+      for (const option of track.weatherOptions) weather.add(option);
+      for (const segment of track.segments) {
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+    expect([...weather].sort()).toEqual(["heavy_rain", "overcast", "rain"]);
+    expect(hazards.has("puddle")).toBe(true);
+    expect(hazards.has("slick_paint")).toBe(true);
   });
 });
