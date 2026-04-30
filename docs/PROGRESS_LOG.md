@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§9](gdd/09-track-design.md) track design,
 [§22](gdd/22-data-schemas.md) track schema, and
 [§24](gdd/24-content-plan.md) full v1.0 content.
-**Branch / PR:** `feat/moss-frontier-tracks`, PR TBD.
+**Branch / PR:** `feat/moss-frontier-tracks`, PR #137.
 **Status:** Implemented.
 
 ### Done
