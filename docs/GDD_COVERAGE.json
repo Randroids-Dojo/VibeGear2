@@ -1517,6 +1517,21 @@
       ],
       "testRefs": ["e2e/cross-browser-smoke.spec.ts"],
       "followupRefs": ["VibeGear2-implement-cross-browser-7cf643ce"]
+    },
+    {
+      "id": "GDD-25-BROWSER-COMPATIBILITY-MATRIX",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The v1.0 release docs publish a browser compatibility matrix with supported browser, OS, viewport, build SHA, date, result, and evidence rows for automated and manual smoke targets.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "docs/BROWSER_COMPATIBILITY.md",
+        "docs/COMPATIBILITY_MATRIX.md",
+        "README.md"
+      ],
+      "followupRefs": ["VibeGear2-implement-browser-61518e15"]
     }
   ]
 }

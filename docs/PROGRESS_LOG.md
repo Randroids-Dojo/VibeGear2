@@ -6,6 +6,46 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Browser compatibility matrix
+
+**GDD sections touched:**
+[§25](gdd/25-development-roadmap.md) v1.0 browser compatibility matrix and
+[§27](gdd/27-risks-and-mitigations.md) browser performance.
+**Branch / PR:** `docs/browser-compatibility-matrix`, PR #115.
+**Status:** Implemented.
+
+### Done
+- Added `docs/BROWSER_COMPATIBILITY.md` with per-browser, OS, viewport,
+  build SHA, date, result, and evidence rows.
+- Recorded the current automated Chromium, Firefox, WebKit, and Steam Deck
+  class smoke evidence from main CI run 25144458887 at build `bfb5300`.
+- Flagged Chrome on macOS, Safari on macOS, and Edge on Windows as pending
+  manual tagged-release rows.
+- Linked the published browser matrix from README and the release
+  compatibility checklist.
+- Added a GDD coverage ledger entry for the published matrix.
+
+### Verified
+- `npm run docs:check && npm run content-lint` green.
+
+### Decisions and assumptions
+- Manual rows stay in the matrix as `not-yet-run` instead of being omitted,
+  so release gaps remain visible.
+- Mobile browser support remains outside the matrix until the mobile touch
+  pass becomes release scope.
+
+### Coverage ledger
+- GDD-25-BROWSER-COMPATIBILITY-MATRIX covers the §25 v1.0 browser
+  compatibility matrix deliverable.
+- Uncovered adjacent requirements: Lighthouse, axe, and bundle-budget gates
+  remain tracked by `VibeGear2-implement-ci-bundle-57af4a04`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Cross-browser verification
 
 **GDD sections touched:**
