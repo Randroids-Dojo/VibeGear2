@@ -1,0 +1,18 @@
+{
+  "id": "breakwater-isles",
+  "name": "Breakwater Isles",
+  "palette": {
+    "sky": "#15324a",
+    "horizon": "#3d6d78",
+    "road": "#596164",
+    "shoulder": "#1f3038",
+    "grass": "#2f6147",
+    "accent": "#72c8d4"
+  },
+  "skyTreatment": "storm",
+  "roadShoulderType": "concrete",
+  "propCategories": ["causeways", "sea-bridges", "harbor-lights", "spray-barriers"],
+  "weatherPresets": ["rain", "heavy_rain", "overcast"],
+  "tunnelMaterials": ["wet-concrete", "sea-wall-tile", "cool-white-lighting"],
+  "uiAccent": "#8ed9e2"
+}

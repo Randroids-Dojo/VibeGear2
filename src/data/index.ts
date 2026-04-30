@@ -31,6 +31,12 @@ export {
   HAZARDS_BY_ID,
   getHazard,
 } from "./hazards";
+export {
+  REGION_IDS,
+  REGIONS,
+  REGIONS_BY_ID,
+  loadRegion,
+} from "./regions";
 
 import { compileTrack } from "@/road/trackCompiler";
 import type { CompiledTrack } from "@/road/types";

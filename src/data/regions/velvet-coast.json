@@ -1,0 +1,18 @@
+{
+  "id": "velvet-coast",
+  "name": "Velvet Coast",
+  "palette": {
+    "sky": "#16304f",
+    "horizon": "#356f83",
+    "road": "#5f5f5a",
+    "shoulder": "#263047",
+    "grass": "#2e6e36",
+    "accent": "#e8d15f"
+  },
+  "skyTreatment": "clear",
+  "roadShoulderType": "guardrail",
+  "propCategories": ["resorts", "marinas", "cliff-roads", "guardrails"],
+  "weatherPresets": ["clear", "dusk", "light_rain", "rain", "fog"],
+  "tunnelMaterials": ["coastal-concrete", "white-tile", "service-lighting"],
+  "uiAccent": "#f2cf5b"
+}

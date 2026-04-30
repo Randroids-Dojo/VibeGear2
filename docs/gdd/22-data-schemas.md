@@ -179,6 +179,39 @@ colors from §16: amber road-edge warnings, red severe damage, cyan wet-grip
 UI, magenta or electric-blue nitro-full readout, and clean PB green or record
 gold.
 
+## Region theme JSON schema
+
+Region theme files define the art-direction package for each tour. Palette
+files own sprite recolouring. Region themes own the wider world-art contract
+that renderers, HUD accents, weather setup, and track validation read.
+
+```
+{
+  "id": "velvet-coast",
+  "name": "Velvet Coast",
+  "palette": {
+    "sky": "#16304f",
+    "horizon": "#356f83",
+    "road": "#5f5f5a",
+    "shoulder": "#263047",
+    "grass": "#2e6e36",
+    "accent": "#e8d15f"
+  },
+  "skyTreatment": "clear",
+  "roadShoulderType": "guardrail",
+  "propCategories": ["resorts", "marinas", "cliff-roads", "guardrails"],
+  "weatherPresets": ["clear", "dusk", "light_rain", "rain", "fog"],
+  "tunnelMaterials": ["coastal-concrete", "white-tile", "service-lighting"],
+  "uiAccent": "#f2cf5b"
+}
+```
+
+`src/data/schemas.ts` owns `RegionThemeSchema`. `src/data/regions/index.ts`
+statically registers the eight v1.0 World Tour regions and exposes
+`loadRegion(id)`. Bundled track content must reference a known `tourId`, and
+each track `weatherOptions` entry must be included in that region's
+`weatherPresets`.
+
 ## Hazard registry JSON schema
 
 ```

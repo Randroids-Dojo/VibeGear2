@@ -1,0 +1,18 @@
+{
+  "id": "iron-borough",
+  "name": "Iron Borough",
+  "palette": {
+    "sky": "#192638",
+    "horizon": "#4b5863",
+    "road": "#565b5e",
+    "shoulder": "#202832",
+    "grass": "#36413d",
+    "accent": "#7ba7c7"
+  },
+  "skyTreatment": "overcast",
+  "roadShoulderType": "concrete",
+  "propCategories": ["industrial-ports", "ring-roads", "gantries", "barriers"],
+  "weatherPresets": ["overcast", "fog", "clear", "rain"],
+  "tunnelMaterials": ["ribbed-concrete", "steel-panel", "sodium-lighting"],
+  "uiAccent": "#8db6d8"
+}

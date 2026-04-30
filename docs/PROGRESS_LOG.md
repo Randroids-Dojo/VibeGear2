@@ -6,6 +6,75 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Region art theme registry
+
+**GDD sections touched:**
+[§8](gdd/08-world-and-progression-design.md) original tours,
+[§14](gdd/14-weather-and-environmental-systems.md) track-specific weather,
+[§17](gdd/17-art-direction.md) region art themes, and
+[§22](gdd/22-data-schemas.md) data schemas.
+**Branch / PR:** `feat/region-art-theme-registry`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `RegionThemeSchema` for the seven §17 region art fields:
+  palette, sky treatment, road shoulder type, prop categories, weather
+  presets, tunnel materials, and UI accent color.
+- Added eight static region theme JSON files for the World Tour regions
+  from §8.
+- Added `src/data/regions/index.ts` with `REGIONS`, `REGIONS_BY_ID`,
+  `REGION_IDS`, and `loadRegion(id)`.
+- Re-exported the region registry through the shared data barrel.
+- Added content tests that validate every region, pin deterministic
+  loading, check UI accent contrast, and assert bundled track weather is
+  allowed by the owning region.
+- Documented the region theme JSON contract in §22 and added the
+  machine-checkable coverage ledger row.
+
+### Verified
+- `npx vitest run src/data/regions/__tests__/regions-content.test.ts src/data/palettes/__tests__/regionPalettes.test.ts src/data/__tests__/tracks-content.test.ts`
+  green, 38 passed.
+- `npx vitest run src/data/regions/__tests__/regions-content.test.ts`
+  green, 6 passed.
+- `npm run typecheck` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2659 passed.
+- `npm run build` green.
+- `node -e "JSON.parse(require('fs').readFileSync('docs/GDD_COVERAGE.json','utf8')); console.log('ok')"`
+  green.
+- `grep -rn $'\u2014\|\u2013' src/data/regions src/data/schemas.ts docs/gdd/22-data-schemas.md`
+  returned nothing.
+
+### Decisions and assumptions
+- Kept `TrackSchema.tourId` as the region key instead of renaming track
+  JSON. That preserves existing content and keeps the registry consumer
+  contract clear.
+- Used the current `WeatherOptionSchema` ids for region weather presets.
+  Region profiles that describe visual variants like heat haze, dust storm,
+  crosswind visuals, or neon rain map to the nearest existing weather ids
+  until a later weather-taxonomy slice adds new ids.
+- Included the current first-two-tour authored track weather in the region
+  presets so the new validation can be enforced immediately without
+  invalidating shipped MVP tracks.
+
+### Coverage ledger
+- GDD-17-REGION-THEME-REGISTRY covers typed World Tour region art packages,
+  static region loading, §8 weather-profile pins, UI accent readability, and
+  track weather validation against region presets.
+- Uncovered adjacent requirements: renderer consumers still need to read
+  region sky, horizon, shoulder, tunnel material, prop categories, and UI
+  accent data instead of local defaults.
+
+### Followups created
+None.
+
+### GDD edits
+- Added the `RegionTheme` JSON schema and bundled track weather validation
+  rule to [§22](gdd/22-data-schemas.md).
+
+---
+
 ## 2026-04-30: Slice: Opt-in client error capture
 
 **GDD sections touched:**

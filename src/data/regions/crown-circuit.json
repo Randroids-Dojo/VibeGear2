@@ -1,0 +1,18 @@
+{
+  "id": "crown-circuit",
+  "name": "Crown Circuit",
+  "palette": {
+    "sky": "#18284e",
+    "horizon": "#4c5c7a",
+    "road": "#555762",
+    "shoulder": "#252535",
+    "grass": "#33573d",
+    "accent": "#d8cf87"
+  },
+  "skyTreatment": "mixed",
+  "roadShoulderType": "cliff-edge",
+  "propCategories": ["finale-hubs", "international-banners", "cliff-edges", "grandstands"],
+  "weatherPresets": ["clear", "rain", "fog", "snow"],
+  "tunnelMaterials": ["polished-concrete", "gold-trim", "broadcast-lighting"],
+  "uiAccent": "#f0dc84"
+}
