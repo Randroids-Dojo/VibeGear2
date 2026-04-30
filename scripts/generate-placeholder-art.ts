@@ -299,6 +299,11 @@ function carSheetSvg(car: (typeof CAR_SHEETS)[number]): string {
       id: "battered",
       extra: `<path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="${car.trim}" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="${car.trim}" stroke-width="2"/>`,
     },
+    {
+      y: 144,
+      id: "totaled",
+      extra: `<path d="M-26 12 L-18 -4 L-6 8 L8 -6 L24 12" fill="none" stroke="${car.trim}" stroke-width="3"/><path d="M-18 2 L-8 -5 M11 -7 L21 2" stroke="${car.accent}" stroke-width="2"/>`,
+    },
   ];
   const dentedExtra = damageRows.find((row) => row.id === "dented")?.extra ?? "";
   const batteredExtra = damageRows.find((row) => row.id === "battered")?.extra ?? "";
@@ -320,12 +325,17 @@ function carSheetSvg(car: (typeof CAR_SHEETS)[number]): string {
       `<g id="clean"><path d="M-27 12 L27 12 L21 -8 L12 -14 L-12 -14 L-21 -8 Z" fill="${car.body}"/><path d="M-14 -7 L14 -7 L9 4 L-9 4 Z" fill="${car.glass}"/><path d="M-22 7 L-12 7 L-12 11 L-22 11 Z" fill="#ff3d38"/><path d="M12 7 L22 7 L22 11 L12 11 Z" fill="#ff3d38"/><path d="M-24 12 L-18 15 L18 15 L24 12 Z" fill="${car.trim}"/><path d="M-18 -5 L18 -5" stroke="${car.accent}" stroke-width="2"/></g>`,
       `<g id="dented"><use href="#clean"/>${dentedExtra}<rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>`,
       `<g id="battered"><use href="#clean"/>${batteredExtra}<rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>`,
+      `<g id="totaled"><use href="#battered"/>${damageRows.find((row) => row.id === "totaled")?.extra ?? ""}<rect x="-23" y="7" width="11" height="4" fill="#8f2626"/><rect x="12" y="7" width="10" height="4" fill="#8f2626"/></g>`,
       '<g id="brake"><use href="#clean"/><rect x="-24" y="6" width="13" height="6" fill="#ff4a44"/><rect x="11" y="6" width="13" height="6" fill="#ff4a44"/></g>',
       '<g id="nitro"><use href="#clean"/><path d="M-14 15 L0 26 L14 15 Z" fill="#44d7ff" opacity="0.75"/><path d="M-8 15 L0 23 L8 15 Z" fill="#e75cff" opacity="0.8"/></g>',
+      '<g id="wet-trail"><path d="M-28 4 L-8 14 L-32 23 Z" fill="#d8f4ff" opacity="0.55"/><path d="M28 4 L8 14 L32 23 Z" fill="#d8f4ff" opacity="0.55"/><path d="M-22 13 L-3 19 M22 13 L3 19" stroke="#9fd7ef" stroke-width="2" opacity="0.7"/></g>',
+      '<g id="snow-trail"><path d="M-24 9 L24 9 L34 24 L-34 24 Z" fill="#edf7ff" opacity="0.64"/><circle cx="-18" cy="17" r="2" fill="#ffffff" opacity="0.7"/><circle cx="0" cy="20" r="2" fill="#ffffff" opacity="0.7"/><circle cx="17" cy="16" r="2" fill="#ffffff" opacity="0.7"/></g>',
       "</defs>",
       ...frames,
       '<g transform="translate(32 112)"><use href="#shadow"/><use href="#brake"/></g>',
       '<g transform="translate(96 112)"><use href="#shadow"/><use href="#nitro"/></g>',
+      '<g transform="translate(32 176)"><use href="#wet-trail"/></g>',
+      '<g transform="translate(96 176)"><use href="#snow-trail"/></g>',
       `<text x="704" y="360" text-anchor="middle" font-family="monospace" font-size="16" font-weight="700" fill="${car.accent}">PLACEHOLDER</text>`,
     ].join("\n"),
   );
