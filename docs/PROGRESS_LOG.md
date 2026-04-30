@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Physics-feel benchmarks
+
+**GDD sections touched:**
+[§10](gdd/10-driving-model-and-physics.md) driving model,
+[§21](gdd/21-technical-design-for-web-implementation.md) deterministic
+replay tests, and [§27](gdd/27-risks-and-mitigations.md) physics-feel
+mitigation.
+**Branch / PR:** `test/physics-feel-benchmarks`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added three benchmark-only tracks for straight acceleration, sweeping
+  curve grip, and brake-and-recovery feel.
+- Added compact scripted input streams for each benchmark.
+- Added committed expected lap-time and sample-point baselines.
+- Added a deterministic ghost-replay regression test with a 5 percent
+  lap-time tolerance and exact sample-point checks.
+- Added `UPDATE_BENCHMARK=1` regeneration support for intentional physics
+  tuning changes.
+- Kept `_benchmark` tracks out of the user-facing track catalogue and v1.0
+  content budget.
+
+### Verified
+- `UPDATE_BENCHMARK=1 npx vitest run src/game/__tests__/physics-feel.bench.test.ts`
+  green, 8 passed.
+- `npx vitest run src/game/__tests__/physics-feel.bench.test.ts` green, 8
+  passed.
+- `npx vitest run src/game/__tests__/physics-feel.bench.test.ts src/data/__tests__/tracks-content.test.ts src/data/__tests__/content-budget.test.ts`
+  green, 50 passed.
+
+### Decisions and assumptions
+- Benchmark tracks live under `src/data/tracks/_benchmark/` but use
+  schema-valid ids with the `benchmark/` prefix.
+- The suite uses the current `sparrow-gt` baseline as the starter-car
+  feel reference.
+- Track curve metadata is still compiled for the benchmark tracks, while
+  the physics assertions pin the current lane-relative step output. Future
+  road-aware grip tuning should update the expected JSON in the same PR.
+
+### Coverage ledger
+- GDD-27-PHYSICS-FEEL-BENCHMARKS covers the §27 replayable benchmark
+  tracks mitigation and the §21 deterministic replay-test expectation for
+  physics-feel regression.
+- Uncovered adjacent requirements: live player-facing physics tuning remains
+  unchanged in this slice; future tuning changes should update benchmark
+  expectations with `UPDATE_BENCHMARK=1`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-30: Slice: Tagged release v0.1.0
 
 **GDD sections touched:**

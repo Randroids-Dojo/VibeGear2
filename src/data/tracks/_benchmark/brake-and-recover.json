@@ -1,0 +1,43 @@
+{
+  "id": "benchmark/brake-and-recover",
+  "name": "Benchmark: Brake and Recover",
+  "tourId": "benchmark",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1150,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 2,
+  "segments": [
+    {
+      "len": 360,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    },
+    {
+      "len": 180,
+      "curve": -0.58,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    },
+    {
+      "len": 610,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 1, "label": "brake-zone" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

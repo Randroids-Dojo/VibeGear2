@@ -1,0 +1,24 @@
+{
+  "id": "benchmark/straight-accel",
+  "name": "Benchmark: Straight Accel",
+  "tourId": "benchmark",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1250,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 1,
+  "segments": [
+    {
+      "len": 1250,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    }
+  ],
+  "checkpoints": [{ "segmentIndex": 0, "label": "start" }],
+  "spawn": { "gridSlots": 12 }
+}

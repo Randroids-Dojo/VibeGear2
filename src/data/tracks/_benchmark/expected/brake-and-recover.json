@@ -1,0 +1,21 @@
+{
+  "trackId": "benchmark/brake-and-recover",
+  "referenceLapTimeMs": 21883.333,
+  "samples": {
+    "60": {
+      "speed": 16,
+      "x": 0,
+      "z": 8.133333
+    },
+    "120": {
+      "speed": 32,
+      "x": 0,
+      "z": 32.266667
+    },
+    "240": {
+      "speed": 27.333333,
+      "x": 0,
+      "z": 112.95
+    }
+  }
+}

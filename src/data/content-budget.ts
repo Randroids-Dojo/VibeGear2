@@ -10,9 +10,10 @@
  * one of these limits. Raising a cap requires editing this constant AND the
  * matching GDD row in the same PR (per the §27 mitigation contract).
  *
- * Stretch content (daily challenges, reverse tracks, modder packs) lives
- * outside the v1.0 cap; the cap counts only files registered through the
- * shipped barrels (`src/data/tracks/index.ts`, `src/data/cars/index.ts`).
+ * Stretch content (daily challenges, reverse tracks, modder packs) and
+ * benchmark-only tracks under `src/data/tracks/_benchmark/` live outside
+ * the v1.0 cap; the cap counts only files registered through the shipped
+ * barrels (`src/data/tracks/index.ts`, `src/data/cars/index.ts`).
  */
 
 export const CONTENT_BUDGET = Object.freeze({

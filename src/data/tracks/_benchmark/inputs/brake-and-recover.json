@@ -1,0 +1,67 @@
+[
+  {
+    "frame": 0,
+    "input": {
+      "steer": 0,
+      "throttle": 1,
+      "brake": 0,
+      "nitro": false,
+      "handbrake": false,
+      "pause": false,
+      "shiftUp": false,
+      "shiftDown": false
+    }
+  },
+  {
+    "frame": 190,
+    "input": {
+      "steer": 0,
+      "throttle": 0,
+      "brake": 1,
+      "nitro": false,
+      "handbrake": false,
+      "pause": false,
+      "shiftUp": false,
+      "shiftDown": false
+    }
+  },
+  {
+    "frame": 250,
+    "input": {
+      "steer": -0.05,
+      "throttle": 1,
+      "brake": 0,
+      "nitro": false,
+      "handbrake": false,
+      "pause": false,
+      "shiftUp": false,
+      "shiftDown": false
+    }
+  },
+  {
+    "frame": 280,
+    "input": {
+      "steer": 0.05,
+      "throttle": 1,
+      "brake": 0,
+      "nitro": false,
+      "handbrake": false,
+      "pause": false,
+      "shiftUp": false,
+      "shiftDown": false
+    }
+  },
+  {
+    "frame": 310,
+    "input": {
+      "steer": 0,
+      "throttle": 1,
+      "brake": 0,
+      "nitro": false,
+      "handbrake": false,
+      "pause": false,
+      "shiftUp": false,
+      "shiftDown": false
+    }
+  }
+]

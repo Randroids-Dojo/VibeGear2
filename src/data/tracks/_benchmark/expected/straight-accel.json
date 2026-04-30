@@ -1,0 +1,21 @@
+{
+  "trackId": "benchmark/straight-accel",
+  "referenceLapTimeMs": 22466.667,
+  "samples": {
+    "60": {
+      "speed": 16,
+      "x": 0,
+      "z": 8.133333
+    },
+    "120": {
+      "speed": 32,
+      "x": 0,
+      "z": 32.266667
+    },
+    "240": {
+      "speed": 61,
+      "x": 0,
+      "z": 128.226667
+    }
+  }
+}

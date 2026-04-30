@@ -1,0 +1,43 @@
+{
+  "id": "benchmark/sweeping-curve",
+  "name": "Benchmark: Sweeping Curve",
+  "tourId": "benchmark",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 1200,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear"],
+  "difficulty": 2,
+  "segments": [
+    {
+      "len": 150,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    },
+    {
+      "len": 700,
+      "curve": 0.42,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    },
+    {
+      "len": 350,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": []
+    }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 1, "label": "curve-entry" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}
