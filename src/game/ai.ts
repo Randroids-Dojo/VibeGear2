@@ -480,7 +480,11 @@ function trafficPressureOffset(
   if (Math.abs(gap) > AI_TUNING.TRAFFIC_PRESSURE_WINDOW_METERS) return 0;
   const closeness =
     1 - Math.abs(gap) / AI_TUNING.TRAFFIC_PRESSURE_WINDOW_METERS;
-  const direction = clamp(playerCar.x / Math.max(roadHalfWidth, 1), -1, 1);
+  const direction = clamp(
+    (playerCar.x - aiCar.x) / Math.max(roadHalfWidth, 1),
+    -1,
+    1,
+  );
   return direction * pressure * clamp(aggression, 0, 1) * closeness;
 }
 

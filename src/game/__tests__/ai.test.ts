@@ -380,6 +380,35 @@ describe("tickAI (§15 archetype behaviours)", () => {
     expect(bullyTick.input.steer).toBeGreaterThan(cleanTick.input.steer);
   });
 
+  it("bully pressure uses the player's position relative to the AI", () => {
+    const clean = archetypeDriver("clean_line");
+    const bully = archetypeDriver("aggressive", { aggression: 1 });
+    const aiCar = freshCar({ x: 1, z: 300, speed: 30 });
+    const playerNearbyLeft: PlayerView = {
+      car: freshCar({ x: 0.5, z: 312, speed: 30 }),
+    };
+    const cleanTick = tickAI(
+      clean,
+      freshAi(),
+      aiCar,
+      playerNearbyLeft,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const bullyTick = tickAI(
+      bully,
+      freshAi(),
+      aiCar,
+      playerNearbyLeft,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(bullyTick.input.steer).toBeLessThan(cleanTick.input.steer);
+  });
+
   it("cautious drivers brake earlier for the same sweeper", () => {
     const clean = archetypeDriver("clean_line");
     const cautious = archetypeDriver("defender");
