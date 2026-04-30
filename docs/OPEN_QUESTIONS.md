@@ -9,6 +9,39 @@ they are part of the design history.
 
 ---
 
+## Q-012: Self-hosted error sink for opt-in client reports
+
+**GDD reference:** [§27](gdd/27-risks-and-mitigations.md) "User-reported
+client crashes", [§21](gdd/21-technical-design-for-web-implementation.md)
+"Build-time checksum versioning".
+**Status:** open
+**Asked in loop:** 2026-04-30
+
+**Question.** The opt-in client error capture slice ships an in-memory
+ring buffer and hidden `?errors=1` panel with no network requests by
+default. Should a future release add a self-hosted report sink, and if
+so where should it live?
+
+- **(a) No sink for v0.1 and v0.2 (recommended).** Keep reports manual:
+  user opens `?errors=1`, copies JSON, and pastes it into a GitHub issue
+  or chat. This avoids telemetry, paid services, and environment changes.
+- **(b) Add a first-party `/api/client-errors` endpoint.** POST reports
+  to a repo-owned route gated by an explicit user action. Requires a
+  storage provider decision before it can retain anything.
+- **(c) Add a third-party or Sentry-compatible sink.** Highest tooling
+  value, but crosses the working-agreement gate for telemetry and
+  possible paid services.
+
+**Recommended default.** (a). The current capture path already makes
+manual bug reports actionable and carries build id, build version, stack
+prefix, count, and user agent. Defer any sink until the dev explicitly
+approves provider, storage, retention, and production env changes.
+
+**Blocking?** No. The no-network capture path can ship now. A sink is a
+future opt-in slice only after this question is answered.
+
+---
+
 ## Q-011: Leaderboard storage provider after Vercel KV sunset
 
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
@@ -416,7 +449,7 @@ Resolved.
 
 ---
 
-## Q-003 — Auto-deploy target
+## Q-003: Auto-deploy target
 
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md), §26
 **Status:** answered
@@ -450,7 +483,7 @@ self-hosted were rejected (rationale in the closing reason of dot
 
 ---
 
-## Q-002 — Licence choice
+## Q-002: Licence choice
 
 **GDD reference:** §1 ("Code under a permissive open-source license. Assets
 under original permissive asset licenses."), §26
@@ -484,7 +517,7 @@ Resolved.
 
 ---
 
-## Q-001 — Section 21 stack confirmation
+## Q-001: Section 21 stack confirmation
 
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
 **Status:** answered
