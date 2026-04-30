@@ -14,10 +14,8 @@
  * exit are listed here. Ghosts uses the existing Time Trial surface until
  * an online leaderboard provider is approved.
  *
- * Manual verification: this slice does not ship a Playwright runner, so
- * the rendered tree is exercised via the dev road page at `/dev/road`
- * (Escape opens the menu, click resume to dismiss). A future slice that
- * stands up Playwright will add the regression spec listed in the dot.
+ * Verification lives in the pause overlay and pause action Playwright
+ * specs plus the shared pause action unit tests.
  */
 
 import type { CSSProperties, ReactElement } from "react";
@@ -30,7 +28,7 @@ export interface PauseOverlayActions {
   onRestart?: () => void;
   /** Retire the race and return to the results screen. */
   onRetire?: () => void;
-  /** Open settings. Inert until the settings page lands. */
+  /** Open the settings page. */
   onSettings?: () => void;
   /** Open the local ghost management surface. */
   onGhosts?: () => void;
