@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Moss Frontier track set
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track design,
+[§22](gdd/22-data-schemas.md) track schema, and
+[§24](gdd/24-content-plan.md) full v1.0 content.
+**Branch / PR:** `feat/moss-frontier-tracks`, PR #137.
+**Status:** Implemented.
+
+### Done
+- Added the four planned Moss Frontier tracks from the §24 World Tour
+  list: Pine Switchback, Millstream, Wetroot Drive, and Mistbarrow.
+- Registered the new tracks in the browser-safe track catalogue.
+- Tightened content tests so the authored World Tour set through
+  Moss Frontier must resolve in both the track catalogue and championship
+  cross-reference tests.
+- Added machine-checkable coverage for the Moss Frontier track set.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/data/regions/__tests__/regions-content.test.ts src/data/__tests__/content-budget.test.ts src/road/__tests__/trackCompiler.test.ts src/road/__tests__/trackCompiler.golden.test.ts`
+  green, 163 tests passed.
+- `npm run content-lint` green.
+- `npm run docs:check` green.
+- `npm run verify` green, 2728 Vitest tests passed.
+- `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
+  green, 3 tests passed.
+
+### Decisions and assumptions
+- Kept Moss Frontier weather to the region profile values already in
+  `src/data/regions/moss-frontier.json`: `heavy_rain`, `rain`, and `fog`.
+- Used the existing wet forest hazard palette (`puddle`, `gravel_band`,
+  and `slick_paint`) plus existing renderer-supported roadside ids so this
+  slice stays content-only.
+
+### Coverage ledger
+- GDD-24-MOSS-FRONTIER-TRACK-SET covers the four seventh-tour bundled
+  track JSON files, catalogue registration, and content validation.
+- Uncovered adjacent requirements: the final v1.0 World Tour region still
+  needs authored track JSON before strict championship track resolution can
+  be enabled.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Neon Meridian track set
 
 **GDD sections touched:**

@@ -1,0 +1,27 @@
+{
+  "id": "moss-frontier/mistbarrow",
+  "name": "Mistbarrow",
+  "tourId": "moss-frontier",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2320,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["fog", "heavy_rain"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 300, "curve": 0.02, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 300, "curve": -0.16, "grade": 0.04, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": ["gravel_band"] },
+    { "len": 280, "curve": 0.2, "grade": 0.03, "roadsideLeft": "rock_boulder", "roadsideRight": "tree_pine", "hazards": ["puddle"] },
+    { "len": 300, "curve": -0.12, "grade": -0.04, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": ["puddle"] },
+    { "len": 320, "curve": 0.18, "grade": 0.01, "roadsideLeft": "tree_pine", "roadsideRight": "sign_marker", "hazards": ["slick_paint"] },
+    { "len": 340, "curve": -0.08, "grade": -0.02, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": ["gravel_band"] },
+    { "len": 480, "curve": 0, "grade": 0, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "barrow-climb" },
+    { "segmentIndex": 5, "label": "mist-gate" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}
