@@ -15,6 +15,7 @@ import {
   getChampionship,
   type SaveGame,
   type Track,
+  type WeatherOption,
 } from "@/data";
 import { buildTimeTrialView } from "@/game/modes/timeTrialTargets";
 import { formatLapTime } from "@/render/hudSplits";
@@ -132,7 +133,7 @@ function formatOptionalTime(ms: number | null): string {
   return ms === null ? "No time" : formatLapTime(ms);
 }
 
-function formatWeather(weather: string): string {
+function formatWeather(weather: WeatherOption): string {
   return weather
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))

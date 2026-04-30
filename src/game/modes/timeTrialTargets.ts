@@ -1,5 +1,7 @@
 import type { Championship, SaveGame, Track, WeatherOption } from "@/data/schemas";
 
+import { unlockedChampionshipTrackIds } from "./unlockedTracks";
+
 export interface TimeTrialTrackOption {
   readonly id: string;
   readonly name: string;
@@ -30,7 +32,7 @@ export function buildTimeTrialView(input: {
   readonly championship: Championship;
   readonly tracksById: ReadonlyMap<string, Track>;
 }): TimeTrialView {
-  const unlockedTrackIds = unlockedTimeTrialTrackIds(
+  const unlockedTrackIds = unlockedChampionshipTrackIds(
     input.save,
     input.championship,
   );
@@ -73,24 +75,4 @@ export function timeTrialRaceHref(input: {
 
 export function developerBenchmarkMs(trackId: string): number | null {
   return DEVELOPER_BENCHMARKS_MS[trackId] ?? null;
-}
-
-function unlockedTimeTrialTrackIds(
-  save: SaveGame,
-  championship: Championship,
-): readonly string[] {
-  const firstTourId = championship.tours[0]?.id;
-  const unlocked = new Set(save.progress.unlockedTours);
-  if (firstTourId) unlocked.add(firstTourId);
-  const seen = new Set<string>();
-  const ids: string[] = [];
-  for (const tour of championship.tours) {
-    if (!unlocked.has(tour.id)) continue;
-    for (const trackId of tour.tracks) {
-      if (seen.has(trackId)) continue;
-      seen.add(trackId);
-      ids.push(trackId);
-    }
-  }
-  return ids;
 }

@@ -6,6 +6,43 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Time Trial review followups
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Time Trial and Quick Race unlocks, and
+[§21](gdd/21-technical-design-for-web-implementation.md) local runtime.
+**Branch / PR:** `fix/time-trial-review-followups`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Extracted shared unlocked championship track selection for Quick Race
+  and Time Trial after PR review flagged drift risk.
+- Tightened the Time Trial weather formatter to the schema enum type
+  after PR review flagged loose string typing.
+
+### Verified
+- `npx vitest run src/game/modes/__tests__/timeTrialTargets.test.ts src/game/modes/__tests__/quickRace.test.ts`
+  green, 8 tests passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run verify` green, 2665 Vitest tests passed.
+
+### Decisions and assumptions
+- Treated the comments from PR #125 as required follow-up work because
+  the PR was merged before the local review fixes were pushed.
+
+### Coverage ledger
+- No new ledger row. This keeps the existing Time Trial launch coverage
+  row accurate while reducing implementation drift risk.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Time Trial benchmark launch page
 
 **GDD sections touched:**

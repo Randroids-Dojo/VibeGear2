@@ -6,6 +6,8 @@ import type {
   WeatherOption,
 } from "@/data/schemas";
 
+import { unlockedChampionshipTrackIds } from "./unlockedTracks";
+
 export interface QuickRaceTrackOption {
   readonly id: string;
   readonly name: string;
@@ -34,7 +36,7 @@ export function buildQuickRaceView(input: {
   readonly tracksById: ReadonlyMap<string, Track>;
   readonly carsById: ReadonlyMap<string, Car>;
 }): QuickRaceView {
-  const unlockedTrackIds = unlockedQuickRaceTrackIds(
+  const unlockedTrackIds = unlockedChampionshipTrackIds(
     input.save,
     input.championship,
   );
@@ -66,24 +68,4 @@ export function quickRaceHref(input: QuickRaceHrefInput): string {
     car: input.carId,
   });
   return `/race?${params.toString()}`;
-}
-
-function unlockedQuickRaceTrackIds(
-  save: SaveGame,
-  championship: Championship,
-): readonly string[] {
-  const firstTourId = championship.tours[0]?.id;
-  const unlocked = new Set(save.progress.unlockedTours);
-  if (firstTourId) unlocked.add(firstTourId);
-  const seen = new Set<string>();
-  const ids: string[] = [];
-  for (const tour of championship.tours) {
-    if (!unlocked.has(tour.id)) continue;
-    for (const trackId of tour.tracks) {
-      if (seen.has(trackId)) continue;
-      seen.add(trackId);
-      ids.push(trackId);
-    }
-  }
-  return ids;
 }
