@@ -35,6 +35,12 @@ Correct them by adding a new entry that references the old one.
   failure log showed Playwright closing the page after the test timeout,
   while the same keyboard flow passed locally when isolated.
 
+### Coverage ledger
+- GDD-27-CROSS-BROWSER-SMOKE covers the automated Chromium, Firefox, and
+  WebKit smoke, including keyboard-only title to race to garage navigation.
+- Uncovered adjacent requirements: none. This hotfix keeps the existing
+  cross-browser smoke coverage stable.
+
 ### Followups created
 None.
 
