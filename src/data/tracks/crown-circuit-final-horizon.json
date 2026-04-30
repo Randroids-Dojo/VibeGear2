@@ -1,0 +1,27 @@
+{
+  "id": "crown-circuit/final-horizon",
+  "name": "Final Horizon",
+  "tourId": "crown-circuit",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2600,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["clear", "rain", "snow", "fog"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 360, "curve": 0, "grade": 0.03, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 320, "curve": -0.16, "grade": 0.05, "roadsideLeft": "guardrail", "roadsideRight": "rock_boulder", "hazards": ["slick_paint"] },
+    { "len": 340, "curve": 0.2, "grade": -0.02, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": ["puddle"] },
+    { "len": 360, "curve": -0.18, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["snow_buildup"] },
+    { "len": 340, "curve": 0.12, "grade": -0.05, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 380, "curve": -0.08, "grade": 0.02, "roadsideLeft": "rock_boulder", "roadsideRight": "guardrail", "hazards": ["traffic_cone"] },
+    { "len": 500, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "horizon-rise" },
+    { "segmentIndex": 5, "label": "final-gate" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

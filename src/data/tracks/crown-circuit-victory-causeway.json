@@ -1,0 +1,27 @@
+{
+  "id": "crown-circuit/victory-causeway",
+  "name": "Victory Causeway",
+  "tourId": "crown-circuit",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2360,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["rain", "fog"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 320, "curve": 0, "grade": 0.01, "roadsideLeft": "guardrail", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 300, "curve": -0.12, "grade": 0.03, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["puddle"] },
+    { "len": 300, "curve": 0.16, "grade": 0.02, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 340, "curve": -0.18, "grade": -0.03, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": ["slick_paint"] },
+    { "len": 320, "curve": 0.14, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 340, "curve": -0.08, "grade": -0.02, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": ["puddle"] },
+    { "len": 440, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "causeway-crest" },
+    { "segmentIndex": 5, "label": "victory-gate" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

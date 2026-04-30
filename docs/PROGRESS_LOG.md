@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Crown Circuit track set
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track design,
+[§22](gdd/22-data-schemas.md) track schema, and
+[§24](gdd/24-content-plan.md) full v1.0 content.
+**Branch / PR:** `feat/crown-circuit-tracks`, PR TBD.
+**Status:** Implemented.
+
+### Done
+- Added the four planned Crown Circuit tracks from the §24 World Tour
+  list: Embassy Loop, Victory Causeway, Grand Meridian, and Final Horizon.
+- Registered the new tracks in the browser-safe track catalogue.
+- Tightened content tests so every World Tour track id must resolve now
+  that the full 32-track v1.0 set is bundled.
+- Added machine-checkable coverage for the Crown Circuit track set.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/data/regions/__tests__/regions-content.test.ts src/data/__tests__/content-budget.test.ts src/road/__tests__/trackCompiler.test.ts src/road/__tests__/trackCompiler.golden.test.ts`
+  green, 172 tests passed.
+- `npm run content-lint` green.
+- `npm run docs:check` green.
+- `npm run verify` green, 2737 Vitest tests passed.
+- `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
+  green, 3 tests passed.
+
+### Decisions and assumptions
+- Kept Crown Circuit weather to the region profile values already in
+  `src/data/regions/crown-circuit.json`: `clear`, `rain`, `fog`, and `snow`.
+- Used the existing finale-compatible hazard palette (`slick_paint`,
+  `puddle`, `snow_buildup`, and occasional `traffic_cone`) plus existing
+  renderer-supported roadside ids so this slice stays content-only.
+
+### Coverage ledger
+- GDD-24-CROWN-CIRCUIT-TRACK-SET covers the four eighth-tour bundled
+  track JSON files, catalogue registration, and content validation.
+- Uncovered adjacent requirements: none for the §24 v1.0 World Tour
+  track list; all 32 planned track ids now resolve in the bundled
+  catalogue.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Moss Frontier track set
 
 **GDD sections touched:**
