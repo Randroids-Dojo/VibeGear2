@@ -32,6 +32,11 @@ Correct them by adding a new entry that references the old one.
 - `npm run verify` green, 2698 Vitest tests passed.
 - `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
   green, 3 tests passed.
+- `CI=1 PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit -g "keyboard-only" --repeat-each=3`
+  green, 3 WebKit runs passed after the PR CI exposed the modal
+  focus path as the flaky step.
+- `CI=1 npm run test:e2e:cross-browser` green, 12 tests passed across
+  Chromium, Firefox, and WebKit.
 
 ### Decisions and assumptions
 - Kept Breakwater Isles weather to the region profile values already in
