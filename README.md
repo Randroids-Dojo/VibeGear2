@@ -57,6 +57,14 @@ are documented in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) and
 "Run workflow" button on the CI workflow with `run_bench=true`; it is
 informational and never gates a merge or deploy.
 
+## Supported Browsers
+
+The current support and release-smoke evidence matrix lives in
+[`docs/BROWSER_COMPATIBILITY.md`](docs/BROWSER_COMPATIBILITY.md). Automated
+coverage runs Chromium, Firefox, and WebKit through Playwright; real Safari,
+Windows Edge, and Chrome on macOS are manual tagged-release checks until they
+are automated.
+
 ### One-time setup (human only)
 
 1. Create the Vercel project from this GitHub repo. Disable "Production

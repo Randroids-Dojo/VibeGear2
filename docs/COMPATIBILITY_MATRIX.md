@@ -4,6 +4,9 @@ This file records the browser, performance, and accessibility verification
 expected before a tagged release. Keep it current when the cross-browser
 smoke or release verification changes.
 
+For the published support table with per-browser evidence rows, see
+[`BROWSER_COMPATIBILITY.md`](BROWSER_COMPATIBILITY.md).
+
 ## Automated Smoke
 
 Run from the repository root:
