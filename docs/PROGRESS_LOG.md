@@ -9,7 +9,7 @@ Correct them by adding a new entry that references the old one.
 ## 2026-04-30: Slice: WebKit keyboard smoke hotfix
 
 **GDD sections touched:**
-[§19](gdd/19-controls-and-accessibility.md) keyboard controls and
+[§19](gdd/19-controls-and-input.md) keyboard controls and
 [§21](gdd/21-technical-design-for-web-implementation.md) CI verification.
 **Branch / PR:** `fix/webkit-keyboard-smoke`, PR pending.
 **Status:** Implemented.
