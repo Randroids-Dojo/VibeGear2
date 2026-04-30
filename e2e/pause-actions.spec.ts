@@ -13,6 +13,8 @@ import { expect, test } from "@playwright/test";
  *     hops to `/race/results` with the DNF placement label.
  *   - Exit-to-Title: open the menu mid-race, click Exit, assert the
  *     route hops to `/`.
+ *   - Settings: open the menu mid-race, click Settings, assert the
+ *     route hops to `/options`.
  */
 
 test.describe("pause actions", () => {
@@ -81,6 +83,22 @@ test.describe("pause actions", () => {
     // Route hops to the title screen.
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByTestId("game-title")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
+  test("Settings routes to the options screen", async ({ page }) => {
+    await page.goto("/race");
+    await expect(page.getByTestId("race-phase")).toHaveText("racing", {
+      timeout: 10_000,
+    });
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("pause-overlay")).toBeVisible();
+    await page.getByTestId("pause-settings").click();
+
+    await expect(page).toHaveURL(/\/options$/);
+    await expect(page.getByTestId("options-page")).toBeVisible({
       timeout: 5_000,
     });
   });
