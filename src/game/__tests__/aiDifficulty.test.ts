@@ -29,7 +29,7 @@ import {
 } from "../aiDifficulty";
 
 describe("DEFAULT_CPU_TIER_ID", () => {
-  it("is 'normal' (the §23 identity row, also the §15 baseline)", () => {
+  it("is 'normal' (the §15 baseline tier)", () => {
     expect(DEFAULT_CPU_TIER_ID).toBe("normal");
   });
 });
@@ -63,15 +63,15 @@ describe("getCpuModifiers", () => {
   it("returns the §23 Easy row", () => {
     expect(getCpuModifiers("easy")).toEqual<CpuDifficultyModifiers>({
       paceScalar: 0.92,
-      recoveryScalar: 0.95,
+      recoveryScalar: 1,
       mistakeScalar: 1.4,
     });
   });
 
-  it("returns the §23 Normal (identity) row", () => {
+  it("returns the §23 Normal row", () => {
     expect(getCpuModifiers("normal")).toEqual<CpuDifficultyModifiers>({
       paceScalar: 1,
-      recoveryScalar: 1,
+      recoveryScalar: 0.6,
       mistakeScalar: 1,
     });
   });
@@ -79,7 +79,7 @@ describe("getCpuModifiers", () => {
   it("returns the §23 Hard row", () => {
     expect(getCpuModifiers("hard")).toEqual<CpuDifficultyModifiers>({
       paceScalar: 1.05,
-      recoveryScalar: 1.03,
+      recoveryScalar: 0.25,
       mistakeScalar: 0.7,
     });
   });
@@ -87,7 +87,7 @@ describe("getCpuModifiers", () => {
   it("returns the §23 Master row", () => {
     expect(getCpuModifiers("master")).toEqual<CpuDifficultyModifiers>({
       paceScalar: 1.09,
-      recoveryScalar: 1.05,
+      recoveryScalar: 0,
       mistakeScalar: 0.45,
     });
   });
@@ -133,14 +133,14 @@ describe("§23 table monotonicity (sanity)", () => {
     expect(hard).toBeLessThanOrEqual(master);
   });
 
-  it("recoveryScalar is non-decreasing across Easy -> Master", () => {
+  it("recoveryScalar is non-increasing across Easy -> Master", () => {
     const easy = getCpuModifiers("easy").recoveryScalar;
     const normal = getCpuModifiers("normal").recoveryScalar;
     const hard = getCpuModifiers("hard").recoveryScalar;
     const master = getCpuModifiers("master").recoveryScalar;
-    expect(easy).toBeLessThanOrEqual(normal);
-    expect(normal).toBeLessThanOrEqual(hard);
-    expect(hard).toBeLessThanOrEqual(master);
+    expect(easy).toBeGreaterThanOrEqual(normal);
+    expect(normal).toBeGreaterThanOrEqual(hard);
+    expect(hard).toBeGreaterThanOrEqual(master);
   });
 
   it("mistakeScalar is non-increasing across Easy -> Master", () => {
@@ -153,10 +153,9 @@ describe("§23 table monotonicity (sanity)", () => {
     expect(hard).toBeGreaterThanOrEqual(master);
   });
 
-  it("Normal sits at identity for every column", () => {
+  it("Normal sits at identity for pace and mistakes", () => {
     const normal = getCpuModifiers("normal");
     expect(normal.paceScalar).toBe(1);
-    expect(normal.recoveryScalar).toBe(1);
     expect(normal.mistakeScalar).toBe(1);
   });
 });

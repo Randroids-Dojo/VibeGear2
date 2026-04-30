@@ -22,10 +22,9 @@
  *     the tier scalar captures player-facing difficulty.
  *
  *   - `recoveryScalar`: tier-level multiplier on the light AI catch-up
- *     rate. > 1 makes the AI close gaps faster (Hard, Master); < 1
- *     lets the player extend a lead (Easy). The shared consumer lives
- *     in `tickAI`; full rubber-banding policy is still a deferred §15
- *     slice.
+ *     rate. Easy gets the strongest assist, Normal is mild, Hard is
+ *     minimal, and Master disables the catch-up term. The shared
+ *     consumer lives in `tickAI`.
  *
  *   - `mistakeScalar`: tier-level multiplier on per-driver
  *     `AIDriver.mistakeRate`. > 1 makes the AI fumble more (Easy:
@@ -68,9 +67,8 @@ export interface CpuDifficultyModifiers {
    */
   readonly paceScalar: number;
   /**
-   * Multiplier on rubber-banding catch-up rate. `1.0` is Normal;
-   * > 1.0 makes the AI close gaps faster (Hard, Master); < 1.0
-   * lets the player extend a lead (Easy).
+   * Multiplier on rubber-banding catch-up rate. Easy is the maximum
+   * assist, Normal is mild, Hard is minimal, and Master is zero.
    */
   readonly recoveryScalar: number;
   /**
@@ -95,37 +93,36 @@ export const DEFAULT_CPU_TIER_ID: PlayerDifficultyPreset = "normal";
  *
  *     | Difficulty | Pace scalar | Recovery scalar | Mistake scalar |
  *     | ---------- | ----------- | --------------- | -------------- |
- *     | Easy       | 0.92        | 0.95            | 1.40           |
- *     | Normal     | 1.00        | 1.00            | 1.00           |
- *     | Hard       | 1.05        | 1.03            | 0.70           |
- *     | Master     | 1.09        | 1.05            | 0.45           |
+ *     | Easy       | 0.92        | 1.00            | 1.40           |
+ *     | Normal     | 1.00        | 0.60            | 1.00           |
+ *     | Hard       | 1.05        | 0.25            | 0.70           |
+ *     | Master     | 1.09        | 0.00            | 0.45           |
  *
- * Walking the §15 ladder top-to-bottom: pace and recovery scale
- * monotonically up, mistake scales monotonically down. Normal sits
- * at identity for every column so a per-driver scalar at Normal is
- * the unmultiplied authored value.
+ * Walking the §15 ladder top-to-bottom: pace scales up while recovery
+ * and mistakes scale down. Normal sits at identity for pace and
+ * mistakes, while recovery is the GDD's mild assist row.
  */
 export const CPU_DIFFICULTY_MODIFIERS: Readonly<
   Record<PlayerDifficultyPreset, CpuDifficultyModifiers>
 > = Object.freeze({
   easy: Object.freeze({
     paceScalar: 0.92,
-    recoveryScalar: 0.95,
+    recoveryScalar: 1,
     mistakeScalar: 1.4,
   }),
   normal: Object.freeze({
     paceScalar: 1,
-    recoveryScalar: 1,
+    recoveryScalar: 0.6,
     mistakeScalar: 1,
   }),
   hard: Object.freeze({
     paceScalar: 1.05,
-    recoveryScalar: 1.03,
+    recoveryScalar: 0.25,
     mistakeScalar: 0.7,
   }),
   master: Object.freeze({
     paceScalar: 1.09,
-    recoveryScalar: 1.05,
+    recoveryScalar: 0,
     mistakeScalar: 0.45,
   }),
 });

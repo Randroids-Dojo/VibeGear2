@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Full AI archetypes
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU archetypes and difficulty tiers,
+[§23](gdd/23-balancing-tables.md) CPU difficulty modifiers, and
+[§27](gdd/27-risks-and-mitigations.md) AI frustration mitigation.
+**Branch / PR:** `feat/full-ai-archetypes`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a frozen AI archetype behavior table that maps the existing JSON
+  schema slots to the six §15 prose archetypes: Rocket starter, Clean line,
+  Bully, Cautious, Chaotic, and Enduro.
+- Wired `tickAI` through the behavior table so archetypes now affect pace,
+  curve braking, racing-line bias, mistake frequency, traffic pressure,
+  rocket launch and fade, and chaotic brilliant bursts.
+- Rebalanced CPU recovery scalars so Easy has the strongest light catch-up,
+  Normal is mild, Hard is minimal, and Master disables rubber-banding.
+- Added deterministic unit tests for every archetype behavior, the updated
+  rubber-banding bounds, and the §23 balancing table.
+- Hardened the cross-browser keyboard smoke so WebKit waits for the title
+  menu to render before tabbing after pause-exit navigation.
+
+### Verified
+- `npx vitest run src/game/__tests__/ai.test.ts src/game/__tests__/aiDifficulty.test.ts src/game/__tests__/aiGrid.test.ts src/data/__tests__/ai-content.test.ts src/data/__tests__/balancing.test.ts`
+  green, 236 passed.
+- `npm run typecheck` green.
+- `npm run verify` green, 2626 passed.
+- `PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit --grep "supports keyboard-only"`
+  green.
+
+### Decisions and assumptions
+- Kept the existing `AIArchetypeSchema` wire names because the data schema
+  already documents them as stable JSON slots. The new behavior table exposes
+  the §15 prose names and owns the gameplay meaning.
+- Interpreted §15 recovery labels as concrete §23 scalars: Easy `1.00`,
+  Normal `0.60`, Hard `0.25`, Master `0.00`. This makes Master's "None"
+  rubber-banding row mechanically true.
+
+### Coverage ledger
+- GDD-15-AI-ARCHETYPES covers the six visible AI archetypes, deterministic
+  seeded behavior differences, and light rubber-banding bounds.
+- Uncovered adjacent requirements: full overtake lane-shift logic, explicit
+  inside / outside pass preference, AI nitro firing, and damage-aware rub
+  fairness remain outside this PR-sized slice.
+
+### Followups created
+None.
+
+### GDD edits
+- Updated [§23](gdd/23-balancing-tables.md) CPU recovery scalars so the
+  numeric table matches §15's Easy, Normal, Hard, and Master
+  rubber-banding labels.
+
 ## 2026-04-30: Slice: Physics-feel benchmarks
 
 **GDD sections touched:**

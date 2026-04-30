@@ -94,6 +94,7 @@ test.describe("cross-browser compatibility smoke", () => {
     page,
   }) => {
     await page.goto("/");
+    await expect(page.getByTestId("menu-start-race")).toBeVisible();
     await focusByTab(page, "menu-start-race");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/race(\?.*)?$/);
@@ -106,6 +107,7 @@ test.describe("cross-browser compatibility smoke", () => {
     await focusByTab(page, "pause-exit");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByTestId("menu-garage")).toBeVisible();
 
     await focusByTab(page, "menu-garage");
     await page.keyboard.press("Enter");

@@ -1,10 +1,8 @@
 /**
- * Single AI driver tick for the `clean_line` archetype per §15
- * "CPU opponents and AI". Phase 1 vertical slice: one opponent on the
- * grid that proves the AI shape works end to end. Later slices add the
- * remaining archetypes (aggressive, bully, cautious, chaotic, enduro)
- * and full grid behaviour (overtake, collision avoidance, mistakes,
- * nitro, weather skill, rubber-banding).
+ * AI driver tick for the §15 "CPU opponents and AI" archetypes.
+ * The controller stays in progress space and dispatches through
+ * `aiArchetypes.ts` for rocket starter, clean line, bully, cautious,
+ * chaotic, and enduro behaviour.
  *
  * Source of truth: `docs/gdd/15-cpu-opponents-and-ai.md`. The "AI is
  * simulated in track-progress space, not free-driving 3D rigid bodies"
@@ -45,9 +43,8 @@
  * on top of per-driver AI data. `paceScalar` raises or lowers target
  * speed, `recoveryScalar` scales the light catch-up term when an AI
  * trails the player, and `mistakeScalar` scales the per-driver
- * `mistakeRate` for deterministic lane-target mistakes. Defaults to
- * identity (`getCpuModifiers("normal")`) so existing callers keep
- * Normal behavior unchanged.
+ * `mistakeRate` for deterministic lane-target mistakes. Defaults to a
+ * legacy identity row so existing callers keep behavior unchanged.
  *
  * Weather skill wiring: callers may pass `weatherSkillScalar` as the
  * compact §15 weather-skill row resolved for the active weather. It is
@@ -60,24 +57,19 @@
  * risk through poorer read distance without changing hit geometry.
  *
  * Out of scope for this slice (deferred to follow-up AI dots):
- * - Overtake / lane-shift behaviour. §15 lists it; the clean_line single
- *   AI may collide with the player. Collision avoidance lands with the
+ * - Overtake / lane-shift behaviour. §15 lists it; an AI may still
+ *   collide with the player. Collision avoidance lands with the
  *   full grid slice.
- * - Nitro firing. The clean_line AI never fires nitro in this slice.
- * - Archetype-specific mistake shapes (miss apex, brake too early in
- *   fog, etc.). This slice ships the shared deterministic lane-target
- *   mistake hook.
- * - Full rubber-banding policy. This slice ships the light catch-up
- *   pace hook so the §23 `recoveryScalar` row is consumed.
+ * - AI nitro firing. Not implemented in this slice.
+ * - Full passing logic with inside / outside pass preferences.
+ * - Damage-aware rub avoidance and contact fairness scoring.
  */
 
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import { CURVATURE_SCALE, ROAD_WIDTH, SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
-import {
-  getCpuModifiers,
-  type CpuDifficultyModifiers,
-} from "./aiDifficulty";
+import type { CpuDifficultyModifiers } from "./aiDifficulty";
+import { getAIBehaviour } from "./aiArchetypes";
 import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
@@ -85,14 +77,17 @@ import { deserializeRng } from "./rng";
 import { WEATHER_VISIBILITY_RISK_MAX_SCALAR } from "./weather";
 
 /**
- * Identity §23 CPU modifiers row used as the default when a caller does
- * not supply tier-resolved scalars. Equivalent to
- * `getCpuModifiers("normal")`: each scalar is `1.0` so the per-driver
- * `paceScalar`, `mistakeRate`, and light recovery term pass through
- * unchanged for any caller that has not yet adopted the tier wiring.
+ * Legacy identity CPU modifier row used as the default when a caller
+ * does not supply tier-resolved §23 scalars. Each scalar is `1.0` so
+ * the per-driver `paceScalar`, `mistakeRate`, and light recovery term
+ * pass through unchanged for any caller that has not yet adopted the
+ * tier wiring.
  */
-export const IDENTITY_CPU_MODIFIERS: CpuDifficultyModifiers =
-  getCpuModifiers("normal");
+export const IDENTITY_CPU_MODIFIERS: CpuDifficultyModifiers = Object.freeze({
+  paceScalar: 1,
+  recoveryScalar: 1,
+  mistakeScalar: 1,
+});
 
 /**
  * Per-AI runtime state. Pinned by the dot stress-test:
@@ -196,6 +191,12 @@ export const AI_TUNING = Object.freeze({
   MAX_RECOVERY_PACE_BONUS: 0.05,
   /** Player gap, in meters, that reaches the maximum recovery term. */
   RECOVERY_GAP_FOR_MAX_BONUS: 240,
+  /** Lap fraction where rocket starter launch boost stops applying. */
+  ROCKET_LAUNCH_FRACTION: 0.18,
+  /** Lap fraction where rocket starter late fade starts applying. */
+  ROCKET_FADE_FRACTION: 0.72,
+  /** Player gap where archetype lane pressure can engage. */
+  TRAFFIC_PRESSURE_WINDOW_METERS: 36,
 });
 
 /**
@@ -261,6 +262,7 @@ export function tickAI(
   weatherSkillScalar: number = 1,
   visibilityRiskScalar: number = 1,
 ): AITickResult {
+  const behaviour = getAIBehaviour(driver.archetype);
   const segment = currentSegment(track, aiCar.z);
   // `segment.curve` is the per-compiled-segment dx contribution, already
   // divided by `CURVATURE_SCALE` by the track compiler. The AI reasons
@@ -277,14 +279,26 @@ export function tickAI(
   // lands, replace this with `segment.racingLineBias`. The leading `0 +`
   // converts a `-0` from the multiplication on a perfectly straight
   // segment back to `+0` so call-sites can `expect(steer).toBe(0)`.
-  const rawIdealOffset = -authoredCurve * AI_TUNING.MAX_RACING_LINE_OFFSET;
+  const rawIdealOffset =
+    -authoredCurve *
+    AI_TUNING.MAX_RACING_LINE_OFFSET *
+    behaviour.racingLineScalar;
+  const trafficLaneOffset = trafficPressureOffset(
+    behaviour.trafficLanePressure,
+    driver.aggression,
+    aiCar,
+    player.car,
+    context.roadHalfWidth,
+  );
+  const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset;
   const baseIdealLateralOffset = clamp(
-    rawIdealOffset === 0 ? 0 : rawIdealOffset,
+    idealOffsetWithTraffic === 0 ? 0 : idealOffsetWithTraffic,
     -context.roadHalfWidth,
     context.roadHalfWidth,
   );
   const effectiveMistakeRate = clamp(
-      driver.mistakeRate *
+    driver.mistakeRate *
+      behaviour.mistakeScalar *
       cpuModifiers.mistakeScalar *
       clamp(visibilityRiskScalar, 1, WEATHER_VISIBILITY_RISK_MAX_SCALAR),
     0,
@@ -292,13 +306,20 @@ export function tickAI(
   );
   let nextSeed = aiState.seed;
   let mistakeOffset = 0;
-  if (race.phase === "racing" && effectiveMistakeRate > 0) {
+  let brilliantPaceBonus = 0;
+  if (
+    race.phase === "racing" &&
+    (effectiveMistakeRate > 0 || behaviour.brilliantChance > 0)
+  ) {
     const mistakeRng = deserializeRng(aiState.seed);
     const mistakeActive = mistakeRng.nextBool(effectiveMistakeRate);
     const mistakeDirection = mistakeRng.next() < 0.5 ? -1 : 1;
     mistakeOffset = mistakeActive
       ? mistakeDirection * AI_TUNING.MAX_MISTAKE_OFFSET
       : 0;
+    if (mistakeRng.nextBool(behaviour.brilliantChance)) {
+      brilliantPaceBonus = behaviour.brilliantPaceBonus;
+    }
     nextSeed = mistakeRng.state;
   }
   const idealLateralOffset = clamp(
@@ -315,7 +336,8 @@ export function tickAI(
       1,
     ) *
     AI_TUNING.MAX_RECOVERY_PACE_BONUS *
-    cpuModifiers.recoveryScalar;
+    cpuModifiers.recoveryScalar *
+    behaviour.recoveryScalar;
 
   // Target speed per segment. §15 "AI chooses a lane offset target" plus
   // a per-driver `paceScalar` from §22 maps onto a curve-aware target
@@ -330,11 +352,26 @@ export function tickAI(
   // objects per AI tick. The composed target is then re-clamped at
   // `stats.topSpeed` so a Master-tier driver with an authored
   // `paceScalar > 1` still cannot exceed the chassis ceiling.
-  const curvePenalty = 1 - AI_TUNING.CLEAN_LINE_CURVE_DECEL * Math.abs(authoredCurve);
+  const curvePenalty =
+    1 -
+    AI_TUNING.CLEAN_LINE_CURVE_DECEL *
+      behaviour.curveBrakeScalar *
+      Math.abs(authoredCurve);
+  const lapProgressFraction = lapFraction(track.totalLength, aiCar.z);
+  const launchPaceBonus =
+    lapProgressFraction < AI_TUNING.ROCKET_LAUNCH_FRACTION
+      ? behaviour.launchPaceBonus
+      : 0;
+  const fadePacePenalty =
+    lapProgressFraction > AI_TUNING.ROCKET_FADE_FRACTION
+      ? behaviour.fadePacePenalty
+      : 0;
   const composedPaceScalar =
     driver.paceScalar *
+    behaviour.targetSpeedScalar *
     cpuModifiers.paceScalar *
-    clamp(weatherSkillScalar, 0, 2);
+    clamp(weatherSkillScalar, 0, 2) *
+    (1 + launchPaceBonus + brilliantPaceBonus - fadePacePenalty);
   const rawTarget =
     stats.topSpeed *
     Math.max(0, curvePenalty) *
@@ -423,6 +460,32 @@ function currentSegment(
     Math.max(0, Math.floor(normalized / SEGMENT_LENGTH)),
   );
   return segments[index];
+}
+
+function lapFraction(totalLength: number, z: number): number {
+  if (!Number.isFinite(totalLength) || totalLength <= 0) return 0;
+  const normalized = ((z % totalLength) + totalLength) % totalLength;
+  return clamp(normalized / totalLength, 0, 1);
+}
+
+function trafficPressureOffset(
+  pressure: number,
+  aggression: number,
+  aiCar: Readonly<CarState>,
+  playerCar: Readonly<CarState>,
+  roadHalfWidth: number,
+): number {
+  if (pressure === 0) return 0;
+  const gap = playerCar.z - aiCar.z;
+  if (Math.abs(gap) > AI_TUNING.TRAFFIC_PRESSURE_WINDOW_METERS) return 0;
+  const closeness =
+    1 - Math.abs(gap) / AI_TUNING.TRAFFIC_PRESSURE_WINDOW_METERS;
+  const direction = clamp(
+    (playerCar.x - aiCar.x) / Math.max(roadHalfWidth, 1),
+    -1,
+    1,
+  );
+  return direction * pressure * clamp(aggression, 0, 1) * closeness;
 }
 
 // Numeric helpers ----------------------------------------------------------
