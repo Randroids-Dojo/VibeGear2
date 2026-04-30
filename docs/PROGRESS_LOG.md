@@ -6,6 +6,43 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: WebKit keyboard smoke hotfix
+
+**GDD sections touched:**
+[§19](gdd/19-controls-and-accessibility.md) keyboard controls and
+[§21](gdd/21-technical-design-for-web-implementation.md) CI verification.
+**Branch / PR:** `fix/webkit-keyboard-smoke`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Hardened the cross-browser keyboard smoke after the PR #132 post-merge
+  main CI failed in WebKit with the page closing at the 30 second test
+  timeout.
+- Made the Tab helper check the current focused element before sending the
+  next Tab key so it does no extra focus cycling.
+- Gave only the keyboard navigation smoke a 60 second timeout and reduced
+  motion media state so the race canvas does less work during the route
+  navigation check.
+
+### Verified
+- `CI=1 PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit --repeat-each=3`
+  green, 12 WebKit runs passed.
+- `CI=1 npm run test:e2e:cross-browser` green, 12 tests passed across
+  Chromium, Firefox, and WebKit.
+
+### Decisions and assumptions
+- Treated this as a CI stability hotfix, not a gameplay change. The
+  failure log showed Playwright closing the page after the test timeout,
+  while the same keyboard flow passed locally when isolated.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Ember Steppe track set
 
 **GDD sections touched:**
