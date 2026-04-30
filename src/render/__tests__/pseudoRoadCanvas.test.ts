@@ -748,43 +748,31 @@ describe("drawRoad roadside sprites", () => {
     ).toHaveLength(2);
   });
 
-  it("deterministically reduces roadside sprite density", () => {
-    const full = makeCanvasSpy();
-    const reduced = makeCanvasSpy();
-    const strips: readonly Strip[] = [
+  it("maps roadside sprite density to fixed opportunity slots", () => {
+    const strips: readonly Strip[] = [0, 10, 20, 30].map((index) =>
       strip({
-        screenY: 440,
-        screenW: 260,
+        screenY: 440 - index,
+        screenW: 260 - index,
         segment: {
           ...strip({}).segment,
-          index: 0,
+          index,
           roadsideLeftId: "tree_pine",
           roadsideRightId: "default",
         },
       }),
-      strip({
-        screenY: 400,
-        screenW: 220,
-        segment: {
-          ...strip({}).segment,
-          index: 10,
-          roadsideLeftId: "tree_pine",
-          roadsideRightId: "default",
-        },
-      }),
-    ];
-
-    drawRoad(full.ctx, strips, VIEWPORT, {});
-    drawRoad(reduced.ctx, strips, VIEWPORT, { spriteDensityFactor: 0.25 });
-
-    const fullTrees = full.calls.filter(
-      (c): c is FillCall => c.type === "fill" && c.fillStyle === "#245c2f",
     );
-    const reducedTrees = reduced.calls.filter(
-      (c): c is FillCall => c.type === "fill" && c.fillStyle === "#245c2f",
-    );
-    expect(fullTrees.length).toBeGreaterThan(reducedTrees.length);
-    expect(reducedTrees).toHaveLength(1);
+    const treeCountFor = (spriteDensityFactor: number): number => {
+      const spy = makeCanvasSpy();
+      drawRoad(spy.ctx, strips, VIEWPORT, { spriteDensityFactor });
+      return spy.calls.filter(
+        (c): c is FillCall => c.type === "fill" && c.fillStyle === "#245c2f",
+      ).length;
+    };
+
+    expect(treeCountFor(1)).toBe(4);
+    expect(treeCountFor(0.75)).toBe(3);
+    expect(treeCountFor(0.5)).toBe(2);
+    expect(treeCountFor(0.25)).toBe(1);
   });
 
   it("skips the default roadside id", () => {

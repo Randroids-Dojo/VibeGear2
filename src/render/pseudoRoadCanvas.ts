@@ -413,9 +413,10 @@ function shouldKeepSpriteForDensity(strip: Strip, side: "left" | "right", densit
   const clamped = Math.max(0, Math.min(1, density));
   if (clamped >= 1) return true;
   if (clamped <= 0) return false;
-  const denominator = Math.max(1, Math.round(1 / clamped));
-  const sideOffset = side === "left" ? 0 : 1;
-  return (strip.segment.index + sideOffset) % denominator === 0;
+  const drawOffset = side === "left" ? 0 : Math.floor(ROADSIDE_DRAW_PERIOD / 2);
+  const opportunityIndex = Math.floor((strip.segment.index + drawOffset) / ROADSIDE_DRAW_PERIOD);
+  const keptSlots = Math.max(1, Math.min(4, Math.round(clamped * 4)));
+  return opportunityIndex % 4 < keptSlots;
 }
 
 function drawRoadsideSprites(
