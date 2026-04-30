@@ -203,9 +203,10 @@
       "testRefs": [
         "src/game/modes/__tests__/dailyChallenge.test.ts",
         "src/app/__tests__/page.test.tsx",
-        "e2e/title-screen.spec.ts"
+        "e2e/title-screen.spec.ts",
+        "e2e/daily-challenge.spec.ts"
       ],
-      "followupRefs": []
+      "followupRefs": ["VibeGear2-implement-daily-challenge-a44efeff"]
     },
     {
       "id": "GDD-06-DAILY-CHALLENGE-RESULT-SHARE",

@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Daily Challenge UTC fake-clock e2e
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Daily Challenge and
+[§21](gdd/21-technical-design-for-web-implementation.md) browser e2e
+verification.
+**Branch / PR:** `test/daily-utc-fake-clock`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Moved the Daily Challenge entry panel into a client-rendered component
+  so the user-facing route can be verified under Playwright's browser
+  clock.
+- Added Playwright coverage that fixes the browser clock before and
+  after UTC midnight, proving `/daily` rolls the entry date, seed, and
+  race link by UTC day.
+- Added Playwright coverage that starts a Daily Challenge run before
+  UTC midnight and verifies the chosen daily marker stays fixed after
+  the browser clock crosses into the next UTC day.
+- Updated the machine-checkable coverage ledger for Daily Challenge
+  selection.
+
+### Verified
+- `npx vitest run src/game/modes/__tests__/dailyChallenge.test.ts`
+  green, 12 tests passed.
+- `npm run typecheck` green.
+- `npx playwright test e2e/daily-challenge.spec.ts e2e/title-screen.spec.ts --project=chromium -g "daily|Daily"`
+  green, 3 tests passed.
+- `npm run lint` green.
+- `npm run content-lint` green.
+- `npm run verify` green, 2670 Vitest tests passed.
+
+### Decisions and assumptions
+- Kept bundled daily track and car-class data in the server page, while
+  moving only date-sensitive selection and rendering to the client. That
+  makes the visible route testable with a browser clock without changing
+  the daily selection algorithm.
+
+### Coverage ledger
+- GDD-06-DAILY-CHALLENGE-SELECTION now includes
+  `e2e/daily-challenge.spec.ts` and the slice dot for fake-clock route
+  verification.
+- Uncovered adjacent requirements: none for the current §6 Daily
+  Challenge fake-clock gap.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Time Trial downloaded ghost selection
 
 **GDD sections touched:**
