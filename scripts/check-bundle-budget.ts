@@ -21,6 +21,7 @@ const ROUTE_BUDGETS: RouteBudget[] = [
   { route: "/options/page", maxGzipKb: 290 },
 ];
 const TOTAL_STATIC_BUDGET_GZIP_KB = 760;
+const gzipSizeCache = new Map<string, number>();
 
 function readManifest(): Manifest {
   const raw = readFileSync(join(BUILD_DIR, "app-build-manifest.json"), "utf8");
@@ -28,8 +29,15 @@ function readManifest(): Manifest {
 }
 
 function gzipKb(path: string): number {
+  const cachedSize = gzipSizeCache.get(path);
+  if (cachedSize !== undefined) {
+    return cachedSize;
+  }
+
   const source = readFileSync(join(BUILD_DIR, path));
-  return gzipSync(source).byteLength / 1024;
+  const size = gzipSync(source).byteLength / 1024;
+  gzipSizeCache.set(path, size);
+  return size;
 }
 
 function isBudgetedAsset(path: string): boolean {

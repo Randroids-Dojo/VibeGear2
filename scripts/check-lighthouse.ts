@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { statSync } from "node:fs";
+import { join } from "node:path";
 import { chromium } from "playwright";
 import lighthouse from "lighthouse";
 import { launch } from "chrome-launcher";
@@ -21,12 +23,18 @@ const MIN_ACCESSIBILITY = 0.9;
 const MIN_BEST_PRACTICES = 0.9;
 const CHROME_START_TIMEOUT_MS = 30_000;
 const LIGHTHOUSE_ROUTE_TIMEOUT_MS = 45_000;
+const NPM_COMMAND = process.platform === "win32" ? "npm.cmd" : "npm";
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForServer(): Promise<void> {
+function assertProductionBuildExists(): void {
+  statSync(join(".next", "BUILD_ID"));
+  statSync(join(".next", "app-build-manifest.json"));
+}
+
+async function waitForServer(serverStopped: Promise<never>): Promise<void> {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       const response = await fetch(BASE_URL);
@@ -36,7 +44,7 @@ async function waitForServer(): Promise<void> {
     } catch {
       // Keep polling until next start finishes booting.
     }
-    await wait(1000);
+    await Promise.race([wait(1000), serverStopped]);
   }
   throw new Error(`Timed out waiting for ${BASE_URL}`);
 }
@@ -63,7 +71,7 @@ async function withTimeout<T>(
   }
 }
 
-function stopServer(): void {
+function stopServer(server: ReturnType<typeof spawn>): void {
   if (server.pid && process.platform !== "win32") {
     try {
       process.kill(-server.pid);
@@ -75,13 +83,16 @@ function stopServer(): void {
   server.kill();
 }
 
+assertProductionBuildExists();
+
 const server = spawn(
-  "npm",
+  NPM_COMMAND,
   ["run", "start", "--", "--port", String(PORT), "--hostname", "127.0.0.1"],
   {
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, NODE_ENV: "production" },
     detached: process.platform !== "win32",
+    shell: process.platform === "win32",
   },
 );
 
@@ -90,33 +101,58 @@ server.stderr.on("data", (chunk) => process.stderr.write(chunk));
 
 let chrome: Awaited<ReturnType<typeof launch>> | undefined;
 let failed = false;
+let stoppingServer = false;
+
+const serverStopped = new Promise<never>((_resolve, reject) => {
+  server.once("error", (error) => {
+    reject(error);
+  });
+  server.once("exit", (code, signal) => {
+    if (stoppingServer) {
+      return;
+    }
+    reject(
+      new Error(
+        `next start exited before Lighthouse completed with code ${
+          code ?? "null"
+        } and signal ${signal ?? "null"}`,
+      ),
+    );
+  });
+});
 
 try {
-  await waitForServer();
+  await waitForServer(serverStopped);
   chrome = await withTimeout(
     "Chrome launch",
     CHROME_START_TIMEOUT_MS,
-    launch({
-      chromePath: chromium.executablePath(),
-      chromeFlags: [
-        "--headless=new",
-        "--no-sandbox",
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-      ],
-    }),
+    Promise.race([
+      launch({
+        chromePath: chromium.executablePath(),
+        chromeFlags: [
+          "--headless=new",
+          "--no-sandbox",
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+        ],
+      }),
+      serverStopped,
+    ]),
   );
 
   for (const route of ROUTES) {
     const result = (await withTimeout(
       `Lighthouse ${route}`,
       LIGHTHOUSE_ROUTE_TIMEOUT_MS,
-      lighthouse(`${BASE_URL}${route}`, {
-        port: chrome.port,
-        output: "json",
-        logLevel: "error",
-        onlyCategories: ["performance", "accessibility", "best-practices"],
-      }),
+      Promise.race([
+        lighthouse(`${BASE_URL}${route}`, {
+          port: chrome.port,
+          output: "json",
+          logLevel: "error",
+          onlyCategories: ["performance", "accessibility", "best-practices"],
+        }),
+        serverStopped,
+      ]),
     )) as LighthouseResult | undefined;
 
     if (!result) {
@@ -143,7 +179,8 @@ try {
   }
 } finally {
   await chrome?.kill();
-  stopServer();
+  stoppingServer = true;
+  stopServer(server);
 }
 
 process.exit(failed ? 1 : 0);
