@@ -99,9 +99,9 @@ export const RegionThemeSchema = z.object({
   palette: RegionThemePaletteSchema,
   skyTreatment: SkyTreatmentSchema,
   roadShoulderType: RoadShoulderTypeSchema,
-  propCategories: z.array(z.string().min(1)).min(1),
+  propCategories: z.array(slug).min(1),
   weatherPresets: z.array(WeatherOptionSchema).min(1),
-  tunnelMaterials: z.array(z.string().min(1)).min(1),
+  tunnelMaterials: z.array(slug).min(1),
   uiAccent: HexColorSchema,
 });
 export type RegionTheme = z.infer<typeof RegionThemeSchema>;
