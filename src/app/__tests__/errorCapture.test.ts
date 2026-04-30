@@ -78,6 +78,24 @@ describe("installErrorCapture", () => {
     });
   });
 
+  it("promotes repeated errors so eviction follows most recent sighting", () => {
+    const target = new FakeTarget();
+    const handle = installErrorCapture({ target, limit: 2 });
+    const first = new Error("first");
+    first.stack = "Error: first\n    at shared (a.ts:1:1)";
+
+    target.dispatch("error", { error: first });
+    target.dispatch("error", { error: new Error("second") });
+    target.dispatch("error", { error: first });
+    target.dispatch("error", { error: new Error("third") });
+
+    expect(handle.getRecent().map((entry) => entry.message)).toEqual([
+      "first",
+      "third",
+    ]);
+    expect(handle.getRecent()[0]?.count).toBe(2);
+  });
+
   it("caps the ring buffer and evicts oldest entries", () => {
     const target = new FakeTarget();
     const handle = installErrorCapture({ target, limit: 3 });

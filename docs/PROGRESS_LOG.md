@@ -33,12 +33,12 @@ mitigation.
 
 ### Verified
 - `npx vitest run src/app/__tests__/errorCapture.test.ts src/app/__tests__/DevErrorPanel.test.tsx src/components/error/__tests__/ErrorBoundary.test.tsx src/components/error/__tests__/formatErrorReport.test.ts`
-  green, 20 passed.
+  green, 21 passed.
 - `npx playwright test e2e/error-boundary.spec.ts` green, 4 passed.
 - `npm run lint` green.
 - `npm run typecheck` green.
 - `npm run docs:check` green.
-- `npm run verify` green, 2652 passed.
+- `npm run verify` green, 2653 passed.
 
 ### Decisions and assumptions
 - No network sink ships in this slice. That keeps the feature outside

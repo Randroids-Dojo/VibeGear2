@@ -45,7 +45,15 @@ const NO_STACK = "<no-stack>";
 let globalCapture: ErrorCaptureHandle | null = null;
 
 export function ensureGlobalErrorCapture(options: ErrorCaptureOptions = {}): ErrorCaptureHandle {
-  if (globalCapture) return globalCapture;
+  if (globalCapture) {
+    if (hasDefinedErrorCaptureOptions(options)) {
+      const logger = options.logger ?? console;
+      logger.warn(
+        "ensureGlobalErrorCapture options were supplied after global error capture was already installed; supplied options were ignored.",
+      );
+    }
+    return globalCapture;
+  }
   globalCapture = installErrorCapture(options);
   return globalCapture;
 }
@@ -82,7 +90,9 @@ export function installErrorCapture(options: ErrorCaptureOptions = {}): ErrorCap
         timestamp: now(),
         count: existing.count + 1,
       };
-      recent[existingIndex] = updated;
+      recent.splice(existingIndex, 1);
+      recent.push(updated);
+      rebuildIndex(byKey, recent);
       reportToSink(options.sink, updated, logger);
       return updated;
     }
@@ -242,6 +252,10 @@ function rebuildIndex(index: Map<string, number>, recent: readonly CapturedError
 function clampLimit(limit: number): number {
   if (!Number.isFinite(limit)) return DEFAULT_LIMIT;
   return Math.max(1, Math.floor(limit));
+}
+
+function hasDefinedErrorCaptureOptions(options: ErrorCaptureOptions): boolean {
+  return Object.values(options).some((value) => value !== undefined);
 }
 
 function hashId(input: string): string {

@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, type ReactElement } from "react";
+import { type ReactElement } from "react";
 
 import { DevErrorPanel } from "./DevErrorPanel";
 import { ensureGlobalErrorCapture } from "./errorCapture";
 
-export function ErrorCaptureClient(): ReactElement {
-  useEffect(() => {
-    ensureGlobalErrorCapture();
-  }, []);
+if (typeof window !== "undefined") {
+  ensureGlobalErrorCapture();
+}
 
+export function ErrorCaptureClient(): ReactElement {
   return <DevErrorPanel />;
 }
