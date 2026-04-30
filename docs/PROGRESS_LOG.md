@@ -26,12 +26,16 @@ Correct them by adding a new entry that references the old one.
   Normal is mild, Hard is minimal, and Master disables rubber-banding.
 - Added deterministic unit tests for every archetype behavior, the updated
   rubber-banding bounds, and the §23 balancing table.
+- Hardened the cross-browser keyboard smoke so WebKit waits for the title
+  menu to render before tabbing after pause-exit navigation.
 
 ### Verified
 - `npx vitest run src/game/__tests__/ai.test.ts src/game/__tests__/aiDifficulty.test.ts src/game/__tests__/aiGrid.test.ts src/data/__tests__/ai-content.test.ts src/data/__tests__/balancing.test.ts`
   green, 236 passed.
 - `npm run typecheck` green.
 - `npm run verify` green, 2626 passed.
+- `PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit --grep "supports keyboard-only"`
+  green.
 
 ### Decisions and assumptions
 - Kept the existing `AIArchetypeSchema` wire names because the data schema
