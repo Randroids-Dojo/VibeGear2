@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§21](gdd/21-technical-design-for-web-implementation.md) CI and deploy target,
 and [§25](gdd/25-development-roadmap.md) v1.0 stable release branch.
-**Branch / PR:** `chore/v0.2-stable-release-branch`, PR TBD.
+**Branch / PR:** `chore/v0.2-stable-release-branch`, PR #140.
 **Status:** Implemented.
 
 ### Done
