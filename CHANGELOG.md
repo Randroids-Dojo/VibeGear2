@@ -3,6 +3,23 @@
 All notable changes to VibeGear2 are tracked here. The canonical slice-by-slice
 audit trail remains `docs/PROGRESS_LOG.md`.
 
+## 0.2.0 - 2026-04-30
+
+Content-complete World Tour release candidate.
+
+### Highlights
+
+- Expanded the bundled World Tour catalogue from the original release build to
+  all 32 planned v1.0 tracks across eight regions.
+- Added Ember Steppe, Breakwater Isles, Glass Ridge, Neon Meridian, Moss
+  Frontier, and Crown Circuit track sets after the `v0.1.0` tag.
+- Enforced strict championship track resolution now that every planned World
+  Tour track id resolves in the browser-safe catalogue.
+- Added per-car FX atlas routing for all six playable cars.
+- Added Time Trial downloaded ghost selection, Daily Challenge share text, and
+  pause-menu Settings and Ghosts actions.
+- Kept production verification green on main after every merged content slice.
+
 ## 0.1.0 - 2026-04-30
 
 Initial playable web release candidate.

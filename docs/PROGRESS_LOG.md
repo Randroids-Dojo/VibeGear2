@@ -6,6 +6,47 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: v0.2.0 content-complete release refresh
+
+**GDD sections touched:**
+[§24](gdd/24-content-plan.md) full v1.0 content and
+[§25](gdd/25-development-roadmap.md) release packaging.
+**Branch / PR:** `chore/v0.2.0-release-refresh`, PR #139.
+**Status:** Implemented.
+
+### Done
+- Bumped package metadata from `0.1.0` to `0.2.0`.
+- Added a `CHANGELOG.md` section for the content-complete World Tour release
+  candidate after the post-`v0.1.0` track-set work.
+- Documented that all 32 planned World Tour tracks are now bundled and strict
+  championship track resolution is enforced.
+
+### Verified
+- `npm run verify` green, 2737 Vitest tests passed.
+- `npm run build && npm run quality:gates` green; bundle budgets passed and
+  Lighthouse passed for `/`, `/race?mode=practice`, `/garage`, and `/options`.
+
+### Decisions and assumptions
+- Used `0.2.0` rather than moving the existing `v0.1.0` tag, because `v0.1.0`
+  already points at an older main commit and the later full-track content is a
+  new release candidate.
+- Deferred creating the `v0.2.0` git tag until this release-refresh PR merges
+  so the tag points at the exact merge commit on `main`.
+
+### Coverage ledger
+- GDD-25-V0-2-0-RELEASE-REFRESH covers the package metadata, changelog, and
+  progress log for the content-complete World Tour build.
+- Uncovered adjacent requirements: create the `v0.2.0` tag after this PR
+  merges, then run post-tag production smoke.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Crown Circuit track set
 
 **GDD sections touched:**
