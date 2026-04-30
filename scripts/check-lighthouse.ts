@@ -19,6 +19,8 @@ const ROUTES = ["/", "/race?mode=practice", "/garage", "/options"];
 const MIN_PERFORMANCE = 0.7;
 const MIN_ACCESSIBILITY = 0.9;
 const MIN_BEST_PRACTICES = 0.9;
+const CHROME_START_TIMEOUT_MS = 30_000;
+const LIGHTHOUSE_ROUTE_TIMEOUT_MS = 45_000;
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,12 +41,47 @@ async function waitForServer(): Promise<void> {
   throw new Error(`Timed out waiting for ${BASE_URL}`);
 }
 
+async function withTimeout<T>(
+  label: string,
+  timeoutMs: number,
+  task: Promise<T>,
+): Promise<T> {
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_resolve, reject) => {
+        timeout = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs} ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
+function stopServer(): void {
+  if (server.pid && process.platform !== "win32") {
+    try {
+      process.kill(-server.pid);
+      return;
+    } catch {
+      // Fall back to killing the npm wrapper if the process group is gone.
+    }
+  }
+  server.kill();
+}
+
 const server = spawn(
   "npm",
   ["run", "start", "--", "--port", String(PORT), "--hostname", "127.0.0.1"],
   {
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, NODE_ENV: "production" },
+    detached: process.platform !== "win32",
   },
 );
 
@@ -56,18 +93,31 @@ let failed = false;
 
 try {
   await waitForServer();
-  chrome = await launch({
-    chromePath: chromium.executablePath(),
-    chromeFlags: ["--headless=new", "--no-sandbox", "--disable-gpu"],
-  });
+  chrome = await withTimeout(
+    "Chrome launch",
+    CHROME_START_TIMEOUT_MS,
+    launch({
+      chromePath: chromium.executablePath(),
+      chromeFlags: [
+        "--headless=new",
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+      ],
+    }),
+  );
 
   for (const route of ROUTES) {
-    const result = (await lighthouse(`${BASE_URL}${route}`, {
-      port: chrome.port,
-      output: "json",
-      logLevel: "error",
-      onlyCategories: ["performance", "accessibility", "best-practices"],
-    })) as LighthouseResult | undefined;
+    const result = (await withTimeout(
+      `Lighthouse ${route}`,
+      LIGHTHOUSE_ROUTE_TIMEOUT_MS,
+      lighthouse(`${BASE_URL}${route}`, {
+        port: chrome.port,
+        output: "json",
+        logLevel: "error",
+        onlyCategories: ["performance", "accessibility", "best-practices"],
+      }),
+    )) as LighthouseResult | undefined;
 
     if (!result) {
       throw new Error(`Lighthouse did not return a result for ${route}`);
@@ -93,9 +143,7 @@ try {
   }
 } finally {
   await chrome?.kill();
-  server.kill();
+  stopServer();
 }
 
-if (failed) {
-  process.exitCode = 1;
-}
+process.exit(failed ? 1 : 0);
