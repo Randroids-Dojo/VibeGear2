@@ -15,11 +15,11 @@ and [§25](gdd/25-development-roadmap.md) v1.0 stable release branch.
 **Status:** Implemented.
 
 ### Done
-- Added `docs/RELEASES.md` with the stable release branch contract, current
+- Added `docs/RELEASES.md` with the stable release branch contract, planned
   `release/v0.2` target, creation commands, smoke checklist, and backport
   rules.
-- Updated CI so pushes to `release/*` branches run verification while
-  production deploy remains restricted to `main`.
+- Updated CI so pushes and PRs targeting `release/*` branches run verification
+  while production deploy remains restricted to `main`.
 - Linked release branch docs from `README.md`.
 - Added GDD coverage for the §25 stable release branch deliverable.
 
@@ -37,10 +37,11 @@ and [§25](gdd/25-development-roadmap.md) v1.0 stable release branch.
   deploy branch per the working agreement.
 
 ### Coverage ledger
-- GDD-25-STABLE-RELEASE-BRANCH covers the release branch process docs and
-  release branch CI trigger.
+- GDD-25-STABLE-RELEASE-BRANCH covers the release branch process docs,
+  backport PR checks, and release branch CI trigger.
 - Uncovered adjacent requirements: create and push
-  `release/v0.2` at the `v0.2.0` tag, then watch its CI run.
+  `release/v0.2` from the merged release-branch docs commit, then watch its
+  CI run.
 
 ### Followups created
 None.
