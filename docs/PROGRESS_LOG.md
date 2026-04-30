@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Ember Steppe track set
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track design,
+[§22](gdd/22-data-schemas.md) track schema, and
+[§24](gdd/24-content-plan.md) full v1.0 content.
+**Branch / PR:** `feat/ember-steppe-tracks`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added the four planned Ember Steppe tracks from the §24 World Tour
+  list: Redglass Straight, Mesa Coil, Dustbreak Causeway, and Cinder
+  Gate.
+- Registered the new tracks in the browser-safe track catalogue.
+- Tightened content tests so the authored World Tour set through Ember
+  Steppe must resolve in both the track catalogue and championship
+  cross-reference tests.
+- Added machine-checkable coverage for the Ember Steppe track set.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts src/data/regions/__tests__/regions-content.test.ts src/data/__tests__/content-budget.test.ts src/road/__tests__/trackCompiler.test.ts src/road/__tests__/trackCompiler.golden.test.ts`
+  green, 123 tests passed.
+- `npx vitest run src/data/__tests__/hazards-content.test.ts src/data/__tests__/tracks-content.test.ts src/data/__tests__/championship-content.test.ts`
+  green, 60 tests passed after replacing invalid hazard ids.
+- `npx playwright test e2e/world-tour.spec.ts e2e/tour-flow.spec.ts --project=chromium`
+  green, 3 tests passed.
+- `npm run content-lint` green.
+- `npm run verify` green, 2687 Vitest tests passed.
+
+### Decisions and assumptions
+- Kept Ember Steppe weather to `clear` and `fog` because the region
+  theme registry currently allows those presets for this tour.
+- Used existing hazard ids from the schema-backed registry, with
+  `gravel_band` as the desert-specific recurring hazard.
+
+### Coverage ledger
+- GDD-24-EMBER-STEPPE-TRACK-SET covers the four third-tour bundled
+  track JSON files, catalogue registration, and content validation.
+- Uncovered adjacent requirements: the remaining five v1.0 World Tour
+  regions still need authored track JSON before strict championship
+  track resolution can be enabled.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Per-car FX atlas routing
 
 **GDD sections touched:**

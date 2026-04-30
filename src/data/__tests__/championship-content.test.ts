@@ -143,8 +143,9 @@ describe("world-tour-standard track id cross-references", () => {
       expect(unresolved).toEqual([]);
     });
   } else {
-    it("resolves every §24 MVP track id for the first two tours", () => {
-      expect(mvpTrackIds.filter((id) => !hasBundledTrack(id))).toEqual([]);
+    it("resolves every authored §24 track id through Ember Steppe", () => {
+      const authoredTrackIds = wt.tours.slice(0, 3).flatMap((t) => t.tracks);
+      expect(authoredTrackIds.filter((id) => !hasBundledTrack(id))).toEqual([]);
     });
 
     it("permits unresolved track ids during the MVP content window", () => {

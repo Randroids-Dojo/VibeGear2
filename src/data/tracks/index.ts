@@ -18,6 +18,10 @@ import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
 import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
 import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
 import ironBoroughRivetTunnel from "./iron-borough-rivet-tunnel.json";
+import emberSteppeCinderGate from "./ember-steppe-cinder-gate.json";
+import emberSteppeDustbreakCauseway from "./ember-steppe-dustbreak-causeway.json";
+import emberSteppeMesaCoil from "./ember-steppe-mesa-coil.json";
+import emberSteppeRedglassStraight from "./ember-steppe-redglass-straight.json";
 import velvetCoastClifflineArc from "./velvet-coast-cliffline-arc.json";
 import velvetCoastHarborRun from "./velvet-coast-harbor-run.json";
 import velvetCoastLighthouseFall from "./velvet-coast-lighthouse-fall.json";
@@ -35,6 +39,10 @@ export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "iron-borough/rivet-tunnel": ironBoroughRivetTunnel,
   "iron-borough/foundry-mile": ironBoroughFoundryMile,
   "iron-borough/outer-exchange": ironBoroughOuterExchange,
+  "ember-steppe/redglass-straight": emberSteppeRedglassStraight,
+  "ember-steppe/mesa-coil": emberSteppeMesaCoil,
+  "ember-steppe/dustbreak-causeway": emberSteppeDustbreakCauseway,
+  "ember-steppe/cinder-gate": emberSteppeCinderGate,
 });
 
 /** Sorted list of available track slugs for menu builders. */
