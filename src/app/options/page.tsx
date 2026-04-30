@@ -30,6 +30,7 @@ import { AudioPane } from "@/components/options/AudioPane";
 import { ControlsPane } from "@/components/options/ControlsPane";
 import { DifficultyPane } from "@/components/options/DifficultyPane";
 import { DisplayPane } from "@/components/options/DisplayPane";
+import { PerformancePane } from "@/components/options/PerformancePane";
 import { ProfileSection } from "@/components/options/ProfileSection";
 import { resetShippedOptionsToDefaults } from "@/components/options/optionsResetState";
 import { defaultSave, loadSave, saveSave } from "@/persistence";
@@ -89,9 +90,7 @@ const TABS: ReadonlyArray<TabSpec> = [
   {
     key: "performance",
     label: "Performance",
-    headline: "Performance settings coming soon",
-    body: "Draw distance, sprite density, and pixel ratio sliders ship with the performance settings slice.",
-    dotId: "VibeGear2-implement-performance-settings-2de5d437",
+    pane: () => <PerformancePane />,
   },
   {
     key: "profile",

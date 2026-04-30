@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const SAVE_KEY = "vibegear2:save:v3";
+const SAVE_KEY = "vibegear2:save:v4";
 
 test.describe("pre-race tire selection", () => {
   test.beforeEach(async ({ page }) => {
@@ -52,7 +52,7 @@ test.describe("pre-race tire selection", () => {
 
 function buildSave() {
   return {
-    version: 3,
+    version: 4,
     profileName: "PreRaceTester",
     settings: {
       displaySpeedUnit: "kph",

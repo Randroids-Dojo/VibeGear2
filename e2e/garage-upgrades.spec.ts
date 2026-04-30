@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const SAVE_KEY = "vibegear2:save:v3";
+const SAVE_KEY = "vibegear2:save:v4";
 
 interface SeededSave {
   version: number;
@@ -36,7 +36,7 @@ function buildGarageSave(
   overrides: Partial<SeededSave["garage"]> = {},
 ): SeededSave {
   return {
-    version: 3,
+    version: 4,
     profileName: "GarageUpgradeTester",
     settings: {
       displaySpeedUnit: "kph",

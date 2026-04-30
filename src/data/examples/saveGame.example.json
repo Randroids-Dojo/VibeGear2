@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "profileName": "Player",
   "settings": {
     "displaySpeedUnit": "kph",
@@ -31,6 +31,12 @@
       "pause": ["Escape"],
       "shiftUp": ["KeyE"],
       "shiftDown": ["KeyQ"]
+    },
+    "graphics": {
+      "mode": "auto",
+      "drawDistance": "high",
+      "spriteDensity": 1,
+      "pixelRatioCap": 2
     }
   },
   "garage": {

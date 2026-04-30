@@ -748,6 +748,45 @@ describe("drawRoad roadside sprites", () => {
     ).toHaveLength(2);
   });
 
+  it("deterministically reduces roadside sprite density", () => {
+    const full = makeCanvasSpy();
+    const reduced = makeCanvasSpy();
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 440,
+        screenW: 260,
+        segment: {
+          ...strip({}).segment,
+          index: 0,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "default",
+        },
+      }),
+      strip({
+        screenY: 400,
+        screenW: 220,
+        segment: {
+          ...strip({}).segment,
+          index: 10,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "default",
+        },
+      }),
+    ];
+
+    drawRoad(full.ctx, strips, VIEWPORT, {});
+    drawRoad(reduced.ctx, strips, VIEWPORT, { spriteDensityFactor: 0.25 });
+
+    const fullTrees = full.calls.filter(
+      (c): c is FillCall => c.type === "fill" && c.fillStyle === "#245c2f",
+    );
+    const reducedTrees = reduced.calls.filter(
+      (c): c is FillCall => c.type === "fill" && c.fillStyle === "#245c2f",
+    );
+    expect(fullTrees.length).toBeGreaterThan(reducedTrees.length);
+    expect(reducedTrees).toHaveLength(1);
+  });
+
   it("skips the default roadside id", () => {
     const spy = makeCanvasSpy();
     const strips: readonly Strip[] = [

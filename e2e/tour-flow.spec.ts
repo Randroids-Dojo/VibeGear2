@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const SAVE_KEY = "vibegear2:save:v3";
+const SAVE_KEY = "vibegear2:save:v4";
 
 test.describe("World Tour race progression", () => {
   test("entering Velvet Coast from the world hub completes all four races", async ({
@@ -154,7 +154,7 @@ function buildFreshTourSave() {
 
 function buildFinalRaceSave() {
   return {
-    version: 3,
+    version: 4,
     profileName: "TourFlowTester",
     settings: {
       displaySpeedUnit: "kph",

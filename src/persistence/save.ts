@@ -22,6 +22,7 @@
 
 import { SaveGameSchema, type SaveGame } from "@/data/schemas";
 import { DEFAULT_KEY_BINDINGS } from "@/game/input";
+import { DEFAULT_GRAPHICS_SETTINGS } from "@/render/graphicsSettings";
 
 import { CURRENT_SAVE_VERSION, migrate } from "./migrations";
 import {
@@ -125,6 +126,7 @@ export function defaultSave(): SaveGame {
       // §19 key bindings: clone the runtime defaults into a plain object
       // so the persisted shape stays mutable and JSON-serialisable.
       keyBindings: cloneDefaultKeyBindings(),
+      graphics: { ...DEFAULT_GRAPHICS_SETTINGS },
     },
     garage: {
       credits: 0,

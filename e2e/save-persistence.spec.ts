@@ -23,7 +23,7 @@ import { expect, test } from "@playwright/test";
  * the first one.
  */
 
-const SAVE_KEY = "vibegear2:save:v3";
+const SAVE_KEY = "vibegear2:save:v4";
 
 interface SeededSave {
   version: number;
@@ -63,7 +63,7 @@ interface SeededSave {
  */
 function buildSeededSave(): SeededSave {
   return {
-    version: 3,
+    version: 4,
     profileName: "PersistenceTester",
     settings: {
       displaySpeedUnit: "kph",

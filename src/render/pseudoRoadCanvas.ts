@@ -182,6 +182,11 @@ export interface DrawRoadOptions {
     phaseMeters?: number;
   };
   /**
+   * Performance knob from §27. `1` draws the authored roadside cadence;
+   * lower values skip a deterministic subset of billboard opportunities.
+   */
+  spriteDensityFactor?: number;
+  /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
    * a second physics step from the recorded `Player.readNext` inputs to
    * derive the ghost's world position, projects it to the screen with
@@ -345,6 +350,7 @@ export function drawRoad(
         strips,
         viewport,
         highContrastSigns,
+        options.spriteDensityFactor,
       );
       ctx.restore();
     } else {
@@ -354,6 +360,7 @@ export function drawRoad(
         strips,
         viewport,
         highContrastSigns,
+        options.spriteDensityFactor,
       );
     }
   }
@@ -402,17 +409,27 @@ function shouldDrawRoadsideSprite(strip: Strip, side: "left" | "right"): boolean
   return (strip.segment.index + offset) % ROADSIDE_DRAW_PERIOD === 0;
 }
 
+function shouldKeepSpriteForDensity(strip: Strip, side: "left" | "right", density = 1): boolean {
+  const clamped = Math.max(0, Math.min(1, density));
+  if (clamped >= 1) return true;
+  if (clamped <= 0) return false;
+  const denominator = Math.max(1, Math.round(1 / clamped));
+  const sideOffset = side === "left" ? 0 : 1;
+  return (strip.segment.index + sideOffset) % denominator === 0;
+}
+
 function drawRoadsideSprites(
   ctx: CanvasRenderingContext2D,
   strips: readonly Strip[],
   viewport: Viewport,
   highContrastSigns = false,
+  spriteDensityFactor = 1,
 ): void {
   for (let i = strips.length - 1; i >= 0; i--) {
     const strip = strips[i];
     if (!strip?.visible) continue;
-    drawRoadsideSprite(ctx, strip, viewport, "left", highContrastSigns);
-    drawRoadsideSprite(ctx, strip, viewport, "right", highContrastSigns);
+    drawRoadsideSprite(ctx, strip, viewport, "left", highContrastSigns, spriteDensityFactor);
+    drawRoadsideSprite(ctx, strip, viewport, "right", highContrastSigns, spriteDensityFactor);
   }
 }
 
@@ -422,8 +439,10 @@ function drawRoadsideSprite(
   viewport: Viewport,
   side: "left" | "right",
   highContrastSigns: boolean,
+  spriteDensityFactor: number,
 ): void {
   if (!shouldDrawRoadsideSprite(strip, side)) return;
+  if (!shouldKeepSpriteForDensity(strip, side, spriteDensityFactor)) return;
   const id =
     side === "left" ? strip.segment.roadsideLeftId : strip.segment.roadsideRightId;
   const style = roadsideStyleFor(id);
