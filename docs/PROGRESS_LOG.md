@@ -10,7 +10,7 @@ Correct them by adding a new entry that references the old one.
 
 **GDD sections touched:**
 [§25](gdd/25-development-roadmap.md) v1.0 stable release branch.
-**Branch / PR:** `docs/v0.2-release-branch-active`, PR TBD.
+**Branch / PR:** `docs/v0.2-release-branch-active`, PR #141.
 **Status:** Implemented.
 
 ### Done
