@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§24](gdd/24-content-plan.md) full v1.0 content and
 [§25](gdd/25-development-roadmap.md) release packaging.
-**Branch / PR:** `chore/v0.2.0-release-refresh`, PR pending.
+**Branch / PR:** `chore/v0.2.0-release-refresh`, PR #139.
 **Status:** Implemented.
 
 ### Done
