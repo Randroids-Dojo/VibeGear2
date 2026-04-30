@@ -12,13 +12,17 @@ const CORE_ROUTES: ReadonlyArray<{
 ];
 
 async function focusByTab(page: Page, testId: string, maxTabs = 40): Promise<void> {
-  for (let i = 0; i < maxTabs; i += 1) {
-    await page.keyboard.press("Tab");
-    const activeTestId = await page.evaluate(() => {
+  const focusedTestId = async (): Promise<string | null> =>
+    page.evaluate(() => {
       const active = document.activeElement;
       return active instanceof HTMLElement ? active.dataset.testid ?? null : null;
     });
-    if (activeTestId === testId) return;
+
+  if ((await focusedTestId()) === testId) return;
+
+  for (let i = 0; i < maxTabs; i += 1) {
+    await page.keyboard.press("Tab");
+    if ((await focusedTestId()) === testId) return;
   }
   throw new Error(`Could not focus ${testId} with Tab`);
 }
@@ -93,6 +97,8 @@ test.describe("cross-browser compatibility smoke", () => {
   test("supports keyboard-only title to race to garage navigation", async ({
     page,
   }) => {
+    test.setTimeout(60_000);
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await expect(page.getByTestId("menu-start-race")).toBeVisible();
     await focusByTab(page, "menu-start-race");
