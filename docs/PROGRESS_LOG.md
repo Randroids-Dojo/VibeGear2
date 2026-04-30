@@ -32,8 +32,10 @@ Correct them by adding a new entry that references the old one.
   the PR was merged before the local review fixes were pushed.
 
 ### Coverage ledger
-- No new ledger row. This keeps the existing Time Trial launch coverage
-  row accurate while reducing implementation drift risk.
+- GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH remains the relevant ledger row
+  for the Time Trial launch surface.
+- Uncovered adjacent requirements: downloaded ghost selection and
+  UTC-midnight fake-clock e2e remain under the §6 modes parent dot.
 
 ### Followups created
 None.
