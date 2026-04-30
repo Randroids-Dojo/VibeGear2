@@ -62,6 +62,7 @@ import {
   CarSchema,
   ChampionshipSchema,
   ModManifestSchema,
+  RegionPaletteSchema,
   TrackSchema,
   UpgradeSchema,
 } from "../src/data/schemas";
@@ -565,6 +566,15 @@ export function lintPublicModManifests(input: LintInput): LintHit[] {
       parsed.data.data.championships,
       "championship",
       ChampionshipSchema,
+    );
+    lintReferencedModFiles(
+      input,
+      hits,
+      manifestAbs,
+      modDir,
+      parsed.data.data.palettes,
+      "palette",
+      RegionPaletteSchema,
     );
   }
   return hits;

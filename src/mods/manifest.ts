@@ -3,12 +3,14 @@ import {
   CarSchema,
   ChampionshipSchema,
   ModManifestSchema,
+  RegionPaletteSchema,
   TrackSchema,
   UpgradeSchema,
   type AIDriver,
   type Car,
   type Championship,
   type ModManifest,
+  type RegionPalette,
   type Track,
   type Upgrade,
 } from "@/data/schemas";
@@ -28,6 +30,7 @@ export interface LoadedModContent {
   upgrades: Upgrade[];
   aiDrivers: AIDriver[];
   championships: Championship[];
+  palettes: RegionPalette[];
 }
 
 export interface LoadModOptions {
@@ -111,7 +114,7 @@ export async function loadModContent(options: LoadModOptions): Promise<LoadedMod
   const basePath = options.basePath ?? MODS_BASE_PATH;
   const manifest = await loadModManifest({ ...options, basePath, fetcher });
 
-  const [tracks, cars, upgrades, aiDrivers, championships] = await Promise.all([
+  const [tracks, cars, upgrades, aiDrivers, championships, palettes] = await Promise.all([
     loadList(fetcher, basePath, options.modId, manifest.data.tracks, "track", TrackSchema),
     loadList(fetcher, basePath, options.modId, manifest.data.cars, "car", CarSchema),
     loadList(fetcher, basePath, options.modId, manifest.data.upgrades, "upgrade", UpgradeSchema),
@@ -124,7 +127,8 @@ export async function loadModContent(options: LoadModOptions): Promise<LoadedMod
       "championship",
       ChampionshipSchema,
     ),
+    loadList(fetcher, basePath, options.modId, manifest.data.palettes, "palette", RegionPaletteSchema),
   ]);
 
-  return { manifest, tracks, cars, upgrades, aiDrivers, championships };
+  return { manifest, tracks, cars, upgrades, aiDrivers, championships, palettes };
 }

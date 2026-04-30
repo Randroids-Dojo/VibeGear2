@@ -1,0 +1,15 @@
+{
+  "id": "crown-circuit",
+  "name": "Crown Circuit",
+  "slots": {
+    "sky": "#18284e",
+    "midHorizon": "#4c5c7a",
+    "nearTerrain": "#33573d",
+    "propPrimary": "#d8cf87",
+    "propSecondary": "#a7aeb7",
+    "propAccent": "#694e8a",
+    "roadEdge": "#e1e0d8",
+    "roadSurface": "#555762",
+    "fogTint": "#969eb5"
+  }
+}

@@ -12,10 +12,15 @@
 import { useEffect, useRef, useState } from "react";
 import { PauseOverlay } from "@/components/pause/PauseOverlay";
 import { usePauseToggle } from "@/components/pause/usePauseToggle";
+import roadsideAtlasFixture from "@/data/atlas/roadside.json";
+import { REGION_PALETTES, REGION_PALETTES_BY_ID } from "@/data/palettes";
+import { AtlasMetaSchema } from "@/data/schemas";
 import { startLoop, type LoopHandle } from "@/game/loop";
 import { deriveHudState, type RankedCar } from "@/game/hudState";
 import { createRaceState, type RaceState } from "@/game/raceState";
+import { PaletteCache } from "@/render/paletteCache";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { loadAtlas, type LoadedAtlas } from "@/render/spriteAtlas";
 import { drawHud } from "@/render/uiRenderer";
 import {
   CAMERA_DEPTH,
@@ -35,8 +40,8 @@ const TEST_TRACK = compileSegments([
     len: 1200,
     curve: 0,
     grade: 0,
-    roadsideLeft: "default",
-    roadsideRight: "default",
+    roadsideLeft: "tree_pine",
+    roadsideRight: "sign_marker",
     hazards: [],
   },
 ]);
@@ -59,14 +64,31 @@ const INITIAL: RoadDevMetrics = {
 export default function RoadDevPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
+  const paletteCacheRef = useRef(new PaletteCache<CanvasImageSource>(128));
   const [metrics, setMetrics] = useState<RoadDevMetrics>(INITIAL);
+  const [paletteId, setPaletteId] = useState(REGION_PALETTES[0]?.id ?? "velvet-coast");
+  const [roadsideAtlas, setRoadsideAtlas] = useState<LoadedAtlas | null>(null);
   const pause = usePauseToggle({ loop: () => handleRef.current });
+  const selectedPalette =
+    REGION_PALETTES_BY_ID[paletteId] ?? REGION_PALETTES[0] ?? null;
+
+  useEffect(() => {
+    let active = true;
+    const meta = AtlasMetaSchema.parse(roadsideAtlasFixture);
+    void loadAtlas(meta).then((atlas) => {
+      if (active) setRoadsideAtlas(atlas);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    paletteCacheRef.current.clear();
 
     const camera: Camera = {
       x: 0,
@@ -104,7 +126,16 @@ export default function RoadDevPage() {
       },
       render: () => {
         const strips = project(TEST_TRACK.segments, camera, viewport);
-        drawRoad(ctx, strips, viewport);
+        drawRoad(ctx, strips, viewport, {
+          roadsideAtlas:
+            roadsideAtlas && selectedPalette
+              ? {
+                  atlas: roadsideAtlas,
+                  palette: selectedPalette,
+                  cache: paletteCacheRef.current,
+                }
+              : null,
+        });
         lastVisible = strips.reduce((acc, s) => (s.visible ? acc + 1 : acc), 0);
 
         // HUD overlay. Speed is the constant camera advance; total
@@ -145,7 +176,7 @@ export default function RoadDevPage() {
       handleRef.current?.stop();
       handleRef.current = null;
     };
-  }, []);
+  }, [roadsideAtlas, selectedPalette]);
 
   return (
     <main
@@ -177,6 +208,27 @@ export default function RoadDevPage() {
           imageRendering: "pixelated",
         }}
       />
+      <label
+        style={{
+          display: "grid",
+          gap: "0.35rem",
+          width: "min(18rem, 100%)",
+          marginTop: "1rem",
+        }}
+      >
+        <span>Region palette</span>
+        <select
+          value={paletteId}
+          onChange={(event) => setPaletteId(event.target.value)}
+          style={{ font: "inherit", padding: "0.35rem" }}
+        >
+          {REGION_PALETTES.map((palette) => (
+            <option key={palette.id} value={palette.id}>
+              {palette.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <dl
         style={{
           display: "grid",

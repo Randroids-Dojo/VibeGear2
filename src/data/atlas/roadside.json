@@ -3,24 +3,39 @@
   "width": 512,
   "height": 256,
   "sprites": {
-    "sign_marker": [
-      { "x": 0, "y": 0, "w": 32, "h": 64 },
-      { "x": 32, "y": 0, "w": 32, "h": 64 }
-    ],
-    "tree_pine": [
-      { "x": 64, "y": 0, "w": 64, "h": 96 },
-      { "x": 128, "y": 0, "w": 64, "h": 96 },
-      { "x": 192, "y": 0, "w": 64, "h": 96 }
-    ],
-    "fence_post": [
-      { "x": 0, "y": 96, "w": 16, "h": 32 }
-    ],
-    "rock_boulder": [
-      { "x": 32, "y": 96, "w": 48, "h": 32 },
-      { "x": 80, "y": 96, "w": 48, "h": 32 }
-    ],
-    "light_pole": [
-      { "x": 256, "y": 0, "w": 16, "h": 128 }
-    ]
+    "sign_marker": {
+      "recolourable": true,
+      "frames": [
+        { "x": 0, "y": 0, "w": 32, "h": 64 },
+        { "x": 32, "y": 0, "w": 32, "h": 64 }
+      ]
+    },
+    "tree_pine": {
+      "recolourable": true,
+      "frames": [
+        { "x": 64, "y": 0, "w": 64, "h": 96 },
+        { "x": 128, "y": 0, "w": 64, "h": 96 },
+        { "x": 192, "y": 0, "w": 64, "h": 96 }
+      ]
+    },
+    "fence_post": {
+      "recolourable": true,
+      "frames": [
+        { "x": 0, "y": 96, "w": 16, "h": 32 }
+      ]
+    },
+    "rock_boulder": {
+      "recolourable": true,
+      "frames": [
+        { "x": 32, "y": 96, "w": 48, "h": 32 },
+        { "x": 80, "y": 96, "w": 48, "h": 32 }
+      ]
+    },
+    "light_pole": {
+      "recolourable": true,
+      "frames": [
+        { "x": 256, "y": 0, "w": 16, "h": 128 }
+      ]
+    }
   }
 }

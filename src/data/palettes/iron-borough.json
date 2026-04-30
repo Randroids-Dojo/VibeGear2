@@ -1,0 +1,15 @@
+{
+  "id": "iron-borough",
+  "name": "Iron Borough",
+  "slots": {
+    "sky": "#192638",
+    "midHorizon": "#4b5863",
+    "nearTerrain": "#36413d",
+    "propPrimary": "#c7c1aa",
+    "propSecondary": "#7f8a8d",
+    "propAccent": "#8a4f42",
+    "roadEdge": "#cfd3d3",
+    "roadSurface": "#565b5e",
+    "fogTint": "#8c979b"
+  }
+}

@@ -6,6 +6,71 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Palette-driven sprite recolour system
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) color palette guidance,
+[§17](gdd/17-art-direction.md) region art themes,
+[§22](gdd/22-data-schemas.md) data schemas, and
+[§27](gdd/27-risks-and-mitigations.md) asset burden mitigation.
+**Branch / PR:** `feat/palette-driven-sprite-recolour`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a `RegionPalette` schema with nine required slots and reserved
+  systemic color collision checks for the §16 readability colors.
+- Added eight starter region palette JSON files and a typed palette registry.
+- Added a deterministic indexed-sprite recolour core plus an LRU cache for
+  prepared palette targets.
+- Extended sprite atlas metadata so sprite entries can opt into
+  `recolourable: true` while legacy array-based frame entries stay valid.
+- Marked the shared roadside atlas as recolourable and converted its source
+  sheet to indexed grayscale colors.
+- Wired atlas-backed roadside drawing through an optional region palette and
+  cache, with raw-frame fallback while recoloured targets are prepared.
+- Extended mod manifests and public-mod linting so mods can reference
+  palette JSON files through `data.palettes`.
+- Added `/dev/road` palette selection so the same roadside atlas can be
+  compared across region palettes.
+
+### Verified
+- `npx vitest run src/data/palettes/__tests__/regionPalettes.test.ts src/render/__tests__/paletteRecolour.test.ts src/render/__tests__/spriteAtlas.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/mods/__tests__/manifest.test.ts scripts/__tests__/content-lint.test.ts scripts/__tests__/placeholder-art-bank.test.ts`
+  green, 162 passed.
+- `npm run typecheck` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npm run art:check` green.
+- `npm run verify` green, 2641 passed.
+- `npm run build` green.
+- Browser smoke on `http://localhost:3000/dev/road` loaded the page, switched
+  the region palette to `neon-meridian`, confirmed the canvas was nonblank,
+  and observed no page or console errors.
+
+### Decisions and assumptions
+- Used exact indexed grayscale colors for recolourable source sprites. The
+  runtime leaves unknown colors untouched so hand-authored non-indexed pixels
+  do not break rendering.
+- Kept palette recolour opt-in per sprite entry instead of making every atlas
+  recolourable by default. This avoids recolouring HUD, FX, or car sprite
+  colors that already carry gameplay meaning.
+- Used RGB distance for reserved color rejection rather than a full color
+  science dependency. The threshold is intentionally small and deterministic.
+
+### Coverage ledger
+- GDD-27-PALETTE-REUSE covers the §27 asset-burden mitigation for
+  palette-driven reuse, the §16 reserved systemic color list, and §17 region
+  palette identity.
+- Uncovered adjacent requirements: full per-region palette art direction
+  tuning, unique prop kits, and palette-aware car customization remain
+  separate content and customization work.
+
+### Followups created
+None.
+
+### GDD edits
+- Added the `RegionPalette` JSON schema and the `data.palettes` mod manifest
+  reference to [§22](gdd/22-data-schemas.md).
+
 ## 2026-04-30: Slice: Full AI archetypes
 
 **GDD sections touched:**

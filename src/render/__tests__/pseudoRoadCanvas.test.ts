@@ -20,7 +20,9 @@
 import { describe, expect, it } from "vitest";
 
 import { visibilityForWeather } from "@/game/weather";
+import { REGION_PALETTES } from "@/data/palettes";
 import type { Strip, Viewport } from "@/road/types";
+import { PaletteCache } from "../paletteCache";
 import type { LoadedAtlas } from "../spriteAtlas";
 
 import {
@@ -149,6 +151,21 @@ function makeCanvasSpy(): CanvasSpy {
       dw: number,
       dh: number,
     ): void {
+      if (arguments.length === 5) {
+        calls.push({
+          type: "drawImage",
+          globalAlpha,
+          sx: 0,
+          sy: 0,
+          sw: 0,
+          sh: 0,
+          dx: sx,
+          dy: sy,
+          dw: sw,
+          dh: sh,
+        });
+        return;
+      }
       calls.push({ type: "drawImage", globalAlpha, sx, sy, sw, sh, dx, dy, dw, dh });
     },
   } as unknown as CanvasRenderingContext2D;
@@ -258,6 +275,24 @@ function loadedCarAtlas(): LoadedAtlas {
         sparrow_brake: [{ x: 128, y: 0, w: 64, h: 32 }],
         sparrow_nitro: [{ x: 192, y: 0, w: 64, h: 32 }],
         sparrow_wet_trail: [{ x: 256, y: 0, w: 64, h: 32 }],
+      },
+    },
+  };
+}
+
+function loadedRoadsideAtlas(): LoadedAtlas {
+  return {
+    image: {} as HTMLImageElement,
+    fallback: false,
+    meta: {
+      image: "art/roadside/temperate.svg",
+      width: 64,
+      height: 64,
+      sprites: {
+        tree_pine: {
+          recolourable: true,
+          frames: [{ x: 8, y: 9, w: 10, h: 11 }],
+        },
       },
     },
   };
@@ -692,6 +727,49 @@ describe("drawRoad roadside sprites", () => {
       (c): c is FillRectCall => c.type === "fillRect",
     );
     expect(fillRects.some((call) => call.fillStyle === "#1b3a20")).toBe(true);
+  });
+
+  it("draws cached palette recoloured atlas roadside sprites", () => {
+    const spy = makeCanvasSpy();
+    const cache = new PaletteCache<CanvasImageSource>(4);
+    cache.set("tree_pine:0:velvet-coast", {} as CanvasImageSource);
+    const strips: readonly Strip[] = [
+      strip({
+        screenY: 440,
+        screenW: 260,
+        segment: {
+          ...strip({}).segment,
+          index: 0,
+          roadsideLeftId: "tree_pine",
+          roadsideRightId: "default",
+        },
+      }),
+      strip({
+        screenY: 300,
+        screenW: 110,
+        segment: {
+          ...strip({}).segment,
+          index: 1,
+          roadsideLeftId: "default",
+          roadsideRightId: "default",
+        },
+      }),
+    ];
+
+    drawRoad(spy.ctx, strips, VIEWPORT, {
+      roadsideAtlas: {
+        atlas: loadedRoadsideAtlas(),
+        palette: REGION_PALETTES[0]!,
+        cache,
+      },
+    });
+
+    const draws = spy.calls.filter((c): c is DrawImageCall => c.type === "drawImage");
+    expect(draws).toHaveLength(1);
+    expect(draws[0]!.dw).toBeCloseTo(draws[0]!.dh * 0.58, 6);
+    expect(draws[0]!.dh).toBeCloseTo(VIEWPORT.height * 0.22, 6);
+    const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
+    expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(false);
   });
 
   it("boosts sign panel and glyph contrast when the assist is enabled", () => {
