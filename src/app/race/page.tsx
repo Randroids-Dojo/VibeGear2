@@ -456,7 +456,8 @@ function resolveDailyChallengeMarker(input: {
   if (input.dateKey === null || !/^\d{4}-\d{2}-\d{2}$/.test(input.dateKey)) {
     return null;
   }
-  const seed = Number(input.seed);
+  if (input.seed === null || !/^\d+$/.test(input.seed.trim())) return null;
+  const seed = Number.parseInt(input.seed, 10);
   if (!Number.isSafeInteger(seed) || seed < 0) return null;
   const carClass = CarClassSchema.safeParse(input.carClass);
   if (!carClass.success) return null;
