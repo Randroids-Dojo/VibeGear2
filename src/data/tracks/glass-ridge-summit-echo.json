@@ -1,0 +1,27 @@
+{
+  "id": "glass-ridge/summit-echo",
+  "name": "Summit Echo",
+  "tourId": "glass-ridge",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2100,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["snow", "fog", "dusk"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 280, "curve": 0, "grade": 0.06, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["snow_buildup"] },
+    { "len": 260, "curve": -0.18, "grade": 0.08, "roadsideLeft": "rock_boulder", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 280, "curve": 0.22, "grade": -0.02, "roadsideLeft": "tree_pine", "roadsideRight": "light_pole", "hazards": ["snow_buildup"] },
+    { "len": 300, "curve": -0.16, "grade": -0.07, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] },
+    { "len": 260, "curve": 0.12, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["traffic_cone"] },
+    { "len": 340, "curve": -0.08, "grade": -0.04, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 380, "curve": 0, "grade": 0, "roadsideLeft": "rock_boulder", "roadsideRight": "tree_pine", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "summit-call" },
+    { "segmentIndex": 5, "label": "echo-descent" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

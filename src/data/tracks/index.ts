@@ -18,6 +18,10 @@ import breakwaterIslesGullPoint from "./breakwater-isles-gull-point.json";
 import breakwaterIslesSealightShelf from "./breakwater-isles-sealight-shelf.json";
 import breakwaterIslesStormSpan from "./breakwater-isles-storm-span.json";
 import breakwaterIslesTidewire from "./breakwater-isles-tidewire.json";
+import glassRidgeFrostrelay from "./glass-ridge-frostrelay.json";
+import glassRidgeHollowCrest from "./glass-ridge-hollow-crest.json";
+import glassRidgeSummitEcho from "./glass-ridge-summit-echo.json";
+import glassRidgeWhitepass from "./glass-ridge-whitepass.json";
 import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
 import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
 import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
@@ -39,6 +43,10 @@ export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "breakwater-isles/storm-span": breakwaterIslesStormSpan,
   "breakwater-isles/gull-point": breakwaterIslesGullPoint,
   "breakwater-isles/sealight-shelf": breakwaterIslesSealightShelf,
+  "glass-ridge/whitepass": glassRidgeWhitepass,
+  "glass-ridge/frostrelay": glassRidgeFrostrelay,
+  "glass-ridge/hollow-crest": glassRidgeHollowCrest,
+  "glass-ridge/summit-echo": glassRidgeSummitEcho,
   "velvet-coast/harbor-run": velvetCoastHarborRun,
   "velvet-coast/sunpier-loop": velvetCoastSunpierLoop,
   "velvet-coast/cliffline-arc": velvetCoastClifflineArc,

@@ -1,0 +1,27 @@
+{
+  "id": "glass-ridge/hollow-crest",
+  "name": "Hollow Crest",
+  "tourId": "glass-ridge",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2040,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["fog", "dusk"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 260, "curve": -0.06, "grade": 0.03, "roadsideLeft": "rock_boulder", "roadsideRight": "tree_pine", "hazards": [] },
+    { "len": 260, "curve": 0.16, "grade": 0.07, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": ["snow_buildup"] },
+    { "len": 300, "curve": -0.1, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "rock_boulder", "hazards": ["tunnel"], "inTunnel": true, "tunnelMaterial": "cold-concrete" },
+    { "len": 280, "curve": 0.2, "grade": -0.05, "roadsideLeft": "rock_boulder", "roadsideRight": "light_pole", "hazards": ["tunnel"], "inTunnel": true, "tunnelMaterial": "blue-safety-lighting" },
+    { "len": 260, "curve": -0.18, "grade": -0.03, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
+    { "len": 300, "curve": 0.12, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["snow_buildup"] },
+    { "len": 380, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "hollow-tunnel" },
+    { "segmentIndex": 5, "label": "crest-exit" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}
