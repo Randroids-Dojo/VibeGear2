@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-29: Slice: Cross-browser verification
+
+**GDD sections touched:**
+[§20](gdd/20-hud-and-ui-ux.md) keyboard-accessible UI,
+[§21](gdd/21-technical-design-for-web-implementation.md) testing approach
+and performance constraints, [§25](gdd/25-development-roadmap.md) v1.0
+browser compatibility matrix, and [§27](gdd/27-risks-and-mitigations.md)
+browser performance.
+**Branch / PR:** `chore/cross-browser-verification`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a dedicated Playwright cross-browser smoke for Chromium, Firefox,
+  and WebKit.
+- Covered core route boot, live race canvas rendering, reduced-motion media
+  query support, Steam Deck viewport bounds, and keyboard-only title to race
+  to garage navigation.
+- Wired CI to install Chromium, Firefox, and WebKit and run the new
+  `test:e2e:cross-browser` script after the regular Chromium suite.
+- Made title menu links and pause-menu actions explicit tab stops so the
+  keyboard path is reliable across the WebKit profile.
+- Added `docs/COMPATIBILITY_MATRIX.md` and a GDD coverage ledger entry.
+
+### Verified
+- `npm run verify` green, 2609 passed.
+- `npm run test:e2e` green, 87 passed.
+- `npm run test:e2e:cross-browser` green, 12 passed.
+- `npx vitest run src/app/__tests__/page.test.tsx src/components/pause/__tests__/pauseAction.test.ts src/components/pause/__tests__/usePauseActions.test.tsx` green, 22 passed.
+
+### Decisions and assumptions
+- This slice owns the automated compatibility smoke and release matrix docs.
+  The heavier Lighthouse, axe, and bundle-budget gates remain in
+  `VibeGear2-implement-ci-bundle-57af4a04`.
+- Playwright WebKit is the automated Safari proxy. Real desktop Safari
+  remains a manual tagged-release check in `docs/COMPATIBILITY_MATRIX.md`.
+
+### Coverage ledger
+- GDD-27-CROSS-BROWSER-SMOKE covers the §25 browser compatibility matrix
+  requirement and the §27 browser hardening smoke.
+- Uncovered adjacent requirements: Lighthouse, axe, and bundle-budget gates
+  remain tracked by `VibeGear2-implement-ci-bundle-57af4a04`.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
 ## 2026-04-29: Slice: Performance settings
 
 **GDD sections touched:**

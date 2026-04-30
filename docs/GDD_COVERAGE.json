@@ -1498,6 +1498,25 @@
         "e2e/options-screen.spec.ts"
       ],
       "followupRefs": ["VibeGear2-implement-performance-settings-2de5d437"]
+    },
+    {
+      "id": "GDD-27-CROSS-BROWSER-SMOKE",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The release hardening path runs a core compatibility smoke across Chromium, Firefox, and WebKit, including route boot, race canvas boot, Steam Deck viewport bounds, reduced-motion media query support, and keyboard-only title to race to garage navigation.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "playwright.config.ts",
+        ".github/workflows/ci.yml",
+        "package.json",
+        "docs/COMPATIBILITY_MATRIX.md"
+      ],
+      "testRefs": ["e2e/cross-browser-smoke.spec.ts"],
+      "followupRefs": ["VibeGear2-implement-cross-browser-7cf643ce"]
     }
   ]
 }

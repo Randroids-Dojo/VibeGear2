@@ -60,6 +60,7 @@ export default function TitlePage() {
               className={styles.menuItem}
               data-testid={item.testId}
               role="button"
+              tabIndex={0}
             >
               {item.label}
             </Link>

@@ -54,13 +54,16 @@ jobs:
         run: npm run test
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Build for e2e
         run: npm run build
 
       - name: Playwright e2e
         run: npm run test:e2e
+
+      - name: Cross-browser smoke
+        run: npm run test:e2e:cross-browser
 
       - name: Upload Playwright report on failure
         if: failure()
