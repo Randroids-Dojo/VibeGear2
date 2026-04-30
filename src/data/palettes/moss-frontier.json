@@ -1,0 +1,15 @@
+{
+  "id": "moss-frontier",
+  "name": "Moss Frontier",
+  "slots": {
+    "sky": "#17344a",
+    "midHorizon": "#49725d",
+    "nearTerrain": "#2f6238",
+    "propPrimary": "#bacb84",
+    "propSecondary": "#5f805c",
+    "propAccent": "#426654",
+    "roadEdge": "#d6ddcf",
+    "roadSurface": "#535c52",
+    "fogTint": "#8ea890"
+  }
+}

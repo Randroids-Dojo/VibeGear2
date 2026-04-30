@@ -150,6 +150,35 @@
 }
 ```
 
+## Region palette JSON schema
+
+Region palette files recolour shared indexed sprites and reserve systemic
+feedback colors for HUD and damage readability.
+
+```
+{
+  "id": "velvet-coast",
+  "name": "Velvet Coast",
+  "slots": {
+    "sky": "#16304f",
+    "midHorizon": "#356f83",
+    "nearTerrain": "#2e6e36",
+    "propPrimary": "#e8d15f",
+    "propSecondary": "#d7d8c9",
+    "propAccent": "#2f496b",
+    "roadEdge": "#d9d9d2",
+    "roadSurface": "#5f5f5a",
+    "fogTint": "#96b3b8"
+  }
+}
+```
+
+`src/data/palettes/_schema.ts` owns the runtime Zod schema. Palette slot
+values must be `#RRGGBB` colors and must not overlap the reserved systemic
+colors from §16: amber road-edge warnings, red severe damage, cyan wet-grip
+UI, magenta or electric-blue nitro-full readout, and clean PB green or record
+gold.
+
 ## Hazard registry JSON schema
 
 ```
@@ -189,7 +218,8 @@ Data mods live under `/mods/<mod-id>/` and load through a manifest file:
     "cars": ["cars/local-starter.json"],
     "upgrades": ["upgrades/local-upgrades.json"],
     "aiDrivers": ["ai/local-rivals.json"],
-    "championships": ["championships/local-cup.json"]
+    "championships": ["championships/local-cup.json"],
+    "palettes": ["palettes/local-region.json"]
   },
   "assets": {
     "art": ["art/roadside.local.manifest.json"],

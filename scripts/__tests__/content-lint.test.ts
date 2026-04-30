@@ -430,6 +430,22 @@ const MOD_MANIFEST = {
   },
 };
 
+const MOD_PALETTE = {
+  id: "community",
+  name: "Community",
+  slots: {
+    sky: "#102030",
+    midHorizon: "#304050",
+    nearTerrain: "#405030",
+    propPrimary: "#706050",
+    propSecondary: "#607070",
+    propAccent: "#806060",
+    roadEdge: "#d0d0d0",
+    roadSurface: "#555555",
+    fogTint: "#90a0a0",
+  },
+};
+
 describe("lintPublicModManifests", () => {
   it("returns no hits when public/mods does not exist", () => {
     expect(lintPublicModManifests({ repoRoot })).toEqual([]);
@@ -451,6 +467,23 @@ describe("lintPublicModManifests", () => {
       }),
     );
     writeFile("public/mods/community-pack/..foo/harbor-day.json", JSON.stringify(MOD_TRACK));
+
+    expect(lintPublicModManifests({ repoRoot })).toEqual([]);
+  });
+
+  it("accepts referenced palette data", () => {
+    writeFile(
+      "public/mods/community-pack/manifest.json",
+      JSON.stringify({
+        ...MOD_MANIFEST,
+        data: {
+          tracks: ["tracks/harbor-day.json"],
+          palettes: ["palettes/community.json"],
+        },
+      }),
+    );
+    writeFile("public/mods/community-pack/tracks/harbor-day.json", JSON.stringify(MOD_TRACK));
+    writeFile("public/mods/community-pack/palettes/community.json", JSON.stringify(MOD_PALETTE));
 
     expect(lintPublicModManifests({ repoRoot })).toEqual([]);
   });

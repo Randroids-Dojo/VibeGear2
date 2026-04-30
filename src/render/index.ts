@@ -6,6 +6,8 @@ export * from "./dust";
 export * from "./hudMinimap";
 export * from "./hudSplits";
 export * from "./parallax";
+export * from "./paletteCache";
+export * from "./paletteRecolour";
 export * from "./pseudoRoadCanvas";
 export * from "./spriteAtlas";
 export * as tunnelRenderer from "./tunnelRenderer";

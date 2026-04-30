@@ -26,16 +26,19 @@ import {
   SPRITE_BASE_SCALE,
 } from "@/road/constants";
 import type { Camera, Strip, Viewport } from "@/road/types";
+import type { RegionPalette } from "@/data/palettes";
 import type { WeatherOption } from "@/data/schemas";
 import { visibilityForWeather } from "@/game/weather";
 
 import { drawDust, type DustState } from "./dust";
+import type { PaletteCache } from "./paletteCache";
+import { paletteCacheKey, recolourFrameToImageBitmap } from "./paletteRecolour";
 import { drawParallax, type ParallaxLayer } from "./parallax";
 import {
   resolveCarRenderFrames,
   selectCarFramePlan,
 } from "./carSpriteCompositor";
-import { frame, type LoadedAtlas } from "./spriteAtlas";
+import { frame, spriteCanRecolour, spriteFrameCount, type LoadedAtlas } from "./spriteAtlas";
 export {
   TUNNEL_ADAPTATION_HIGHLIGHT_FILL,
   TUNNEL_ADAPTATION_HIGHLIGHT_MAX_ALPHA,
@@ -186,6 +189,17 @@ export interface DrawRoadOptions {
    * lower values skip a deterministic subset of billboard opportunities.
    */
   spriteDensityFactor?: number;
+  /**
+   * Optional atlas-backed roadside prop rendering. Recolourable atlas
+   * entries use the supplied region palette and cache when available,
+   * then fall back to the raw atlas frame while the recolour target is
+   * prepared for a later frame.
+   */
+  roadsideAtlas?: {
+    atlas: LoadedAtlas;
+    palette?: RegionPalette;
+    cache?: PaletteCache<CanvasImageSource>;
+  } | null;
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
    * a second physics step from the recorded `Player.readNext` inputs to
@@ -351,6 +365,7 @@ export function drawRoad(
         viewport,
         highContrastSigns,
         options.spriteDensityFactor,
+        options.roadsideAtlas,
       );
       ctx.restore();
     } else {
@@ -361,6 +376,7 @@ export function drawRoad(
         viewport,
         highContrastSigns,
         options.spriteDensityFactor,
+        options.roadsideAtlas,
       );
     }
   }
@@ -425,12 +441,29 @@ function drawRoadsideSprites(
   viewport: Viewport,
   highContrastSigns = false,
   spriteDensityFactor = 1,
+  roadsideAtlas: DrawRoadOptions["roadsideAtlas"] = null,
 ): void {
   for (let i = strips.length - 1; i >= 0; i--) {
     const strip = strips[i];
     if (!strip?.visible) continue;
-    drawRoadsideSprite(ctx, strip, viewport, "left", highContrastSigns, spriteDensityFactor);
-    drawRoadsideSprite(ctx, strip, viewport, "right", highContrastSigns, spriteDensityFactor);
+    drawRoadsideSprite(
+      ctx,
+      strip,
+      viewport,
+      "left",
+      highContrastSigns,
+      spriteDensityFactor,
+      roadsideAtlas,
+    );
+    drawRoadsideSprite(
+      ctx,
+      strip,
+      viewport,
+      "right",
+      highContrastSigns,
+      spriteDensityFactor,
+      roadsideAtlas,
+    );
   }
 }
 
@@ -441,6 +474,7 @@ function drawRoadsideSprite(
   side: "left" | "right",
   highContrastSigns: boolean,
   spriteDensityFactor: number,
+  roadsideAtlas: DrawRoadOptions["roadsideAtlas"],
 ): void {
   if (!shouldDrawRoadsideSprite(strip, side)) return;
   if (!shouldKeepSpriteForDensity(strip, side, spriteDensityFactor)) return;
@@ -465,6 +499,22 @@ function drawRoadsideSprite(
   if (baseY < 0 || baseY - height > viewport.height) return;
   if (baseX + width < 0 || baseX - width > viewport.width) return;
 
+  if (
+    roadsideAtlas?.atlas.image &&
+    drawRoadsideAtlasSprite(
+      ctx,
+      roadsideAtlas,
+      id,
+      strip.segment.index,
+      baseX,
+      baseY,
+      width,
+      height,
+    )
+  ) {
+    return;
+  }
+
   switch (style.kind) {
     case "tree":
       drawTreeSprite(ctx, baseX, baseY, width, height);
@@ -482,6 +532,51 @@ function drawRoadsideSprite(
       drawPoleSprite(ctx, baseX, baseY, width, height);
       break;
   }
+}
+
+function drawRoadsideAtlasSprite(
+  ctx: CanvasRenderingContext2D,
+  roadsideAtlas: NonNullable<DrawRoadOptions["roadsideAtlas"]>,
+  spriteId: string,
+  frameIndex: number,
+  baseX: number,
+  baseY: number,
+  width: number,
+  height: number,
+): boolean {
+  const image = roadsideAtlas.atlas.image;
+  if (!image) return false;
+
+  let keyFrameIndex = frameIndex;
+  let sprite: ReturnType<typeof frame>;
+  try {
+    const count = spriteFrameCount(roadsideAtlas.atlas, spriteId);
+    keyFrameIndex = ((frameIndex % count) + count) % count;
+    sprite = frame(roadsideAtlas.atlas, spriteId, keyFrameIndex);
+  } catch {
+    return false;
+  }
+
+  const anchor = sprite.anchor ?? { x: 0.5, y: 1 };
+  const dx = baseX - width * anchor.x;
+  const dy = baseY - height * anchor.y;
+
+  if (roadsideAtlas.palette && spriteCanRecolour(roadsideAtlas.atlas, spriteId)) {
+    const key = paletteCacheKey(spriteId, keyFrameIndex, roadsideAtlas.palette.id);
+    const cached = roadsideAtlas.cache?.get(key);
+    if (cached) {
+      ctx.drawImage(cached, dx, dy, width, height);
+      return true;
+    }
+    if (roadsideAtlas.cache) {
+      void recolourFrameToImageBitmap(image, sprite, roadsideAtlas.palette).then((recoloured) => {
+        roadsideAtlas.cache?.set(key, recoloured);
+      });
+    }
+  }
+
+  ctx.drawImage(image, sprite.x, sprite.y, sprite.w, sprite.h, dx, dy, width, height);
+  return true;
 }
 
 function drawTreeSprite(

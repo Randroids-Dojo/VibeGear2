@@ -1,0 +1,15 @@
+{
+  "id": "glass-ridge",
+  "name": "Glass Ridge",
+  "slots": {
+    "sky": "#172a4b",
+    "midHorizon": "#6f8295",
+    "nearTerrain": "#586f78",
+    "propPrimary": "#dfe7e5",
+    "propSecondary": "#9eabb1",
+    "propAccent": "#3e6a83",
+    "roadEdge": "#e6e9e8",
+    "roadSurface": "#60686c",
+    "fogTint": "#b6c6ca"
+  }
+}

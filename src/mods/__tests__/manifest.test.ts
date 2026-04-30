@@ -47,6 +47,22 @@ const manifest = {
   },
 };
 
+const palette = {
+  id: "community",
+  name: "Community",
+  slots: {
+    sky: "#102030",
+    midHorizon: "#304050",
+    nearTerrain: "#405030",
+    propPrimary: "#706050",
+    propSecondary: "#607070",
+    propAccent: "#806060",
+    roadEdge: "#d0d0d0",
+    roadSurface: "#555555",
+    fogTint: "#90a0a0",
+  },
+};
+
 function fetcher(files: Record<string, unknown>) {
   return async (url: string) => ({
     ok: Object.prototype.hasOwnProperty.call(files, url),
@@ -138,6 +154,24 @@ describe("mod loader", () => {
     expect(loaded.manifest.id).toBe("community-pack");
     expect(loaded.tracks).toHaveLength(1);
     expect(loaded.tracks[0]?.id).toBe("community/harbor-day");
+    expect(loaded.palettes).toEqual([]);
+  });
+
+  it("loads and validates referenced palette JSON", async () => {
+    const loaded = await loadModContent({
+      modId: "community-pack",
+      fetcher: fetcher({
+        "/mods/community-pack/manifest.json": {
+          ...manifest,
+          data: { tracks: ["tracks/harbor-day.json"], palettes: ["palettes/community.json"] },
+        },
+        "/mods/community-pack/tracks/harbor-day.json": track,
+        "/mods/community-pack/palettes/community.json": palette,
+      }),
+    });
+
+    expect(loaded.palettes).toHaveLength(1);
+    expect(loaded.palettes[0]?.id).toBe("community");
   });
 
   it("rejects a manifest id mismatch", async () => {

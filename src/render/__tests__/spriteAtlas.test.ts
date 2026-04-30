@@ -7,6 +7,8 @@ import {
   FALLBACK_FRAME,
   frame,
   loadAtlas,
+  spriteCanRecolour,
+  spriteFrameCount,
   type LoadedAtlas,
 } from "../spriteAtlas";
 
@@ -85,6 +87,22 @@ describe("AtlasMetaSchema", () => {
       sprites: { sparrow: [{ x: 0, y: 0, w: 0, h: 32 }] },
     };
     expect(AtlasMetaSchema.safeParse(broken).success).toBe(false);
+  });
+
+  it("accepts a recolourable sprite entry with explicit frames", () => {
+    const meta = {
+      image: "art/roadside/temperate.svg",
+      width: 64,
+      height: 64,
+      sprites: {
+        sign_marker: {
+          recolourable: true,
+          frames: [{ x: 0, y: 0, w: 32, h: 64 }],
+        },
+      },
+    };
+
+    expect(AtlasMetaSchema.safeParse(meta).success).toBe(true);
   });
 });
 
@@ -186,5 +204,23 @@ describe("frame", () => {
     const a = frame(atlas, "sparrow_clean", 3);
     const b = frame(atlas, "sparrow_clean", 3);
     expect(a).toBe(b);
+  });
+
+  it("returns frames from recolourable sprite entries", () => {
+    const atlas = loadedAtlas({
+      image: "art/roadside/temperate.svg",
+      width: 64,
+      height: 64,
+      sprites: {
+        sign_marker: {
+          recolourable: true,
+          frames: [{ x: 1, y: 2, w: 3, h: 4 }],
+        },
+      },
+    });
+
+    expect(frame(atlas, "sign_marker", 0)).toEqual({ x: 1, y: 2, w: 3, h: 4 });
+    expect(spriteCanRecolour(atlas, "sign_marker")).toBe(true);
+    expect(spriteFrameCount(atlas, "sign_marker")).toBe(1);
   });
 });

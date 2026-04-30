@@ -25,7 +25,7 @@
  *   object so renderers can compare references when memoising draw calls.
  */
 
-import type { AtlasFrame, AtlasMeta } from "@/data/schemas";
+import type { AtlasFrame, AtlasMeta, AtlasSpriteEntry } from "@/data/schemas";
 
 export type { AtlasFrame, AtlasMeta } from "@/data/schemas";
 
@@ -56,6 +56,26 @@ export interface LoadedAtlas {
   image: HTMLImageElement | null;
   /** True when the placeholder fallback is active. */
   fallback: boolean;
+}
+
+function framesForSprite(entry: AtlasSpriteEntry): readonly AtlasFrame[] {
+  return Array.isArray(entry) ? entry : entry.frames;
+}
+
+export function spriteCanRecolour(atlas: LoadedAtlas, spriteId: string): boolean {
+  const entry = atlas.meta.sprites[spriteId];
+  if (!entry) {
+    throw new RangeError(`unknown sprite id: ${spriteId}`);
+  }
+  return !Array.isArray(entry) && entry.recolourable === true;
+}
+
+export function spriteFrameCount(atlas: LoadedAtlas, spriteId: string): number {
+  const entry = atlas.meta.sprites[spriteId];
+  if (!entry) {
+    throw new RangeError(`unknown sprite id: ${spriteId}`);
+  }
+  return framesForSprite(entry).length;
 }
 
 export interface LoadAtlasOptions {
@@ -141,9 +161,10 @@ export function frame(
   if (atlas.fallback) {
     return FALLBACK_FRAME;
   }
-  const wrapped = ((frameIdx % frames.length) + frames.length) % frames.length;
-  // The schema enforces frames.length >= 1, so this index is always
+  const spriteFrames = framesForSprite(frames);
+  const wrapped = ((frameIdx % spriteFrames.length) + spriteFrames.length) % spriteFrames.length;
+  // The schema enforces spriteFrames.length >= 1, so this index is always
   // in-bounds. The `as AtlasFrame` is needed because TypeScript widens
   // tuple element access to `AtlasFrame | undefined` under noUncheckedIndexedAccess.
-  return frames[wrapped] as AtlasFrame;
+  return spriteFrames[wrapped] as AtlasFrame;
 }

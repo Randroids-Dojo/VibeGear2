@@ -1,0 +1,15 @@
+{
+  "id": "neon-meridian",
+  "name": "Neon Meridian",
+  "slots": {
+    "sky": "#101d45",
+    "midHorizon": "#334d74",
+    "nearTerrain": "#263a52",
+    "propPrimary": "#cfcc70",
+    "propSecondary": "#69758c",
+    "propAccent": "#8b5fd1",
+    "roadEdge": "#d7d9df",
+    "roadSurface": "#4d5264",
+    "fogTint": "#707fa3"
+  }
+}

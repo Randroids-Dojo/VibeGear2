@@ -1,0 +1,15 @@
+{
+  "id": "ember-steppe",
+  "name": "Ember Steppe",
+  "slots": {
+    "sky": "#26334f",
+    "midHorizon": "#7c6353",
+    "nearTerrain": "#6f5b35",
+    "propPrimary": "#d9b971",
+    "propSecondary": "#8a6f4a",
+    "propAccent": "#7b3d54",
+    "roadEdge": "#ded8c7",
+    "roadSurface": "#635d54",
+    "fogTint": "#b89477"
+  }
+}

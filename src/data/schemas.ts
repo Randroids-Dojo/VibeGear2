@@ -14,6 +14,8 @@
 
 import { z } from "zod";
 
+import { RegionPaletteSchema } from "./palettes/_schema";
+
 // Shared primitives ---------------------------------------------------------
 
 /**
@@ -361,6 +363,15 @@ export const AtlasFrameSchema = z.object({
 });
 export type AtlasFrame = z.infer<typeof AtlasFrameSchema>;
 
+const AtlasSpriteEntrySchema = z.union([
+  z.array(AtlasFrameSchema).min(1),
+  z.object({
+    frames: z.array(AtlasFrameSchema).min(1),
+    recolourable: z.boolean().optional(),
+  }),
+]);
+export type AtlasSpriteEntry = z.infer<typeof AtlasSpriteEntrySchema>;
+
 /**
  * Atlas metadata. `image` is a path relative to `public/` (resolved as
  * `/<image>` at runtime). `sprites` maps a sprite id to an ordered frame
@@ -374,7 +385,7 @@ export const AtlasMetaSchema = z.object({
   width: positiveInt,
   height: positiveInt,
   sprites: z
-    .record(z.string().min(1), z.array(AtlasFrameSchema).min(1))
+    .record(z.string().min(1), AtlasSpriteEntrySchema)
     .refine((value) => Object.keys(value).length > 0, {
       message: "atlas must declare at least one sprite",
     }),
@@ -475,6 +486,7 @@ export const ModDataRefsSchema = z
     upgrades: z.array(modPath).optional(),
     aiDrivers: z.array(modPath).optional(),
     championships: z.array(modPath).optional(),
+    palettes: z.array(modPath).optional(),
   })
   .strict()
   .refine((refs) => Object.values(refs).some((list) => list && list.length > 0), {
@@ -505,6 +517,9 @@ export const ModManifestSchema = z
   })
   .strict();
 export type ModManifest = z.infer<typeof ModManifestSchema>;
+
+export { RegionPaletteSchema };
+export type { RegionPalette } from "./palettes/_schema";
 
 // Save-game -----------------------------------------------------------------
 

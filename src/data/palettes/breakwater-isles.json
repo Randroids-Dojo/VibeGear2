@@ -1,0 +1,15 @@
+{
+  "id": "breakwater-isles",
+  "name": "Breakwater Isles",
+  "slots": {
+    "sky": "#15324a",
+    "midHorizon": "#3d6d78",
+    "nearTerrain": "#2f6147",
+    "propPrimary": "#d2d7c7",
+    "propSecondary": "#6d8790",
+    "propAccent": "#365c70",
+    "roadEdge": "#d6ddd8",
+    "roadSurface": "#596164",
+    "fogTint": "#8fb2ba"
+  }
+}
