@@ -31,7 +31,7 @@ provider choice remains blocked separately by Q-011.
 ## F-068: Add unique FX atlas sheets for all six playable cars
 **Created:** 2026-04-29
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-04-30)
 **Notes:** The car FX compositor slice wires the live race renderer to an
 explicit §16 frame contract and extends the original Sparrow atlas with
 damage, brake, nitro, wet spray, and snow trail variants. The current
@@ -39,6 +39,12 @@ runtime still uses that shared Sparrow atlas for the live car overlay.
 Add per-car atlas metadata or generated sheets for the full six-car
 catalogue, route the active car's `visualProfile.spriteSet` into the
 race renderer, and verify each car has equivalent FX coverage.
+
+Closed by `feat/per-car-fx-atlases`. The generated car sheets for all
+six playable visual profiles now include totaled, wet trail, and snow
+trail rows. The live race renderer loads the selected car's atlas and
+passes the matching sprite ids into the car compositor, with tests
+covering catalogue equivalence and non-Sparrow frame resolution.
 
 ## F-067: Add weather particle intensity, glare, and fog readability settings
 **Created:** 2026-04-28

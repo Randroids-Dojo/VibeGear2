@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Per-car FX atlas routing
+
+**GDD sections touched:**
+[§11](gdd/11-cars-and-stats.md) car visual profiles,
+[§16](gdd/16-rendering-and-visual-design.md) car sprites, and
+[§17](gdd/17-art-direction.md) car design language.
+**Branch / PR:** `feat/per-car-fx-atlases`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Completed the generated car sprite sheets for all six playable visual
+  profiles with totaled, wet trail, and snow trail rows.
+- Added typed atlas metadata and sprite-set lookup helpers keyed by each
+  car's `visualProfile.spriteSet`.
+- Routed the live race renderer to load the selected car's atlas and pass
+  the matching sprite ids into the car compositor.
+- Marked F-068 done and updated the machine-checkable coverage ledger for
+  the §16 car sprite atlas requirement.
+
+### Verified
+- `npx vitest run src/data/atlas/carSprites.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts src/render/__tests__/carSpriteCompositor.test.ts src/render/__tests__/spriteAtlas.test.ts`
+  green, 83 tests passed.
+- `npm run typecheck` green.
+
+### Decisions and assumptions
+- Kept the existing generated placeholder art style and generator ownership,
+  then extended the generator so future art regeneration preserves the FX
+  rows.
+- Ghost cars continue to use the active player's selected car atlas until
+  ghost replay data stores the recorded car visual profile.
+
+### Coverage ledger
+- GDD-16-CAR-SPRITE-ATLAS now references the six playable car sheets,
+  `src/data/atlas/carSprites.ts`, and the catalogue coverage tests.
+- Uncovered adjacent requirements: ghost replay payloads still do not store
+  a recorded car visual profile, so Time Trial ghost cars keep using the
+  active player's selected car atlas.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: Pause ghosts action
 
 **GDD sections touched:**

@@ -280,6 +280,40 @@ function loadedCarAtlas(): LoadedAtlas {
   };
 }
 
+function loadedCustomCarAtlas(): LoadedAtlas {
+  return {
+    image: {} as HTMLImageElement,
+    fallback: false,
+    meta: {
+      image: "art/cars/custom.svg",
+      width: 128,
+      height: 192,
+      sprites: {
+        custom_clean: [
+          { x: 10, y: 0, w: 64, h: 32 },
+          { x: 11, y: 0, w: 64, h: 32 },
+        ],
+        custom_dented: [
+          { x: 20, y: 0, w: 64, h: 32 },
+          { x: 21, y: 0, w: 64, h: 32 },
+        ],
+        custom_battered: [
+          { x: 60, y: 0, w: 64, h: 32 },
+          { x: 61, y: 0, w: 64, h: 32 },
+        ],
+        custom_totaled: [
+          { x: 70, y: 0, w: 64, h: 32 },
+          { x: 71, y: 0, w: 64, h: 32 },
+        ],
+        custom_wet_trail: [{ x: 30, y: 0, w: 64, h: 32 }],
+        custom_brake: [{ x: 40, y: 0, w: 64, h: 32 }],
+        custom_nitro: [{ x: 50, y: 0, w: 64, h: 32 }],
+        custom_snow_trail: [{ x: 80, y: 0, w: 64, h: 32 }],
+      },
+    },
+  };
+}
+
 function loadedRoadsideAtlas(): LoadedAtlas {
   return {
     image: {} as HTMLImageElement,
@@ -1242,6 +1276,34 @@ describe("drawRoad player car overlay", () => {
 
     const draws = spy.calls.filter((c): c is DrawImageCall => c.type === "drawImage");
     expect(draws.map((draw) => draw.sx)).toEqual([64, 256, 128, 192, 320]);
+  });
+
+  it("uses the supplied car sprite set when resolving atlas FX frames", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      playerCar: {
+        atlas: loadedCustomCarAtlas(),
+        spriteSet: {
+          clean: "custom_clean",
+          damage1: "custom_dented",
+          damage2: "custom_battered",
+          damage3: "custom_totaled",
+          brake: "custom_brake",
+          nitro: "custom_nitro",
+          wetTrail: "custom_wet_trail",
+          snowTrail: "custom_snow_trail",
+        },
+        frameIndex: 1,
+        braking: true,
+        nitroActive: true,
+        weather: "heavy_rain",
+        speedMetersPerSecond: 20,
+        damageTotal: 0.55,
+      },
+    });
+
+    const draws = spy.calls.filter((c): c is DrawImageCall => c.type === "drawImage");
+    expect(draws.map((draw) => draw.sx)).toEqual([11, 30, 40, 50, 61]);
   });
 
   it("does not paint the live player car when omitted or null", () => {

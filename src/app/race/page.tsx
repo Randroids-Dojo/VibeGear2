@@ -53,9 +53,11 @@ import {
   getChampionship,
   loadTrack,
 } from "@/data";
-import carsAtlasFixture from "@/data/atlas/cars.json";
 import {
-  AtlasMetaSchema,
+  carAtlasMetaForVisualProfile,
+  carSpriteSetForVisualProfile,
+} from "@/data/atlas/carSprites";
+import {
   TrackSchema,
   type AudioSettings,
   type Track,
@@ -128,6 +130,7 @@ import {
 } from "@/road";
 import { drawRoad } from "@/render/pseudoRoadCanvas";
 import { playerCarFrameIndex } from "@/render/carFrame";
+import type { CarSpriteSet } from "@/render/carSpriteCompositor";
 import {
   clampDevicePixelRatio,
   resolveGraphicsSettings,
@@ -178,7 +181,6 @@ const DEFAULT_TRACK_ID = "test/elevation";
 const TOUR_PLACEHOLDER_TRACK_ID = "test/straight";
 const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
-const CARS_ATLAS_META = AtlasMetaSchema.parse(carsAtlasFixture);
 
 /**
  * §20 minimap layout. The wireframe places the minimap in the bottom-left
@@ -489,16 +491,20 @@ function weatherOptionLabel(weather: WeatherOption): string {
 function resolveSessionCar(
   save: SaveGame,
   requestedCarId: string | null,
-): { id: string; stats: CarBaseStats } {
+): { id: string; stats: CarBaseStats; spriteSet: string } {
   const fallbackId = save.garage.activeCarId;
   const requestedIsOwned =
     requestedCarId !== null && save.garage.ownedCars.includes(requestedCarId);
   const carId = requestedIsOwned ? requestedCarId : fallbackId;
   const car = getCar(carId) ?? getCar(fallbackId) ?? CARS[0];
   if (car === undefined) {
-    return { id: fallbackId, stats: STARTER_STATS };
+    return { id: fallbackId, stats: STARTER_STATS, spriteSet: "sparrow_gt" };
   }
-  return { id: car.id, stats: car.baseStats };
+  return {
+    id: car.id,
+    stats: car.baseStats,
+    spriteSet: car.visualProfile.spriteSet,
+  };
 }
 
 /**
@@ -777,6 +783,9 @@ function RaceCanvas({
   const lastBrakeRef = useRef<number>(0);
   const pauseInputHeldRef = useRef<boolean>(false);
   const carAtlasRef = useRef<LoadedAtlas | null>(null);
+  const carSpriteSetRef = useRef<CarSpriteSet>(
+    carSpriteSetForVisualProfile("sparrow_gt"),
+  );
   // Imperative pause-menu effects, populated inside the loop effect
   // below so the hook layer can stay decoupled from the loop / session
   // / config refs. The hook reads these getters once per click; mid-
@@ -825,13 +834,22 @@ function RaceCanvas({
 
   useEffect(() => {
     let active = true;
-    void loadAtlas(CARS_ATLAS_META).then((atlas) => {
-      if (active) carAtlasRef.current = atlas;
-    });
+    const persisted = loadSave();
+    const sessionSave =
+      persisted.kind === "loaded" ? persisted.save : defaultSave();
+    const sessionCar = resolveSessionCar(sessionSave, selectedCarId);
+    const spriteSet = carSpriteSetForVisualProfile(sessionCar.spriteSet);
+    carSpriteSetRef.current = spriteSet;
+    carAtlasRef.current = null;
+    void loadAtlas(carAtlasMetaForVisualProfile(sessionCar.spriteSet)).then(
+      (atlas) => {
+        if (active) carAtlasRef.current = atlas;
+      },
+    );
     return () => {
       active = false;
     };
-  }, []);
+  }, [selectedCarId]);
 
   const pause = usePauseToggle({ loop: () => handleRef.current });
   const { openMenu: openPauseMenu } = pause;
@@ -926,6 +944,7 @@ function RaceCanvas({
     const noCampaignMode = recordsOnlyMode || practiceMode;
     const economyEnabled = mode === "race";
     const sessionCar = resolveSessionCar(sessionSave, selectedCarId);
+    carSpriteSetRef.current = carSpriteSetForVisualProfile(sessionCar.spriteSet);
     const playerStats = sessionCar.stats;
     const initialPlayerDamage = noCampaignMode
       ? PRISTINE_DAMAGE_STATE
@@ -1377,11 +1396,13 @@ function RaceCanvas({
             ? {
                 ...ghostOverlayRef.current,
                 atlas: carAtlasRef.current,
+                spriteId: carSpriteSetRef.current.clean,
                 frameIndex: playerFrameIndex,
               }
             : null,
           playerCar: {
             atlas: carAtlasRef.current,
+            spriteSet: carSpriteSetRef.current,
             frameIndex: playerFrameIndex,
             weather: renderWeather,
             braking: lastBrakeRef.current > 0,

@@ -1349,7 +1349,15 @@
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/art/cars/sparrow.svg",
+        "public/art/cars/sparrow_gt.svg",
+        "public/art/cars/breaker_s.svg",
+        "public/art/cars/vanta_xr.svg",
+        "public/art/cars/bastion_lm.svg",
+        "public/art/cars/tempest_r.svg",
+        "public/art/cars/nova_shade.svg",
         "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts",
+        "src/data/atlas/carSprites.ts",
         "src/data/atlas/cars.json",
         "src/app/race/page.tsx",
         "src/render/carSpriteCompositor.ts",
@@ -1357,12 +1365,13 @@
         "src/render/spriteAtlas.ts"
       ],
       "testRefs": [
+        "src/data/atlas/carSprites.test.ts",
         "src/render/__tests__/carSpriteCompositor.test.ts",
         "src/render/__tests__/pseudoRoadCanvas.test.ts",
         "src/render/__tests__/spriteAtlas.test.ts",
         "src/render/__tests__/carFrame.test.ts"
       ],
-      "followupRefs": ["F-051", "F-059", "F-060", "F-068"]
+      "followupRefs": ["F-051", "F-059", "F-060"]
     },
     {
       "id": "GDD-16-CAR-WEATHER-VARIANTS",

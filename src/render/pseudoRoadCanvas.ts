@@ -37,6 +37,7 @@ import { drawParallax, type ParallaxLayer } from "./parallax";
 import {
   resolveCarRenderFrames,
   selectCarFramePlan,
+  type CarSpriteSet,
 } from "./carSpriteCompositor";
 import { frame, spriteCanRecolour, spriteFrameCount, type LoadedAtlas } from "./spriteAtlas";
 export {
@@ -253,6 +254,7 @@ export interface DrawRoadOptions {
     nitroActive?: boolean;
     speedMetersPerSecond?: number;
     damageTotal?: number;
+    spriteSet?: CarSpriteSet;
   } | null;
 }
 
@@ -1210,6 +1212,7 @@ function drawPlayerCar(
         weather: car.weather,
         speedMetersPerSecond: car.speedMetersPerSecond ?? 0,
         damageTotal: car.damageTotal ?? 0,
+        spriteSet: car.spriteSet,
       }),
     );
     if (frames) {
