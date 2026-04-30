@@ -1,0 +1,27 @@
+{
+  "id": "neon-meridian/prism-cut",
+  "name": "Prism Cut",
+  "tourId": "neon-meridian",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2020,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["dusk", "night"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 260, "curve": -0.08, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 240, "curve": 0.2, "grade": 0.03, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": ["slick_paint"] },
+    { "len": 280, "curve": -0.22, "grade": -0.02, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 300, "curve": 0.1, "grade": 0.01, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": ["tunnel"], "inTunnel": true, "tunnelMaterial": "neon-strip" },
+    { "len": 280, "curve": -0.14, "grade": -0.03, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": ["tunnel"], "inTunnel": true, "tunnelMaterial": "violet-service-lighting" },
+    { "len": 300, "curve": 0.16, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": ["traffic_cone"] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 3, "label": "prism-tunnel" },
+    { "segmentIndex": 5, "label": "cut-exit" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

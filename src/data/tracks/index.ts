@@ -22,6 +22,10 @@ import glassRidgeFrostrelay from "./glass-ridge-frostrelay.json";
 import glassRidgeHollowCrest from "./glass-ridge-hollow-crest.json";
 import glassRidgeSummitEcho from "./glass-ridge-summit-echo.json";
 import glassRidgeWhitepass from "./glass-ridge-whitepass.json";
+import neonMeridianAfterglowRun from "./neon-meridian-afterglow-run.json";
+import neonMeridianArcBoulevard from "./neon-meridian-arc-boulevard.json";
+import neonMeridianPrismCut from "./neon-meridian-prism-cut.json";
+import neonMeridianSkylineDrain from "./neon-meridian-skyline-drain.json";
 import ironBoroughFoundryMile from "./iron-borough-foundry-mile.json";
 import ironBoroughFreightlineRing from "./iron-borough-freightline-ring.json";
 import ironBoroughOuterExchange from "./iron-borough-outer-exchange.json";
@@ -47,6 +51,10 @@ export const TRACK_RAW: Readonly<Record<string, unknown>> = Object.freeze({
   "glass-ridge/frostrelay": glassRidgeFrostrelay,
   "glass-ridge/hollow-crest": glassRidgeHollowCrest,
   "glass-ridge/summit-echo": glassRidgeSummitEcho,
+  "neon-meridian/arc-boulevard": neonMeridianArcBoulevard,
+  "neon-meridian/prism-cut": neonMeridianPrismCut,
+  "neon-meridian/skyline-drain": neonMeridianSkylineDrain,
+  "neon-meridian/afterglow-run": neonMeridianAfterglowRun,
   "velvet-coast/harbor-run": velvetCoastHarborRun,
   "velvet-coast/sunpier-loop": velvetCoastSunpierLoop,
   "velvet-coast/cliffline-arc": velvetCoastClifflineArc,

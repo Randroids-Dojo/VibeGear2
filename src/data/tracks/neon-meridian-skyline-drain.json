@@ -1,0 +1,27 @@
+{
+  "id": "neon-meridian/skyline-drain",
+  "name": "Skyline Drain",
+  "tourId": "neon-meridian",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2080,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["rain", "dusk"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 300, "curve": 0, "grade": -0.01, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": ["puddle"] },
+    { "len": 260, "curve": -0.16, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 280, "curve": 0.18, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["slick_paint"] },
+    { "len": 300, "curve": -0.08, "grade": -0.03, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": ["puddle"] },
+    { "len": 260, "curve": 0.12, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 320, "curve": -0.14, "grade": -0.02, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["traffic_cone"] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 2, "label": "skyline-run" },
+    { "segmentIndex": 5, "label": "drain-sprint" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

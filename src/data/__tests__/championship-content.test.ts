@@ -143,8 +143,8 @@ describe("world-tour-standard track id cross-references", () => {
       expect(unresolved).toEqual([]);
     });
   } else {
-    it("resolves every authored §24 track id through Glass Ridge", () => {
-      const authoredTrackIds = wt.tours.slice(0, 5).flatMap((t) => t.tracks);
+    it("resolves every authored §24 track id through Neon Meridian", () => {
+      const authoredTrackIds = wt.tours.slice(0, 6).flatMap((t) => t.tracks);
       expect(authoredTrackIds.filter((id) => !hasBundledTrack(id))).toEqual([]);
     });
 

@@ -1060,6 +1060,32 @@
       "followupRefs": ["VibeGear2-implement-glass-ridge-1dfc8d6b"]
     },
     {
+      "id": "GDD-24-NEON-MERIDIAN-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Neon Meridian World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and urban hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/neon-meridian-arc-boulevard.json",
+        "src/data/tracks/neon-meridian-prism-cut.json",
+        "src/data/tracks/neon-meridian-skyline-drain.json",
+        "src/data/tracks/neon-meridian-afterglow-run.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-neon-meridian-f803dd00"]
+    },
+    {
       "id": "GDD-19-MOBILE-RACE-INPUT",
       "gddSections": [
         "docs/gdd/19-controls-and-input.md",
