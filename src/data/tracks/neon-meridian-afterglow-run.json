@@ -1,0 +1,27 @@
+{
+  "id": "neon-meridian/afterglow-run",
+  "name": "Afterglow Run",
+  "tourId": "neon-meridian",
+  "author": "core",
+  "version": 1,
+  "lengthMeters": 2140,
+  "laps": 1,
+  "laneCount": 3,
+  "weatherOptions": ["night", "rain", "dusk"],
+  "difficulty": 5,
+  "segments": [
+    { "len": 300, "curve": 0.1, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 280, "curve": -0.18, "grade": 0.03, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": ["slick_paint"] },
+    { "len": 300, "curve": 0.22, "grade": -0.02, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": ["puddle"] },
+    { "len": 300, "curve": -0.12, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": ["tunnel"], "inTunnel": true, "tunnelMaterial": "black-ceramic" },
+    { "len": 280, "curve": 0.16, "grade": -0.04, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": ["tunnel"], "inTunnel": true, "tunnelMaterial": "neon-strip" },
+    { "len": 320, "curve": -0.08, "grade": -0.02, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": ["traffic_cone"] },
+    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": [] }
+  ],
+  "checkpoints": [
+    { "segmentIndex": 0, "label": "start" },
+    { "segmentIndex": 3, "label": "afterglow-tunnel" },
+    { "segmentIndex": 5, "label": "runout" }
+  ],
+  "spawn": { "gridSlots": 12 }
+}

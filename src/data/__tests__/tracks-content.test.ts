@@ -41,6 +41,10 @@ const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
   "glass-ridge/frostrelay",
   "glass-ridge/hollow-crest",
   "glass-ridge/summit-echo",
+  "neon-meridian/arc-boulevard",
+  "neon-meridian/prism-cut",
+  "neon-meridian/skyline-drain",
+  "neon-meridian/afterglow-run",
 ];
 
 const EXPECTED_IDS = [
@@ -60,6 +64,10 @@ const EXPECTED_IDS = [
   "iron-borough/freightline-ring",
   "iron-borough/outer-exchange",
   "iron-borough/rivet-tunnel",
+  "neon-meridian/afterglow-run",
+  "neon-meridian/arc-boulevard",
+  "neon-meridian/prism-cut",
+  "neon-meridian/skyline-drain",
   "test/curve",
   "test/elevation",
   "test/straight",
@@ -74,7 +82,7 @@ describe("track catalogue", () => {
     expect([...TRACK_IDS].sort()).toEqual(EXPECTED_IDS);
   });
 
-  it("registers the authored World Tour track set through Glass Ridge", () => {
+  it("registers the authored World Tour track set through Neon Meridian", () => {
     for (const id of EXPECTED_AUTHORED_TOUR_TRACK_IDS) {
       expect(TRACK_IDS).toContain(id);
     }
@@ -261,6 +269,45 @@ describe("§24 Glass Ridge track set", () => {
     }
     expect([...weather].sort()).toEqual(["dusk", "fog", "snow"]);
     expect(hazards.has("snow_buildup")).toBe(true);
+    expect(hazards.has("tunnel")).toBe(true);
+  });
+});
+
+describe("§24 Neon Meridian track set", () => {
+  const neonMeridianTrackIds = EXPECTED_AUTHORED_TOUR_TRACK_IDS.filter((id) =>
+    id.startsWith("neon-meridian/"),
+  );
+
+  it("covers all four planned Neon Meridian tracks", () => {
+    expect(neonMeridianTrackIds).toEqual([
+      "neon-meridian/arc-boulevard",
+      "neon-meridian/prism-cut",
+      "neon-meridian/skyline-drain",
+      "neon-meridian/afterglow-run",
+    ]);
+    for (const id of neonMeridianTrackIds) {
+      expect(TRACK_IDS).toContain(id);
+    }
+  });
+
+  it("uses the Neon Meridian region weather profile and urban hazards", () => {
+    const tracks = neonMeridianTrackIds.map((id) =>
+      TrackSchema.parse(TRACK_RAW[id]),
+    );
+    const weather = new Set<string>();
+    const hazards = new Set<string>();
+    for (const track of tracks) {
+      expect(track.tourId).toBe("neon-meridian");
+      expect(track.laps).toBe(1);
+      expect(track.laneCount).toBe(3);
+      for (const option of track.weatherOptions) weather.add(option);
+      for (const segment of track.segments) {
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+    expect([...weather].sort()).toEqual(["dusk", "night", "rain"]);
+    expect(hazards.has("slick_paint")).toBe(true);
+    expect(hazards.has("puddle")).toBe(true);
     expect(hazards.has("tunnel")).toBe(true);
   });
 });
