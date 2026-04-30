@@ -1,0 +1,18 @@
+{
+  "id": "moss-frontier",
+  "name": "Moss Frontier",
+  "palette": {
+    "sky": "#17344a",
+    "horizon": "#49725d",
+    "road": "#535c52",
+    "shoulder": "#203126",
+    "grass": "#2f6238",
+    "accent": "#9bcf79"
+  },
+  "skyTreatment": "fog",
+  "roadShoulderType": "gravel",
+  "propCategories": ["forest-highways", "villages", "mist-signs", "wood-rails"],
+  "weatherPresets": ["heavy_rain", "rain", "fog"],
+  "tunnelMaterials": ["moss-concrete", "timber-brace", "warm-lamp-lighting"],
+  "uiAccent": "#b5df8d"
+}

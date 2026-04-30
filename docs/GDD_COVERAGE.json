@@ -2,6 +2,27 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-17-REGION-THEME-REGISTRY",
+      "gddSections": [
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Each World Tour region has a typed art theme package covering palette, sky treatment, road shoulder type, prop categories, weather presets, tunnel materials, and UI accent color. Bundled track weather options must be allowed by the owning region theme.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/data/regions/",
+        "src/data/index.ts",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "testRefs": [
+        "src/data/regions/__tests__/regions-content.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-region-art-43d6f582"]
+    },
+    {
       "id": "GDD-17-PLACEHOLDER-ART-MANIFEST",
       "gddSections": [
         "docs/gdd/17-art-direction.md",

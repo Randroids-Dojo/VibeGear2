@@ -1,0 +1,18 @@
+{
+  "id": "neon-meridian",
+  "name": "Neon Meridian",
+  "palette": {
+    "sky": "#101d45",
+    "horizon": "#334d74",
+    "road": "#4d5264",
+    "shoulder": "#1d2638",
+    "grass": "#263a52",
+    "accent": "#c38cff"
+  },
+  "skyTreatment": "night-neon",
+  "roadShoulderType": "neon-curb",
+  "propCategories": ["metro-outskirts", "neon-signs", "glass-rails", "rain-pylons"],
+  "weatherPresets": ["night", "rain", "dusk"],
+  "tunnelMaterials": ["black-ceramic", "neon-strip", "violet-service-lighting"],
+  "uiAccent": "#d9a6ff"
+}

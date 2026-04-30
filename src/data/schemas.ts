@@ -14,7 +14,7 @@
 
 import { z } from "zod";
 
-import { RegionPaletteSchema } from "./palettes/_schema";
+import { HexColorSchema, RegionPaletteSchema } from "./palettes/_schema";
 
 // Shared primitives ---------------------------------------------------------
 
@@ -56,6 +56,55 @@ export const WeatherOptionSchema = z.enum([
   "night",
 ]);
 export type WeatherOption = z.infer<typeof WeatherOptionSchema>;
+
+// Region theme --------------------------------------------------------------
+
+export const SkyTreatmentSchema = z.enum([
+  "clear",
+  "overcast",
+  "dusk",
+  "night-neon",
+  "snow",
+  "fog",
+  "desert-haze",
+  "storm",
+  "mixed",
+]);
+export type SkyTreatment = z.infer<typeof SkyTreatmentSchema>;
+
+export const RoadShoulderTypeSchema = z.enum([
+  "sand",
+  "guardrail",
+  "concrete",
+  "snowbank",
+  "gravel",
+  "neon-curb",
+  "cliff-edge",
+]);
+export type RoadShoulderType = z.infer<typeof RoadShoulderTypeSchema>;
+
+export const RegionThemePaletteSchema = z.object({
+  sky: HexColorSchema,
+  horizon: HexColorSchema,
+  road: HexColorSchema,
+  shoulder: HexColorSchema,
+  grass: HexColorSchema,
+  accent: HexColorSchema,
+});
+export type RegionThemePalette = z.infer<typeof RegionThemePaletteSchema>;
+
+export const RegionThemeSchema = z.object({
+  id: singleSegmentSlug,
+  name: z.string().min(1),
+  palette: RegionThemePaletteSchema,
+  skyTreatment: SkyTreatmentSchema,
+  roadShoulderType: RoadShoulderTypeSchema,
+  propCategories: z.array(slug).min(1),
+  weatherPresets: z.array(WeatherOptionSchema).min(1),
+  tunnelMaterials: z.array(slug).min(1),
+  uiAccent: HexColorSchema,
+});
+export type RegionTheme = z.infer<typeof RegionThemeSchema>;
 
 export const HazardKindSchema = z.enum([
   "puddle",

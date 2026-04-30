@@ -1,0 +1,18 @@
+{
+  "id": "ember-steppe",
+  "name": "Ember Steppe",
+  "palette": {
+    "sky": "#26334f",
+    "horizon": "#7c6353",
+    "road": "#635d54",
+    "shoulder": "#2b2d35",
+    "grass": "#6f5b35",
+    "accent": "#d98a4b"
+  },
+  "skyTreatment": "desert-haze",
+  "roadShoulderType": "sand",
+  "propCategories": ["desert-highways", "canyon-walls", "heat-signs", "rock-spires"],
+  "weatherPresets": ["clear", "fog"],
+  "tunnelMaterials": ["sandstone", "dark-asphalt", "amber-work-lights"],
+  "uiAccent": "#f0a05a"
+}

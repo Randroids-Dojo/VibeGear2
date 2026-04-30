@@ -1,0 +1,18 @@
+{
+  "id": "glass-ridge",
+  "name": "Glass Ridge",
+  "palette": {
+    "sky": "#172a4b",
+    "horizon": "#6f8295",
+    "road": "#60686c",
+    "shoulder": "#23313a",
+    "grass": "#586f78",
+    "accent": "#9ad7e6"
+  },
+  "skyTreatment": "snow",
+  "roadShoulderType": "snowbank",
+  "propCategories": ["alpine-passes", "snowbanks", "tunnels", "warning-posts"],
+  "weatherPresets": ["snow", "fog", "dusk"],
+  "tunnelMaterials": ["cold-concrete", "ice-tile", "blue-safety-lighting"],
+  "uiAccent": "#b7edf5"
+}
