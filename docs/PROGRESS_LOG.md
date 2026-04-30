@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-04-30: Slice: Time Trial downloaded ghost selection
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) Time Trial,
+[§21](gdd/21-technical-design-for-web-implementation.md) local runtime, and
+[§22](gdd/22-data-schemas.md) save schema.
+**Branch / PR:** `feat/time-trial-downloaded-ghosts`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a separate `downloadedGhosts` save slot so imported rival replays
+  do not overwrite personal-best ghosts.
+- Extended the Time Trial launch page with downloaded ghost status,
+  JSON import, schema and track-version validation, and a dedicated
+  start link for downloaded ghost races.
+- Taught the race route to use `?ghost=downloaded` as the Time Trial
+  ghost source while keeping personal-best recording unchanged.
+- Added the machine-checkable coverage ledger row for downloaded ghost
+  selection.
+
+### Verified
+- `npx vitest run src/game/modes/__tests__/timeTrialTargets.test.ts src/data/schemas.test.ts src/persistence/save.test.ts`
+  green, 89 tests passed.
+- `npm run typecheck` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/time-trial.spec.ts e2e/title-screen.spec.ts --project=chromium -g "time trial|Time Trial"`
+  green, 2 tests passed.
+- `npm run lint` green.
+- `npm run verify` green, 2670 Vitest tests passed.
+
+### Decisions and assumptions
+- Kept downloaded ghosts local-only. The GDD names downloaded ghosts but
+  does not require a remote ghost backend for v1.0.
+- Reused the existing replay schema and per-track map shape while keeping
+  imported rivals separate from PB ghosts.
+
+### Coverage ledger
+- GDD-06-TIME-TRIAL-DOWNLOADED-GHOST covers the downloaded ghost save
+  slot, Time Trial import/status UI, and race start link selection.
+- Uncovered adjacent requirements: UTC-midnight fake-clock e2e remains
+  under the §6 modes parent dot.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/22-data-schemas.md`: documented `downloadedGhosts` as the
+  imported-rival replay map separate from PB ghosts.
+
+---
+
 ## 2026-04-30: Slice: Time Trial review followups
 
 **GDD sections touched:**

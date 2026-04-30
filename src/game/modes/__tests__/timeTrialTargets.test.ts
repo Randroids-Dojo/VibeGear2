@@ -4,6 +4,7 @@ import { TRACK_RAW, TrackSchema, getChampionship } from "@/data";
 import { defaultSave } from "@/persistence/save";
 
 import {
+  acceptDownloadedGhost,
   buildTimeTrialView,
   developerBenchmarkMs,
   timeTrialRaceHref,
@@ -19,6 +20,18 @@ describe("timeTrialRaceHref", () => {
         weather: "rain",
       }),
     ).toBe("/race?mode=timeTrial&track=velvet-coast%2Fharbor-run&weather=rain");
+  });
+
+  it("adds a downloaded ghost source when requested", () => {
+    expect(
+      timeTrialRaceHref({
+        trackId: "velvet-coast/harbor-run",
+        weather: "rain",
+        ghost: "downloaded",
+      }),
+    ).toBe(
+      "/race?mode=timeTrial&track=velvet-coast%2Fharbor-run&weather=rain&ghost=downloaded",
+    );
   });
 });
 
@@ -40,6 +53,12 @@ describe("buildTimeTrialView", () => {
       bestLapMs: 30_000,
       bestRaceMs: 90_000,
     };
+    save.downloadedGhosts = {
+      "velvet-coast/harbor-run": replay({
+        trackId: "velvet-coast/harbor-run",
+        finalTimeMs: 32_000,
+      }),
+    };
     const view = buildTimeTrialView({
       save,
       championship: getChampionship(CHAMPIONSHIP_ID),
@@ -54,8 +73,11 @@ describe("buildTimeTrialView", () => {
       personalBestLapMs: 30_000,
       personalBestRaceMs: 90_000,
       developerBenchmarkMs: 31_500,
+      downloadedGhostTimeMs: 32_000,
       startHref:
         "/race?mode=timeTrial&track=velvet-coast%2Fharbor-run&weather=clear",
+      startDownloadedGhostHref:
+        "/race?mode=timeTrial&track=velvet-coast%2Fharbor-run&weather=clear&ghost=downloaded",
     });
   });
 
@@ -75,10 +97,52 @@ describe("buildTimeTrialView", () => {
   });
 });
 
+describe("acceptDownloadedGhost", () => {
+  it("accepts a replay for the selected track and track version", () => {
+    expect(
+      acceptDownloadedGhost({
+        trackId: "velvet-coast/harbor-run",
+        trackVersion: 1,
+        ghost: replay({ trackId: "velvet-coast/harbor-run" }),
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a replay for another track", () => {
+    expect(
+      acceptDownloadedGhost({
+        trackId: "velvet-coast/harbor-run",
+        trackVersion: 1,
+        ghost: replay({ trackId: "iron-borough/freightline-ring" }),
+      }),
+    ).toBe(false);
+  });
+});
+
 function buildTrackMap() {
   const entries = Object.values(TRACK_RAW).map((raw) => {
     const track = TrackSchema.parse(raw);
     return [track.id, track] as const;
   });
   return new Map(entries);
+}
+
+function replay(overrides: Partial<ReturnType<typeof replayBase>> = {}) {
+  return { ...replayBase(), ...overrides };
+}
+
+function replayBase() {
+  return {
+    formatVersion: 1,
+    physicsVersion: 1,
+    fixedStepMs: 16.666666666666668,
+    trackId: "velvet-coast/harbor-run",
+    trackVersion: 1,
+    carId: "sparrow-gt",
+    seed: 0,
+    totalTicks: 120,
+    finalTimeMs: 2_000,
+    truncated: false,
+    deltas: [],
+  };
 }

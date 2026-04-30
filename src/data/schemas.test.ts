@@ -346,22 +346,17 @@ describe("SaveGameSchema", () => {
     const withGhost = {
       ...saveGameExample,
       ghosts: {
-        "velvet-coast/harbor-run": {
-          formatVersion: 1,
-          physicsVersion: 1,
-          fixedStepMs: 16.6667,
-          trackId: "velvet-coast/harbor-run",
-          trackVersion: 1,
-          carId: "sparrow-gt",
-          seed: 0,
-          totalTicks: 600,
-          finalTimeMs: 10000,
-          truncated: false,
-          deltas: [
-            { tick: 0, mask: 1, values: [0.5] },
-            { tick: 60, mask: 2, values: [1] },
-          ],
-        },
+        "velvet-coast/harbor-run": ghostReplay(),
+      },
+    };
+    expect(SaveGameSchema.safeParse(withGhost).success).toBe(true);
+  });
+
+  it("accepts a save with a populated downloadedGhosts entry", () => {
+    const withGhost = {
+      ...saveGameExample,
+      downloadedGhosts: {
+        "velvet-coast/harbor-run": ghostReplay(),
       },
     };
     expect(SaveGameSchema.safeParse(withGhost).success).toBe(true);
@@ -389,6 +384,25 @@ describe("SaveGameSchema", () => {
     expect(SaveGameSchema.safeParse(broken).success).toBe(false);
   });
 });
+
+function ghostReplay() {
+  return {
+    formatVersion: 1,
+    physicsVersion: 1,
+    fixedStepMs: 16.6667,
+    trackId: "velvet-coast/harbor-run",
+    trackVersion: 1,
+    carId: "sparrow-gt",
+    seed: 0,
+    totalTicks: 600,
+    finalTimeMs: 10000,
+    truncated: false,
+    deltas: [
+      { tick: 0, mask: 1, values: [0.5] },
+      { tick: 60, mask: 2, values: [1] },
+    ],
+  };
+}
 
 describe("GhostReplayDeltaSchema", () => {
   it("accepts a typical numeric-and-boolean delta", () => {

@@ -427,11 +427,16 @@ function resolveTrack(
 }
 
 type RaceMode = "race" | "timeTrial" | "quickRace" | "practice";
+type TimeTrialGhostSource = "personalBest" | "downloaded";
 
 function resolveRaceMode(raw: string | null): RaceMode {
   if (raw === "practice") return "practice";
   if (raw === "quickRace") return "quickRace";
   return raw === "timeTrial" ? "timeTrial" : "race";
+}
+
+function resolveTimeTrialGhostSource(raw: string | null): TimeTrialGhostSource {
+  return raw === "downloaded" ? "downloaded" : "personalBest";
 }
 
 function resolveRaceWeather(
@@ -685,6 +690,7 @@ function RaceShell(): ReactElement {
   const weatherRaw = search?.get("weather") ?? null;
   const tireRaw = search?.get("tire") ?? null;
   const carRaw = search?.get("car") ?? null;
+  const ghostRaw = search?.get("ghost") ?? null;
   const dailyDateKeyRaw = search?.get("daily") ?? null;
   const dailySeedRaw = search?.get("dailySeed") ?? null;
   const dailyCarClassRaw = search?.get("carClass") ?? null;
@@ -717,6 +723,10 @@ function RaceShell(): ReactElement {
     [dailyCarClassRaw, dailyDateKeyRaw, dailySeedRaw, mode, track.id, weather],
   );
   const playerTire = useMemo(() => resolvePlayerTire(tireRaw), [tireRaw]);
+  const ghostSource = useMemo(
+    () => resolveTimeTrialGhostSource(ghostRaw),
+    [ghostRaw],
+  );
   return (
     <RaceCanvas
       track={track}
@@ -727,6 +737,7 @@ function RaceShell(): ReactElement {
       playerTire={playerTire}
       selectedCarId={carRaw}
       dailyChallenge={dailyChallenge}
+      ghostSource={ghostSource}
     />
   );
 }
@@ -740,6 +751,7 @@ interface RaceCanvasProps {
   playerTire: TireKind | undefined;
   selectedCarId: string | null;
   dailyChallenge: DailyChallengeSelection | null;
+  ghostSource: TimeTrialGhostSource;
 }
 
 function RaceCanvas({
@@ -751,6 +763,7 @@ function RaceCanvas({
   playerTire,
   selectedCarId,
   dailyChallenge,
+  ghostSource,
 }: RaceCanvasProps): ReactElement {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -947,7 +960,10 @@ function RaceCanvas({
         timeTrialRecorderRef.current = null;
         return;
       }
-      const currentGhost = timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
+      const currentGhost =
+        ghostSource === "downloaded"
+          ? timeTrialSaveSnapshot.downloadedGhosts?.[track.id] ?? null
+          : timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
       const ghostCarStats =
         currentGhost === null
           ? playerStats
@@ -1602,6 +1618,7 @@ function RaceCanvas({
     playerTire,
     selectedCarId,
     dailyChallenge,
+    ghostSource,
   ]);
 
   return (

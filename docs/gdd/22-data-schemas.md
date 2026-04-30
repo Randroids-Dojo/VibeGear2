@@ -402,3 +402,7 @@ v1 -> v2 migrator seeds it to `0` if absent.
 in the runtime schema so v1 / v2 saves still validate before migration, but a
 fully migrated v3 save carries at least an empty map. Each stored entry uses
 the Ghost replay schema below.
+
+`downloadedGhosts` is the §6 Time Trial imported rival replay map keyed by
+track id. It uses the same Ghost replay schema as `ghosts` but stays separate
+so a downloaded rival never overwrites the player's personal-best replay.

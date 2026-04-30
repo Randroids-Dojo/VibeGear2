@@ -157,6 +157,7 @@ export function defaultSave(): SaveGame {
     // migrator seeds the same shape so a fresh save and a migrated save
     // are byte-identical at this slot.
     ghosts: {},
+    downloadedGhosts: {},
     // Cross-tab last-write-wins counter. Seeds at 0; `saveSave` increments
     // before every persist so two tabs can compare which write came last.
     writeCounter: 0,

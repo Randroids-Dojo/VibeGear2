@@ -964,5 +964,12 @@ export const SaveGameSchema = z.object({
    * record. Per `docs/gdd/22-data-schemas.md`.
    */
   ghosts: z.record(slug, GhostReplaySchema).optional(),
+  /**
+   * §6 Time Trial downloaded ghost replays, keyed by track slug. This slot
+   * is separate from `ghosts` so imported rival runs never overwrite the
+   * player's PB replay. Optional so current v4 saves validate without a
+   * migration; fresh saves seed an empty map.
+   */
+  downloadedGhosts: z.record(slug, GhostReplaySchema).optional(),
 });
 export type SaveGame = z.infer<typeof SaveGameSchema>;

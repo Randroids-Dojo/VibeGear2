@@ -271,6 +271,30 @@
       "followupRefs": ["VibeGear2-implement-time-trial-9135b1e7"]
     },
     {
+      "id": "GDD-06-TIME-TRIAL-DOWNLOADED-GHOST",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Time Trial supports a separate downloaded ghost replay slot per track, lets the player import a valid replay for an unlocked track, and can start a Time Trial using that downloaded ghost instead of the personal-best ghost.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/persistence/save.ts",
+        "src/game/modes/timeTrialTargets.ts",
+        "src/app/time-trial/page.tsx",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/data/schemas.test.ts",
+        "src/persistence/save.test.ts",
+        "src/game/modes/__tests__/timeTrialTargets.test.ts",
+        "e2e/time-trial.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-time-trial-40c02d43"]
+    },
+    {
       "id": "GDD-06-QUICK-RACE-MODE",
       "gddSections": [
         "docs/gdd/06-game-modes.md",
