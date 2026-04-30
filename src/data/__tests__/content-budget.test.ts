@@ -92,7 +92,9 @@ function readJson(absPath: string): unknown {
 }
 
 describe("content budget: tracks", () => {
-  const trackJsonFiles = walkJsonFiles(TRACKS_DIR);
+  const trackJsonFiles = walkJsonFiles(TRACKS_DIR).filter(
+    (file) => !file.relPath.startsWith(`_benchmark${path.sep}`),
+  );
 
   it("counts every JSON under src/data/tracks as a valid track", () => {
     const failures: string[] = [];

@@ -51,6 +51,10 @@ describe("track catalogue", () => {
       expect(TRACK_IDS).toContain(id);
     }
   });
+
+  it("does not register benchmark-only tracks in the user-facing catalogue", () => {
+    expect(TRACK_IDS.some((id) => id.startsWith("benchmark/"))).toBe(false);
+  });
 });
 
 describe.each(EXPECTED_IDS.map((id) => [id] as const))(
