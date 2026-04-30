@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§25](gdd/25-development-roadmap.md) v1.0 browser compatibility matrix and
 [§27](gdd/27-risks-and-mitigations.md) browser performance.
-**Branch / PR:** `docs/browser-compatibility-matrix`, PR pending.
+**Branch / PR:** `docs/browser-compatibility-matrix`, PR #115.
 **Status:** Implemented.
 
 ### Done
