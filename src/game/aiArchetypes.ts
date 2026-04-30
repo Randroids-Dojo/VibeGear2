@@ -12,6 +12,10 @@ export interface AIBehaviour {
   readonly fadePacePenalty: number;
   readonly brilliantChance: number;
   readonly brilliantPaceBonus: number;
+  /**
+   * Lateral offset bias, in meters, applied toward the player when the
+   * player is close enough to engage traffic pressure.
+   */
   readonly trafficLanePressure: number;
 }
 

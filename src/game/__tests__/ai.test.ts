@@ -32,7 +32,10 @@ import {
   AI_ARCHETYPE_BEHAVIOURS,
   AI_ARCHETYPE_ORDER,
 } from "@/game/aiArchetypes";
-import { getCpuModifiers } from "@/game/aiDifficulty";
+import {
+  getCpuModifiers,
+  type CpuDifficultyModifiers,
+} from "@/game/aiDifficulty";
 import { INITIAL_CAR_STATE, type CarState } from "@/game/physics";
 import { createRaceState, type RaceState } from "@/game/raceState";
 import { compileSegments, type CompiledSegmentBuffer } from "@/road/trackCompiler";
@@ -564,8 +567,8 @@ describe("tickAI (§23 CPU difficulty tier paceScalar)", () => {
   // `paceScalar` on top of the per-driver `AIDriver.paceScalar`. These
   // tests pin the runtime side of F-048: a clean_line driver under
   // identical inputs targets a higher speed at Hard than at Easy, and
-  // omitting the `cpuModifiers` argument is byte-identical to passing
-  // the Normal (identity) row.
+  // omitted `cpuModifiers` keep the legacy all-ones default separate
+  // from the §23 Normal row.
 
   it("Hard tier yields a higher targetSpeed than Easy under matched inputs", () => {
     // Mid-sweeper at curve=0.5: rawTarget = 61 * (1 - 0.6 * 0.5) * 1.0
@@ -600,12 +603,11 @@ describe("tickAI (§23 CPU difficulty tier paceScalar)", () => {
     );
   });
 
-  it("Normal tier (identity) is byte-identical to omitting cpuModifiers", () => {
-    // The default-arg path resolves to `IDENTITY_CPU_MODIFIERS` which
-    // matches `getCpuModifiers("normal")`. Passing the Normal row
-    // explicitly must not drift any field of the result, so callers
-    // that adopt the binding can flip in stages without altering the
-    // pre-binding behaviour for any tier they have not yet wired.
+  it("Normal tier pace path matches omitted modifiers without a recovery gap", () => {
+    // The default-arg path resolves to `IDENTITY_CPU_MODIFIERS`. Normal
+    // is not identity anymore because §23 gives it mild recovery, but
+    // without a trailing gap its pace and mistake scalars still match
+    // the legacy default.
     const omitted = tickAI(
       CLEAN_LINE_DRIVER,
       freshAi(),
@@ -629,6 +631,37 @@ describe("tickAI (§23 CPU difficulty tier paceScalar)", () => {
     );
     expect(explicitNormal.input).toEqual(omitted.input);
     expect(explicitNormal.nextAiState).toEqual(omitted.nextAiState);
+  });
+
+  it("Normal tier recovery differs from the legacy omitted default", () => {
+    const aiCar = freshCar({ z: 900, speed: 30 });
+    const playerAhead: PlayerView = {
+      car: freshCar({ z: aiCar.z + 240, speed: 30 }),
+    };
+    const omitted = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      aiCar,
+      playerAhead,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    const explicitNormal = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      aiCar,
+      playerAhead,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      getCpuModifiers("normal"),
+    );
+    expect(omitted.nextAiState.targetSpeed).toBeGreaterThan(
+      explicitNormal.nextAiState.targetSpeed,
+    );
   });
 
   it("composes per-driver paceScalar with the tier paceScalar", () => {
@@ -690,8 +723,13 @@ describe("tickAI (§23 CPU difficulty tier paceScalar)", () => {
     expect(result.nextAiState.targetSpeed).toBe(STARTER_STATS.topSpeed);
   });
 
-  it("IDENTITY_CPU_MODIFIERS matches the §23 Normal row", () => {
-    expect(IDENTITY_CPU_MODIFIERS).toBe(getCpuModifiers("normal"));
+  it("IDENTITY_CPU_MODIFIERS is the legacy all-ones default row", () => {
+    expect(IDENTITY_CPU_MODIFIERS).toEqual<CpuDifficultyModifiers>({
+      paceScalar: 1,
+      recoveryScalar: 1,
+      mistakeScalar: 1,
+    });
+    expect(Object.isFrozen(IDENTITY_CPU_MODIFIERS)).toBe(true);
   });
 });
 

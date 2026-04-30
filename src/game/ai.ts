@@ -43,9 +43,8 @@
  * on top of per-driver AI data. `paceScalar` raises or lowers target
  * speed, `recoveryScalar` scales the light catch-up term when an AI
  * trails the player, and `mistakeScalar` scales the per-driver
- * `mistakeRate` for deterministic lane-target mistakes. Defaults to
- * identity (`getCpuModifiers("normal")`) so existing callers keep
- * Normal behavior unchanged.
+ * `mistakeRate` for deterministic lane-target mistakes. Defaults to a
+ * legacy identity row so existing callers keep behavior unchanged.
  *
  * Weather skill wiring: callers may pass `weatherSkillScalar` as the
  * compact §15 weather-skill row resolved for the active weather. It is
@@ -61,7 +60,7 @@
  * - Overtake / lane-shift behaviour. §15 lists it; an AI may still
  *   collide with the player. Collision avoidance lands with the
  *   full grid slice.
- * - Nitro firing. The clean_line AI never fires nitro in this slice.
+ * - AI nitro firing. Not implemented in this slice.
  * - Full passing logic with inside / outside pass preferences.
  * - Damage-aware rub avoidance and contact fairness scoring.
  */
@@ -69,10 +68,7 @@
 import type { AIDriver, CarBaseStats } from "@/data/schemas";
 import { CURVATURE_SCALE, ROAD_WIDTH, SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
-import {
-  getCpuModifiers,
-  type CpuDifficultyModifiers,
-} from "./aiDifficulty";
+import type { CpuDifficultyModifiers } from "./aiDifficulty";
 import { getAIBehaviour } from "./aiArchetypes";
 import { NEUTRAL_INPUT, type Input } from "./input";
 import type { CarState } from "./physics";
@@ -81,14 +77,17 @@ import { deserializeRng } from "./rng";
 import { WEATHER_VISIBILITY_RISK_MAX_SCALAR } from "./weather";
 
 /**
- * Identity §23 CPU modifiers row used as the default when a caller does
- * not supply tier-resolved scalars. Equivalent to
- * `getCpuModifiers("normal")`: each scalar is `1.0` so the per-driver
- * `paceScalar`, `mistakeRate`, and light recovery term pass through
- * unchanged for any caller that has not yet adopted the tier wiring.
+ * Legacy identity CPU modifier row used as the default when a caller
+ * does not supply tier-resolved §23 scalars. Each scalar is `1.0` so
+ * the per-driver `paceScalar`, `mistakeRate`, and light recovery term
+ * pass through unchanged for any caller that has not yet adopted the
+ * tier wiring.
  */
-export const IDENTITY_CPU_MODIFIERS: CpuDifficultyModifiers =
-  getCpuModifiers("normal");
+export const IDENTITY_CPU_MODIFIERS: CpuDifficultyModifiers = Object.freeze({
+  paceScalar: 1,
+  recoveryScalar: 1,
+  mistakeScalar: 1,
+});
 
 /**
  * Per-AI runtime state. Pinned by the dot stress-test:
@@ -196,7 +195,7 @@ export const AI_TUNING = Object.freeze({
   ROCKET_LAUNCH_FRACTION: 0.18,
   /** Lap fraction where rocket starter late fade starts applying. */
   ROCKET_FADE_FRACTION: 0.72,
-  /** Player or traffic gap where archetype lane pressure can engage. */
+  /** Player gap where archetype lane pressure can engage. */
   TRAFFIC_PRESSURE_WINDOW_METERS: 36,
 });
 
@@ -291,10 +290,9 @@ export function tickAI(
     player.car,
     context.roadHalfWidth,
   );
+  const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset;
   const baseIdealLateralOffset = clamp(
-    rawIdealOffset + trafficLaneOffset === 0
-      ? 0
-      : rawIdealOffset + trafficLaneOffset,
+    idealOffsetWithTraffic === 0 ? 0 : idealOffsetWithTraffic,
     -context.roadHalfWidth,
     context.roadHalfWidth,
   );

@@ -29,7 +29,7 @@ import {
 } from "../aiDifficulty";
 
 describe("DEFAULT_CPU_TIER_ID", () => {
-  it("is 'normal' (the §23 identity row, also the §15 baseline)", () => {
+  it("is 'normal' (the §15 baseline tier)", () => {
     expect(DEFAULT_CPU_TIER_ID).toBe("normal");
   });
 });
@@ -68,7 +68,7 @@ describe("getCpuModifiers", () => {
     });
   });
 
-  it("returns the §23 Normal (identity) row", () => {
+  it("returns the §23 Normal row", () => {
     expect(getCpuModifiers("normal")).toEqual<CpuDifficultyModifiers>({
       paceScalar: 1,
       recoveryScalar: 0.6,
