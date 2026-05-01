@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents,
 [§16](gdd/16-rendering-and-visual-design.md) billboard cars, and
 [§20](gdd/20-hud-and-ui-ux.md) race HUD observability.
-**Branch / PR:** `feat/ai-visible-opponents`, PR pending.
+**Branch / PR:** `feat/ai-visible-opponents`, PR #145.
 **Status:** Implemented.
 
 ### Done
@@ -28,6 +28,9 @@ Correct them by adding a new entry that references the old one.
   the player shifts laterally toward a pass lane with a 2 m target margin.
 - Added desktop and mobile Playwright coverage that waits for a real race to
   render at least one visible AI opponent.
+- Addressed Copilot review by tightening AI car viewport culling and moving
+  opponent screen projection onto the direct car projector path to avoid
+  current-segment pop-in.
 
 ### Verified
 - `npx vitest run src/game/__tests__/raceSession.test.ts src/game/__tests__/ai.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts`

@@ -466,19 +466,27 @@ function isDrawableProjectedCar(
   car: NonNullable<DrawRoadOptions["aiCars"]>[number],
   viewport: Viewport,
 ): boolean {
+  if (
+    !(
+      viewport.width > 0 &&
+      viewport.height > 0 &&
+      Number.isFinite(car.screenX) &&
+      Number.isFinite(car.screenY) &&
+      Number.isFinite(car.screenW) &&
+      car.screenW > 0 &&
+      Number.isFinite(car.depthMeters) &&
+      car.depthMeters > 0
+    )
+  ) {
+    return false;
+  }
+
+  const halfW = car.screenW / 2;
   return (
-    viewport.width > 0 &&
-    viewport.height > 0 &&
-    Number.isFinite(car.screenX) &&
-    Number.isFinite(car.screenY) &&
-    Number.isFinite(car.screenW) &&
-    car.screenW > 0 &&
-    Number.isFinite(car.depthMeters) &&
-    car.depthMeters > 0 &&
     car.screenY >= -viewport.height * 0.2 &&
     car.screenY <= viewport.height * 1.15 &&
-    car.screenX + car.screenW >= 0 &&
-    car.screenX - car.screenW <= viewport.width
+    car.screenX + halfW >= 0 &&
+    car.screenX - halfW <= viewport.width
   );
 }
 

@@ -616,6 +616,7 @@ describe("drawRoad AI car overlays", () => {
         { screenX: Number.NaN, screenY: 200, screenW: 40, depthMeters: 20 },
         { screenX: 100, screenY: 200, screenW: 0, depthMeters: 20 },
         { screenX: 100, screenY: 200, screenW: 40, depthMeters: -1 },
+        { screenX: VIEWPORT.width + 30, screenY: 200, screenW: 40, depthMeters: 20 },
       ],
     });
 

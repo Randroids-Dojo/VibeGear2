@@ -120,16 +120,16 @@ import type { DailyChallengeSelection } from "@/game/modes/dailyChallenge";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
-  ROAD_WIDTH,
   SEGMENT_LENGTH,
   fitToBox,
   project,
   projectCar,
+  projectGhostCar,
   upcomingCurvature,
   type Camera,
+  type CompiledSegment,
   type CompiledTrack,
   type MinimapPoint,
-  type Strip,
   type Viewport,
 } from "@/road";
 import { drawRoad, type DrawRoadOptions } from "@/render/pseudoRoadCanvas";
@@ -572,7 +572,8 @@ function projectOpponentCar(input: {
   carX: number;
   carZ: number;
   camera: Camera;
-  strips: readonly Strip[];
+  segments: readonly CompiledSegment[];
+  viewport: Viewport;
   trackLength: number;
   atlas: LoadedAtlas | null;
   spriteSet: CarSpriteSet;
@@ -588,19 +589,19 @@ function projectOpponentCar(input: {
   if (depthMeters > 200) return null;
   if (!Number.isFinite(input.trackLength) || input.trackLength <= 0) return null;
 
-  const wrappedZ = ((input.carZ % input.trackLength) + input.trackLength) % input.trackLength;
-  const segmentIndex = Math.floor(wrappedZ / SEGMENT_LENGTH);
-  const strip = input.strips.find(
-    (candidate) => candidate.visible && candidate.segment.index === segmentIndex,
+  const projection = projectGhostCar(
+    input.segments,
+    input.camera,
+    input.viewport,
+    input.carZ,
+    input.carX,
   );
-  if (!strip || strip.screenW <= 0) return null;
+  if (!projection.visible || projection.screenW <= 0) return null;
 
-  const lateral = input.carX / ROAD_WIDTH;
-  const screenX = strip.screenX + lateral * strip.screenW;
-  const screenW = Math.max(16, Math.min(92, strip.screenW * 0.3));
+  const screenW = Math.max(16, Math.min(92, projection.screenW * 0.3));
   return {
-    screenX,
-    screenY: strip.screenY,
+    screenX: projection.screenX,
+    screenY: projection.screenY,
     screenW,
     depthMeters,
     atlas: input.atlas,
@@ -1433,7 +1434,8 @@ function RaceCanvas({
               carX: entry.car.x,
               carZ: entry.car.z,
               camera,
-              strips,
+              segments: track.compiled.segments,
+              viewport,
               trackLength: track.compiled.totalLengthMeters,
               atlas: aiCarAtlasesRef.current[aiSpriteSetId] ?? null,
               spriteSet: carSpriteSetForVisualProfile(aiSpriteSetId),
