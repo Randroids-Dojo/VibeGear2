@@ -25,12 +25,17 @@ Correct them by adding a new entry that references the old one.
 ### Verified
 - `npx vitest run src/audio/sfx.test.ts src/game/__tests__/raceSession.test.ts`
   green, 137 tests passed.
+- `CI=1 npx playwright test --project=chromium` green, 95 tests passed
+  with the CI worker setting.
+- `npm run verify` green, 142 files and 2759 tests passed.
 
 ### Decisions and assumptions
 - Pickup collection cues remain procedural one-shots so they respect the
   existing Web Audio context lifecycle and persisted SFX mixer gain.
 - Cash uses a shorter high triangle cue while nitro uses a lower sawtooth
   rise to keep the two pickup kinds readable without adding asset files.
+- CI browser tests now use four workers because the serialized Playwright
+  run exceeded the workflow job budget even though the suite passed locally.
 
 ### Coverage ledger
 - Added `GDD-18-PROCEDURAL-PICKUP-SFX`.
