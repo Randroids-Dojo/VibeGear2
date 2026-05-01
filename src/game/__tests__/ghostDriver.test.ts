@@ -80,6 +80,7 @@ function flatTrack(count: number): CompiledSegment[] {
       roadsideLeftId: "default",
       roadsideRightId: "default",
       hazardIds: [],
+      pickupIds: [],
     };
   }
   return segs;

@@ -6,6 +6,62 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Pickup design contract and track schema
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track pickups,
+[§10](gdd/10-driving-model-and-physics.md) mid-race resources,
+[§22](gdd/22-data-schemas.md) track segment schema, and
+[§25](gdd/25-development-roadmap.md) roadmap.
+**Branch / PR:** `docs/pickups-design-contract`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added the canonical pickup taxonomy for v1: cash and nitro only.
+- Documented deterministic segment authoring, per-lap respawn, race-start
+  reset, v1 AI ignore behavior, and balance targets.
+- Added `docs/PICKUPS_DESIGN.md` as the implementation contract for runtime,
+  rendering, audio, and balance follow-up slices.
+- Added `TrackPickupSchema`, optional `segments[].pickups`, and compiled
+  segment `pickupIds`.
+- Seeded pickups in `test/straight` and `velvet-coast/harbor-run` so the next
+  runtime slice has stable content for tests.
+
+### Verified
+- `grep -rn $'\u2014\|\u2013'` on changed files returned no matches.
+- `npm run typecheck` green.
+- `npx vitest run src/road/__tests__/trackCompiler.test.ts
+  src/data/schemas.test.ts src/road/__tests__/minimap.test.ts
+  src/road/__tests__/segmentProjector.test.ts
+  src/render/__tests__/pseudoRoadCanvas.test.ts
+  src/render/__tests__/tunnelRenderer.test.ts
+  src/game/__tests__/ghostDriver.test.ts` green, 206 tests passed.
+- `npm run docs:check` green.
+- `npm run verify` green, 140 files and 2746 tests passed.
+
+### Decisions and assumptions
+- Pickup collection resets on race start and race retry in v1.
+- Pickups respawn each lap so repeated lap structure stays learnable.
+- AI ignores pickups until a later AI-awareness pass.
+- Nitro pickup values are reserve percentages, with `25` as the v1 standard.
+
+### Coverage ledger
+- Adds `GDD-09-TRACK-PICKUPS` and `GDD-10-MID-RACE-PICKUPS`.
+- Starts `VibeGear2-feat-pickups-on-9f6438bd`.
+- Uncovered adjacent requirements: runtime collection, rendering, pickup SFX,
+  HUD flash, ghost replay state, and E2E pickup collection coverage.
+
+### Followups created
+None yet. Remaining pickup work stays in Dots until this parent is split after
+the PR lands.
+
+### GDD edits
+- Added §9 pickup rules.
+- Added §10 mid-race resource pickup rules.
+- Added §22 pickup schema fields.
+
+---
+
 ## 2026-05-01: Slice: Finish-line moment and lap rollover polish
 
 **GDD sections touched:**

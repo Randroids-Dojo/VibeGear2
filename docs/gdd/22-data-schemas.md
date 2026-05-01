@@ -21,7 +21,10 @@
       "grade": 0.0,
       "roadsideLeft": "palms_sparse",
       "roadsideRight": "marina_signs",
-      "hazards": []
+      "hazards": [],
+      "pickups": [
+        { "id": "harbor-run-start-cash", "kind": "cash", "laneOffset": 0, "value": 100 }
+      ]
     },
     {
       "len": 140,
@@ -45,6 +48,23 @@
 `weatherOptions` entries are the §14 weather ids:
 `clear`, `overcast`, `light_rain`, `rain`, `heavy_rain`, `fog`, `snow`,
 `dusk`, and `night`.
+
+`segments[].pickups` is optional. When present, each entry is a deterministic
+track-authored pickup:
+
+```
+{
+  "id": "harbor-run-start-cash",
+  "kind": "cash",
+  "laneOffset": 0,
+  "value": 100
+}
+```
+
+Pickup `kind` is `cash` or `nitro`. `laneOffset` uses the same normalized
+lateral convention as hazards, with `0` on centerline and values near `-1` or
+`1` near the road edges. `value` is credits for cash pickups and reserve
+percent for nitro pickups. The v1 standard nitro value is `25`.
 
 ## Car JSON schema
 

@@ -16,7 +16,10 @@
       "grade": 0.0,
       "roadsideLeft": "palms_sparse",
       "roadsideRight": "marina_signs",
-      "hazards": []
+      "hazards": [],
+      "pickups": [
+        { "id": "harbor-run-start-cash", "kind": "cash", "laneOffset": 0, "value": 100 }
+      ]
     },
     {
       "len": 140,

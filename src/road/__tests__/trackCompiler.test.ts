@@ -118,6 +118,22 @@ describe("compileSegments (lower-level dev-page entry point)", () => {
     expect(compiled.segments[0]!.hazardIds).toBe(hazards);
   });
 
+  it("propagates pickup ids from authored pickup objects", () => {
+    const compiled = compileSegments([
+      seg({
+        len: 6,
+        pickups: [
+          { id: "cash-start", kind: "cash", laneOffset: -0.35, value: 75 },
+          { id: "nitro-apex", kind: "nitro", laneOffset: 0.35, value: 25 },
+        ],
+      }),
+    ]);
+    expect(compiled.segments[0]!.pickupIds).toEqual([
+      "cash-start",
+      "nitro-apex",
+    ]);
+  });
+
   it("propagates tunnel segment metadata", () => {
     const compiled = compileSegments([
       seg({
@@ -171,6 +187,27 @@ describe("compileTrack (full-track entry point)", () => {
     const compiled = compileTrack(t);
     expect(compiled.segments[0]!.inTunnel).toBe(true);
     expect(compiled.segments[0]!.tunnelMaterialId).toBe("iron-borough/riveted-steel");
+  });
+
+  it("accepts authored pickups in TrackSchema and full-track compilation", () => {
+    const t = track({
+      segments: [
+        seg({
+          len: 60,
+          pickups: [
+            { id: "cash-line", kind: "cash", laneOffset: 0, value: 100 },
+          ],
+        }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+      ],
+      lengthMeters: 240,
+    });
+    const parsed = TrackSchema.safeParse(t);
+    expect(parsed.success).toBe(true);
+    const compiled = compileTrack(t);
+    expect(compiled.segments[0]!.pickupIds).toEqual(["cash-line"]);
   });
 
   it("compiles a 13 m authored segment to 3 compiled segments (ceil(13/6))", () => {

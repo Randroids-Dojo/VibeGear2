@@ -125,6 +125,7 @@ export function compileTrack(track: Track): CompiledTrack {
     const count = Math.max(1, Number.isFinite(rawCount) ? rawCount : 1);
     const curve = sanitize(seg.curve, "curve", warned) / CURVATURE_SCALE;
     const grade = sanitize(seg.grade, "grade", warned) * SEGMENT_LENGTH;
+    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? [];
     for (let i = 0; i < count; i++) {
       segments.push({
         index: cumulativeIndex,
@@ -135,6 +136,7 @@ export function compileTrack(track: Track): CompiledTrack {
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
+        pickupIds,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });
@@ -308,6 +310,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
     const count = Math.max(1, Number.isFinite(rawCount) ? rawCount : 1);
     const curve = sanitize(seg.curve, "curve", warned) / CURVATURE_SCALE;
     const grade = sanitize(seg.grade, "grade", warned) * SEGMENT_LENGTH;
+    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? [];
     for (let i = 0; i < count; i++) {
       compiled.push({
         index: cumulativeIndex,
@@ -318,6 +321,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
+        pickupIds,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });

@@ -131,6 +131,17 @@ export const HazardRegistryEntrySchema = z.object({
 });
 export type HazardRegistryEntry = z.infer<typeof HazardRegistryEntrySchema>;
 
+export const PickupKindSchema = z.enum(["cash", "nitro"]);
+export type PickupKind = z.infer<typeof PickupKindSchema>;
+
+export const TrackPickupSchema = z.object({
+  id: slug,
+  kind: PickupKindSchema,
+  laneOffset: z.number().min(-1).max(1),
+  value: nonNegInt,
+});
+export type TrackPickup = z.infer<typeof TrackPickupSchema>;
+
 export const TrackSegmentSchema = z.object({
   len: positiveNumber,
   curve: z.number().min(-1).max(1),
@@ -138,6 +149,7 @@ export const TrackSegmentSchema = z.object({
   roadsideLeft: z.string().min(1),
   roadsideRight: z.string().min(1),
   hazards: z.array(slug),
+  pickups: z.array(TrackPickupSchema).optional(),
   inTunnel: z.boolean().optional(),
   tunnelMaterial: slug.optional(),
 });

@@ -34,6 +34,7 @@ function strip(overrides: Partial<Strip> = {}): Strip {
       roadsideLeftId: "default",
       roadsideRightId: "default",
       hazardIds: [],
+      pickupIds: [],
     },
     ...overrides,
   };

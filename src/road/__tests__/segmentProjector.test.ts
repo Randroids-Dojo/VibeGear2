@@ -38,6 +38,7 @@ function flatTrack(count: number, init: Partial<CompiledSegment> = {}): Compiled
       roadsideLeftId: "default",
       roadsideRightId: "default",
       hazardIds: [],
+      pickupIds: [],
       ...init,
     };
   }
