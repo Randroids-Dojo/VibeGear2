@@ -11,7 +11,7 @@ Correct them by adding a new entry that references the old one.
 **GDD sections touched:**
 [§25](gdd/25-development-roadmap.md) v1.0 launch trailer and screenshots,
 and [§26](gdd/26-open-source-project-guidance.md) release packaging.
-**Branch / PR:** `docs/release-media-kit`, PR pending.
+**Branch / PR:** `docs/release-media-kit`, PR #143.
 **Status:** Implemented.
 
 ### Done
