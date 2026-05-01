@@ -21,6 +21,7 @@ concept and [§24](gdd/24-content-plan.md) online leaderboard.
   while keeping the legacy `vercel-kv` tag available.
 - Set production Vercel env vars for the Redis backend, public leaderboard
   enablement, and signed lap submissions.
+- Set matching branch-scoped preview env vars after pushing the branch.
 - Documented the selected provider, env contract, and runtime path in
   `docs/LEADERBOARD_BACKEND.md`.
 - Marked Q-011 answered and F-069 done.
@@ -37,8 +38,8 @@ concept and [§24](gdd/24-content-plan.md) online leaderboard.
 - Chose `iad1` to match the Vercel deploy region.
 - Set `autoUpgrade=false` and `prodPack=false` to keep spend bounded until the
   dev changes the plan intentionally.
-- Preview branch env vars will be added after the branch is pushed because the
-  Vercel CLI rejects preview vars for branches that do not exist in GitHub yet.
+- Vercel requires branch-scoped preview env vars to reference a branch that
+  already exists in the connected GitHub repository.
 
 ### Coverage ledger
 - GDD-21-LEADERBOARD-STORAGE-GATE now covers the approved provider, production

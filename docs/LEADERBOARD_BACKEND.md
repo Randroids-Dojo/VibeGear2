@@ -31,10 +31,9 @@ The app-owned leaderboard flags are:
 - `LEADERBOARD_SIGNING_KEY=<random secret>`
 
 Production has all three app-owned vars set. Development has the same backend
-flag and client flag plus a non-sensitive local signing key. Preview branch
-vars should be added after pushing the feature branch because Vercel only
-accepts branch-scoped preview vars for branches that already exist in the
-connected Git repository.
+flag and client flag plus a non-sensitive local signing key. The
+`feat/upstash-leaderboard-production` preview branch also has branch-scoped
+copies of all three app-owned vars so the PR preview exercises the Redis path.
 
 ## Runtime Path
 
