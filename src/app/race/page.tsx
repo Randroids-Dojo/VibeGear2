@@ -54,6 +54,8 @@ import {
   loadTrack,
 } from "@/data";
 import {
+  CAR_SPRITE_SET_IDS,
+  type CarSpriteSetId,
   carAtlasMetaForVisualProfile,
   carSpriteSetForVisualProfile,
 } from "@/data/atlas/carSprites";
@@ -118,6 +120,7 @@ import type { DailyChallengeSelection } from "@/game/modes/dailyChallenge";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
+  ROAD_WIDTH,
   SEGMENT_LENGTH,
   fitToBox,
   project,
@@ -126,9 +129,10 @@ import {
   type Camera,
   type CompiledTrack,
   type MinimapPoint,
+  type Strip,
   type Viewport,
 } from "@/road";
-import { drawRoad } from "@/render/pseudoRoadCanvas";
+import { drawRoad, type DrawRoadOptions } from "@/render/pseudoRoadCanvas";
 import { playerCarFrameIndex } from "@/render/carFrame";
 import type { CarSpriteSet } from "@/render/carSpriteCompositor";
 import {
@@ -181,6 +185,14 @@ const DEFAULT_TRACK_ID = "test/elevation";
 const TOUR_PLACEHOLDER_TRACK_ID = "test/straight";
 const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
+const AI_FALLBACK_FILLS = Object.freeze([
+  "#ff6b5f",
+  "#63d471",
+  "#5fb6ff",
+  "#f7d154",
+  "#d980ff",
+  "#ff9f43",
+]);
 
 /**
  * §20 minimap layout. The wireframe places the minimap in the bottom-left
@@ -556,6 +568,57 @@ function toMinimapCar(
   return { x, y, isPlayer };
 }
 
+function projectOpponentCar(input: {
+  carX: number;
+  carZ: number;
+  camera: Camera;
+  strips: readonly Strip[];
+  trackLength: number;
+  atlas: LoadedAtlas | null;
+  spriteSet: CarSpriteSet;
+  fill?: string;
+  frameIndex: number;
+  braking: boolean;
+  nitroActive: boolean;
+  speedMetersPerSecond: number;
+  damageTotal: number;
+}): NonNullable<DrawRoadOptions["aiCars"]>[number] | null {
+  const depthMeters = input.carZ - input.camera.z;
+  if (!Number.isFinite(depthMeters) || depthMeters < input.camera.depth) return null;
+  if (depthMeters > 200) return null;
+  if (!Number.isFinite(input.trackLength) || input.trackLength <= 0) return null;
+
+  const wrappedZ = ((input.carZ % input.trackLength) + input.trackLength) % input.trackLength;
+  const segmentIndex = Math.floor(wrappedZ / SEGMENT_LENGTH);
+  const strip = input.strips.find(
+    (candidate) => candidate.visible && candidate.segment.index === segmentIndex,
+  );
+  if (!strip || strip.screenW <= 0) return null;
+
+  const lateral = input.carX / ROAD_WIDTH;
+  const screenX = strip.screenX + lateral * strip.screenW;
+  const screenW = Math.max(16, Math.min(92, strip.screenW * 0.3));
+  return {
+    screenX,
+    screenY: strip.screenY,
+    screenW,
+    depthMeters,
+    atlas: input.atlas,
+    spriteSet: input.spriteSet,
+    fill: input.fill,
+    frameIndex: input.frameIndex,
+    braking: input.braking,
+    nitroActive: input.nitroActive,
+    speedMetersPerSecond: input.speedMetersPerSecond,
+    damageTotal: input.damageTotal,
+  };
+}
+
+function aiSpriteSetIdForGridIndex(index: number): CarSpriteSetId {
+  const offset = index + 1;
+  return CAR_SPRITE_SET_IDS[offset % CAR_SPRITE_SET_IDS.length]!;
+}
+
 /**
  * Race-finish wallet commit per F-034. Credits the §12 reward (placement
  * payout + §5 bonuses) into the persisted save, persists the new save
@@ -783,6 +846,7 @@ function RaceCanvas({
   const lastBrakeRef = useRef<number>(0);
   const pauseInputHeldRef = useRef<boolean>(false);
   const carAtlasRef = useRef<LoadedAtlas | null>(null);
+  const aiCarAtlasesRef = useRef<Partial<Record<CarSpriteSetId, LoadedAtlas>>>({});
   const carSpriteSetRef = useRef<CarSpriteSet>(
     carSpriteSetForVisualProfile("sparrow_gt"),
   );
@@ -827,6 +891,7 @@ function RaceCanvas({
     checkpointReady: boolean;
   } | null>(null);
   const [fieldSize, setFieldSize] = useState<number>(1);
+  const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
   const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
     touchLayoutFor({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }),
   );
@@ -846,6 +911,15 @@ function RaceCanvas({
         if (active) carAtlasRef.current = atlas;
       },
     );
+    aiCarAtlasesRef.current = {};
+    void Promise.all(
+      CAR_SPRITE_SET_IDS.map(async (id) => {
+        const atlas = await loadAtlas(carAtlasMetaForVisualProfile(id));
+        return [id, atlas] as const;
+      }),
+    ).then((entries) => {
+      if (active) aiCarAtlasesRef.current = Object.fromEntries(entries);
+    });
     return () => {
       active = false;
     };
@@ -1352,6 +1426,37 @@ function RaceCanvas({
           lastSteerRef.current,
           upcomingCurvature(track.compiled.segments, camera.z, SEGMENT_LENGTH * 5),
         );
+        const aiCars = session.ai
+          .map((entry, index) => {
+            const aiSpriteSetId = aiSpriteSetIdForGridIndex(index);
+            return projectOpponentCar({
+              carX: entry.car.x,
+              carZ: entry.car.z,
+              camera,
+              strips,
+              trackLength: track.compiled.totalLengthMeters,
+              atlas: aiCarAtlasesRef.current[aiSpriteSetId] ?? null,
+              spriteSet: carSpriteSetForVisualProfile(aiSpriteSetId),
+              fill: AI_FALLBACK_FILLS[index % AI_FALLBACK_FILLS.length],
+              frameIndex: playerCarFrameIndex(
+                0,
+                upcomingCurvature(
+                  track.compiled.segments,
+                  entry.car.z,
+                  SEGMENT_LENGTH * 5,
+                ),
+              ),
+              braking: entry.state.targetSpeed < entry.car.speed - 1,
+              nitroActive: entry.nitro.activeRemainingSec > 0,
+              speedMetersPerSecond: entry.car.speed,
+              damageTotal: entry.damage.total,
+            });
+          })
+          .filter(
+            (car): car is NonNullable<DrawRoadOptions["aiCars"]>[number] =>
+              car !== null,
+          );
+        setAiVisibleCount(aiCars.length);
         if (
           ghostEnabled &&
           session.race.phase === "racing" &&
@@ -1392,6 +1497,7 @@ function RaceCanvas({
             intensityScale: tunnelOcclusion(tunnelState),
           },
           spriteDensityFactor: graphics.spriteDensityFactor,
+          aiCars,
           ghostCar: ghostOverlayRef.current
             ? {
                 ...ghostOverlayRef.current,
@@ -1701,6 +1807,8 @@ function RaceCanvas({
         <dd data-testid="hud-position">{hudSnapshot.position}</dd>
         <dt>Field size:</dt>
         <dd data-testid="race-field-size">{fieldSize}</dd>
+        <dt>Visible AI:</dt>
+        <dd data-testid="race-visible-ai-count">{aiVisibleCount}</dd>
         <dt>Touch active:</dt>
         <dd data-testid="race-touch-active">
           {inputSnapshot.touchActive ? "yes" : "no"}

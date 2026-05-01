@@ -26,6 +26,8 @@ import { PaletteCache } from "../paletteCache";
 import type { LoadedAtlas } from "../spriteAtlas";
 
 import {
+  AI_CAR_DEFAULT_ALPHA,
+  AI_CAR_DEFAULT_FILL,
   GHOST_CAR_DEFAULT_ALPHA,
   GHOST_CAR_DEFAULT_FILL,
   HEAT_SHIMMER_BAND_COUNT,
@@ -548,6 +550,79 @@ describe("drawRoad ghost car overlay", () => {
         c.type === "fillRect" && c.w === 40 && c.h === 20,
     );
     expect(ghostRect).toBeUndefined();
+  });
+});
+
+describe("drawRoad AI car overlays", () => {
+  it("draws projected AI fallback cars from far to near", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      aiCars: [
+        { screenX: 430, screenY: 300, screenW: 50, depthMeters: 24, fill: "#00ff00" },
+        { screenX: 410, screenY: 210, screenW: 30, depthMeters: 80 },
+      ],
+    });
+
+    const carBodies = spy.calls.filter(
+      (c): c is FillCall =>
+        c.type === "fill" &&
+        (c.fillStyle === AI_CAR_DEFAULT_FILL || c.fillStyle === "#00ff00"),
+    );
+    expect(carBodies).toHaveLength(2);
+    expect(carBodies[0]!.fillStyle).toBe(AI_CAR_DEFAULT_FILL);
+    expect(carBodies[0]!.globalAlpha).toBeCloseTo(AI_CAR_DEFAULT_ALPHA, 6);
+    expect(carBodies[1]!.fillStyle).toBe("#00ff00");
+  });
+
+  it("draws projected AI cars from the loaded atlas when available", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      aiCars: [
+        {
+          screenX: 220,
+          screenY: 260,
+          screenW: 64,
+          depthMeters: 60,
+          atlas: loadedCustomCarAtlas(),
+          spriteSet: {
+            clean: "custom_clean",
+            damage1: "custom_dented",
+            damage2: "custom_battered",
+            damage3: "custom_totaled",
+            brake: "custom_brake",
+            nitro: "custom_nitro",
+            wetTrail: "custom_wet_trail",
+            snowTrail: "custom_snow_trail",
+          },
+          frameIndex: 1,
+          braking: true,
+          speedMetersPerSecond: 20,
+        },
+      ],
+    });
+
+    const draws = spy.calls.filter((c): c is DrawImageCall => c.type === "drawImage");
+    expect(draws.length).toBeGreaterThanOrEqual(2);
+    expect(draws[0]!.sx).toBe(11);
+    expect(draws[0]!.sy).toBe(0);
+    expect(draws[0]!.globalAlpha).toBeCloseTo(AI_CAR_DEFAULT_ALPHA, 6);
+    expect(draws.some((draw) => draw.sx === 40)).toBe(true);
+  });
+
+  it("skips projected AI cars outside the viewport contract", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, EMPTY_STRIPS, VIEWPORT, {
+      aiCars: [
+        { screenX: Number.NaN, screenY: 200, screenW: 40, depthMeters: 20 },
+        { screenX: 100, screenY: 200, screenW: 0, depthMeters: 20 },
+        { screenX: 100, screenY: 200, screenW: 40, depthMeters: -1 },
+      ],
+    });
+
+    const carBodies = spy.calls.filter(
+      (c): c is FillCall => c.type === "fill" && c.fillStyle === AI_CAR_DEFAULT_FILL,
+    );
+    expect(carBodies).toHaveLength(0);
   });
 });
 

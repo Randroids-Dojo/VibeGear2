@@ -197,6 +197,12 @@ export const AI_TUNING = Object.freeze({
   ROCKET_FADE_FRACTION: 0.72,
   /** Player gap where archetype lane pressure can engage. */
   TRAFFIC_PRESSURE_WINDOW_METERS: 36,
+  /** Gap where a trailing AI can start a visible lane move. */
+  OVERTAKE_WINDOW_METERS: 28,
+  /** Lateral overtake target in meters. */
+  OVERTAKE_LANE_SHIFT_METERS: 3,
+  /** Minimum lateral space from the player target line during a pass. */
+  OVERTAKE_PLAYER_MARGIN_METERS: 2,
 });
 
 /**
@@ -290,7 +296,12 @@ export function tickAI(
     player.car,
     context.roadHalfWidth,
   );
-  const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset;
+  const overtake = overtakeOffset(
+    aiCar,
+    player.car,
+    context.roadHalfWidth,
+  );
+  const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset + overtake.offset;
   const baseIdealLateralOffset = clamp(
     idealOffsetWithTraffic === 0 ? 0 : idealOffsetWithTraffic,
     -context.roadHalfWidth,
@@ -385,7 +396,7 @@ export function tickAI(
     progress: aiCar.z / SEGMENT_LENGTH,
     laneOffset: aiCar.x,
     speed: aiCar.speed,
-    intent: aiState.intent,
+    intent: overtake.active ? "overtake" : aiState.intent === "overtake" ? "recover" : aiState.intent,
     targetSpeed,
     seed: nextSeed,
   };
@@ -486,6 +497,38 @@ function trafficPressureOffset(
     1,
   );
   return direction * pressure * clamp(aggression, 0, 1) * closeness;
+}
+
+function overtakeOffset(
+  aiCar: Readonly<CarState>,
+  playerCar: Readonly<CarState>,
+  roadHalfWidth: number,
+): { active: boolean; offset: number } {
+  const gap = playerCar.z - aiCar.z;
+  if (gap <= 0 || gap > AI_TUNING.OVERTAKE_WINDOW_METERS) {
+    return { active: false, offset: 0 };
+  }
+  if (aiCar.speed + 1 < playerCar.speed) {
+    return { active: false, offset: 0 };
+  }
+  const passSide = playerCar.x <= 0 ? 1 : -1;
+  const desiredTarget =
+    playerCar.x + passSide * AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS;
+  const boundedTarget = clamp(
+    desiredTarget,
+    -roadHalfWidth + AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS,
+    roadHalfWidth - AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS,
+  );
+  const directionalTarget =
+    passSide * Math.min(AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, roadHalfWidth);
+  const target =
+    Math.abs(boundedTarget - playerCar.x) >= AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS
+      ? boundedTarget
+      : directionalTarget;
+  return {
+    active: true,
+    offset: clamp(target - aiCar.x, -AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, AI_TUNING.OVERTAKE_LANE_SHIFT_METERS),
+  };
 }
 
 // Numeric helpers ----------------------------------------------------------

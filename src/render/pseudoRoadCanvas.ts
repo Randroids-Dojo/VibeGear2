@@ -79,6 +79,9 @@ export const PLAYER_CAR_DEFAULT_SHADOW = "rgba(0, 0, 0, 0.55)";
 export const PLAYER_CAR_DEFAULT_WINDSHIELD = "#18243d";
 export const PLAYER_CAR_DEFAULT_TIRE = "#10151f";
 export const PLAYER_CAR_DEFAULT_TAIL_LIGHT = "#ff3d38";
+export const AI_CAR_DEFAULT_ALPHA = 0.95;
+export const AI_CAR_DEFAULT_FILL = "#ff6b5f";
+export const AI_CAR_DEFAULT_SHADOW = "rgba(0, 0, 0, 0.45)";
 
 /**
  * Standard player-car footprint. §16 pins the player car at 16 to 22
@@ -233,6 +236,26 @@ export interface DrawRoadOptions {
     spriteId?: string;
     frameIndex?: number;
   } | null;
+  /**
+   * Optional opponent car overlays. Callers project these with the same
+   * camera and strips as the road, then the drawer paints them in depth
+   * order over the road and under the fixed player car.
+   */
+  aiCars?: readonly {
+    screenX: number;
+    screenY: number;
+    screenW: number;
+    depthMeters: number;
+    alpha?: number;
+    fill?: string;
+    atlas?: LoadedAtlas | null;
+    frameIndex?: number;
+    braking?: boolean;
+    nitroActive?: boolean;
+    speedMetersPerSecond?: number;
+    damageTotal?: number;
+    spriteSet?: CarSpriteSet;
+  }[] | null;
   /**
    * Optional live player car overlay. Pseudo-3D road strips represent the
    * world moving under a chase camera, so the player car is drawn as a
@@ -391,6 +414,10 @@ export function drawRoad(
     }
   }
 
+  if (options.aiCars && options.aiCars.length > 0) {
+    drawAICars(ctx, options.aiCars, viewport);
+  }
+
   // Ghost car paints over the road strips so the player sees their best
   // line, but BEFORE the dust pool so off-road dust the live car kicks
   // up still occludes the ghost rather than the ghost showing through
@@ -418,6 +445,110 @@ export function drawRoad(
 
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
+  }
+}
+
+function drawAICars(
+  ctx: CanvasRenderingContext2D,
+  cars: NonNullable<DrawRoadOptions["aiCars"]>,
+  viewport: Viewport,
+): void {
+  const ordered = cars
+    .filter((car) => isDrawableProjectedCar(car, viewport))
+    .slice()
+    .sort((a, b) => b.depthMeters - a.depthMeters);
+  for (const car of ordered) {
+    drawProjectedAICar(ctx, car);
+  }
+}
+
+function isDrawableProjectedCar(
+  car: NonNullable<DrawRoadOptions["aiCars"]>[number],
+  viewport: Viewport,
+): boolean {
+  return (
+    viewport.width > 0 &&
+    viewport.height > 0 &&
+    Number.isFinite(car.screenX) &&
+    Number.isFinite(car.screenY) &&
+    Number.isFinite(car.screenW) &&
+    car.screenW > 0 &&
+    Number.isFinite(car.depthMeters) &&
+    car.depthMeters > 0 &&
+    car.screenY >= -viewport.height * 0.2 &&
+    car.screenY <= viewport.height * 1.15 &&
+    car.screenX + car.screenW >= 0 &&
+    car.screenX - car.screenW <= viewport.width
+  );
+}
+
+function drawProjectedAICar(
+  ctx: CanvasRenderingContext2D,
+  car: NonNullable<DrawRoadOptions["aiCars"]>[number],
+): void {
+  const alpha =
+    typeof car.alpha === "number" && Number.isFinite(car.alpha)
+      ? Math.max(0, Math.min(1, car.alpha))
+      : AI_CAR_DEFAULT_ALPHA;
+  if (alpha <= 0) return;
+
+  if (car.atlas?.image) {
+    const frames = resolveCarRenderFrames(
+      car.atlas,
+      selectCarFramePlan({
+        frameIndex: car.frameIndex ?? 0,
+        braking: car.braking === true,
+        nitroActive: car.nitroActive === true,
+        speedMetersPerSecond: car.speedMetersPerSecond ?? 0,
+        damageTotal: car.damageTotal ?? 0,
+        spriteSet: car.spriteSet,
+      }),
+    );
+    if (frames) {
+      drawAtlasCarFrame(ctx, car.atlas.image, frames.base, car.screenX, car.screenY, car.screenW, alpha);
+      if (frames.trailOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.trailOverlay, car.screenX, car.screenY, car.screenW, alpha);
+      }
+      if (frames.brakeOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.brakeOverlay, car.screenX, car.screenY, car.screenW, alpha);
+      }
+      if (frames.nitroOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.nitroOverlay, car.screenX, car.screenY, car.screenW, alpha);
+      }
+      if (frames.damageOverlay) {
+        drawAtlasCarFrame(ctx, car.atlas.image, frames.damageOverlay, car.screenX, car.screenY, car.screenW, alpha);
+      }
+      return;
+    }
+  }
+
+  const height = car.screenW * 0.52;
+  const halfW = car.screenW / 2;
+  const bottomY = car.screenY;
+  const topY = bottomY - height;
+  const prevAlpha = ctx.globalAlpha;
+  const prevFill = ctx.fillStyle;
+  try {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = AI_CAR_DEFAULT_SHADOW;
+    ctx.fillRect(car.screenX - halfW * 0.72, bottomY - height * 0.08, car.screenW * 0.72, height * 0.16);
+    ctx.fillStyle = car.fill ?? AI_CAR_DEFAULT_FILL;
+    ctx.beginPath();
+    ctx.moveTo(car.screenX, topY);
+    ctx.lineTo(car.screenX + halfW * 0.82, bottomY - height * 0.22);
+    ctx.lineTo(car.screenX + halfW * 0.62, bottomY);
+    ctx.lineTo(car.screenX - halfW * 0.62, bottomY);
+    ctx.lineTo(car.screenX - halfW * 0.82, bottomY - height * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = PLAYER_CAR_DEFAULT_WINDSHIELD;
+    ctx.fillRect(car.screenX - halfW * 0.28, topY + height * 0.35, halfW * 0.56, height * 0.24);
+    ctx.fillStyle = PLAYER_CAR_DEFAULT_TAIL_LIGHT;
+    ctx.fillRect(car.screenX - halfW * 0.46, bottomY - height * 0.18, halfW * 0.28, height * 0.08);
+    ctx.fillRect(car.screenX + halfW * 0.18, bottomY - height * 0.18, halfW * 0.28, height * 0.08);
+  } finally {
+    ctx.globalAlpha = prevAlpha;
+    ctx.fillStyle = prevFill;
   }
 }
 
