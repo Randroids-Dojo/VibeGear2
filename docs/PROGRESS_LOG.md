@@ -6,6 +6,64 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Finish-line moment and lap rollover polish
+
+**GDD sections touched:**
+[§7](gdd/07-race-rules-and-structure.md) race finish,
+[§18](gdd/18-sound-and-music-design.md) lap and results stingers,
+[§20](gdd/20-hud-and-ui-ux.md) race HUD feedback, and
+[§25](gdd/25-development-roadmap.md) roadmap.
+**Branch / PR:** `feat/race-finish-moment`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added an in-race lap-complete callout driven by the existing
+  `lapComplete` race-session event.
+- Added a centered finish moment with place-aware copy before the results
+  screen route takes over.
+- Delayed the natural-finish route handoff briefly so the final stinger and
+  finish feedback register while preserving the existing saved-results flow.
+- Kept one-shot finish SFX alive during the finish hold, then stopped it at
+  the results route handoff.
+- Added Playwright coverage that waits for the finish moment before asserting
+  the route reaches `/race/results`.
+
+### Verified
+- `grep -n $'\u2014\|\u2013'` on changed files returned no matches.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npx vitest run src/game/__tests__/raceSession.test.ts src/audio/sfx.test.ts`
+  green, 134 tests passed.
+- `npx playwright test e2e/race-finish.spec.ts --project=chromium --grep
+  "natural finish on test/straight"` green.
+- `PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test
+  e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit` green.
+- `git diff --check` green.
+
+### Decisions and assumptions
+- Kept the deterministic race-session reducer unchanged because it already
+  emits `lapComplete` and `raceFinish` events at the right boundary.
+- Used a short page-layer hold before navigation instead of changing race
+  physics after finish. This keeps the saved result snapshot and route handoff
+  stable while making the finish feel intentional.
+- Addressed Copilot PR review by splitting finish teardown so the visual hold
+  does not cut off the finish stinger.
+
+### Coverage ledger
+- Extends `GDD-18-PROCEDURAL-RACE-MILESTONE-SFX` and
+  `GDD-16-VFX-FLASH-SHAKE` with user-visible lap and finish feedback.
+- Uncovered adjacent requirements: pickups, readable AI archetype behavior,
+  race audio emphasis, production car art, first-tour authored events, and
+  automated release-fun checklist remain in Dots.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-01: Slice: Top Gear 2 fun-factor gap audit
 
 **GDD sections touched:**
@@ -14,7 +72,7 @@ Correct them by adding a new entry that references the old one.
 [§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents,
 [§18](gdd/18-sound-and-music-design.md) sound and music,
 and [§25](gdd/25-development-roadmap.md) roadmap.
-**Branch / PR:** `docs/top-gear-fun-gap-audit`, PR pending.
+**Branch / PR:** `docs/top-gear-fun-gap-audit`, PR #146.
 **Status:** Implemented.
 
 ### Done

@@ -185,6 +185,8 @@ const DEFAULT_TRACK_ID = "test/elevation";
 const TOUR_PLACEHOLDER_TRACK_ID = "test/straight";
 const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
+const LAP_MOMENT_MS = 900;
+const FINISH_MOMENT_MS = 1250;
 const AI_FALLBACK_FILLS = Object.freeze([
   "#ff6b5f",
   "#63d471",
@@ -297,6 +299,43 @@ function playRaceSfxEvents(
       });
     }
   }
+}
+
+interface RaceMoment {
+  kind: "lap" | "finish";
+  title: string;
+  detail: string;
+}
+
+function playerMomentFromEvents(
+  events: ReadonlyArray<RaceSessionAudioEvent>,
+  totalLaps: number,
+): RaceMoment | null {
+  let latest: RaceMoment | null = null;
+  for (const event of events) {
+    if (event.carId !== PLAYER_ID) continue;
+    if (event.kind === "lapComplete") {
+      const nextLap = Math.min(totalLaps, event.lap + 1);
+      latest = {
+        kind: "lap",
+        title: `Lap ${event.lap} complete`,
+        detail: `Next lap ${nextLap} / ${totalLaps}`,
+      };
+    } else if (event.kind === "raceFinish") {
+      latest = {
+        kind: "finish",
+        title: "Finish",
+        detail: "Saving results",
+      };
+    }
+  }
+  return latest;
+}
+
+function finishMomentTitle(place: number): string {
+  if (place === 1) return "Victory";
+  if (place <= 3) return "Podium";
+  return "Finished";
 }
 
 function createLayerCanvas(
@@ -860,6 +899,8 @@ function RaceCanvas({
   const exitFnRef = useRef<(() => void) | null>(null);
   const settingsFnRef = useRef<(() => void) | null>(null);
   const ghostsFnRef = useRef<(() => void) | null>(null);
+  const raceMomentTimeoutRef = useRef<number | null>(null);
+  const finishRouteTimeoutRef = useRef<number | null>(null);
   // Per-mount guard for the natural finish wiring. The render callback
   // fires every frame, so without this latch a `phase === "finished"`
   // tick would call `saveRaceResult` and `router.push` on every frame
@@ -897,6 +938,33 @@ function RaceCanvas({
     touchLayoutFor({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }),
   );
   const [resultMs, setResultMs] = useState<number | null>(null);
+  const [raceMoment, setRaceMoment] = useState<RaceMoment | null>(null);
+
+  const clearRaceMomentTimeout = useCallback(() => {
+    if (raceMomentTimeoutRef.current === null) return;
+    window.clearTimeout(raceMomentTimeoutRef.current);
+    raceMomentTimeoutRef.current = null;
+  }, []);
+
+  const clearFinishRouteTimeout = useCallback(() => {
+    if (finishRouteTimeoutRef.current === null) return;
+    window.clearTimeout(finishRouteTimeoutRef.current);
+    finishRouteTimeoutRef.current = null;
+  }, []);
+
+  const showRaceMoment = useCallback(
+    (next: RaceMoment, durationMs: number) => {
+      clearRaceMomentTimeout();
+      setRaceMoment(next);
+      if (durationMs > 0) {
+        raceMomentTimeoutRef.current = window.setTimeout(() => {
+          raceMomentTimeoutRef.current = null;
+          setRaceMoment((current) => (current === next ? null : current));
+        }, durationMs);
+      }
+    },
+    [clearRaceMomentTimeout],
+  );
 
   useEffect(() => {
     let active = true;
@@ -1213,12 +1281,17 @@ function RaceCanvas({
       window.removeEventListener("keydown", tryStartEngineAudio);
       unbindAudioVisibility();
     };
-    const stopRaceRuntime = (): void => {
+    const stopRaceRuntime = ({
+      stopSfx = true,
+    }: { stopSfx?: boolean } = {}): void => {
+      clearFinishRouteTimeout();
       engineAudioTeardown = true;
       unbindEngineAudio();
       handleRef.current?.stop();
       engineAudio.stop();
-      raceSfx.stopAll();
+      if (stopSfx) {
+        raceSfx.stopAll();
+      }
       raceMusic.stop();
       handleRef.current = null;
       sessionRef.current = null;
@@ -1237,6 +1310,9 @@ function RaceCanvas({
     restartFnRef.current = (): void => {
       const handle = handleRef.current;
       if (!handle) return;
+      clearRaceMomentTimeout();
+      clearFinishRouteTimeout();
+      setRaceMoment(null);
       sessionRef.current = createRaceSession(config);
       resetTimeTrialRuntime();
       tunnelState = OPEN_TUNNEL_STATE;
@@ -1265,6 +1341,9 @@ function RaceCanvas({
     retireFnRef.current = (): void => {
       const session = sessionRef.current;
       if (!session) return;
+      clearRaceMomentTimeout();
+      clearFinishRouteTimeout();
+      setRaceMoment(null);
       const retired = retireRaceSession(session);
       sessionRef.current = retired;
       // Build the §20 results payload from the post-retire session
@@ -1349,16 +1428,25 @@ function RaceCanvas({
     };
 
     exitFnRef.current = (): void => {
+      clearRaceMomentTimeout();
+      clearFinishRouteTimeout();
+      setRaceMoment(null);
       stopRaceRuntime();
       router.push("/");
     };
 
     settingsFnRef.current = (): void => {
+      clearRaceMomentTimeout();
+      clearFinishRouteTimeout();
+      setRaceMoment(null);
       stopRaceRuntime();
       router.push("/options");
     };
 
     ghostsFnRef.current = (): void => {
+      clearRaceMomentTimeout();
+      clearFinishRouteTimeout();
+      setRaceMoment(null);
       stopRaceRuntime();
       router.push("/time-trial");
     };
@@ -1419,6 +1507,16 @@ function RaceCanvas({
         if (lastRaceSfxTick !== session.tick) {
           lastRaceSfxTick = session.tick;
           playRaceSfxEvents(raceSfx, session.audioEvents, persistedSettings.audio);
+          const playerMoment = playerMomentFromEvents(
+            session.audioEvents,
+            session.race.totalLaps,
+          );
+          if (playerMoment !== null) {
+            showRaceMoment(
+              playerMoment,
+              playerMoment.kind === "finish" ? 0 : LAP_MOMENT_MS,
+            );
+          }
         }
         const strips = project(track.compiled.segments, camera, viewport, {
           drawDistance: graphics.drawDistanceSegments,
@@ -1709,10 +1807,23 @@ function RaceCanvas({
                             }),
                   });
             saveRaceResult(committed);
-            // Tear down the loop, input, and audio bindings before the
-            // route hop. Mirrors the retire branch tear-down ordering.
-            stopRaceRuntime();
-            router.push("/race/results");
+            // Tear down the loop, input, engine, and music before the
+            // route hop. Keep one-shot SFX alive during the hold so the
+            // finish stinger can land with the moment.
+            showRaceMoment(
+              {
+                kind: "finish",
+                title: finishMomentTitle(rankPosition(PLAYER_ID, cars)),
+                detail: `Total ${session.race.elapsed.toFixed(2)} s`,
+              },
+              0,
+            );
+            stopRaceRuntime({ stopSfx: false });
+            finishRouteTimeoutRef.current = window.setTimeout(() => {
+              finishRouteTimeoutRef.current = null;
+              raceSfx.stopAll();
+              router.push("/race/results");
+            }, FINISH_MOMENT_MS);
           }
         } else if (lastCountdownSfxStep !== 0) {
           lastCountdownSfxStep = 0;
@@ -1753,6 +1864,8 @@ function RaceCanvas({
     return () => {
       window.removeEventListener("resize", resize);
       window.visualViewport?.removeEventListener("resize", resize);
+      clearRaceMomentTimeout();
+      clearFinishRouteTimeout();
       stopRaceRuntime();
     };
   }, [
@@ -1768,6 +1881,9 @@ function RaceCanvas({
     selectedCarId,
     dailyChallenge,
     ghostSource,
+    showRaceMoment,
+    clearRaceMomentTimeout,
+    clearFinishRouteTimeout,
   ]);
 
   return (
@@ -1786,6 +1902,16 @@ function RaceCanvas({
         style={canvasStyle}
       />
       <TouchControls layout={touchLayout} />
+      {raceMoment !== null ? (
+        <div
+          data-testid="race-moment"
+          data-kind={raceMoment.kind}
+          style={raceMomentStyle}
+        >
+          <strong style={raceMomentTitleStyle}>{raceMoment.title}</strong>
+          <span style={raceMomentDetailStyle}>{raceMoment.detail}</span>
+        </div>
+      ) : null}
       <dl
         style={metricsStyle}
         data-testid="race-metrics"
@@ -1923,10 +2049,45 @@ const metricsStyle: CSSProperties = {
 };
 
 const resultStyle: CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  bottom: "8rem",
+  transform: "translateX(-50%)",
   padding: "0.75rem 1rem",
   border: "1px solid var(--muted, #888)",
   borderRadius: "6px",
   background: "rgba(255,255,255,0.05)",
+};
+
+const raceMomentStyle: CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  top: "50%",
+  transform: "translate(-50%, -50%)",
+  display: "grid",
+  justifyItems: "center",
+  gap: "0.35rem",
+  minWidth: "min(22rem, calc(100vw - 2rem))",
+  padding: "0.9rem 1.15rem",
+  border: "2px solid rgba(255, 238, 120, 0.92)",
+  borderRadius: "6px",
+  background: "rgba(8, 13, 24, 0.78)",
+  color: "#fff6b0",
+  textAlign: "center",
+  textShadow: "0 2px 0 rgba(0, 0, 0, 0.8)",
+  boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.44)",
+  pointerEvents: "none",
+};
+
+const raceMomentTitleStyle: CSSProperties = {
+  fontSize: "3rem",
+  lineHeight: 1,
+  textTransform: "uppercase",
+};
+
+const raceMomentDetailStyle: CSSProperties = {
+  fontSize: "1rem",
+  color: "#ffffff",
 };
 
 const practicePanelStyle: CSSProperties = {
