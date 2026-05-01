@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Top Gear 2 fun-factor gap audit
+
+**GDD sections touched:**
+[§3](gdd/03-top-gear-2-research-summary.md) research summary,
+[§4](gdd/04-player-experience-goals.md) player goals,
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents,
+[§18](gdd/18-sound-and-music-design.md) sound and music,
+and [§25](gdd/25-development-roadmap.md) roadmap.
+**Branch / PR:** `docs/top-gear-fun-gap-audit`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `docs/FUN_FACTOR_GAP_AUDIT.md` to compare the current game loop
+  against the Top Gear 2 reference stack and the current VibeGear2 backlog.
+- Ranked the next release-facing gameplay slices around live race fun:
+  finish-line moment, pickups, readable AI archetypes, first-race tuning,
+  audio mix, car art, first-tour authored events, and release playtest
+  automation.
+- Identified missing implementation dots for first-race tuning, race audio
+  emphasis, first-tour authored events, and release-fun checklist automation.
+
+### Verified
+- Documentation-only slice. Ran `grep -n $'\u2014\|\u2013'` on changed
+  files.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `git diff --check` green.
+
+### Decisions and assumptions
+- Treated the existing GDD as the primary source of truth and used external
+  Top Gear 2 sources only to rank the backlog, not to copy specific content.
+- Recommended live-race fun before large art and content expansion because the
+  current codebase already has most systemic scaffolding wired.
+
+### Coverage ledger
+- GDD-03-FUN-GAP-AUDIT now covers the release-facing gap ranking and the
+  next implementation order for fun-factor work.
+- Uncovered adjacent requirements: the ranked slices remain unimplemented
+  until their dots land, especially pickups, AI archetype behavior, finish-line
+  feedback, race-audio emphasis, production car art, and first-tour authored
+  events.
+
+### Followups created
+- `VibeGear2-feat-tuning-first-74ba5505`: first-race fun pass.
+- `VibeGear2-feat-audio-race-a656eed2`: race mix and event emphasis pass.
+- `VibeGear2-feat-tracks-first-10ebfec0`: first-tour authored event pass.
+- `VibeGear2-feat-playtest-automate-9d148438`: automate release-fun
+  checklist.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-01: Slice: Visible AI opponents
 
 **GDD sections touched:**
