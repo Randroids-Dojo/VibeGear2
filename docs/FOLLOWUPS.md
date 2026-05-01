@@ -13,12 +13,19 @@ or `obsolete` so the trail is preserved.
 ## F-072: Render pickups and collection feedback in the race view
 **Created:** 2026-05-01
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-05-01)
 **Notes:** The pickup runtime slice collects authored cash and nitro
 pickups, hides already collected ids from session state, pays pickup cash
 with the race result, and emits pickup events. Add visible pickup sprites,
 collection burst feedback, HUD cash and nitro feedback, and Playwright
 coverage that proves a visible pickup disappears after collection.
+
+Closed by `feat/pickups-render-feedback`. The race renderer now projects
+visible uncollected pickups from compiled strip metadata, paints cash and
+nitro pickup sprites in the canvas world, emits a short collection burst,
+and exposes pickup telemetry for E2E coverage. `test/straight` now places
+the first pickup far enough from the spawn point to prove the sprite is
+visible before collection and disappears after pickup.
 
 ## F-071: Route pickup collection events into race SFX
 **Created:** 2026-05-01

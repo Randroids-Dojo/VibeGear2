@@ -4,11 +4,15 @@ import { loadTrack } from "@/data";
 import { evaluatePickups } from "@/game/pickups";
 import { INITIAL_CAR_STATE } from "@/game/physics";
 
+const CASH_PICKUP_Z = 120;
+const NITRO_PICKUP_Z = 282;
+const NITRO_PICKUP_X = 1.575;
+
 describe("evaluatePickups", () => {
   it("collects a matching pickup once per lap", () => {
     const track = loadTrack("test/straight");
     const first = evaluatePickups({
-      car: { ...INITIAL_CAR_STATE, x: 0, z: 0 },
+      car: { ...INITIAL_CAR_STATE, x: 0, z: CASH_PICKUP_Z },
       track,
       lap: 1,
     });
@@ -16,7 +20,7 @@ describe("evaluatePickups", () => {
       {
         key: "1:test-straight-cash",
         pickupId: "test-straight-cash",
-        segmentIndex: 0,
+        segmentIndex: 20,
         lap: 1,
         kind: "cash",
         value: 100,
@@ -24,7 +28,7 @@ describe("evaluatePickups", () => {
     ]);
 
     const sameLap = evaluatePickups({
-      car: { ...INITIAL_CAR_STATE, x: 0, z: 6 },
+      car: { ...INITIAL_CAR_STATE, x: 0, z: CASH_PICKUP_Z + 6 },
       track,
       lap: 1,
       collectedPickups: first.collectedPickups,
@@ -32,7 +36,7 @@ describe("evaluatePickups", () => {
     expect(sameLap.events).toHaveLength(0);
 
     const nextLap = evaluatePickups({
-      car: { ...INITIAL_CAR_STATE, x: 0, z: 0 },
+      car: { ...INITIAL_CAR_STATE, x: 0, z: CASH_PICKUP_Z },
       track,
       lap: 2,
       collectedPickups: sameLap.collectedPickups,
@@ -45,7 +49,7 @@ describe("evaluatePickups", () => {
   it("uses normalized lane offset against road-space car x", () => {
     const track = loadTrack("test/straight");
     const result = evaluatePickups({
-      car: { ...INITIAL_CAR_STATE, x: 1.575, z: 0 },
+      car: { ...INITIAL_CAR_STATE, x: NITRO_PICKUP_X, z: NITRO_PICKUP_Z },
       track,
       lap: 1,
     });
@@ -57,7 +61,7 @@ describe("evaluatePickups", () => {
   it("falls back to lap 1 when lap state is corrupted", () => {
     const track = loadTrack("test/straight");
     const result = evaluatePickups({
-      car: { ...INITIAL_CAR_STATE, x: 0, z: 0 },
+      car: { ...INITIAL_CAR_STATE, x: 0, z: CASH_PICKUP_Z },
       track,
       lap: Number.NaN,
     });

@@ -10,18 +10,30 @@
   "weatherOptions": ["clear"],
   "difficulty": 1,
   "segments": [
+    { "len": 120, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] },
     {
-      "len": 1200,
+      "len": 160,
       "curve": 0,
       "grade": 0,
       "roadsideLeft": "default",
       "roadsideRight": "default",
       "hazards": [],
       "pickups": [
-        { "id": "test-straight-cash", "kind": "cash", "laneOffset": 0, "value": 100 },
+        { "id": "test-straight-cash", "kind": "cash", "laneOffset": 0, "value": 100 }
+      ]
+    },
+    {
+      "len": 200,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "default",
+      "roadsideRight": "default",
+      "hazards": [],
+      "pickups": [
         { "id": "test-straight-nitro", "kind": "nitro", "laneOffset": 0.35, "value": 25 }
       ]
-    }
+    },
+    { "len": 720, "curve": 0, "grade": 0, "roadsideLeft": "default", "roadsideRight": "default", "hazards": [] }
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" }

@@ -34,6 +34,7 @@ import { drawDust, type DustState } from "./dust";
 import type { PaletteCache } from "./paletteCache";
 import { paletteCacheKey, recolourFrameToImageBitmap } from "./paletteRecolour";
 import { drawParallax, type ParallaxLayer } from "./parallax";
+import type { ProjectedPickupSprite } from "./pickupSprites";
 import {
   resolveCarRenderFrames,
   selectCarFramePlan,
@@ -101,6 +102,11 @@ export const RAIN_ROAD_SHEEN_FILL = "#d8f4ff";
 export const RAIN_ROAD_SHEEN_MAX_ALPHA = 0.16;
 export const SNOW_ROADSIDE_WHITENING_FILL = "#edf7ff";
 export const SNOW_ROADSIDE_WHITENING_MAX_ALPHA = 0.2;
+export const PICKUP_CASH_FILL = "#ffd84a";
+export const PICKUP_CASH_SHADOW = "#7a4b00";
+export const PICKUP_NITRO_FILL = "#55d8ff";
+export const PICKUP_NITRO_SHADOW = "#173f82";
+export const PICKUP_FEEDBACK_TTL_MS = 900;
 const LANE_DASH_CYCLE_METERS = LANE_STRIPE_LEN * SEGMENT_LENGTH;
 const LANE_DASH_VISIBLE_METERS = SEGMENT_LENGTH * 2;
 
@@ -206,6 +212,11 @@ export interface DrawRoadOptions {
     inFlight?: Set<string>;
     failed?: Set<string>;
     onRecolourError?: (key: string, error: unknown) => void;
+  } | null;
+  pickupSprites?: readonly ProjectedPickupSprite[] | null;
+  pickupFeedback?: {
+    kind: "cash" | "nitro";
+    ageMs: number;
   } | null;
   /**
    * Optional ghost car overlay per F-022. The §6 Time Trial flow drives
@@ -400,6 +411,7 @@ export function drawRoad(
         options.spriteDensityFactor,
         options.roadsideAtlas,
       );
+      drawPickupSprites(ctx, options.pickupSprites);
       ctx.restore();
     } else {
       drawStrips(ctx, strips, viewport, colors, markingCameraZFrom(options));
@@ -411,6 +423,7 @@ export function drawRoad(
         options.spriteDensityFactor,
         options.roadsideAtlas,
       );
+      drawPickupSprites(ctx, options.pickupSprites);
     }
   }
 
@@ -445,6 +458,129 @@ export function drawRoad(
 
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);
+  }
+
+  drawPickupFeedback(ctx, viewport, options.pickupFeedback);
+}
+
+function drawPickupSprites(
+  ctx: CanvasRenderingContext2D,
+  sprites: readonly ProjectedPickupSprite[] | null | undefined,
+): void {
+  if (!sprites || sprites.length === 0) return;
+  for (const sprite of sprites) {
+    drawPickupSprite(ctx, sprite);
+  }
+}
+
+function drawPickupSprite(
+  ctx: CanvasRenderingContext2D,
+  sprite: ProjectedPickupSprite,
+): void {
+  if (
+    !Number.isFinite(sprite.screenX) ||
+    !Number.isFinite(sprite.screenY) ||
+    !Number.isFinite(sprite.screenW) ||
+    sprite.screenW <= 0
+  ) {
+    return;
+  }
+
+  if (sprite.kind === "nitro") {
+    drawNitroPickupSprite(ctx, sprite.screenX, sprite.screenY, sprite.screenW);
+  } else {
+    drawCashPickupSprite(ctx, sprite.screenX, sprite.screenY, sprite.screenW);
+  }
+}
+
+function drawCashPickupSprite(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  baseY: number,
+  size: number,
+): void {
+  const half = size / 2;
+  const y = baseY - size * 0.82;
+  const prevFill = ctx.fillStyle;
+  try {
+    ctx.fillStyle = PICKUP_CASH_SHADOW;
+    ctx.beginPath();
+    ctx.moveTo(centerX, y + size * 0.12);
+    ctx.lineTo(centerX + half, y + half + size * 0.12);
+    ctx.lineTo(centerX, y + size + size * 0.12);
+    ctx.lineTo(centerX - half, y + half + size * 0.12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = PICKUP_CASH_FILL;
+    ctx.beginPath();
+    ctx.moveTo(centerX, y);
+    ctx.lineTo(centerX + half, y + half);
+    ctx.lineTo(centerX, y + size);
+    ctx.lineTo(centerX - half, y + half);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#fff7a8";
+    ctx.fillRect(centerX - size * 0.08, y + size * 0.24, size * 0.16, size * 0.52);
+    ctx.fillRect(centerX - size * 0.23, y + size * 0.42, size * 0.46, size * 0.14);
+  } finally {
+    ctx.fillStyle = prevFill;
+  }
+}
+
+function drawNitroPickupSprite(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  baseY: number,
+  size: number,
+): void {
+  const y = baseY - size * 0.9;
+  const prevFill = ctx.fillStyle;
+  try {
+    ctx.fillStyle = PICKUP_NITRO_SHADOW;
+    ctx.fillRect(centerX - size * 0.4, y + size * 0.16, size * 0.8, size * 0.78);
+    ctx.fillStyle = PICKUP_NITRO_FILL;
+    ctx.fillRect(centerX - size * 0.34, y, size * 0.68, size * 0.78);
+    ctx.fillStyle = "#f7fbff";
+    ctx.fillRect(centerX - size * 0.22, y + size * 0.12, size * 0.44, size * 0.12);
+    ctx.fillStyle = "#2f7dff";
+    ctx.fillRect(centerX - size * 0.14, y + size * 0.32, size * 0.28, size * 0.34);
+  } finally {
+    ctx.fillStyle = prevFill;
+  }
+}
+
+function drawPickupFeedback(
+  ctx: CanvasRenderingContext2D,
+  viewport: Viewport,
+  feedback: DrawRoadOptions["pickupFeedback"],
+): void {
+  if (!feedback) return;
+  if (viewport.width <= 0 || viewport.height <= 0) return;
+  if (!Number.isFinite(feedback.ageMs)) return;
+  const t = Math.max(0, Math.min(1, feedback.ageMs / PICKUP_FEEDBACK_TTL_MS));
+  if (t >= 1) return;
+
+  const prevFill = ctx.fillStyle;
+  const prevAlpha = ctx.globalAlpha;
+  try {
+    ctx.globalAlpha = 1 - t;
+    ctx.fillStyle = feedback.kind === "nitro" ? PICKUP_NITRO_FILL : PICKUP_CASH_FILL;
+    const centerX = viewport.width / 2;
+    const centerY = viewport.height * 0.78;
+    const radius = 22 + t * 32;
+    const size = 5;
+    for (let i = 0; i < 8; i += 1) {
+      const angle = (Math.PI * 2 * i) / 8;
+      ctx.fillRect(
+        centerX + Math.cos(angle) * radius - size / 2,
+        centerY + Math.sin(angle) * radius - size / 2,
+        size,
+        size,
+      );
+    }
+  } finally {
+    ctx.fillStyle = prevFill;
+    ctx.globalAlpha = prevAlpha;
   }
 }
 

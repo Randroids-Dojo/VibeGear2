@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Pickup render and feedback
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track pickups,
+[§10](gdd/10-driving-model-and-physics.md) mid-race resources,
+[§16](gdd/16-rendering-and-visual-design.md) race readability, and
+[§20](gdd/20-hud-and-ui-ux.md) race feedback.
+**Branch / PR:** `feat/pickups-render-feedback`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added pure pickup sprite projection from visible road strips, compiled
+  pickup metadata, lap, and collected pickup ids.
+- Added canvas pickup sprites for cash and nitro pickups.
+- Added a short collection burst driven by the deterministic player pickup
+  event.
+- Added race metrics for visible pickups, collected pickups, and last pickup
+  kind so browser tests can prove the runtime loop.
+- Moved `test/straight` pickups away from spawn so the first pickup is visible
+  before collection and disappears after the player drives into it.
+
+### Verified
+- `npx vitest run src/render/__tests__/pickupSprites.test.ts
+  src/render/__tests__/pseudoRoadCanvas.test.ts
+  src/game/__tests__/pickups.test.ts src/game/__tests__/raceSession.test.ts
+  src/road/__tests__/trackCompiler.test.ts` green, 219 tests passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npx playwright test e2e/race-pickups.spec.ts --project=chromium` green.
+- `npm run verify` green, 142 files and 2758 tests passed.
+
+### Decisions and assumptions
+- Pickup sprites are projected from the same strip array as the road so they
+  inherit hill and curve visibility without adding a second projection path.
+- Collection feedback is visual only in this slice. Pickup SFX remains F-071.
+- The `test/straight` pickup placement changed only to support the visible
+  before collection browser proof.
+
+### Coverage ledger
+- Added `GDD-09-PICKUP-RENDER-FEEDBACK` to cover visible pickup sprites,
+  collection disappearance, and collection feedback.
+- Closes F-072.
+- Uncovered adjacent requirements: pickup SFX in F-071 and richer pickup art
+  beyond the procedural placeholder sprites.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/GDD_COVERAGE.json`: added pickup render and feedback coverage.
+
+---
+
 ## 2026-05-01: Slice: Pickup runtime collection
 
 **GDD sections touched:**

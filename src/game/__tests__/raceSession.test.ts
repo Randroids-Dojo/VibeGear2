@@ -810,6 +810,10 @@ describe("stepRaceSession (pickups)", () => {
   it("collects cash pickups into the player race cash delta once", () => {
     const config = buildConfig({
       track: loadTrack("test/straight"),
+      player: {
+        stats: STARTER_STATS,
+        initial: { z: 120 },
+      },
       ai: [],
       countdownSec: 0,
     });
@@ -834,7 +838,7 @@ describe("stepRaceSession (pickups)", () => {
       track: loadTrack("test/straight"),
       player: {
         stats: STARTER_STATS,
-        initial: { x: 1.575 },
+        initial: { x: 1.575, z: 282 },
       },
       ai: [],
       countdownSec: 0,
