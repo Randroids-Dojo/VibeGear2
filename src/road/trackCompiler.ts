@@ -80,6 +80,29 @@ function sanitize(value: number, label: string, warned: { current: boolean }): n
   return 0;
 }
 
+function assertUniquePickupIds(track: Track): void {
+  const seen = new Map<string, number>();
+  for (let segmentIndex = 0; segmentIndex < track.segments.length; segmentIndex += 1) {
+    const pickups = track.segments[segmentIndex]?.pickups ?? [];
+    for (const pickup of pickups) {
+      const firstSegmentIndex = seen.get(pickup.id);
+      if (firstSegmentIndex !== undefined) {
+        throw new TrackCompileError(
+          "duplicate-pickup-id",
+          `track ${track.id}: pickup id "${pickup.id}" appears in multiple segments`,
+          {
+            trackId: track.id,
+            pickupId: pickup.id,
+            firstSegmentIndex,
+            duplicateSegmentIndex: segmentIndex,
+          },
+        );
+      }
+      seen.set(pickup.id, segmentIndex);
+    }
+  }
+}
+
 /**
  * Recursively `Object.freeze` a value and every property it owns. Returns
  * the input for fluent use. Avoids re-freezing already-frozen objects to
@@ -106,6 +129,7 @@ function deepFreeze<T>(value: T): T {
 export function compileTrack(track: Track): CompiledTrack {
   const warned = { current: false };
   const warnings: string[] = [];
+  assertUniquePickupIds(track);
 
   // Compile segments and remember each authored segment's first compiled
   // index so we can map checkpoints below.
@@ -125,6 +149,7 @@ export function compileTrack(track: Track): CompiledTrack {
     const count = Math.max(1, Number.isFinite(rawCount) ? rawCount : 1);
     const curve = sanitize(seg.curve, "curve", warned) / CURVATURE_SCALE;
     const grade = sanitize(seg.grade, "grade", warned) * SEGMENT_LENGTH;
+    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? [];
     for (let i = 0; i < count; i++) {
       segments.push({
         index: cumulativeIndex,
@@ -135,6 +160,7 @@ export function compileTrack(track: Track): CompiledTrack {
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
+        pickupIds,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });
@@ -308,6 +334,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
     const count = Math.max(1, Number.isFinite(rawCount) ? rawCount : 1);
     const curve = sanitize(seg.curve, "curve", warned) / CURVATURE_SCALE;
     const grade = sanitize(seg.grade, "grade", warned) * SEGMENT_LENGTH;
+    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? [];
     for (let i = 0; i < count; i++) {
       compiled.push({
         index: cumulativeIndex,
@@ -318,6 +345,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
+        pickupIds,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });

@@ -53,6 +53,30 @@ Allowed hazards:
 
 Avoid gimmick hazards that turn races into memory tests.
 
+## Pickups
+
+Pickups are authored track objects that reward a chosen line instead of
+punishing a mistake. They are the inverse of hazards: visible, deterministic,
+and placed by track authors rather than spawned randomly.
+
+Allowed pickup kinds:
+
+- Cash: small credit bundles that make an optional racing line feel valuable.
+- Nitro: a reserve top-up for players who spend boost early or take a risky
+  line before a long straight.
+
+Placement rules:
+
+- Pickups live on track segments, not in a global random pool.
+- Pickups respawn each lap so lap structure stays consistent.
+- A pickup id must be unique within a track.
+- Cash pickups should contribute roughly 5 to 15 percent of expected race cash
+  on a normal clear run, so finish rewards and sponsor goals remain dominant.
+- Nitro pickups restore 25 percent of the starting nitro reserve, clamped at
+  the car's current maximum.
+- AI ignores pickups in v1. This is a documented limitation so AI racing lines
+  remain stable while the player-facing mechanic lands.
+
 ## Roadside scenery
 
 Use scenery to reinforce speed and identity:

@@ -46,10 +46,12 @@ export interface Viewport {
  * segment so the renderer can look up roadside / hazard info at draw time
  * without re-reading the source `Track`.
  *
- * `roadsideLeftId`, `roadsideRightId`, and `hazardIds` are the authored
- * decoration ids for the strip. `hazardIds` is the same array reference
- * as the source authored segment's `hazards` array (frozen) to avoid
- * per-segment allocation.
+ * `roadsideLeftId`, `roadsideRightId`, `hazardIds`, and `pickupIds` are
+ * the authored decoration and interaction ids for the strip. `hazardIds`
+ * is the same array reference as the source authored segment's `hazards`
+ * array (frozen) to avoid per-segment allocation. `pickupIds` is derived
+ * once at compile time from the authored pickup objects so future runtime
+ * logic can quickly filter pickup-capable segments.
  *
  * `inTunnel` and `tunnelMaterialId` are authored visual and audio metadata.
  * `hazardIds` can still contain `tunnel` for older content, but the
@@ -64,6 +66,7 @@ export interface CompiledSegment {
   roadsideLeftId: string;
   roadsideRightId: string;
   hazardIds: readonly string[];
+  pickupIds: readonly string[];
   inTunnel?: boolean;
   tunnelMaterialId?: string;
 }

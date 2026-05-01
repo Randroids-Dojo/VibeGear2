@@ -108,6 +108,23 @@ Design
 - Upgrades improve thrust and total duration.
 - Nitro expands instability under poor traction.
 - Nitro use in severe corners is usually a mistake.
+- Nitro pickups can restore part of the starting reserve mid-race. A standard
+  pickup restores 25 percent of the reserve and clamps at the car's current
+  maximum, so it rewards route choice without creating infinite boost.
+
+## Mid-race resource pickups
+
+Pickups add small tactical rewards to the racing line without adding Top Gear
+1 style fuel pressure. They are deterministic, segment-authored objects with
+two v1 kinds:
+
+- Cash pickups add a small race cash delta that is paid with the final result.
+- Nitro pickups top up the player's nitro reserve by a percentage of the
+  starting reserve.
+
+Collection state resets on race start and respawns per lap. This keeps retries,
+practice, time trials, and ghost replays deterministic: the same lap position
+and lane offset should produce the same pickup result.
 
 ## Weather effects on handling
 
