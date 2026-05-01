@@ -19,6 +19,7 @@ Run commands from the repository root.
 | `quality:bundle` | Checks route and total static gzip budgets from the Next app build manifest. | After `npm run build`, before release or performance PRs. | A route or total static asset budget regressed. |
 | `quality:lighthouse` | Starts the production build and runs Lighthouse on core routes, retrying each route to smooth CI scoring noise. | After `npm run build`, before release or performance PRs. | Performance, accessibility, or best-practices score fell below the release gate on every attempt. |
 | `quality:gates` | Runs bundle and Lighthouse quality gates. | In CI after the production build. | Bundle budget or Lighthouse release gate failed. |
+| `release:media` | Captures the v1.0 screenshot pack and trailer source clip from a running build. | After `npm run build && npm run start`, before release notes or store copy. | The app is not running, a release route failed to boot, or Playwright video capture failed. |
 | `bench:render` | Runs the render benchmark suite. | Renderer, sprite, parallax, road, HUD, or VFX PRs. | Perf harness failure or a large frame-time regression. |
 | `art:generate` | Regenerates placeholder art assets. | Only when intentionally refreshing generated art. | Art generator or manifest contract changed. |
 | `art:check` | Validates art manifest coverage. | Before PRs that touch art. | Missing manifest entry, bad path, or invalid art metadata. |
@@ -37,6 +38,7 @@ Run commands from the repository root.
 | Browser or route change | `npm run verify:full` |
 | Cross-browser hardening | `npm run test:e2e:cross-browser` |
 | Release quality gates | `npm run build && npm run quality:gates` |
+| Release screenshots and trailer source | `npm run build`, `npm run start`, then `npm run release:media` |
 | Renderer change | `npm run verify && npm run bench:render` |
 | Docs-only change | `npm run docs:check && npm run content-lint` |
 | Art change | `npm run art:check` |

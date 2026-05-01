@@ -1889,6 +1889,23 @@
         "README.md"
       ],
       "followupRefs": ["VibeGear2-implement-v0-2-cdf8bf7a"]
+    },
+    {
+      "id": "GDD-25-RELEASE-MEDIA-KIT",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The v1.0 release process has a repeatable launch screenshot pack and trailer source capture workflow, including required views, artifact location, and public-release review checks.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "scripts/capture-release-media.ts",
+        "docs/RELEASE_MEDIA.md",
+        "docs/SCRIPTS.md",
+        "README.md",
+        "package.json"
+      ],
+      "followupRefs": ["VibeGear2-docs-add-release-ad43a325"]
     }
   ]
 }

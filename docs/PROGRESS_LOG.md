@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Release media capture kit
+
+**GDD sections touched:**
+[§25](gdd/25-development-roadmap.md) v1.0 launch trailer and screenshots,
+and [§26](gdd/26-open-source-project-guidance.md) release packaging.
+**Branch / PR:** `docs/release-media-kit`, PR #143.
+**Status:** Implemented.
+
+### Done
+- Added `scripts/capture-release-media.ts` to capture the required release
+  screenshot pack and a short race-play trailer source clip from a running
+  production build.
+- Added the `release:media` npm script and documented it in the script
+  catalogue.
+- Added `docs/RELEASE_MEDIA.md` with the screenshot set, trailer source
+  contract, artifact location, and release review checklist.
+- Added `GDD-25-RELEASE-MEDIA-KIT` to the coverage ledger so the §25 media
+  deliverable is machine-checkable.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npm run typecheck` green.
+- `npm run build` green.
+- `RELEASE_MEDIA_BASE_URL=http://127.0.0.1:3010 npm run release:media`
+  captured 6 screenshots and 1 trailer clip from a production server.
+- `RELEASE_MEDIA_OUT=. npm run release:media` failed before deleting output,
+  proving the artifact safety guard rejects unsafe paths.
+
+### Decisions and assumptions
+- Generated screenshots and WebM clips stay out of git as release artifacts.
+  The repo owns the repeatable capture workflow and checklist.
+
+### Coverage ledger
+- GDD-25-RELEASE-MEDIA-KIT covers the v1.0 launch screenshot and trailer source
+  workflow.
+- Uncovered adjacent requirements: final public trailer editing and hosting
+  remain release-operator work outside the repo unless a later PR approves
+  storing those assets here.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-01: Slice: Lighthouse gate retry hotfix
 
 **GDD sections touched:**
