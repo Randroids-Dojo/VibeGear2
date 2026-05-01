@@ -42,6 +42,12 @@ test.describe("race-finish wiring (F-038)", () => {
       await canvas.focus();
       await page.keyboard.down("ArrowUp");
 
+      const finishMoment = page.getByTestId("race-moment");
+      await expect(finishMoment).toHaveAttribute("data-kind", "finish", {
+        timeout: 45_000,
+      });
+      await expect(finishMoment).toContainText(/Victory|Podium|Finished/);
+
       // The natural-finish wiring tears down the loop and pushes the
       // router to /race/results once the player crosses the line. The
       // URL assertion is the load-bearing contract per the F-038
