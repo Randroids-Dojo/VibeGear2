@@ -291,6 +291,8 @@ export interface BuildRaceResultInput {
   sponsorContext?: SponsorEvaluationContext | null;
   /** Daily Challenge marker carried from the entry route, if any. */
   dailyChallenge?: DailyChallengeSelection | null;
+  /** Cash collected from on-track pickups during this race. */
+  pickupCashEarned?: number;
 }
 
 const ZERO_DAMAGE: DamageDelta = Object.freeze({ engine: 0, tires: 0, body: 0 });
@@ -347,6 +349,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     sponsor = null,
     sponsorContext = null,
     dailyChallenge = null,
+    pickupCashEarned = 0,
   } = input;
 
   // Resolve the per-track base reward. Caller override wins; otherwise
@@ -418,8 +421,19 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
           sponsor,
         })
       : null;
-  const bonuses: ReadonlyArray<RaceBonus> =
-    sponsorAward === null ? baseBonuses : [...baseBonuses, sponsorAward];
+  const pickupBonus: RaceBonus | null =
+    pickupCashEarned > 0
+      ? {
+          kind: "pickupCash",
+          label: "Track pickups",
+          cashCredits: Math.round(pickupCashEarned),
+        }
+      : null;
+  const bonuses: ReadonlyArray<RaceBonus> = [
+    ...baseBonuses,
+    ...(sponsorAward === null ? [] : [sponsorAward]),
+    ...(pickupBonus === null ? [] : [pickupBonus]),
+  ];
 
   // 5. Sum.
   const bonusCash = bonuses.reduce((acc, b) => acc + b.cashCredits, 0);

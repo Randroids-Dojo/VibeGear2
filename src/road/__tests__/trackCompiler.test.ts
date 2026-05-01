@@ -208,6 +208,12 @@ describe("compileTrack (full-track entry point)", () => {
     expect(parsed.success).toBe(true);
     const compiled = compileTrack(t);
     expect(compiled.segments[0]!.pickupIds).toEqual(["cash-line"]);
+    expect(compiled.pickupsById["cash-line"]).toEqual({
+      id: "cash-line",
+      kind: "cash",
+      laneOffset: 0,
+      value: 100,
+    });
   });
 
   it("compiles a 13 m authored segment to 3 compiled segments (ceil(13/6))", () => {

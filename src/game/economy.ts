@@ -314,13 +314,13 @@ export function awardCredits(save: SaveGame, input: AwardCreditsInput): EconomyR
     dnfParticipation: input.dnfParticipation,
   });
 
-  // Bonuses do not accumulate for DNF cars: a DNF car receives the flat
-  // participation cash and nothing else. The §5 bonus pipeline already
-  // filters DNF inside `computeBonuses`, so any list reaching this layer
-  // for a DNF car would be empty in practice; the explicit check keeps
-  // the contract tight even if a caller bypasses the pipeline.
+  // Result bonuses do not accumulate for DNF cars, but cash pickups are
+  // a race-collected delta rather than a finish-quality bonus. Keep those
+  // in the receipt so collected track cash is still paid with the result.
   const bonuses: ReadonlyArray<RaceBonus> =
-    input.status === "dnf" ? [] : (input.bonuses ?? []);
+    input.status === "dnf"
+      ? (input.bonuses ?? []).filter((bonus) => bonus.kind === "pickupCash")
+      : (input.bonuses ?? []);
   const bonusCash = sumBonusCredits(bonuses);
 
   const cashEarned = cashBaseEarned + bonusCash;

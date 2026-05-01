@@ -7,7 +7,7 @@
  * without pulling in either the projector or the canvas drawer.
  */
 
-import type { TrackSpawn, WeatherOption } from "@/data/schemas";
+import type { TrackPickup, TrackSpawn, WeatherOption } from "@/data/schemas";
 
 /**
  * Virtual camera that the player car never visibly leaves.
@@ -126,6 +126,12 @@ export interface CompiledTrack {
    * otherwise computed by `projectTrack` from segment headings.
    */
   minimapPoints: readonly CompiledMinimapPoint[];
+  /**
+   * Pickup authoring entries keyed by unique pickup id. Kept on the
+   * compiled track so runtime collection can resolve `segment.pickupIds`
+   * without re-reading source JSON.
+   */
+  pickupsById: Readonly<Record<string, TrackPickup>>;
   warnings: readonly string[];
 }
 

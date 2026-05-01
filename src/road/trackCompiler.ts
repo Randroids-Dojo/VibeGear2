@@ -130,6 +130,11 @@ export function compileTrack(track: Track): CompiledTrack {
   const warned = { current: false };
   const warnings: string[] = [];
   assertUniquePickupIds(track);
+  const pickupsById = Object.fromEntries(
+    track.segments.flatMap((segment) =>
+      (segment.pickups ?? []).map((pickup) => [pickup.id, { ...pickup }] as const),
+    ),
+  );
 
   // Compile segments and remember each authored segment's first compiled
   // index so we can map checkpoints below.
@@ -160,7 +165,7 @@ export function compileTrack(track: Track): CompiledTrack {
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
-        pickupIds,
+        pickupIds: i === 0 ? pickupIds : [],
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });
@@ -298,6 +303,7 @@ export function compileTrack(track: Track): CompiledTrack {
     weatherOptions: [...track.weatherOptions],
     difficulty: track.difficulty,
     minimapPoints,
+    pickupsById,
     warnings,
   };
 
@@ -345,7 +351,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
-        pickupIds,
+        pickupIds: i === 0 ? pickupIds : [],
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });

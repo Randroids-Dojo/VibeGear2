@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Pickup runtime collection
+
+**GDD sections touched:**
+[§9](gdd/09-track-design.md) track pickups,
+[§10](gdd/10-driving-model-and-physics.md) mid-race resources,
+[§12](gdd/12-upgrade-and-economy-system.md) currency rewards,
+[§20](gdd/20-hud-and-ui-ux.md) race feedback, and
+[§22](gdd/22-data-schemas.md) track segment schema.
+**Branch / PR:** `feat/pickups-runtime`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `src/game/pickups.ts` to evaluate authored pickups with the same
+  segment lookup shape as hazards.
+- Added compiled `pickupsById` lookup data so runtime collection does not
+  re-read source track JSON.
+- Added race-session pickup state keyed by lap and pickup id, so pickups
+  collect once per lap and reset with a fresh race session.
+- Wired cash pickups into the player race cash delta and the result receipt
+  as a `pickupCash` bonus that is paid with the wallet award.
+- Wired nitro pickups into the existing charge model as a capped top-up.
+- Added `pickupCollected` session events so the next audio and render slices
+  can consume the same deterministic runtime signal.
+
+### Verified
+- `npx vitest run src/game/__tests__/pickups.test.ts
+  src/game/__tests__/raceSession.test.ts
+  src/road/__tests__/trackCompiler.test.ts
+  src/game/__tests__/raceResult.test.ts src/game/__tests__/economy.test.ts`
+  green, 280 tests passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- Pickup ids collect once per lap by `lap:id` because v1 authoring keeps
+  pickup ids unique per track.
+- Pickup placement is tied to the first compiled segment of the authored
+  segment. A later authoring pass can add per-segment z offsets if needed.
+- Nitro pickups top up whole charges in the current charge-based nitro model.
+  A 25 percent pickup adds one stock charge and clamps at the car's race-start
+  charge cap.
+- Cash pickup payout rides the result bonus path so wallet accounting, receipt
+  display, and DNF pickup cash stay one code path.
+
+### Coverage ledger
+- Extends `GDD-09-TRACK-PICKUPS` and `GDD-10-MID-RACE-PICKUPS` into runtime
+  collection and result payout.
+- Uncovered adjacent requirements: visible pickup sprites, collection VFX,
+  HUD flash, pickup SFX, and browser E2E pickup collection coverage.
+
+### Followups created
+- F-071: route pickup collection events into race SFX.
+- F-072: render pickups and collection feedback in the race view.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-01: Slice: Pickup design contract and track schema
 
 **GDD sections touched:**
