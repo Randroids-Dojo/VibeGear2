@@ -132,7 +132,11 @@ import {
   type MinimapPoint,
   type Viewport,
 } from "@/road";
-import { drawRoad, type DrawRoadOptions } from "@/render/pseudoRoadCanvas";
+import {
+  PICKUP_FEEDBACK_TTL_MS,
+  drawRoad,
+  type DrawRoadOptions,
+} from "@/render/pseudoRoadCanvas";
 import { projectPickupSprites } from "@/render/pickupSprites";
 import { playerCarFrameIndex } from "@/render/carFrame";
 import type { CarSpriteSet } from "@/render/carSpriteCompositor";
@@ -188,7 +192,6 @@ const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
 const LAP_MOMENT_MS = 900;
 const FINISH_MOMENT_MS = 1250;
-const PICKUP_FEEDBACK_MS = 900;
 const AI_FALLBACK_FILLS = Object.freeze([
   "#ff6b5f",
   "#63d471",
@@ -197,6 +200,7 @@ const AI_FALLBACK_FILLS = Object.freeze([
   "#d980ff",
   "#ff9f43",
 ]);
+const EMPTY_COLLECTED_PICKUP_SET: ReadonlySet<string> = new Set<string>();
 
 /**
  * §20 minimap layout. The wireframe places the minimap in the bottom-left
@@ -1279,6 +1283,8 @@ function RaceCanvas({
     let lastEngineAudioUpdateMs = 0;
     let lastCountdownSfxStep: number | null = null;
     let lastRaceSfxTick: number | null = null;
+    let cachedCollectedPickups: ReadonlyArray<string> | null = null;
+    let cachedCollectedPickupSet: ReadonlySet<string> = new Set<string>();
     const tryStartEngineAudio = (): void => {
       if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
         return;
@@ -1576,7 +1582,7 @@ function RaceCanvas({
           strips,
           pickupsById: track.compiled.pickupsById,
           lap: session.race.lap,
-          collectedPickups: session.collectedPickups,
+          collectedPickups: collectedPickupSetForRender(),
         });
         setVisiblePickupCount(pickupSprites.length);
         setCollectedPickupCount(session.collectedPickups.length);
@@ -1663,7 +1669,7 @@ function RaceCanvas({
           pickupSprites,
           pickupFeedback:
             pickupFeedbackRef.current !== null &&
-            pickupFeedbackAgeMs < PICKUP_FEEDBACK_MS
+            pickupFeedbackAgeMs < PICKUP_FEEDBACK_TTL_MS
               ? { kind: pickupFeedbackRef.current.kind, ageMs: pickupFeedbackAgeMs }
               : null,
           aiCars,
@@ -1930,6 +1936,19 @@ function RaceCanvas({
         }
       },
     });
+
+    function collectedPickupSetForRender(): ReadonlySet<string> {
+      if (sessionRef.current === null) return cachedCollectedPickupSet;
+      if (sessionRef.current.collectedPickups === cachedCollectedPickups) {
+        return cachedCollectedPickupSet;
+      }
+      cachedCollectedPickups = sessionRef.current.collectedPickups;
+      cachedCollectedPickupSet =
+        cachedCollectedPickups.length === 0
+          ? EMPTY_COLLECTED_PICKUP_SET
+          : new Set(cachedCollectedPickups);
+      return cachedCollectedPickupSet;
+    }
 
     return () => {
       window.removeEventListener("resize", resize);

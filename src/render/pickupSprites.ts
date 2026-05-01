@@ -24,6 +24,7 @@ export interface ProjectPickupSpritesInput {
 const DEFAULT_MAX_PICKUP_DISTANCE_METERS = 180;
 const MIN_PICKUP_SCREEN_WIDTH = 8;
 const MAX_PICKUP_SCREEN_WIDTH = 34;
+const EMPTY_COLLECTED_PICKUP_SET: ReadonlySet<string> = new Set<string>();
 
 export function projectPickupSprites(
   input: ProjectPickupSpritesInput,
@@ -77,6 +78,7 @@ function normalizeCollected(
 ): ReadonlySet<string> | null {
   if (collected === undefined) return null;
   if ("has" in collected) return collected;
+  if (collected.length === 0) return EMPTY_COLLECTED_PICKUP_SET;
   return new Set(collected);
 }
 
