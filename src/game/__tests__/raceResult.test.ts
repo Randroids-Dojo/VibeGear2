@@ -432,6 +432,22 @@ describe("buildRaceResult: bonuses", () => {
       Math.round(DEFAULT_BASE_TRACK_REWARD * UNDERDOG_BONUS_RATE_PER_RANK * 6);
     expect(result.cashEarned).toBe(result.cashBaseEarned + expectedBonusCash);
   });
+
+  it("adds pickup cash as a results bonus and wallet-credit input", () => {
+    const result = buildRaceResult(
+      makeInput({ playerStartPosition: 1, pickupCashEarned: 175 }),
+    );
+    const pickup = result.bonuses.find((b) => b.kind === "pickupCash");
+    expect(pickup).toEqual({
+      kind: "pickupCash",
+      label: "Track pickups",
+      cashCredits: 175,
+    });
+    expect(result.cashEarned).toBe(
+      result.cashBaseEarned +
+        result.bonuses.reduce((acc, bonus) => acc + bonus.cashCredits, 0),
+    );
+  });
 });
 
 describe("buildRaceResult: DNF path", () => {

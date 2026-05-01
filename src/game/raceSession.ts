@@ -87,12 +87,15 @@ import {
 import { evaluateHazards } from "./hazards";
 import { NEUTRAL_INPUT, type Input } from "./input";
 import {
+  applyNitroTopUp,
   createNitroForCar,
   getNitroAccelMultiplier,
+  maxNitroChargesForUpgrades,
   tickNitro,
   type NitroStepResult,
   type NitroState,
 } from "./nitro";
+import { evaluatePickups } from "./pickups";
 import { createRng, deserializeRng, serializeRng, splitRng } from "./rng";
 import {
   createTransmissionForCar,
@@ -270,6 +273,13 @@ export interface RaceSessionSurfaceHushAudioEvent {
   readonly speedFactor: number;
 }
 
+export interface RaceSessionPickupCollectedAudioEvent {
+  readonly kind: "pickupCollected";
+  readonly carId: string;
+  readonly pickupKind: "cash" | "nitro";
+  readonly value: number;
+}
+
 type RaceSessionLapMilestoneAudioEvent =
   | RaceSessionLapCompleteAudioEvent
   | RaceSessionRaceFinishAudioEvent;
@@ -282,7 +292,8 @@ export type RaceSessionAudioEvent =
   | RaceSessionRaceFinishAudioEvent
   | RaceSessionBrakeScrubAudioEvent
   | RaceSessionTireSquealAudioEvent
-  | RaceSessionSurfaceHushAudioEvent;
+  | RaceSessionSurfaceHushAudioEvent
+  | RaceSessionPickupCollectedAudioEvent;
 
 export interface RaceSessionConfig {
   /** Compiled track to drive on. Frozen output of `compileTrack`. */
@@ -528,6 +539,8 @@ export interface RaceSessionPlayerCar {
    * car has stopped (existing all-stopped branch). Pinned per F-047.
    */
   damage: DamageState;
+  /** Cash collected from on-track pickups during this race. */
+  pickupCashEarned: number;
 }
 
 /**
@@ -607,6 +620,8 @@ export interface RaceSessionState {
   draftWindows: Readonly<Record<string, DraftWindowState>>;
   /** Breakable track hazards consumed during this race, keyed by segment and id. */
   brokenHazards: ReadonlyArray<string>;
+  /** On-track pickups consumed this race, keyed by lap and id. */
+  collectedPickups: ReadonlyArray<string>;
   /** §14 weather runtime state, constrained to this track's authored options. */
   weather: WeatherState;
   /** Serialized deterministic PRNG state reserved for weather transitions. */
@@ -749,6 +764,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     lapTimes: [],
     finishedAtMs: null,
     damage: config.player.initialDamage ?? PRISTINE_DAMAGE_STATE,
+    pickupCashEarned: 0,
   };
 
   const raceSeed = config.seed ?? DEFAULT_RACE_SESSION_SEED;
@@ -807,6 +823,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
     baselineSplitsMs: null,
     draftWindows: {},
     brokenHazards: [],
+    collectedPickups: [],
     weather,
     weatherRngState: serializeRng(weatherRng),
     audioEvents: [],
@@ -972,6 +989,7 @@ export function stepRaceSession(
         baselineSplitsMs: state.baselineSplitsMs,
         draftWindows: state.draftWindows,
         brokenHazards: state.brokenHazards,
+        collectedPickups: state.collectedPickups,
         weather: cloneWeatherState(state.weather),
         weatherRngState: state.weatherRngState,
         audioEvents: [],
@@ -1000,6 +1018,7 @@ export function stepRaceSession(
       baselineSplitsMs: state.baselineSplitsMs,
       draftWindows: state.draftWindows,
       brokenHazards: state.brokenHazards,
+      collectedPickups: state.collectedPickups,
       weather: cloneWeatherState(state.weather),
       weatherRngState: state.weatherRngState,
       audioEvents: [],
@@ -1297,6 +1316,11 @@ export function stepRaceSession(
       ? new Set(state.brokenHazards)
       : EMPTY_BROKEN_HAZARDS;
   let nextBrokenHazards = initialBrokenHazards;
+  const initialCollectedPickups =
+    state.collectedPickups.length > 0
+      ? new Set(state.collectedPickups)
+      : EMPTY_COLLECTED_PICKUPS;
+  let nextCollectedPickups = initialCollectedPickups;
   const hazardHitsByCarId = new Map<string, HitEvent[]>();
   const playerHazards = playerIsRacing
     ? evaluateHazards({
@@ -1309,6 +1333,35 @@ export function stepRaceSession(
   if (playerIsRacing) {
     nextBrokenHazards = playerHazards.brokenHazards;
   }
+  const playerPickups = playerIsRacing
+    ? evaluatePickups({
+        car: state.player.car,
+        track: config.track,
+        lap: state.race.lap,
+        collectedPickups: nextCollectedPickups,
+      })
+    : EMPTY_PICKUP_EFFECT;
+  if (playerIsRacing) {
+    nextCollectedPickups = playerPickups.collectedPickups;
+  }
+  const playerPickupNitroPercent = playerPickups.events.reduce(
+    (acc, event) => acc + (event.kind === "nitro" ? event.value : 0),
+    0,
+  );
+  const playerNitroAfterPickups =
+    playerPickupNitroPercent <= 0
+      ? playerNitroResult.state
+      : applyNitroTopUp(
+          playerNitroResult.state,
+          playerPickupNitroPercent,
+          maxNitroChargesForUpgrades(config.player.upgrades ?? null),
+        );
+  const playerPickupCashEarned =
+    state.player.pickupCashEarned +
+    playerPickups.events.reduce(
+      (acc, event) => acc + (event.kind === "cash" ? event.value : 0),
+      0,
+    );
   const playerHazardHits = hitsFromHazards(playerHazards.events);
   if (playerHazardHits.length > 0) {
     hazardHitsByCarId.set(PLAYER_CAR_ID, playerHazardHits);
@@ -1818,11 +1871,19 @@ export function stepRaceSession(
     weather: trackWeather,
     topSpeed: playerStats.topSpeed,
   });
+  const playerPickupAudioEvents: RaceSessionPickupCollectedAudioEvent[] =
+    playerPickups.events.map((event) => ({
+      kind: "pickupCollected",
+      carId: PLAYER_CAR_ID,
+      pickupKind: event.kind,
+      value: event.value,
+    }));
   const hasPlayerNonImpactAudioEvents =
     playerNitroEvents.length > 0 ||
     playerShiftEvents.length > 0 ||
     playerLapEvents.length > 0 ||
-    playerSurfaceAudio.events.length > 0;
+    playerSurfaceAudio.events.length > 0 ||
+    playerPickupAudioEvents.length > 0;
   const nextAudioEvents: ReadonlyArray<RaceSessionAudioEvent> =
     hasPlayerNonImpactAudioEvents
       ? [
@@ -1830,6 +1891,7 @@ export function stepRaceSession(
           ...playerShiftEvents,
           ...playerLapEvents,
           ...playerSurfaceAudio.events,
+          ...playerPickupAudioEvents,
           ...playerImpactEvents,
         ]
       : playerImpactEvents;
@@ -1848,7 +1910,7 @@ export function stepRaceSession(
     },
     player: {
       car: nextPlayerCar,
-      nitro: playerNitroResult.state,
+      nitro: playerNitroAfterPickups,
       // Mirror the post-assist nitro value so the next tick's
       // rising-edge detection in `tickNitro` matches the input the
       // physics step actually consumed. This matters under
@@ -1870,6 +1932,7 @@ export function stepRaceSession(
       lapTimes: nextPlayerLapTimes,
       finishedAtMs: nextPlayerFinishedAtMs,
       damage: playerDamageResult.damage,
+      pickupCashEarned: playerPickupCashEarned,
     },
     ai: aiAfterDnf,
     tick: nextTick,
@@ -1880,6 +1943,10 @@ export function stepRaceSession(
       nextBrokenHazards === initialBrokenHazards
         ? state.brokenHazards
         : Array.from(nextBrokenHazards),
+    collectedPickups:
+      nextCollectedPickups === initialCollectedPickups
+        ? state.collectedPickups
+        : Array.from(nextCollectedPickups),
     weather: nextWeather,
     weatherRngState: nextWeatherRngState,
     audioEvents: nextAudioEvents,
@@ -2014,6 +2081,7 @@ function cloneSessionState(state: Readonly<RaceSessionState>): RaceSessionState 
     baselineSplitsMs: state.baselineSplitsMs,
     draftWindows: state.draftWindows,
     brokenHazards: state.brokenHazards.slice(),
+    collectedPickups: state.collectedPickups.slice(),
     weather: cloneWeatherState(state.weather),
     weatherRngState: state.weatherRngState,
     audioEvents: state.audioEvents.slice(),
@@ -2026,11 +2094,16 @@ const EMPTY_HAZARD_REGISTRY: ReadonlyMap<
 > = new Map();
 
 const EMPTY_BROKEN_HAZARDS: ReadonlySet<string> = new Set<string>();
+const EMPTY_COLLECTED_PICKUPS: ReadonlySet<string> = new Set<string>();
 
 const EMPTY_HAZARD_EFFECT = Object.freeze({
   events: Object.freeze([]),
   gripMultiplier: 1,
   brokenHazards: EMPTY_BROKEN_HAZARDS,
+});
+const EMPTY_PICKUP_EFFECT = Object.freeze({
+  events: Object.freeze([]),
+  collectedPickups: EMPTY_COLLECTED_PICKUPS,
 });
 
 function hitsFromHazards(
@@ -2089,6 +2162,7 @@ function clonePlayerCar(
     lapTimes: player.lapTimes.slice(),
     finishedAtMs: player.finishedAtMs,
     damage: player.damage,
+    pickupCashEarned: player.pickupCashEarned,
   };
 }
 

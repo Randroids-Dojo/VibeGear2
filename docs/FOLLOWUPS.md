@@ -10,6 +10,25 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-072: Render pickups and collection feedback in the race view
+**Created:** 2026-05-01
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The pickup runtime slice collects authored cash and nitro
+pickups, hides already collected ids from session state, pays pickup cash
+with the race result, and emits pickup events. Add visible pickup sprites,
+collection burst feedback, HUD cash and nitro feedback, and Playwright
+coverage that proves a visible pickup disappears after collection.
+
+## F-071: Route pickup collection events into race SFX
+**Created:** 2026-05-01
+**Priority:** polish
+**Status:** open
+**Notes:** `RaceSessionAudioEvent` now emits `pickupCollected` for cash
+and nitro pickups, but the page SFX bridge intentionally leaves the event
+silent until the audio slice. Add distinct cash and nitro collection cues
+through the procedural SFX runtime and cover them with audio unit tests.
+
 ## F-070: Wire pause leaderboard or ghost action to a target surface
 **Created:** 2026-04-30
 **Priority:** polish

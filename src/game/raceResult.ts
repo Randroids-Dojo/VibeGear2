@@ -291,6 +291,8 @@ export interface BuildRaceResultInput {
   sponsorContext?: SponsorEvaluationContext | null;
   /** Daily Challenge marker carried from the entry route, if any. */
   dailyChallenge?: DailyChallengeSelection | null;
+  /** Cash collected from on-track pickups during this race. */
+  pickupCashEarned?: number;
 }
 
 const ZERO_DAMAGE: DamageDelta = Object.freeze({ engine: 0, tires: 0, body: 0 });
@@ -347,6 +349,7 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
     sponsor = null,
     sponsorContext = null,
     dailyChallenge = null,
+    pickupCashEarned = 0,
   } = input;
 
   // Resolve the per-track base reward. Caller override wins; otherwise
@@ -403,10 +406,9 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
   //     skips the call so the chip list is identical to the per-race
   //     four-chip baseline. A failed predicate is silent (no chip,
   //     no negative credit) per `sponsorBonus`'s documented contract.
-  //     Sponsors are appended after the per-race bonuses so the §20
-  //     chip strip orders them at the end of the row, matching the
-  //     "podium / fastestLap / cleanRace / underdog / sponsor" pin
-  //     in the chip selector tests.
+  //     Sponsors are appended after the per-race bonuses and before
+  //     pickup cash, matching the chip selector tests:
+  //     "podium / fastestLap / cleanRace / underdog / sponsor / pickupCash".
   const sponsorAward =
     sponsor !== null && sponsorContext !== null
       ? sponsorBonus({
@@ -418,8 +420,19 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
           sponsor,
         })
       : null;
-  const bonuses: ReadonlyArray<RaceBonus> =
-    sponsorAward === null ? baseBonuses : [...baseBonuses, sponsorAward];
+  const pickupBonus: RaceBonus | null =
+    pickupCashEarned > 0
+      ? {
+          kind: "pickupCash",
+          label: "Track pickups",
+          cashCredits: Math.round(pickupCashEarned),
+        }
+      : null;
+  const bonuses: ReadonlyArray<RaceBonus> = [
+    ...baseBonuses,
+    ...(sponsorAward === null ? [] : [sponsorAward]),
+    ...(pickupBonus === null ? [] : [pickupBonus]),
+  ];
 
   // 5. Sum.
   const bonusCash = bonuses.reduce((acc, b) => acc + b.cashCredits, 0);

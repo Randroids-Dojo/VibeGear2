@@ -51,6 +51,7 @@ const LENGTH_METERS_TOLERANCE = 0.05;
 
 /** Warning threshold for `spawn.gridSlots`. */
 const MIN_GRID_SLOTS_WARN = 8;
+const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
 /**
  * Hard-error thrown by `compileTrack` for structural violations the schema
@@ -130,6 +131,11 @@ export function compileTrack(track: Track): CompiledTrack {
   const warned = { current: false };
   const warnings: string[] = [];
   assertUniquePickupIds(track);
+  const pickupsById = Object.fromEntries(
+    track.segments.flatMap((segment) =>
+      (segment.pickups ?? []).map((pickup) => [pickup.id, { ...pickup }] as const),
+    ),
+  );
 
   // Compile segments and remember each authored segment's first compiled
   // index so we can map checkpoints below.
@@ -149,7 +155,7 @@ export function compileTrack(track: Track): CompiledTrack {
     const count = Math.max(1, Number.isFinite(rawCount) ? rawCount : 1);
     const curve = sanitize(seg.curve, "curve", warned) / CURVATURE_SCALE;
     const grade = sanitize(seg.grade, "grade", warned) * SEGMENT_LENGTH;
-    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? [];
+    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? EMPTY_IDS;
     for (let i = 0; i < count; i++) {
       segments.push({
         index: cumulativeIndex,
@@ -160,7 +166,7 @@ export function compileTrack(track: Track): CompiledTrack {
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
-        pickupIds,
+        pickupIds: i === 0 ? pickupIds : EMPTY_IDS,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });
@@ -298,6 +304,7 @@ export function compileTrack(track: Track): CompiledTrack {
     weatherOptions: [...track.weatherOptions],
     difficulty: track.difficulty,
     minimapPoints,
+    pickupsById,
     warnings,
   };
 
@@ -334,7 +341,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
     const count = Math.max(1, Number.isFinite(rawCount) ? rawCount : 1);
     const curve = sanitize(seg.curve, "curve", warned) / CURVATURE_SCALE;
     const grade = sanitize(seg.grade, "grade", warned) * SEGMENT_LENGTH;
-    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? [];
+    const pickupIds = seg.pickups?.map((pickup) => pickup.id) ?? EMPTY_IDS;
     for (let i = 0; i < count; i++) {
       compiled.push({
         index: cumulativeIndex,
@@ -345,7 +352,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
         roadsideLeftId: seg.roadsideLeft,
         roadsideRightId: seg.roadsideRight,
         hazardIds: seg.hazards,
-        pickupIds,
+        pickupIds: i === 0 ? pickupIds : EMPTY_IDS,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
       });

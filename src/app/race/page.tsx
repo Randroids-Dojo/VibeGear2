@@ -1380,6 +1380,7 @@ function RaceCanvas({
         tourId: tourContext?.tourId,
         currentTrackIndex: tourContext?.raceIndex,
         dailyChallenge,
+        pickupCashEarned: retired.player.pickupCashEarned,
       });
       // F-034: credit the wallet (DNF cars receive the §12 participation
       // cash) and mirror the delta onto `RaceResult.creditsAwarded` so
@@ -1769,6 +1770,7 @@ function RaceCanvas({
               tourId: tourContext?.tourId,
               currentTrackIndex: tourContext?.raceIndex,
               dailyChallenge,
+              pickupCashEarned: session.player.pickupCashEarned,
             });
             // F-034: credit the wallet from the same numbers the
             // results screen will render. The `commitRaceCredits`

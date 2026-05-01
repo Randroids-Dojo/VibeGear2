@@ -636,13 +636,36 @@ export function createNitroForCar(
   _stats: Readonly<CarBaseStats>,
   upgrades?: Partial<Record<UpgradeCategory, number>> | null,
 ): NitroState {
+  return Object.freeze({
+    charges: maxNitroChargesForUpgrades(upgrades),
+    activeRemainingSec: 0,
+  });
+}
+
+export function maxNitroChargesForUpgrades(
+  upgrades?: Partial<Record<UpgradeCategory, number>> | null,
+): number {
   const tier = nitroUpgradeTierForUpgrades(upgrades);
-  const charges = clampInt(
+  return clampInt(
     DEFAULT_NITRO_CHARGES + tier.chargesBonus,
     0,
     ABSOLUTE_MAX_CHARGES,
   );
-  return Object.freeze({ charges, activeRemainingSec: 0 });
+}
+
+export function applyNitroTopUp(
+  state: Readonly<NitroState>,
+  valuePercent: number,
+  maxCharges: number,
+): NitroState {
+  const safe = sanitiseState(state);
+  const max = clampInt(maxCharges, 0, ABSOLUTE_MAX_CHARGES);
+  if (max <= 0 || valuePercent <= 0) return safe;
+  const gained = Math.max(1, Math.round((max * valuePercent) / 100));
+  return {
+    charges: clampInt(safe.charges + gained, 0, max),
+    activeRemainingSec: safe.activeRemainingSec,
+  };
 }
 
 // Internal helpers --------------------------------------------------------

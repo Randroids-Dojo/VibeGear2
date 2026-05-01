@@ -806,6 +806,52 @@ describe("stepRaceSession (nitro)", () => {
   });
 });
 
+describe("stepRaceSession (pickups)", () => {
+  it("collects cash pickups into the player race cash delta once", () => {
+    const config = buildConfig({
+      track: loadTrack("test/straight"),
+      ai: [],
+      countdownSec: 0,
+    });
+    let session = createRaceSession(config);
+    session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(session.player.pickupCashEarned).toBe(100);
+    expect(session.collectedPickups).toEqual(["1:test-straight-cash"]);
+    expect(session.audioEvents).toContainEqual({
+      kind: "pickupCollected",
+      carId: PLAYER_CAR_ID,
+      pickupKind: "cash",
+      value: 100,
+    });
+
+    const again = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(again.player.pickupCashEarned).toBe(100);
+    expect(again.collectedPickups).toEqual(["1:test-straight-cash"]);
+  });
+
+  it("tops up nitro pickups without exceeding the race start charge cap", () => {
+    const config = buildConfig({
+      track: loadTrack("test/straight"),
+      player: {
+        stats: STARTER_STATS,
+        initial: { x: 1.575 },
+      },
+      ai: [],
+      countdownSec: 0,
+    });
+    const session = {
+      ...createRaceSession(config),
+      player: {
+        ...createRaceSession(config).player,
+        nitro: { charges: 2, activeRemainingSec: 0 },
+      },
+    };
+    const next = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
+    expect(next.player.nitro.charges).toBe(3);
+    expect(next.collectedPickups).toEqual(["1:test-straight-nitro"]);
+  });
+});
+
 describe("stepRaceSession (transmission)", () => {
   function shiftUpInput(): Input {
     return { ...NEUTRAL_INPUT, throttle: 1, shiftUp: true };

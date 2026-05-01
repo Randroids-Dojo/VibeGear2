@@ -65,7 +65,8 @@ export type RaceBonusKind =
   | "underdog"
   | "tourComplete"
   | "easyModeTourComplete"
-  | "sponsor";
+  | "sponsor"
+  | "pickupCash";
 
 /**
  * A single awarded bonus. `cashCredits` is the integer credit delta the
