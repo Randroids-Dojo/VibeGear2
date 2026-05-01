@@ -6,6 +6,48 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Lighthouse gate retry hotfix
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) CI quality gates,
+[§25](gdd/25-development-roadmap.md) v1.0 CI coverage, and
+[§27](gdd/27-risks-and-mitigations.md) browser performance.
+**Branch / PR:** `fix/lighthouse-options-retry`, PR #142.
+**Status:** Implemented.
+
+### Done
+- Added per-route retry handling to the Lighthouse quality gate so a single
+  noisy performance sample does not fail main when a later run meets the same
+  score threshold.
+- Kept the existing performance, accessibility, and best-practices thresholds
+  intact.
+- Documented the retry behavior in `docs/SCRIPTS.md`.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npm run typecheck` green.
+- `npm run quality:gates` green.
+- `git diff --check` green.
+- Changed-file diff scan for em-dashes and en-dashes clean.
+
+### Decisions and assumptions
+- Treated the main failure after PR #141 as a CI reliability issue because the
+  rerun passed the PR check, the branch was docs-only, and local Playwright
+  passed 99 tests.
+
+### Coverage ledger
+- GDD-27-CI-QUALITY-GATES remains the active coverage row for CI quality gates.
+- Uncovered adjacent requirements: none.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-04-30: Slice: v0.2 release branch activation docs
 
 **GDD sections touched:**

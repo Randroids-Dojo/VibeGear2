@@ -17,7 +17,7 @@ Run commands from the repository root.
 | `test:e2e:cross-browser` | Runs the compatibility smoke on Chromium, Firefox, and WebKit. | Before browser hardening or release PRs. | A core route, canvas boot, keyboard path, or browser API differs across engines. |
 | `test:e2e:ui` | Opens the Playwright UI runner. | Debugging a failing e2e test locally. | Playwright cannot launch or the app is not built correctly. |
 | `quality:bundle` | Checks route and total static gzip budgets from the Next app build manifest. | After `npm run build`, before release or performance PRs. | A route or total static asset budget regressed. |
-| `quality:lighthouse` | Starts the production build and runs Lighthouse on core routes. | After `npm run build`, before release or performance PRs. | Performance, accessibility, or best-practices score fell below the release gate. |
+| `quality:lighthouse` | Starts the production build and runs Lighthouse on core routes, retrying each route to smooth CI scoring noise. | After `npm run build`, before release or performance PRs. | Performance, accessibility, or best-practices score fell below the release gate on every attempt. |
 | `quality:gates` | Runs bundle and Lighthouse quality gates. | In CI after the production build. | Bundle budget or Lighthouse release gate failed. |
 | `bench:render` | Runs the render benchmark suite. | Renderer, sprite, parallax, road, HUD, or VFX PRs. | Perf harness failure or a large frame-time regression. |
 | `art:generate` | Regenerates placeholder art assets. | Only when intentionally refreshing generated art. | Art generator or manifest contract changed. |
