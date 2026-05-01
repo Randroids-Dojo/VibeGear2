@@ -4,16 +4,16 @@ This document defines the stable release branch contract required by
 [`docs/gdd/25-development-roadmap.md`](gdd/25-development-roadmap.md) for v1.0
 readiness.
 
-## Current Stable Branch Target
+## Current Stable Branch
 
 | Line | Branch | Tag | Branch base | Status | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| Content-complete World Tour | `release/v0.2` | `v0.2.0` | Post-PR #140 merge commit | Planned | Stable branch for the 32-track World Tour release candidate. |
+| Content-complete World Tour | `release/v0.2` | `v0.2.0` | `269f890` | Active | Stable branch for the 32-track World Tour release candidate. |
 
-The branch is created after the release-refresh PR merges and the tag passes
-production smoke. The branch starts at the first `main` commit after `v0.2.0`
-that adds the release branch CI and support docs, so release-branch PRs have
-pre-merge checks available.
+The branch was created after release-refresh PR #139 merged, the `v0.2.0` tag
+passed production smoke, and PR #140 added the release branch CI and support
+docs. It starts at `269f890`, the first `main` commit after `v0.2.0` with
+pre-merge checks available for release-branch PRs.
 
 ## Branch Rules
 
