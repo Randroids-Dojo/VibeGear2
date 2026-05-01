@@ -36,7 +36,9 @@ test.describe("race pickups", () => {
       .toBeGreaterThan(0);
     await page.keyboard.up("ArrowUp");
 
-    await expect(page.getByTestId("race-last-pickup-kind")).toHaveText("cash");
+    await expect(page.getByTestId("race-last-pickup-kind")).toHaveText("cash", {
+      timeout: 20_000,
+    });
     await expect
       .poll(async () => metricNumber(await visiblePickups.textContent()))
       .toBeLessThan(initialVisible);

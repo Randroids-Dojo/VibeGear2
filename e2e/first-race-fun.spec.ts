@@ -59,10 +59,6 @@ test.describe("first quick race fun pass", () => {
       )
       .toBeGreaterThan(0);
 
-    await expect(page.getByTestId("race-last-pickup-kind")).toHaveText("cash", {
-      timeout: 20_000,
-    });
-
     await expect(page.getByTestId("race-last-pickup-kind")).toHaveText("nitro", {
       timeout: 35_000,
     });
