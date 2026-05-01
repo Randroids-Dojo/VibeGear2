@@ -41,14 +41,19 @@ and [§25](gdd/25-development-roadmap.md) roadmap.
   current codebase already has most systemic scaffolding wired.
 
 ### Coverage ledger
-- GDD-03-FUN-GAP-AUDIT now covers the release-facing gap ranking and the
-  next implementation order for fun-factor work.
+- This slice ranks the release-facing gaps around existing coverage ids
+  `GDD-15-AI-GRID-SPAWNER`, `GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES`,
+  `GDD-17-PLACEHOLDER-CAR-SPRITES`, `GDD-09-HAZARDS-RUNTIME`, and
+  `GDD-24-MVP-TRACK-SET`, then records the next implementation order for
+  fun-factor work.
 - Uncovered adjacent requirements: the ranked slices remain unimplemented
   until their dots land, especially pickups, AI archetype behavior, finish-line
   feedback, race-audio emphasis, production car art, and first-tour authored
   events.
 
-### Followups created
+### Followups created / tracking note
+- These implementation followups are tracked as Dots backlog slugs, not
+  `docs/FOLLOWUPS.md` entries with `F-NNN` ids.
 - `VibeGear2-feat-tuning-first-74ba5505`: first-race fun pass.
 - `VibeGear2-feat-audio-race-a656eed2`: race mix and event emphasis pass.
 - `VibeGear2-feat-tracks-first-10ebfec0`: first-tour authored event pass.
