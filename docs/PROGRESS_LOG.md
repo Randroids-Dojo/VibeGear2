@@ -12,7 +12,7 @@ Correct them by adding a new entry that references the old one.
 [§21](gdd/21-technical-design-for-web-implementation.md) CI quality gates,
 [§25](gdd/25-development-roadmap.md) v1.0 CI coverage, and
 [§27](gdd/27-risks-and-mitigations.md) browser performance.
-**Branch / PR:** `fix/lighthouse-options-retry`, PR TBD.
+**Branch / PR:** `fix/lighthouse-options-retry`, PR #142.
 **Status:** Implemented.
 
 ### Done
