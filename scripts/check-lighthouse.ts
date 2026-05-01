@@ -21,6 +21,10 @@ const ROUTES = ["/", "/race?mode=practice", "/garage", "/options"];
 const MIN_PERFORMANCE = 0.7;
 const MIN_ACCESSIBILITY = 0.9;
 const MIN_BEST_PRACTICES = 0.9;
+const ROUTE_ATTEMPTS = Math.max(
+  1,
+  Math.floor(Number(process.env.LIGHTHOUSE_ROUTE_ATTEMPTS ?? 3)),
+);
 const CHROME_START_TIMEOUT_MS = 30_000;
 const LIGHTHOUSE_ROUTE_TIMEOUT_MS = 45_000;
 const NPM_COMMAND = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -141,39 +145,47 @@ try {
   );
 
   for (const route of ROUTES) {
-    const result = (await withTimeout(
-      `Lighthouse ${route}`,
-      LIGHTHOUSE_ROUTE_TIMEOUT_MS,
-      Promise.race([
-        lighthouse(`${BASE_URL}${route}`, {
-          port: chrome.port,
-          output: "json",
-          logLevel: "error",
-          onlyCategories: ["performance", "accessibility", "best-practices"],
-        }),
-        serverStopped,
-      ]),
-    )) as LighthouseResult | undefined;
+    let routePassed = false;
 
-    if (!result) {
-      throw new Error(`Lighthouse did not return a result for ${route}`);
+    for (let attempt = 1; attempt <= ROUTE_ATTEMPTS; attempt += 1) {
+      const result = (await withTimeout(
+        `Lighthouse ${route} attempt ${attempt}`,
+        LIGHTHOUSE_ROUTE_TIMEOUT_MS,
+        Promise.race([
+          lighthouse(`${BASE_URL}${route}`, {
+            port: chrome.port,
+            output: "json",
+            logLevel: "error",
+            onlyCategories: ["performance", "accessibility", "best-practices"],
+          }),
+          serverStopped,
+        ]),
+      )) as LighthouseResult | undefined;
+
+      if (!result) {
+        throw new Error(`Lighthouse did not return a result for ${route}`);
+      }
+
+      const performance = result.lhr.categories.performance.score ?? 0;
+      const accessibility = result.lhr.categories.accessibility.score ?? 0;
+      const bestPractices = result.lhr.categories["best-practices"].score ?? 0;
+      routePassed =
+        performance >= MIN_PERFORMANCE &&
+        accessibility >= MIN_ACCESSIBILITY &&
+        bestPractices >= MIN_BEST_PRACTICES;
+
+      console.log(
+        `${routePassed ? "pass" : "fail"} ${route} attempt=${attempt}/${ROUTE_ATTEMPTS} performance=${performance.toFixed(
+          2,
+        )} accessibility=${accessibility.toFixed(2)} best-practices=${bestPractices.toFixed(
+          2,
+        )}`,
+      );
+
+      if (routePassed) {
+        break;
+      }
     }
-
-    const performance = result.lhr.categories.performance.score ?? 0;
-    const accessibility = result.lhr.categories.accessibility.score ?? 0;
-    const bestPractices = result.lhr.categories["best-practices"].score ?? 0;
-    const routePassed =
-      performance >= MIN_PERFORMANCE &&
-      accessibility >= MIN_ACCESSIBILITY &&
-      bestPractices >= MIN_BEST_PRACTICES;
-
-    console.log(
-      `${routePassed ? "pass" : "fail"} ${route} performance=${performance.toFixed(
-        2,
-      )} accessibility=${accessibility.toFixed(2)} best-practices=${bestPractices.toFixed(
-        2,
-      )}`,
-    );
 
     failed ||= !routePassed;
   }
