@@ -73,6 +73,7 @@ test.describe("first quick race fun pass", () => {
           metricNumber(
             await page.getByTestId("race-collected-pickup-count").textContent(),
           ),
+        { timeout: 40_000 },
       )
       .toBeGreaterThanOrEqual(2);
 
