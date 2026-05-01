@@ -19,6 +19,7 @@
     "quality:bundle": "vite-node --script scripts/check-bundle-budget.ts",
     "quality:lighthouse": "vite-node --script scripts/check-lighthouse.ts",
     "quality:gates": "npm run quality:bundle && npm run quality:lighthouse",
+    "release:media": "vite-node --script scripts/capture-release-media.ts",
     "bench:render": "vitest run --config vitest.bench.config.ts",
     "art:generate": "vite-node --script scripts/generate-placeholder-art.ts",
     "art:check": "vite-node --script scripts/check-art-manifest.ts",

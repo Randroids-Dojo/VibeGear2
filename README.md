@@ -61,6 +61,9 @@ Stable release branches are documented in [`docs/RELEASES.md`](docs/RELEASES.md)
 `release/*` branches run CI for backport confidence, but production deploys
 remain gated to `main`.
 
+Release screenshots and trailer source clips are captured with
+`npm run release:media`; see [`docs/RELEASE_MEDIA.md`](docs/RELEASE_MEDIA.md).
+
 ## Supported Browsers
 
 The current support and release-smoke evidence matrix lives in
