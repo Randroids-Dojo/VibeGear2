@@ -14,17 +14,17 @@ Marketplace.
 - Provisioning flags: `prodPack=false`, `autoUpgrade=false`, `eviction=false`.
 - Vercel project: `randroid88s-projects/vibe-gear2`.
 
-## Required Env Vars
+## Injected Env Vars
 
 The Marketplace integration injects these Redis vars:
 
-- `KV_REST_API_URL`
-- `KV_REST_API_TOKEN`
+- `KV_REST_API_URL` (required by the runtime store)
+- `KV_REST_API_TOKEN` (required by the runtime store)
 - `KV_REST_API_READ_ONLY_TOKEN`
 - `KV_URL`
 - `REDIS_URL`
 
-The app-owned leaderboard flags are:
+The app-owned leaderboard flags required to enable production submissions are:
 
 - `LEADERBOARD_BACKEND=upstash-redis`
 - `NEXT_PUBLIC_LEADERBOARD_ENABLED=true`

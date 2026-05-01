@@ -18,6 +18,38 @@ import type { LeaderboardStore } from "./types";
 
 export const UPSTASH_REDIS_ENV_VARS = VERCEL_KV_ENV_VARS;
 
+function adaptUpstashRedis(redis: Redis): KvLike {
+  return {
+    hset(key, value) {
+      return redis.hset(key, value);
+    },
+    hgetall(key) {
+      return redis.hgetall(key);
+    },
+    zadd(key, options, member) {
+      if (options === undefined) {
+        return redis.zadd(key, member);
+      }
+      return redis.zadd(key, options, member);
+    },
+    zrange(key, start, stop) {
+      return redis.zrange<string[]>(key, start, stop);
+    },
+    del(...keys) {
+      return redis.del(...keys);
+    },
+    async set(key, value, options) {
+      const result = await redis.set(key, value, options);
+      if (result === null || result === "OK") {
+        return result;
+      }
+      throw new Error(
+        `adaptUpstashRedis: unexpected SET NX result ${String(result)}`,
+      );
+    },
+  };
+}
+
 export function createUpstashRedisStoreFromEnv(): LeaderboardStore {
   const missing = UPSTASH_REDIS_ENV_VARS.filter(
     (name) => !(process.env[name] ?? "").trim(),
@@ -27,5 +59,5 @@ export function createUpstashRedisStoreFromEnv(): LeaderboardStore {
       `createUpstashRedisStoreFromEnv: missing env vars ${missing.join(", ")}`,
     );
   }
-  return createVercelKvStore(Redis.fromEnv() as KvLike);
+  return createVercelKvStore(adaptUpstashRedis(Redis.fromEnv()));
 }
