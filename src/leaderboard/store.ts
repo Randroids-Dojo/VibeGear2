@@ -14,13 +14,14 @@
  *     store. This is the documented default in `AGENTS.md` RULE 7
  *     (backend services are optional later phases).
  *
- *   - `"vercel-kv"` (case-insensitive): dynamically imports
- *     `./store-vercel-kv` and returns a Vercel KV-backed store. The
- *     dynamic import keeps `@vercel/kv` out of the bundle on the noop
- *     and static-export deploy shapes per the dot
- *     `VibeGear2-implement-leaderboard-client-48a44048` "loaded
- *     dynamically when LEADERBOARD_BACKEND=vercel-kv so the bundle
- *     stays slim" requirement.
+ *   - `"upstash-redis"` (case-insensitive): dynamically imports
+ *     `./store-upstash-redis` and returns an Upstash Redis-backed
+ *     store. This is the production Vercel Marketplace backend.
+ *
+ *   - `"vercel-kv"` (case-insensitive): legacy alias for the old
+ *     Vercel KV path. It still loads `./store-vercel-kv` for local
+ *     compatibility, but new production projects should use
+ *     `"upstash-redis"`.
  *
  *   - Anything else: throws. A typoed value should fail loudly at
  *     boot rather than silently fall back to the noop store and
@@ -32,20 +33,18 @@
  * caches its connection inside the dynamically loaded module.
  *
  * Why one resolver instead of importing each factory directly: the
- * route handlers stay backend-agnostic. Adding a Redis or Upstash
- * store later means editing this file (and the dot's followup) without
- * touching the route handlers or their tests.
+ * route handlers stay backend-agnostic. Provider swaps edit this file
+ * without touching the route handlers or their tests.
  */
 
 import { createNoopStore } from "./store-noop";
 import type { LeaderboardStore } from "./types";
 
 /**
- * The set of backend tags the resolver recognises today. Adding a tag
- * (e.g. `"upstash-redis"`) requires only extending this union and the
- * switch below; the route handlers stay untouched.
+ * The set of backend tags the resolver recognises today. The route
+ * handlers stay untouched when this list changes.
  */
-export type LeaderboardBackendTag = "noop" | "vercel-kv";
+export type LeaderboardBackendTag = "noop" | "upstash-redis" | "vercel-kv";
 
 /**
  * Resolve which backend tag to use given the raw env value. Exported so
@@ -62,8 +61,11 @@ export function resolveBackendTag(
   if (normalized === "vercel-kv") {
     return "vercel-kv";
   }
+  if (normalized === "upstash-redis") {
+    return "upstash-redis";
+  }
   throw new Error(
-    `resolveBackendTag: unknown LEADERBOARD_BACKEND value "${envValue}". Known values: noop, vercel-kv`,
+    `resolveBackendTag: unknown LEADERBOARD_BACKEND value "${envValue}". Known values: noop, upstash-redis, vercel-kv`,
   );
 }
 
@@ -84,6 +86,10 @@ export async function resolveLeaderboardStore(
   switch (tag) {
     case "noop":
       return createNoopStore();
+    case "upstash-redis": {
+      const mod = await import("./store-upstash-redis");
+      return mod.createUpstashRedisStoreFromEnv();
+    }
     case "vercel-kv": {
       const mod = await import("./store-vercel-kv");
       return mod.createVercelKvStoreFromEnv();

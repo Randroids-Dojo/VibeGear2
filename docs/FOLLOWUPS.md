@@ -1075,7 +1075,7 @@ decision is tracked by Q-011 and the implementation followup is F-069.
 ## F-069: Select Marketplace Redis provider and wire production leaderboard backend
 **Created:** 2026-04-29
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done (2026-05-01)
 **Notes:** Replaces F-030 after the Vercel KV sunset. Once Q-011 is answered,
 provision the selected Redis provider through Vercel Marketplace, install the
 matching SDK or REST client, update the current `store-vercel-kv` naming if
@@ -1083,6 +1083,14 @@ the provider is not Vercel KV-compatible, set the production env vars, and
 verify one signed lap roundtrip through `/api/leaderboard/test%2Fstraight`.
 Do not start this slice until the dev approves the provider, pricing plan,
 and production environment changes.
+
+Closed by `feat/upstash-leaderboard-production`. The Vercel project now has
+an Upstash Redis Marketplace resource named `vibegear2-leaderboard` in `iad1`
+on the Pay As You Go plan. `LEADERBOARD_BACKEND=upstash-redis`,
+`NEXT_PUBLIC_LEADERBOARD_ENABLED=true`, and `LEADERBOARD_SIGNING_KEY` are set
+for production. The app now recognises the `upstash-redis` backend tag through
+`@upstash/redis`, while keeping the old `vercel-kv` tag as a compatibility
+path.
 
 ## F-029: Playwright e2e race-finish spec
 **Created:** 2026-04-26

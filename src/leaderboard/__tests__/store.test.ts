@@ -6,9 +6,9 @@
  *
  *   - Unset / empty / case-insensitive `"noop"` values pick the noop
  *     store.
- *   - `"vercel-kv"` is a recognised tag (the store factory itself is
- *     not exercised here; the dynamic import requires a configured
- *     `@vercel/kv` package, which is the FOLLOWUPS task).
+ *   - `"upstash-redis"` is a recognised tag and rejects loudly when
+ *     the required Marketplace env vars are missing.
+ *   - `"vercel-kv"` remains a recognised legacy tag.
  *   - Any unknown value throws (loud failure on misconfigured deploy
  *     per AGENTS.md RULE 7).
  *   - The factory returns a fresh store object on each call so a
@@ -45,6 +45,11 @@ describe("resolveBackendTag", () => {
     expect(resolveBackendTag("  Vercel-KV  ")).toBe("vercel-kv");
   });
 
+  it("returns upstash-redis for the literal 'upstash-redis' (case-insensitive, trimmed)", () => {
+    expect(resolveBackendTag("upstash-redis")).toBe("upstash-redis");
+    expect(resolveBackendTag("  Upstash-Redis  ")).toBe("upstash-redis");
+  });
+
   it("throws on an unknown value rather than falling back silently", () => {
     expect(() => resolveBackendTag("redis")).toThrow(/LEADERBOARD_BACKEND/);
     expect(() => resolveBackendTag("upstash")).toThrow(/LEADERBOARD_BACKEND/);
@@ -69,6 +74,31 @@ describe("resolveLeaderboardStore", () => {
     const a = await resolveLeaderboardStore("noop");
     const b = await resolveLeaderboardStore("noop");
     expect(a).not.toBe(b);
+  });
+});
+
+describe("resolveLeaderboardStore(upstash-redis)", () => {
+  let savedUrl: string | undefined;
+  let savedToken: string | undefined;
+
+  beforeEach(() => {
+    savedUrl = process.env.KV_REST_API_URL;
+    savedToken = process.env.KV_REST_API_TOKEN;
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+  });
+
+  afterEach(() => {
+    if (savedUrl === undefined) delete process.env.KV_REST_API_URL;
+    else process.env.KV_REST_API_URL = savedUrl;
+    if (savedToken === undefined) delete process.env.KV_REST_API_TOKEN;
+    else process.env.KV_REST_API_TOKEN = savedToken;
+  });
+
+  it("rejects with a configuration error when env vars are absent", async () => {
+    await expect(resolveLeaderboardStore("upstash-redis")).rejects.toThrow(
+      /KV_REST_API_URL|KV_REST_API_TOKEN/,
+    );
   });
 });
 
