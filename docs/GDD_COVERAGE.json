@@ -668,6 +668,29 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-09-PICKUP-RENDER-FEEDBACK",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Authored cash and nitro pickups are visible in the live race view before collection, disappear after collection, and emit player-facing collection feedback.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pickupSprites.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx",
+        "src/data/tracks/test-straight.json"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pickupSprites.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/race-pickups.spec.ts"
+      ],
+      "followupRefs": ["F-072"]
+    },
+    {
       "id": "GDD-20-GAME-UI-SELECTION",
       "gddSections": [
         "docs/gdd/20-hud-and-ui-ux.md",

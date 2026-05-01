@@ -33,6 +33,9 @@ import {
   HEAT_SHIMMER_BAND_COUNT,
   HEAT_SHIMMER_FILL,
   HEAT_SHIMMER_MAX_ALPHA,
+  PICKUP_CASH_FILL,
+  PICKUP_FEEDBACK_TTL_MS,
+  PICKUP_NITRO_FILL,
   PLAYER_CAR_DEFAULT_FILL,
   PLAYER_CAR_DEFAULT_SHADOW,
   PLAYER_CAR_DEFAULT_SPRITE_ID,
@@ -555,6 +558,62 @@ describe("drawRoad ghost car overlay", () => {
         c.type === "fillRect" && c.w === 40 && c.h === 20,
     );
     expect(ghostRect).toBeUndefined();
+  });
+});
+
+describe("drawRoad pickup overlays", () => {
+  it("paints cash and nitro pickup sprites above road strips", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
+      pickupSprites: [
+        {
+          key: "1:cash",
+          pickupId: "cash",
+          kind: "cash",
+          value: 100,
+          screenX: 410,
+          screenY: 260,
+          screenW: 18,
+          depthMeters: 12,
+        },
+        {
+          key: "1:nitro",
+          pickupId: "nitro",
+          kind: "nitro",
+          value: 25,
+          screenX: 430,
+          screenY: 260,
+          screenW: 18,
+          depthMeters: 18,
+        },
+      ],
+    });
+
+    expect(
+      spy.calls.some((c) => c.type === "fill" && c.fillStyle === PICKUP_CASH_FILL),
+    ).toBe(true);
+    expect(
+      spy.calls.some(
+        (c) => c.type === "fillRect" && c.fillStyle === PICKUP_NITRO_FILL,
+      ),
+    ).toBe(true);
+  });
+
+  it("paints and fades collection feedback without leaking alpha", () => {
+    const spy = makeCanvasSpy();
+    drawRoad(spy.ctx, WEATHER_STRIPS, VIEWPORT, {
+      pickupFeedback: { kind: "cash", ageMs: PICKUP_FEEDBACK_TTL_MS / 2 },
+    });
+
+    const feedbackCalls = spy.calls.filter(
+      (c): c is FillRectCall =>
+        c.type === "fillRect" &&
+        c.fillStyle === PICKUP_CASH_FILL &&
+        c.globalAlpha > 0 &&
+        c.globalAlpha < 1,
+    );
+    expect(feedbackCalls.length).toBeGreaterThan(0);
+    expect(spy.finalAlpha()).toBeCloseTo(1, 6);
   });
 });
 

@@ -133,6 +133,7 @@ import {
   type Viewport,
 } from "@/road";
 import { drawRoad, type DrawRoadOptions } from "@/render/pseudoRoadCanvas";
+import { projectPickupSprites } from "@/render/pickupSprites";
 import { playerCarFrameIndex } from "@/render/carFrame";
 import type { CarSpriteSet } from "@/render/carSpriteCompositor";
 import {
@@ -187,6 +188,7 @@ const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
 const LAP_MOMENT_MS = 900;
 const FINISH_MOMENT_MS = 1250;
+const PICKUP_FEEDBACK_MS = 900;
 const AI_FALLBACK_FILLS = Object.freeze([
   "#ff6b5f",
   "#63d471",
@@ -307,6 +309,12 @@ interface RaceMoment {
   detail: string;
 }
 
+interface PickupFeedbackSnapshot {
+  kind: "cash" | "nitro";
+  value: number;
+  createdAtMs: number;
+}
+
 function playerMomentFromEvents(
   events: ReadonlyArray<RaceSessionAudioEvent>,
   totalLaps: number,
@@ -328,6 +336,23 @@ function playerMomentFromEvents(
         detail: "Saving results",
       };
     }
+  }
+  return latest;
+}
+
+function playerPickupFeedbackFromEvents(
+  events: ReadonlyArray<RaceSessionAudioEvent>,
+  nowMs: number,
+): PickupFeedbackSnapshot | null {
+  let latest: PickupFeedbackSnapshot | null = null;
+  for (const event of events) {
+    if (event.carId !== PLAYER_ID) continue;
+    if (event.kind !== "pickupCollected") continue;
+    latest = {
+      kind: event.pickupKind,
+      value: event.value,
+      createdAtMs: nowMs,
+    };
   }
   return latest;
 }
@@ -901,6 +926,7 @@ function RaceCanvas({
   const ghostsFnRef = useRef<(() => void) | null>(null);
   const raceMomentTimeoutRef = useRef<number | null>(null);
   const finishRouteTimeoutRef = useRef<number | null>(null);
+  const pickupFeedbackRef = useRef<PickupFeedbackSnapshot | null>(null);
   // Per-mount guard for the natural finish wiring. The render callback
   // fires every frame, so without this latch a `phase === "finished"`
   // tick would call `saveRaceResult` and `router.push` on every frame
@@ -934,6 +960,10 @@ function RaceCanvas({
   } | null>(null);
   const [fieldSize, setFieldSize] = useState<number>(1);
   const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
+  const [visiblePickupCount, setVisiblePickupCount] = useState<number>(0);
+  const [collectedPickupCount, setCollectedPickupCount] = useState<number>(0);
+  const [pickupFeedback, setPickupFeedback] =
+    useState<PickupFeedbackSnapshot | null>(null);
   const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
     touchLayoutFor({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }),
   );
@@ -1174,6 +1204,8 @@ function RaceCanvas({
       });
     };
 
+    pickupFeedbackRef.current = null;
+    setPickupFeedback(null);
     sessionRef.current = createRaceSession(config);
     resetTimeTrialRuntime();
     // Re-arm the natural-finish guard on every fresh mount. The
@@ -1313,6 +1345,8 @@ function RaceCanvas({
       clearRaceMomentTimeout();
       clearFinishRouteTimeout();
       setRaceMoment(null);
+      pickupFeedbackRef.current = null;
+      setPickupFeedback(null);
       sessionRef.current = createRaceSession(config);
       resetTimeTrialRuntime();
       tunnelState = OPEN_TUNNEL_STATE;
@@ -1344,6 +1378,8 @@ function RaceCanvas({
       clearRaceMomentTimeout();
       clearFinishRouteTimeout();
       setRaceMoment(null);
+      pickupFeedbackRef.current = null;
+      setPickupFeedback(null);
       const retired = retireRaceSession(session);
       sessionRef.current = retired;
       // Build the §20 results payload from the post-retire session
@@ -1432,6 +1468,8 @@ function RaceCanvas({
       clearRaceMomentTimeout();
       clearFinishRouteTimeout();
       setRaceMoment(null);
+      pickupFeedbackRef.current = null;
+      setPickupFeedback(null);
       stopRaceRuntime();
       router.push("/");
     };
@@ -1440,6 +1478,8 @@ function RaceCanvas({
       clearRaceMomentTimeout();
       clearFinishRouteTimeout();
       setRaceMoment(null);
+      pickupFeedbackRef.current = null;
+      setPickupFeedback(null);
       stopRaceRuntime();
       router.push("/options");
     };
@@ -1448,6 +1488,8 @@ function RaceCanvas({
       clearRaceMomentTimeout();
       clearFinishRouteTimeout();
       setRaceMoment(null);
+      pickupFeedbackRef.current = null;
+      setPickupFeedback(null);
       stopRaceRuntime();
       router.push("/time-trial");
     };
@@ -1508,6 +1550,14 @@ function RaceCanvas({
         if (lastRaceSfxTick !== session.tick) {
           lastRaceSfxTick = session.tick;
           playRaceSfxEvents(raceSfx, session.audioEvents, persistedSettings.audio);
+          const pickupFeedbackFromTick = playerPickupFeedbackFromEvents(
+            session.audioEvents,
+            performance.now(),
+          );
+          if (pickupFeedbackFromTick !== null) {
+            pickupFeedbackRef.current = pickupFeedbackFromTick;
+            setPickupFeedback(pickupFeedbackFromTick);
+          }
           const playerMoment = playerMomentFromEvents(
             session.audioEvents,
             session.race.totalLaps,
@@ -1522,6 +1572,18 @@ function RaceCanvas({
         const strips = project(track.compiled.segments, camera, viewport, {
           drawDistance: graphics.drawDistanceSegments,
         });
+        const pickupSprites = projectPickupSprites({
+          strips,
+          pickupsById: track.compiled.pickupsById,
+          lap: session.race.lap,
+          collectedPickups: session.collectedPickups,
+        });
+        setVisiblePickupCount(pickupSprites.length);
+        setCollectedPickupCount(session.collectedPickups.length);
+        const pickupFeedbackAgeMs =
+          pickupFeedbackRef.current === null
+            ? Number.POSITIVE_INFINITY
+            : performance.now() - pickupFeedbackRef.current.createdAtMs;
         const playerFrameIndex = playerCarFrameIndex(
           lastSteerRef.current,
           upcomingCurvature(track.compiled.segments, camera.z, SEGMENT_LENGTH * 5),
@@ -1598,6 +1660,12 @@ function RaceCanvas({
             intensityScale: tunnelOcclusion(tunnelState),
           },
           spriteDensityFactor: graphics.spriteDensityFactor,
+          pickupSprites,
+          pickupFeedback:
+            pickupFeedbackRef.current !== null &&
+            pickupFeedbackAgeMs < PICKUP_FEEDBACK_MS
+              ? { kind: pickupFeedbackRef.current.kind, ageMs: pickupFeedbackAgeMs }
+              : null,
           aiCars,
           ghostCar: ghostOverlayRef.current
             ? {
@@ -1939,6 +2007,16 @@ function RaceCanvas({
         <dd data-testid="race-field-size">{fieldSize}</dd>
         <dt>Visible AI:</dt>
         <dd data-testid="race-visible-ai-count">{aiVisibleCount}</dd>
+        <dt>Visible pickups:</dt>
+        <dd data-testid="race-visible-pickup-count">{visiblePickupCount}</dd>
+        <dt>Collected pickups:</dt>
+        <dd data-testid="race-collected-pickup-count">
+          {collectedPickupCount}
+        </dd>
+        <dt>Last pickup:</dt>
+        <dd data-testid="race-last-pickup-kind">
+          {pickupFeedback?.kind ?? "none"}
+        </dd>
         <dt>Touch active:</dt>
         <dd data-testid="race-touch-active">
           {inputSnapshot.touchActive ? "yes" : "no"}
