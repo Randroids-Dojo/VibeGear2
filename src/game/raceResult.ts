@@ -406,10 +406,9 @@ export function buildRaceResult(input: BuildRaceResultInput): RaceResult {
   //     skips the call so the chip list is identical to the per-race
   //     four-chip baseline. A failed predicate is silent (no chip,
   //     no negative credit) per `sponsorBonus`'s documented contract.
-  //     Sponsors are appended after the per-race bonuses so the §20
-  //     chip strip orders them at the end of the row, matching the
-  //     "podium / fastestLap / cleanRace / underdog / sponsor" pin
-  //     in the chip selector tests.
+  //     Sponsors are appended after the per-race bonuses and before
+  //     pickup cash, matching the chip selector tests:
+  //     "podium / fastestLap / cleanRace / underdog / sponsor / pickupCash".
   const sponsorAward =
     sponsor !== null && sponsorContext !== null
       ? sponsorBonus({

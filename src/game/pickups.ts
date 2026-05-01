@@ -38,7 +38,7 @@ export function evaluatePickups(input: EvaluatePickupsInput): PickupTickEffect {
   let nextCollected = input.collectedPickups ?? EMPTY_COLLECTED;
   let writableCollected: Set<string> | null = null;
   let events: PickupCollectedEvent[] | null = null;
-  const lap = Math.max(1, Math.floor(input.lap));
+  const lap = sanitizeLap(input.lap);
 
   for (const pickupId of segment.pickupIds) {
     const pickup = input.track.pickupsById[pickupId];
@@ -69,6 +69,11 @@ export function evaluatePickups(input: EvaluatePickupsInput): PickupTickEffect {
 function overlapsPickup(carX: number, laneOffset: number): boolean {
   const center = laneOffset * ROAD_WIDTH;
   return Math.abs(carX - center) <= PICKUP_OVERLAP_WIDTH_M / 2;
+}
+
+function sanitizeLap(lap: number): number {
+  if (!Number.isFinite(lap)) return 1;
+  return Math.max(1, Math.floor(lap));
 }
 
 function noPickupEffect(

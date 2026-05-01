@@ -53,4 +53,16 @@ describe("evaluatePickups", () => {
       "test-straight-nitro",
     ]);
   });
+
+  it("falls back to lap 1 when lap state is corrupted", () => {
+    const track = loadTrack("test/straight");
+    const result = evaluatePickups({
+      car: { ...INITIAL_CAR_STATE, x: 0, z: 0 },
+      track,
+      lap: Number.NaN,
+    });
+    expect(result.events.map((event) => event.key)).toEqual([
+      "1:test-straight-cash",
+    ]);
+  });
 });
