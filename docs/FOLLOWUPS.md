@@ -30,11 +30,15 @@ visible before collection and disappears after pickup.
 ## F-071: Route pickup collection events into race SFX
 **Created:** 2026-05-01
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-05-01)
 **Notes:** `RaceSessionAudioEvent` now emits `pickupCollected` for cash
 and nitro pickups, but the page SFX bridge intentionally leaves the event
 silent until the audio slice. Add distinct cash and nitro collection cues
 through the procedural SFX runtime and cover them with audio unit tests.
+
+Closed by `feat/pickups-sfx`. The race page routes deterministic player
+pickup events into the procedural SFX runtime, with distinct cash and
+nitro one-shots covered by audio unit tests.
 
 ## F-070: Wire pause leaderboard or ghost action to a target surface
 **Created:** 2026-04-30

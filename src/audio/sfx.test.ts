@@ -170,6 +170,49 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.18);
   });
 
+  it("plays distinct cash and nitro pickup collection cues", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(
+      runtime.playPickupCollected({ pickupKind: "cash", audio: AUDIO }),
+    ).toBe(true);
+    expect(
+      runtime.playPickupCollected({ pickupKind: "nitro", audio: AUDIO }),
+    ).toBe(true);
+
+    expect(context.oscillators).toHaveLength(2);
+    expect(context.oscillators[0]?.type).toBe("triangle");
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      1180,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(1580, 0.14);
+    expect(context.gains[0]?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1 * 0.9 * 0.2 * 0.54,
+      0.01,
+    );
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.14);
+    expect(context.oscillators[1]?.type).toBe("sawtooth");
+    expect(context.oscillators[1]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      720,
+      0,
+    );
+    expect(
+      context.oscillators[1]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(1120, 0.18);
+    expect(context.gains[1]?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1 * 0.9 * 0.2 * 0.62,
+      0.01,
+    );
+    expect(context.oscillators[1]?.stop).toHaveBeenCalledWith(0.18);
+  });
+
   it("plays gear shifts with direction-specific pitch movement", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralSfxRuntime({

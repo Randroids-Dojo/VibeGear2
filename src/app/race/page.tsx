@@ -283,6 +283,11 @@ function playRaceSfxEvents(
       });
     } else if (event.kind === "nitroEngage") {
       runtime.playNitroEngage({ audio });
+    } else if (event.kind === "pickupCollected") {
+      runtime.playPickupCollected({
+        pickupKind: event.pickupKind,
+        audio,
+      });
     } else if (event.kind === "gearShift") {
       runtime.playGearShift({
         fromGear: event.fromGear,

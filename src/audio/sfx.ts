@@ -53,6 +53,11 @@ export interface NitroEngageSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export interface PickupCollectedSfxInput {
+  readonly pickupKind: "cash" | "nitro";
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface GearShiftSfxInput {
   readonly fromGear: number;
   readonly toGear: number;
@@ -147,6 +152,18 @@ export class ProceduralSfxRuntime {
       gainScale: 0.75,
       durationSeconds: 0.18,
       endFrequency: 1460,
+    });
+  }
+
+  playPickupCollected(input: PickupCollectedSfxInput): boolean {
+    const nitro = input.pickupKind === "nitro";
+    return this.playTone({
+      audio: input.audio,
+      frequency: nitro ? 720 : 1180,
+      oscillatorType: nitro ? "sawtooth" : "triangle",
+      gainScale: nitro ? 0.62 : 0.54,
+      durationSeconds: nitro ? 0.18 : 0.14,
+      endFrequency: nitro ? 1120 : 1580,
     });
   }
 
