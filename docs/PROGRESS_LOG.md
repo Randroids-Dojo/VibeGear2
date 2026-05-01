@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Upstash leaderboard production backend
+
+**GDD sections touched:**
+[§21](gdd/21-technical-design-for-web-implementation.md) leaderboard backend
+concept and [§24](gdd/24-content-plan.md) online leaderboard.
+**Branch / PR:** `feat/upstash-leaderboard-production`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Provisioned the `vibegear2-leaderboard` Upstash Redis resource through the
+  Vercel Marketplace CLI and connected it to the `vibe-gear2` project.
+- Added the `upstash-redis` leaderboard backend tag backed by `@upstash/redis`
+  while keeping the legacy `vercel-kv` tag available.
+- Set production Vercel env vars for the Redis backend, public leaderboard
+  enablement, and signed lap submissions.
+- Documented the selected provider, env contract, and runtime path in
+  `docs/LEADERBOARD_BACKEND.md`.
+- Marked Q-011 answered and F-069 done.
+
+### Verified
+- `npm run typecheck` green.
+- `npx vitest run src/leaderboard/__tests__/store.test.ts src/leaderboard/__tests__/store-vercel-kv.test.ts`
+  green, 30 tests passed.
+
+### Decisions and assumptions
+- Used Upstash Redis through Vercel Marketplace because the dev approved using
+  Vercel and GitHub CLIs to complete setup, and Q-011 recommended Upstash as
+  the closest successor to the obsolete Vercel KV path.
+- Chose `iad1` to match the Vercel deploy region.
+- Set `autoUpgrade=false` and `prodPack=false` to keep spend bounded until the
+  dev changes the plan intentionally.
+- Preview branch env vars will be added after the branch is pushed because the
+  Vercel CLI rejects preview vars for branches that do not exist in GitHub yet.
+
+### Coverage ledger
+- GDD-21-LEADERBOARD-STORAGE-GATE now covers the approved provider, production
+  resource, app-owned env flags, runtime backend tag, and regression tests.
+- Uncovered adjacent requirements: production signed-lap roundtrip after this
+  PR deploys.
+
+### Followups created
+None.
+
+### GDD edits
+- Updated `docs/gdd/21-technical-design-for-web-implementation.md` to name the
+  Upstash Redis production backend and the app-owned env flags.
+
+---
+
 ## 2026-05-01: Slice: Release media capture kit
 
 **GDD sections touched:**

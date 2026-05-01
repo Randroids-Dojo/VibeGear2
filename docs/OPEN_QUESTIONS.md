@@ -47,8 +47,9 @@ future opt-in slice only after this question is answered.
 **GDD reference:** [§21](gdd/21-technical-design-for-web-implementation.md)
 "leaderboard back end concept", [§24](gdd/24-content-plan.md) "Online
 leaderboard".
-**Status:** open
+**Status:** answered (2026-05-01)
 **Asked in loop:** 2026-04-29
+**Answered in loop:** 2026-05-01
 
 **Question.** F-030 asked the agent to provision Vercel KV and flip
 `LEADERBOARD_BACKEND=vercel-kv` in production. Current Vercel docs say
@@ -79,6 +80,13 @@ chosen provider and update the current `vercel-kv` adapter name if needed.
 **Blocking?** Yes for replacing F-030. It is not blocking local gameplay
 because the noop leaderboard path still deploys and the client remains
 feature-flagged off.
+
+**Answer.** Use Upstash Redis through Vercel Marketplace. The agent provisioned
+`vibegear2-leaderboard` in region `iad1` on the Pay As You Go plan with
+`autoUpgrade=false`, `prodPack=false`, and `eviction=false`, then connected it
+to the `vibe-gear2` Vercel project. The app-owned production env vars are
+`LEADERBOARD_BACKEND=upstash-redis`, `NEXT_PUBLIC_LEADERBOARD_ENABLED=true`,
+and `LEADERBOARD_SIGNING_KEY`.
 
 ## Q-010: `tourTierScale` table for the §12 repair-cost formula
 

@@ -64,6 +64,9 @@ remain gated to `main`.
 Release screenshots and trailer source clips are captured with
 `npm run release:media`; see [`docs/RELEASE_MEDIA.md`](docs/RELEASE_MEDIA.md).
 
+The production online leaderboard uses Upstash Redis through the Vercel
+Marketplace. See [`docs/LEADERBOARD_BACKEND.md`](docs/LEADERBOARD_BACKEND.md).
+
 ## Supported Browsers
 
 The current support and release-smoke evidence matrix lives in

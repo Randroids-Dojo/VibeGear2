@@ -1297,13 +1297,20 @@
         "docs/gdd/24-content-plan.md"
       ],
       "requirement": "Online leaderboard production storage must use a currently available provider and must not be provisioned until the dev approves the provider, pricing plan, and production environment changes.",
-      "coverage": ["implemented-code", "open-question", "open-followup"],
+      "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
+        "src/leaderboard/store.ts",
+        "src/leaderboard/store-upstash-redis.ts",
+        "docs/LEADERBOARD_BACKEND.md",
         "docs/OPEN_QUESTIONS.md",
         "docs/FOLLOWUPS.md",
         "docs/PROGRESS_LOG.md"
       ],
-      "questionRefs": ["Q-011"],
+      "testRefs": [
+        "src/leaderboard/__tests__/store.test.ts",
+        "src/leaderboard/__tests__/store-vercel-kv.test.ts"
+      ],
+      "questionRefs": [],
       "followupRefs": ["F-069"]
     },
     {
