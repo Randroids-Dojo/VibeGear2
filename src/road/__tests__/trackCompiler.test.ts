@@ -346,6 +346,32 @@ describe("compileTrack (full-track entry point)", () => {
     }
   });
 
+  it("throws TrackCompileError when pickup ids are duplicated within a track", () => {
+    const t = track({
+      segments: [
+        seg({
+          len: 60,
+          pickups: [{ id: "cash-line", kind: "cash", laneOffset: 0, value: 100 }],
+        }),
+        seg({
+          len: 60,
+          pickups: [{ id: "cash-line", kind: "cash", laneOffset: 0.35, value: 100 }],
+        }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+      ],
+      lengthMeters: 240,
+    });
+    try {
+      compileTrack(t);
+      throw new Error("expected throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(TrackCompileError);
+      expect((e as TrackCompileError).code).toBe("duplicate-pickup-id");
+      expect((e as TrackCompileError).details.pickupId).toBe("cash-line");
+    }
+  });
+
   it("emits a warning when spawn.gridSlots < 8", () => {
     const t = track({ spawn: { gridSlots: 4 } });
     const compiled = compileTrack(t);

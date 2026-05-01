@@ -80,6 +80,29 @@ function sanitize(value: number, label: string, warned: { current: boolean }): n
   return 0;
 }
 
+function assertUniquePickupIds(track: Track): void {
+  const seen = new Map<string, number>();
+  for (let segmentIndex = 0; segmentIndex < track.segments.length; segmentIndex += 1) {
+    const pickups = track.segments[segmentIndex]?.pickups ?? [];
+    for (const pickup of pickups) {
+      const firstSegmentIndex = seen.get(pickup.id);
+      if (firstSegmentIndex !== undefined) {
+        throw new TrackCompileError(
+          "duplicate-pickup-id",
+          `track ${track.id}: pickup id "${pickup.id}" appears in multiple segments`,
+          {
+            trackId: track.id,
+            pickupId: pickup.id,
+            firstSegmentIndex,
+            duplicateSegmentIndex: segmentIndex,
+          },
+        );
+      }
+      seen.set(pickup.id, segmentIndex);
+    }
+  }
+}
+
 /**
  * Recursively `Object.freeze` a value and every property it owns. Returns
  * the input for fluent use. Avoids re-freezing already-frozen objects to
@@ -106,6 +129,7 @@ function deepFreeze<T>(value: T): T {
 export function compileTrack(track: Track): CompiledTrack {
   const warned = { current: false };
   const warnings: string[] = [];
+  assertUniquePickupIds(track);
 
   // Compile segments and remember each authored segment's first compiled
   // index so we can map checkpoints below.

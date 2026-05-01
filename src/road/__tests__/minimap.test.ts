@@ -32,7 +32,7 @@ function seg(overrides: Partial<CompiledSegment> = {}): CompiledSegment {
     roadsideLeftId: "default",
     roadsideRightId: "default",
     hazardIds: [],
-      pickupIds: [],
+    pickupIds: [],
     ...overrides,
   };
 }

@@ -24,6 +24,8 @@ Correct them by adding a new entry that references the old one.
   rendering, audio, and balance follow-up slices.
 - Added `TrackPickupSchema`, optional `segments[].pickups`, and compiled
   segment `pickupIds`.
+- Added compile-time duplicate pickup id validation before runtime collection
+  keys depend on authored ids.
 - Seeded pickups in `test/straight` and `velvet-coast/harbor-run` so the next
   runtime slice has stable content for tests.
 
@@ -37,13 +39,15 @@ Correct them by adding a new entry that references the old one.
   src/render/__tests__/tunnelRenderer.test.ts
   src/game/__tests__/ghostDriver.test.ts` green, 206 tests passed.
 - `npm run docs:check` green.
-- `npm run verify` green, 140 files and 2746 tests passed.
+- `npm run verify` green, 140 files and 2747 tests passed.
 
 ### Decisions and assumptions
 - Pickup collection resets on race start and race retry in v1.
 - Pickups respawn each lap so repeated lap structure stays learnable.
 - AI ignores pickups until a later AI-awareness pass.
 - Nitro pickup values are reserve percentages, with `25` as the v1 standard.
+- Addressed Copilot PR review by making duplicate pickup ids a hard track
+  compile error.
 
 ### Coverage ledger
 - Adds `GDD-09-TRACK-PICKUPS` and `GDD-10-MID-RACE-PICKUPS`.
