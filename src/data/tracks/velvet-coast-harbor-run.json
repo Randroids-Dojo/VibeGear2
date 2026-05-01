@@ -16,25 +16,39 @@
       "grade": 0,
       "roadsideLeft": "sign_marker",
       "roadsideRight": "light_pole",
+      "hazards": []
+    },
+    {
+      "len": 180,
+      "curve": 0.08,
+      "grade": 0,
+      "roadsideLeft": "fence_post",
+      "roadsideRight": "sign_marker",
       "hazards": [],
       "pickups": [
         { "id": "harbor-run-launch-cash", "kind": "cash", "laneOffset": 0, "value": 75 }
       ]
     },
-    { "len": 180, "curve": 0.08, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] },
     {
       "len": 240,
       "curve": 0,
       "grade": 0.02,
       "roadsideLeft": "light_pole",
       "roadsideRight": "fence_post",
-      "hazards": [],
-      "pickups": [
-        { "id": "harbor-run-crest-nitro", "kind": "nitro", "laneOffset": 0.35, "value": 25 }
-      ]
+      "hazards": []
     },
     { "len": 180, "curve": -0.08, "grade": -0.01, "roadsideLeft": "tree_pine", "roadsideRight": "light_pole", "hazards": ["puddle"] },
-    { "len": 300, "curve": 0.04, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "rock_boulder", "hazards": [] },
+    {
+      "len": 300,
+      "curve": 0.04,
+      "grade": 0,
+      "roadsideLeft": "sign_marker",
+      "roadsideRight": "rock_boulder",
+      "hazards": [],
+      "pickups": [
+        { "id": "harbor-run-crest-nitro", "kind": "nitro", "laneOffset": 0, "value": 25 }
+      ]
+    },
     { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] }
   ],
   "checkpoints": [

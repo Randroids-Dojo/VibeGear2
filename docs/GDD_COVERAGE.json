@@ -319,6 +319,26 @@
       "followupRefs": ["VibeGear2-implement-practice-quick-ad3ba399"]
     },
     {
+      "id": "GDD-04-FIRST-RACE-FUN-LOOP",
+      "gddSections": [
+        "docs/gdd/04-player-experience-goals.md",
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/07-race-rules-and-structure.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The default Quick Race path demonstrates the first-race loop with a visible rival, nitro use, authored pickup rewards, a natural finish, results feedback, and a clear garage next step.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/quick-race/page.tsx",
+        "src/app/race/page.tsx",
+        "src/data/tracks/velvet-coast-harbor-run.json"
+      ],
+      "testRefs": ["e2e/first-race-fun.spec.ts"],
+      "followupRefs": ["VibeGear2-feat-tuning-first-74ba5505"]
+    },
+    {
       "id": "GDD-06-PRACTICE-MODE",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

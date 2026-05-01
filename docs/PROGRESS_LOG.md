@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: First-race fun pass
+
+**GDD sections touched:**
+[§4](gdd/04-player-experience-goals.md) player experience goals,
+[§5](gdd/05-core-gameplay-loop.md) core loop,
+[§7](gdd/07-race-rules-and-structure.md) race structure,
+[§12](gdd/12-upgrade-and-economy-system.md) reward clarity,
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents, and
+[§20](gdd/20-hud-and-ui-ux.md) HUD and results flow.
+**Branch / PR:** `feat/first-race-fun-pass`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Tuned Harbor Run so the default Quick Race no longer collects a pickup at
+  spawn and instead presents early cash and nitro pickups while driving.
+- Added live nitro telemetry to the race metrics block so browser coverage can
+  prove the player spent nitro during the race.
+- Added a first-race browser spec that starts from `/quick-race`, runs the
+  default race, proves a visible rival, nitro use, pickup collection, natural
+  finish, results feedback, and the garage next step.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts
+  src/road/__tests__/trackCompiler.test.ts src/game/__tests__/raceSession.test.ts`
+  green, 244 tests passed.
+- `npx playwright test e2e/first-race-fun.spec.ts --project=chromium` green,
+  1 test passed.
+
+### Decisions and assumptions
+- The first Quick Race teaches pickups with a centerline cash reward and a
+  later centerline nitro refill. A stricter lane-choice pickup can come after
+  steering feel and AI traffic are more readable.
+- Quick Race results continue to the garage so a new player sees the broader
+  loop even though quick races do not award campaign credits.
+
+### Coverage ledger
+- Added `GDD-04-FIRST-RACE-FUN-LOOP`.
+- Uncovered adjacent requirements: AI archetype personality and richer first
+  tour authored events remain separate backlog items.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/GDD_COVERAGE.json`: added first-race fun loop coverage.
+
+---
+
 ## 2026-05-01: Slice: Pickup collection SFX
 
 **GDD sections touched:**

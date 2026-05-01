@@ -971,6 +971,7 @@ function RaceCanvas({
   const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
   const [visiblePickupCount, setVisiblePickupCount] = useState<number>(0);
   const [collectedPickupCount, setCollectedPickupCount] = useState<number>(0);
+  const [playerNitroActive, setPlayerNitroActive] = useState<boolean>(false);
   const [pickupFeedback, setPickupFeedback] =
     useState<PickupFeedbackSnapshot | null>(null);
   const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
@@ -1591,6 +1592,7 @@ function RaceCanvas({
         });
         setVisiblePickupCount(pickupSprites.length);
         setCollectedPickupCount(session.collectedPickups.length);
+        setPlayerNitroActive(session.player.nitro.activeRemainingSec > 0);
         const pickupFeedbackAgeMs =
           pickupFeedbackRef.current === null
             ? Number.POSITIVE_INFINITY
@@ -2036,6 +2038,10 @@ function RaceCanvas({
         <dt>Collected pickups:</dt>
         <dd data-testid="race-collected-pickup-count">
           {collectedPickupCount}
+        </dd>
+        <dt>Nitro active:</dt>
+        <dd data-testid="race-player-nitro-active">
+          {playerNitroActive ? "yes" : "no"}
         </dd>
         <dt>Last pickup:</dt>
         <dd data-testid="race-last-pickup-kind">
