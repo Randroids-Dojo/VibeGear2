@@ -356,7 +356,7 @@ describe("tickAI (§15 archetype behaviours)", () => {
     const bully = archetypeDriver("aggressive", { aggression: 1 });
     const aiCar = freshCar({ x: 0, z: 300, speed: 30 });
     const playerNearbyRight: PlayerView = {
-      car: freshCar({ x: 3, z: 312, speed: 30 }),
+      car: freshCar({ x: 3, z: 300, speed: 30 }),
     };
     const cleanTick = tickAI(
       clean,
@@ -385,7 +385,7 @@ describe("tickAI (§15 archetype behaviours)", () => {
     const bully = archetypeDriver("aggressive", { aggression: 1 });
     const aiCar = freshCar({ x: 1, z: 300, speed: 30 });
     const playerNearbyLeft: PlayerView = {
-      car: freshCar({ x: 0.5, z: 312, speed: 30 }),
+      car: freshCar({ x: 0.5, z: 300, speed: 30 }),
     };
     const cleanTick = tickAI(
       clean,
@@ -461,6 +461,44 @@ describe("tickAI (§15 archetype behaviours)", () => {
     expect(countSteeringMistakes(chaotic)).toBeGreaterThan(
       countSteeringMistakes(enduro),
     );
+  });
+});
+
+describe("tickAI (visible overtake intent)", () => {
+  it("moves laterally when a trailing AI reaches the player", () => {
+    const playerAhead: PlayerView = {
+      car: freshCar({ x: 0, z: 112, speed: 28 }),
+    };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      playerAhead,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.input.steer).toBeGreaterThan(0);
+  });
+
+  it("keeps a 2 m target margin from the player line during a pass", () => {
+    const playerAheadLeft: PlayerView = {
+      car: freshCar({ x: -1, z: 112, speed: 28 }),
+    };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: -1, z: 100, speed: 30 }),
+      playerAheadLeft,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+
+    expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.input.steer).toBe(1);
   });
 });
 

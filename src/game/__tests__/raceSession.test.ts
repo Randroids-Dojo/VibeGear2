@@ -2082,20 +2082,21 @@ describe("stepRaceSession (§28 difficulty preset wiring, F-042)", () => {
     // cars run their own controller without scalar bias. Two sessions
     // with different player presets should leave the AI car at the
     // same lateral position after a short on-road burst.
-    const STEER_GENTLE: Input = { ...NEUTRAL_INPUT, throttle: 1, steer: 0.2 };
     const cfgEasy = buildConfig({
       countdownSec: 0,
       player: { stats: STARTER_STATS, difficultyPreset: "easy" },
+      ai: [{ driver: TEST_DRIVER, stats: STARTER_STATS, initial: { z: -80 } }],
     });
     const cfgHard = buildConfig({
       countdownSec: 0,
       player: { stats: STARTER_STATS, difficultyPreset: "hard" },
+      ai: [{ driver: TEST_DRIVER, stats: STARTER_STATS, initial: { z: -80 } }],
     });
     let easy = createRaceSession(cfgEasy);
     let hard = createRaceSession(cfgHard);
     for (let i = 0; i < 30; i += 1) {
-      easy = stepRaceSession(easy, STEER_GENTLE, cfgEasy, DT);
-      hard = stepRaceSession(hard, STEER_GENTLE, cfgHard, DT);
+      easy = stepRaceSession(easy, NEUTRAL_INPUT, cfgEasy, DT);
+      hard = stepRaceSession(hard, NEUTRAL_INPUT, cfgHard, DT);
     }
     expect(easy.ai[0]?.car.x).toBeCloseTo(hard.ai[0]?.car.x ?? Number.NaN, 6);
     expect(easy.ai[0]?.car.z).toBeCloseTo(hard.ai[0]?.car.z ?? Number.NaN, 6);

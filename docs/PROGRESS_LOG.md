@@ -6,6 +6,66 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-01: Slice: Visible AI opponents
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents,
+[§16](gdd/16-rendering-and-visual-design.md) billboard cars, and
+[§20](gdd/20-hud-and-ui-ux.md) race HUD observability.
+**Branch / PR:** `feat/ai-visible-opponents`, PR #145.
+**Status:** Implemented.
+
+### Done
+- Added a projected `aiCars` overlay contract to the pseudo-3D canvas
+  renderer so opponent cars paint over road strips and under the fixed
+  player car.
+- Projected live `/race` AI cars from the same camera and strip list that
+  renders the road, with a 200 m z-cull and a visible opponent count for
+  browser verification.
+- Routed opponent overlays through the existing per-car sprite-set registry
+  and atlas loader, with distinct fallback fills while sheets load.
+- Added deterministic overtake intent to `tickAI`: a trailing AI that reaches
+  the player shifts laterally toward a pass lane with a 2 m target margin.
+- Added desktop and mobile Playwright coverage that waits for a real race to
+  render at least one visible AI opponent.
+- Addressed Copilot review by tightening AI car viewport culling and moving
+  opponent screen projection onto the direct car projector path to avoid
+  current-segment pop-in.
+
+### Verified
+- `npx vitest run src/game/__tests__/raceSession.test.ts src/game/__tests__/ai.test.ts src/render/__tests__/pseudoRoadCanvas.test.ts`
+  green, 213 tests passed.
+- `npm run verify` green, 2744 Vitest tests passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `git diff --check` green.
+- `npx playwright test e2e/race-ai-visible.spec.ts` green, 2 tests passed.
+
+### Decisions and assumptions
+- Used screen-space projected opponent overlays instead of adding a separate
+  renderer transform. The projection source remains the road strip list from
+  `segmentProjector.project`, so cars and road share one camera contract.
+- Used a 200 m opponent draw cutoff to match the active dot and keep distant
+  sprite scale readable without increasing the road draw window.
+- Assigned AI car sprite sets by grid index until the GDD gains explicit
+  per-driver car selections.
+
+### Coverage ledger
+- GDD-15-AI-VISIBLE-OPPONENTS now covers rendered CPU cars, projected
+  opponent z-culling, visible overtake lane intent, and browser coverage.
+- Uncovered adjacent requirements: per-driver car ownership and full
+  hand-authored production car art remain covered by the existing art dot.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-01: Slice: Upstash leaderboard production backend
 
 **GDD sections touched:**
