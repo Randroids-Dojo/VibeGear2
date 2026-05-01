@@ -17,6 +17,9 @@ The script writes `artifacts/release-media/manifest.json`, screenshots under
 `artifacts/release-media/screenshots/`, and a WebM race-play clip under
 `artifacts/release-media/trailer/`.
 
+Set `RELEASE_MEDIA_OUT` only to a child directory under `artifacts/`.
+The script rejects other paths before deleting or recreating output.
+
 ## Required Screenshots
 
 The screenshot pack must include:

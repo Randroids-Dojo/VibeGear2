@@ -32,6 +32,8 @@ and [§26](gdd/26-open-source-project-guidance.md) release packaging.
 - `npm run build` green.
 - `RELEASE_MEDIA_BASE_URL=http://127.0.0.1:3010 npm run release:media`
   captured 6 screenshots and 1 trailer clip from a production server.
+- `RELEASE_MEDIA_OUT=. npm run release:media` failed before deleting output,
+  proving the artifact safety guard rejects unsafe paths.
 
 ### Decisions and assumptions
 - Generated screenshots and WebM clips stay out of git as release artifacts.

@@ -1,7 +1,7 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
-import { chromium } from "@playwright/test";
+import { chromium, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 type CaptureTarget = {
   id: string;
@@ -11,7 +11,7 @@ type CaptureTarget = {
 };
 
 const BASE_URL = process.env.RELEASE_MEDIA_BASE_URL ?? "http://127.0.0.1:3000";
-const OUTPUT_DIR = process.env.RELEASE_MEDIA_OUT ?? "artifacts/release-media";
+const OUTPUT_DIR = resolveOutputDir(process.env.RELEASE_MEDIA_OUT);
 const VIEWPORT = { width: 1280, height: 720 };
 
 const screenshotTargets: CaptureTarget[] = [
@@ -23,52 +23,93 @@ const screenshotTargets: CaptureTarget[] = [
   { id: "06-options", path: "/options", readySelector: "body" },
 ];
 
-async function captureScreenshots(): Promise<string[]> {
-  const browser = await chromium.launch();
-  const context = await browser.newContext({ viewport: VIEWPORT });
-  const page = await context.newPage();
-  const files: string[] = [];
-
-  for (const target of screenshotTargets) {
-    await page.goto(new URL(target.path, BASE_URL).toString(), { waitUntil: "networkidle" });
-    await page.locator(target.readySelector).first().waitFor({ state: "visible" });
-    if (target.waitMs) await page.waitForTimeout(target.waitMs);
-    const file = join(OUTPUT_DIR, "screenshots", `${target.id}.png`);
-    await page.screenshot({ path: file, fullPage: false });
-    files.push(file);
+function resolveOutputDir(rawOutputDir: string | undefined): string {
+  const requested = (rawOutputDir ?? "artifacts/release-media").trim();
+  if (requested.length === 0) {
+    throw new Error("RELEASE_MEDIA_OUT must not be empty.");
   }
 
-  await context.close();
-  await browser.close();
-  return files;
+  const repoRoot = process.cwd();
+  const artifactsRoot = resolve(repoRoot, "artifacts");
+  const resolved = resolve(repoRoot, requested);
+  const rel = relative(artifactsRoot, resolved);
+  if (rel.length === 0 || rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error(
+      "RELEASE_MEDIA_OUT must resolve to a child directory under artifacts/.",
+    );
+  }
+  return resolved;
+}
+
+async function captureScreenshots(): Promise<string[]> {
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let page: Page | undefined;
+  const files: string[] = [];
+
+  try {
+    browser = await chromium.launch();
+    context = await browser.newContext({ viewport: VIEWPORT });
+    page = await context.newPage();
+
+    for (const target of screenshotTargets) {
+      await page.goto(new URL(target.path, BASE_URL).toString(), { waitUntil: "networkidle" });
+      await page.locator(target.readySelector).first().waitFor({ state: "visible" });
+      if (target.waitMs) await page.waitForTimeout(target.waitMs);
+      const file = join(OUTPUT_DIR, "screenshots", `${target.id}.png`);
+      await page.screenshot({ path: file, fullPage: false });
+      files.push(file);
+    }
+
+    return files;
+  } finally {
+    await page?.close();
+    await context?.close();
+    await browser?.close();
+  }
 }
 
 async function captureTrailerClip(): Promise<string> {
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: VIEWPORT,
-    recordVideo: {
-      dir: join(OUTPUT_DIR, "trailer"),
-      size: VIEWPORT,
-    },
-  });
-  const page = await context.newPage();
-  await page.goto(new URL("/race?mode=practice", BASE_URL).toString(), {
-    waitUntil: "networkidle",
-  });
-  await page.locator("canvas").first().waitFor({ state: "visible" });
-  await page.keyboard.down("ArrowUp");
-  await page.waitForTimeout(12_000);
-  await page.keyboard.up("ArrowUp");
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let page: Page | undefined;
 
-  const video = page.video();
-  const file = join(OUTPUT_DIR, "trailer", "raceplay.webm");
-  await page.close();
-  await context.close();
-  await video?.saveAs(file);
-  await video?.delete();
-  await browser.close();
-  return file;
+  try {
+    browser = await chromium.launch();
+    context = await browser.newContext({
+      viewport: VIEWPORT,
+      recordVideo: {
+        dir: join(OUTPUT_DIR, "trailer"),
+        size: VIEWPORT,
+      },
+    });
+    page = await context.newPage();
+    await page.goto(new URL("/race?mode=practice", BASE_URL).toString(), {
+      waitUntil: "networkidle",
+    });
+    await page.locator("canvas").first().waitFor({ state: "visible" });
+    await page.keyboard.down("ArrowUp");
+    await page.waitForTimeout(12_000);
+    await page.keyboard.up("ArrowUp");
+
+    const video = page.video();
+    if (!video) {
+      throw new Error("Trailer capture failed: Playwright did not create a video recording.");
+    }
+
+    const file = join(OUTPUT_DIR, "trailer", "raceplay.webm");
+    await page.close();
+    page = undefined;
+    await context.close();
+    context = undefined;
+    await video.saveAs(file);
+    await video.delete();
+    return file;
+  } finally {
+    await page?.close();
+    await context?.close();
+    await browser?.close();
+  }
 }
 
 async function main(): Promise<void> {
