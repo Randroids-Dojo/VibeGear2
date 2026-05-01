@@ -1281,13 +1281,17 @@ function RaceCanvas({
       window.removeEventListener("keydown", tryStartEngineAudio);
       unbindAudioVisibility();
     };
-    const stopRaceRuntime = (): void => {
+    const stopRaceRuntime = ({
+      stopSfx = true,
+    }: { stopSfx?: boolean } = {}): void => {
       clearFinishRouteTimeout();
       engineAudioTeardown = true;
       unbindEngineAudio();
       handleRef.current?.stop();
       engineAudio.stop();
-      raceSfx.stopAll();
+      if (stopSfx) {
+        raceSfx.stopAll();
+      }
       raceMusic.stop();
       handleRef.current = null;
       sessionRef.current = null;
@@ -1803,9 +1807,9 @@ function RaceCanvas({
                             }),
                   });
             saveRaceResult(committed);
-            // Tear down the loop, input, and audio bindings before the
-            // route hop. Keep the finish moment on screen briefly so the
-            // player gets a clear payoff before the results route takes over.
+            // Tear down the loop, input, engine, and music before the
+            // route hop. Keep one-shot SFX alive during the hold so the
+            // finish stinger can land with the moment.
             showRaceMoment(
               {
                 kind: "finish",
@@ -1814,9 +1818,10 @@ function RaceCanvas({
               },
               0,
             );
-            stopRaceRuntime();
+            stopRaceRuntime({ stopSfx: false });
             finishRouteTimeoutRef.current = window.setTimeout(() => {
               finishRouteTimeoutRef.current = null;
+              raceSfx.stopAll();
               router.push("/race/results");
             }, FINISH_MOMENT_MS);
           }

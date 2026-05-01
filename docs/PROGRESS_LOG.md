@@ -23,6 +23,8 @@ Correct them by adding a new entry that references the old one.
   screen route takes over.
 - Delayed the natural-finish route handoff briefly so the final stinger and
   finish feedback register while preserving the existing saved-results flow.
+- Kept one-shot finish SFX alive during the finish hold, then stopped it at
+  the results route handoff.
 - Added Playwright coverage that waits for the finish moment before asserting
   the route reaches `/race/results`.
 
@@ -34,6 +36,8 @@ Correct them by adding a new entry that references the old one.
   green, 134 tests passed.
 - `npx playwright test e2e/race-finish.spec.ts --project=chromium --grep
   "natural finish on test/straight"` green.
+- `PLAYWRIGHT_CROSS_BROWSER=1 npx playwright test
+  e2e/cross-browser-smoke.spec.ts --project=cross-browser-webkit` green.
 - `git diff --check` green.
 
 ### Decisions and assumptions
@@ -42,6 +46,8 @@ Correct them by adding a new entry that references the old one.
 - Used a short page-layer hold before navigation instead of changing race
   physics after finish. This keeps the saved result snapshot and route handoff
   stable while making the finish feel intentional.
+- Addressed Copilot PR review by splitting finish teardown so the visual hold
+  does not cut off the finish stinger.
 
 ### Coverage ledger
 - Extends `GDD-18-PROCEDURAL-RACE-MILESTONE-SFX` and
