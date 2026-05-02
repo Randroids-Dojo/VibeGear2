@@ -6,6 +6,55 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Production menu backgrounds
+
+**GDD sections touched:** §17, §24, and §26.
+**Branch / PR:** `feat/production-menu-backgrounds`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Replaced the eight generated main menu backgrounds with production-labeled
+  original scene art for title, world, garage, race prep, results, daily,
+  options, and loading screens.
+- Removed visible `PLACEHOLDER` labels and placeholder aria labels from menu
+  background SVGs.
+- Added screen-specific scene language: hero car, tour route, garage bays,
+  prep lane, podium, daily marker, options panel, and loading convoy.
+- Updated menu background manifest provenance to CC BY 4.0 production scene
+  art.
+
+### Verified
+- `npm run art:generate` green.
+- `npx vitest run scripts/__tests__/placeholder-art-bank.test.ts` green, 5 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/projection-readability.spec.ts --project=chromium` green, 1 passed.
+- `git diff --check` clean.
+- Changed-file dash scan clean.
+
+### Decisions and assumptions
+- Kept the existing 1920 x 1080 SVG contract so route backgrounds remain
+  compatible with current image loading and layout code.
+- Left backdrops, HUD icons, FX sheets, and final audio assets for separate
+  production-polish slices.
+
+### Coverage ledger
+- Replaced `GDD-17-PLACEHOLDER-MENU-BACKGROUNDS` with
+  `GDD-17-PRODUCTION-MENU-BACKGROUNDS`.
+- Closes `VibeGear2-feat-art-replace-5e2e9c74`.
+- Uncovered adjacent requirements: production backdrops, HUD icons, FX
+  sheets, and final audio assets remain separate polish work.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Production roadside props
 
 **GDD sections touched:** §16, §17, §24, and §26.
