@@ -72,6 +72,17 @@ describe("deriveRaceStoryMoment", () => {
     ).toBeNull();
   });
 
+  it("returns null when the current field does not contain the player", () => {
+    expect(
+      deriveRaceStoryMoment({
+        playerId: PLAYER,
+        previousCars: [car(PLAYER, 200), car("ai-a", 180)],
+        currentCars: [car("ai-a", 230), car("ai-b", 210)],
+        threatDistanceMeters: 25,
+      }),
+    ).toBeNull();
+  });
+
   it("ignores distant trailing opponents", () => {
     expect(
       deriveRaceStoryMoment({

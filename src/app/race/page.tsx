@@ -1558,6 +1558,7 @@ function RaceCanvas({
       setPickupFeedback(null);
       previousRaceStoryCarsRef.current = null;
       lastRaceStoryMomentMsRef.current = 0;
+      setLastRaceStoryMoment(null);
       sessionRef.current = createRaceSession(config);
       resetTimeTrialRuntime();
       tunnelState = OPEN_TUNNEL_STATE;

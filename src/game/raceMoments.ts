@@ -18,14 +18,6 @@ export interface RaceStoryMomentInput {
   readonly threatDistanceMeters: number;
 }
 
-function sortedByProgress(cars: readonly RankedCar[]): RankedCar[] {
-  return [...cars].sort((a, b) => {
-    if (b.totalProgress !== a.totalProgress)
-      return b.totalProgress - a.totalProgress;
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-  });
-}
-
 function nearestTrailingGap(input: {
   readonly playerId: string;
   readonly cars: readonly RankedCar[];
@@ -48,6 +40,11 @@ function nearestTrailingGap(input: {
 export function deriveRaceStoryMoment(
   input: RaceStoryMomentInput,
 ): RaceStoryMoment | null {
+  const currentHasPlayer = input.currentCars.some(
+    (car) => car.id === input.playerId,
+  );
+  if (!currentHasPlayer) return null;
+
   const currentPosition = rankPosition(input.playerId, input.currentCars);
   if (input.previousCars !== null) {
     const previousHasPlayer = input.previousCars.some(
@@ -74,7 +71,7 @@ export function deriveRaceStoryMoment(
 
   const trailingGap = nearestTrailingGap({
     playerId: input.playerId,
-    cars: sortedByProgress(input.currentCars),
+    cars: input.currentCars,
   });
   if (
     trailingGap !== null &&
