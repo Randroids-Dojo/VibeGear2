@@ -19,6 +19,25 @@ Every run records:
 - Screenshot or video path for any visual failure.
 - Any manual observation that automation cannot yet assert.
 
+## Automated Command
+
+Run:
+
+```bash
+npm run playtest:release-fun
+```
+
+The command runs `e2e/release-fun-playtest.spec.ts` with
+`RELEASE_FUN_PLAYTEST=1` against a production Next.js build. It covers scripts
+A through H and skips the deployed production smoke unless these optional env
+vars are supplied:
+
+- `RELEASE_FUN_PRODUCTION_URL`: production or preview base URL to smoke.
+- `RELEASE_FUN_EXPECTED_VERSION`: expected `/api/version` value.
+
+When the production vars are set, Script I also verifies `/api/version`, title
+screen boot, Quick Race start, and nonblank race canvas paint.
+
 ## Script A: First 90 Seconds
 
 Route:
@@ -220,9 +239,11 @@ Do not call the game releasable if any of these occur:
 
 ## Automation Backlog
 
-- `VibeGear2-feat-playtest-automate-9d148438`: implement the full checklist
-  runner tracked by F-076.
-- `VibeGear2-feat-playtest-add-4ba02811`: add projection and opponent
-  readability checks to the runner.
+- `VibeGear2-feat-playtest-automate-9d148438`: shipped
+  `npm run playtest:release-fun`, covering scripts A through H locally and
+  Script I when production env vars are supplied.
+- `VibeGear2-feat-playtest-add-4ba02811`: shipped projection and opponent
+  readability checks through `e2e/projection-readability.spec.ts`, and the
+  release-fun runner now samples road and opponent stability in Script A.
 - `VibeGear2-feat-feedback-add-880f1fd2`: add pass and rival-pressure telemetry
   that the AI pass script can assert.

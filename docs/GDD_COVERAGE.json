@@ -335,8 +335,14 @@
         "src/app/race/page.tsx",
         "src/data/tracks/velvet-coast-harbor-run.json"
       ],
-      "testRefs": ["e2e/first-race-fun.spec.ts"],
-      "followupRefs": ["VibeGear2-feat-tuning-first-74ba5505"]
+      "testRefs": [
+        "e2e/first-race-fun.spec.ts",
+        "e2e/release-fun-playtest.spec.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-feat-tuning-first-74ba5505",
+        "F-076"
+      ]
     },
     {
       "id": "GDD-06-PRACTICE-MODE",
@@ -1615,7 +1621,8 @@
       "testRefs": [
         "src/road/__tests__/segmentProjector.test.ts",
         "src/render/__tests__/pseudoRoadCanvas.test.ts",
-        "e2e/projection-readability.spec.ts"
+        "e2e/projection-readability.spec.ts",
+        "e2e/release-fun-playtest.spec.ts"
       ],
       "followupRefs": ["VibeGear2-fix-cpu-opponent-009867d7", "F-073"]
     },

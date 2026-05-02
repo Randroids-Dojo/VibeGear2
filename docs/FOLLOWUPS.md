@@ -13,12 +13,18 @@ or `obsolete` so the trail is preserved.
 ## F-076: Automate the release-fun playtest checklist
 **Created:** 2026-05-02
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-05-02)
 **Notes:** `docs/RELEASE_FUN_PLAYTEST.md` defines the manual release-fun
 gate, but it is not yet an agent-runnable command. Implement the checklist
 as browser automation with screenshot or trace evidence, deployed-smoke
 coverage, and normal race HUD telemetry for grip and weather when available.
 Dot: `VibeGear2-feat-playtest-automate-9d148438`.
+
+Closed by `feat/release-fun-playtest-automation`. `npm run playtest:release-fun`
+runs a gated Playwright checklist for first 90 seconds, full Quick Race,
+first-tour handoff, upgrade purchase, weather prep, AI pressure, pickup
+feedback, finish routing, and optional production smoke through
+`RELEASE_FUN_PRODUCTION_URL`.
 
 ## F-075: Add pass and rival-pressure HUD moments
 **Created:** 2026-05-02
