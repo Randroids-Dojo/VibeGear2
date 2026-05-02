@@ -6,6 +6,50 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Release-fun playtest automation
+
+**GDD sections touched:** §4, §5, §16, and §20.
+**Branch / PR:** `feat/release-fun-playtest-automation`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `npm run playtest:release-fun`, a gated Playwright command for the
+  release-fun checklist.
+- Added `e2e/release-fun-playtest.spec.ts`, covering the first 90 seconds,
+  full Quick Race to garage, first-tour handoff, upgrade purchase, weather
+  prep, AI pressure, pickup feedback, finish routing, and optional production
+  smoke.
+- Updated the release-fun checklist, script catalogue, followups, and coverage
+  ledger so future agents run the checklist before calling race-feel work done.
+
+### Verified
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run playtest:release-fun` green, 5 passed and 1 skipped because
+  production smoke env vars were not supplied.
+
+### Decisions and assumptions
+- The release-fun checklist is gated behind its own npm script instead of the
+  default CI suite because it duplicates several long browser flows and should
+  be run for release candidates and major race-feel changes.
+- Production smoke is part of the same spec, but remains opt-in locally through
+  `RELEASE_FUN_PRODUCTION_URL` and `RELEASE_FUN_EXPECTED_VERSION`.
+
+### Coverage ledger
+- Updated `GDD-04-FIRST-RACE-FUN-LOOP`.
+- Updated `GDD-16-OPPONENT-HILL-PROJECTION`.
+- Closes F-076.
+- Uncovered adjacent requirements: F-075 still tracks richer pass and
+  rival-pressure telemetry for a stronger Script F assertion.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Projection readability playtest checks
 
 **GDD sections touched:** §4, §15, and §16.
