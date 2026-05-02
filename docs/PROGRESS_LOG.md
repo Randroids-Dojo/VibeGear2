@@ -6,6 +6,44 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Release-fun playtest checklist
+
+**GDD sections touched:** §4, §5, and §20.
+**Branch / PR:** `docs/release-fun-playtest-checklist`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `docs/RELEASE_FUN_PLAYTEST.md`, a repeatable checklist covering the
+  first 90 seconds, first full race, first tour chain, upgrade purchase,
+  weather prep, AI pass, pickup collection, finish-line feel, and deployed
+  smoke.
+- Defined required evidence, pass criteria, stop conditions, and automation
+  hooks for the implementation dots that will turn the checklist into an
+  agent-run command.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- The release-fun gate should sit above normal CI. CI proves correctness; this
+  checklist proves that the default route communicates the arcade-racer promise.
+
+### Coverage ledger
+- Planning-only slice. Referenced existing ledger ids:
+  `GDD-04-FIRST-RACE-FUN-LOOP`, `GDD-16-OPPONENT-HILL-PROJECTION`, and
+  `GDD-09-PICKUP-RENDER-FEEDBACK`.
+- Uncovered adjacent requirements: the checklist is not automated yet, and
+  rival-pressure telemetry still needs F-075.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Arcade racer priority research
 
 **GDD sections touched:** §3, §4, §5, §15, §16, §17, §18, and §20.
