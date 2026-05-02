@@ -70,7 +70,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Install cross-browser smoke browsers
-        run: npx playwright install firefox webkit
+        run: npx playwright install --with-deps firefox webkit
 
       - name: Cross-browser smoke
         run: npm run test:e2e:cross-browser

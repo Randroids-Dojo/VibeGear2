@@ -47,6 +47,8 @@ Correct them by adding a new entry that references the old one.
   GitHub runner consumed the old 15 minute budget before tests could run.
 - CI installs Chromium before the gating e2e suite and defers Firefox and
   WebKit installation until the cross-browser smoke step.
+- The deferred cross-browser browser install includes Linux browser
+  dependencies so WebKit can launch on GitHub runners.
 
 ### Coverage ledger
 - Added `GDD-04-FIRST-RACE-FUN-LOOP`.
