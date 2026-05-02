@@ -460,6 +460,42 @@ describe("projectGhostCar", () => {
     expect(ghost.screenX).toBeCloseTo(strip.screenX, 6);
   });
 
+  it("interpolates a car's hill height between segment boundaries", () => {
+    const segs = flatTrack(48, { grade: 2 });
+    const camera = makeCamera();
+    const start = projectGhostCar(
+      segs,
+      camera,
+      VIEWPORT,
+      SEGMENT_LENGTH * 2,
+      0,
+      { drawDistance: 24 },
+    );
+    const end = projectGhostCar(
+      segs,
+      camera,
+      VIEWPORT,
+      SEGMENT_LENGTH * 3,
+      0,
+      { drawDistance: 24 },
+    );
+    const halfway = projectGhostCar(
+      segs,
+      camera,
+      VIEWPORT,
+      SEGMENT_LENGTH * 2.5,
+      0,
+      { drawDistance: 24 },
+    );
+
+    expect(start.visible).toBe(true);
+    expect(end.visible).toBe(true);
+    expect(halfway.visible).toBe(true);
+    expect(halfway.worldY).toBeCloseTo((start.worldY + end.worldY) / 2, 6);
+    expect(halfway.screenY).toBeGreaterThan(end.screenY);
+    expect(halfway.screenY).toBeLessThan(start.screenY);
+  });
+
   it("wraps cameraZ past the end of the ring so a lap-rolling player still sees a ghost ahead", () => {
     const segs = flatTrack(16);
     const trackLength = 16 * SEGMENT_LENGTH;

@@ -59,6 +59,22 @@ function smoothStep(t: number): number {
   return t * t * (3 - 2 * t);
 }
 
+function sampleLocalProjectionOffset(
+  offsets: readonly LocalProjectionOffset[],
+  position: number,
+): LocalProjectionOffset {
+  if (position <= 0) return offsets[0] ?? { x: 0, y: 0 };
+
+  const startIndex = Math.floor(position);
+  const start = offsets[startIndex] ?? offsets[offsets.length - 1] ?? { x: 0, y: 0 };
+  const end = offsets[startIndex + 1] ?? start;
+  const t = position - startIndex;
+  return {
+    x: lerp(start.x, end.x, t),
+    y: lerp(start.y, end.y, t),
+  };
+}
+
 /**
  * Project a compiled segment list to screen-space strips.
  *
@@ -438,23 +454,26 @@ export function projectGhostCar(
     return HIDDEN_GHOST_PROJECTION;
   }
 
-  const ghostSegmentOffset = Math.floor(
-    (forwardZ + cameraOffsetWithinSegment) / SEGMENT_LENGTH,
-  );
+  const ghostSegmentPosition =
+    (forwardZ + cameraOffsetWithinSegment) / SEGMENT_LENGTH;
+  const ghostSegmentOffset = Math.floor(ghostSegmentPosition);
   const currentOffsets = buildLocalProjectionOffsets(
     segments,
     baseSegmentIndex,
-    ghostSegmentOffset + 1,
+    ghostSegmentOffset + 2,
   );
   const nextOffsets = buildLocalProjectionOffsets(
     segments,
     (baseSegmentIndex + 1) % totalSegments,
-    ghostSegmentOffset + 1,
+    ghostSegmentOffset + 2,
   );
-  const current = currentOffsets[ghostSegmentOffset] ?? { x: 0, y: 0 };
+  const current = sampleLocalProjectionOffset(
+    currentOffsets,
+    ghostSegmentPosition,
+  );
   const next =
-    ghostSegmentOffset > 0
-      ? nextOffsets[ghostSegmentOffset - 1] ?? current
+    ghostSegmentPosition >= 1
+      ? sampleLocalProjectionOffset(nextOffsets, ghostSegmentPosition - 1)
       : current;
   const worldX = lerp(current.x, next.x, boundaryBlend) + ghostX - camera.x;
   const worldY = lerp(current.y, next.y, boundaryBlend) - camera.y;
