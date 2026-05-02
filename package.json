@@ -20,7 +20,7 @@
     "quality:lighthouse": "vite-node --script scripts/check-lighthouse.ts",
     "quality:gates": "npm run quality:bundle && npm run quality:lighthouse",
     "release:media": "vite-node --script scripts/capture-release-media.ts",
-    "playtest:release-fun": "RELEASE_FUN_PLAYTEST=1 playwright test e2e/release-fun-playtest.spec.ts --project=chromium --workers=1",
+    "playtest:release-fun": "node scripts/run-release-fun-playtest.mjs",
     "bench:render": "vitest run --config vitest.bench.config.ts",
     "art:generate": "vite-node --script scripts/generate-placeholder-art.ts",
     "art:check": "vite-node --script scripts/check-art-manifest.ts",

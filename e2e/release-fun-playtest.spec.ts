@@ -81,16 +81,14 @@ test.describe("release-fun playtest checklist", () => {
       ...samples.map((sample) => sample.collectedPickups),
     );
     const maxSpeed = Math.max(...samples.map((sample) => sample.speed));
-    const roadJumps = adjacentMaxRatio(
-      samples
-        .map((sample) => sample.roadHalfWidth)
-        .filter((value): value is number => value !== null && value > 0),
-    );
-    const aiScaleJumps = adjacentMaxRatio(
-      samples
-        .map((sample) => sample.aiWidthDepth)
-        .filter((value): value is number => value !== null && value > 0),
-    );
+    const roadHalfWidthSamples = samples
+      .map((sample) => sample.roadHalfWidth)
+      .filter((value): value is number => value !== null && value > 0);
+    const aiWidthDepthSamples = samples
+      .map((sample) => sample.aiWidthDepth)
+      .filter((value): value is number => value !== null && value > 0);
+    const roadJumps = adjacentMaxRatio(roadHalfWidthSamples);
+    const aiScaleJumps = adjacentMaxRatio(aiWidthDepthSamples);
 
     await attachEvidence(testInfo, "script-a-first-90-seconds", {
       route: "/quick-race",
@@ -103,6 +101,8 @@ test.describe("release-fun playtest checklist", () => {
         maxVisiblePickups,
         maxCollectedPickups,
         maxSpeed,
+        roadSampleCount: roadHalfWidthSamples.length,
+        aiScaleSampleCount: aiWidthDepthSamples.length,
         roadJumps,
         aiScaleJumps,
         endedOnResults: page.url().includes("/race/results"),
@@ -114,6 +114,8 @@ test.describe("release-fun playtest checklist", () => {
     expect(maxVisiblePickups).toBeGreaterThan(0);
     expect(maxCollectedPickups).toBeGreaterThan(0);
     expect(maxSpeed).toBeGreaterThan(120);
+    expect(roadHalfWidthSamples.length).toBeGreaterThanOrEqual(4);
+    expect(aiWidthDepthSamples.length).toBeGreaterThanOrEqual(2);
     expect(roadJumps).toBeLessThan(1.6);
     expect(aiScaleJumps).toBeLessThan(1.8);
   });
