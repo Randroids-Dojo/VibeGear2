@@ -1600,6 +1600,25 @@
       "followupRefs": ["F-051", "F-059", "F-060"]
     },
     {
+      "id": "GDD-16-OPPONENT-HILL-PROJECTION",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/16-rendering-and-visual-design.md"
+      ],
+      "requirement": "Opponent and ghost car sprites scale from projected depth while sampling the road height at their exact track position across hills and crests.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/road/segmentProjector.ts",
+        "src/app/race/page.tsx",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/road/__tests__/segmentProjector.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-fix-cpu-opponent-009867d7"]
+    },
+    {
       "id": "GDD-16-CAR-WEATHER-VARIANTS",
       "gddSections": [
         "docs/gdd/16-rendering-and-visual-design.md",

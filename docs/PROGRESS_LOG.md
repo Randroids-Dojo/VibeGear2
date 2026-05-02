@@ -6,6 +6,42 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: CPU opponent hill scale fix
+
+**GDD sections touched:**
+[§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents and
+[§16](gdd/16-rendering-and-visual-design.md) sprite scaling.
+**Branch / PR:** `fix/cpu-opponent-scale-hills`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Fixed projected car height sampling so opponent and ghost cars interpolate
+  the road's local hill offset at their exact fractional segment position.
+- Added a projector regression test proving a car halfway between two hill
+  segment boundaries lands halfway between their road heights.
+
+### Verified
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts
+  src/render/__tests__/pseudoRoadCanvas.test.ts` green, 95 tests passed.
+
+### Decisions and assumptions
+- The issue was projection math, not car art scale. Cars already scale from
+  projected depth, but they were using segment-boundary hill height even when
+  rendered mid-segment.
+
+### Coverage ledger
+- Added `GDD-16-OPPONENT-HILL-PROJECTION`.
+- Uncovered adjacent requirements: richer AI archetype personality and full
+  passing behavior remain separate backlog items.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-01: Slice: First-race fun pass
 
 **GDD sections touched:**
@@ -15,7 +51,7 @@ Correct them by adding a new entry that references the old one.
 [§12](gdd/12-upgrade-and-economy-system.md) reward clarity,
 [§15](gdd/15-cpu-opponents-and-ai.md) CPU opponents, and
 [§20](gdd/20-hud-and-ui-ux.md) HUD and results flow.
-**Branch / PR:** `feat/first-race-fun-pass`, PR pending.
+**Branch / PR:** `feat/first-race-fun-pass`, PR #152 merged.
 **Status:** Implemented.
 
 ### Done
