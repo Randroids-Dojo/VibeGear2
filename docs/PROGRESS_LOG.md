@@ -6,6 +6,56 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Production procedural audio bank
+
+**GDD sections touched:** §18, §24, §25, and §26.
+**Branch / PR:** `feat/production-audio-bank`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Promoted generated music loops, race themes, SFX, UI sounds, weather loops,
+  and intensity stems from placeholder provenance to production procedural
+  audio provenance.
+- Updated audio manifest entries to CC BY 4.0 for original generated audio
+  assets.
+- Strengthened audio-bank tests so music, stems, SFX, and weather loops cannot
+  ship with placeholder provenance.
+
+### Verified
+- `npm run audio:generate` green.
+- `npx vitest run scripts/__tests__/placeholder-audio-bank.test.ts scripts/__tests__/check-audio-manifest.test.ts` green, 10 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/projection-readability.spec.ts --project=chromium` green, 1 passed.
+- `git diff --check` clean.
+- Changed-file dash scan clean.
+
+### Decisions and assumptions
+- Kept the existing deterministic Opus generation, duration, sample rate, and
+  file layout so runtime loading and manifest validation remain compatible.
+- Treated this as a provenance and release-readiness slice. Composition and
+  mix upgrades remain separate sound-design work.
+
+### Coverage ledger
+- Replaced `GDD-18-PLACEHOLDER-AUDIO-BANK` with
+  `GDD-18-PRODUCTION-PROCEDURAL-AUDIO-BANK`.
+- Replaced `GDD-18-PLACEHOLDER-MUSIC-INTENSITY-STEMS` with
+  `GDD-18-PRODUCTION-MUSIC-INTENSITY-STEMS`.
+- Closes `VibeGear2-feat-audio-replace-71d72deb`.
+- Uncovered adjacent requirements: composition and mix upgrades for final
+  race music, SFX layering, UI cue tuning, and weather beds remain separate
+  sound-design work.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Production menu backgrounds
 
 **GDD sections touched:** §17, §24, and §26.

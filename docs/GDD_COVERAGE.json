@@ -113,14 +113,14 @@
       ]
     },
     {
-      "id": "GDD-18-PLACEHOLDER-AUDIO-BANK",
+      "id": "GDD-18-PRODUCTION-PROCEDURAL-AUDIO-BANK",
       "gddSections": [
         "docs/gdd/18-sound-and-music-design.md",
         "docs/gdd/24-content-plan.md",
         "docs/gdd/25-development-roadmap.md",
         "docs/gdd/26-open-source-project-guidance.md"
       ],
-      "requirement": "The placeholder audio bank ships original music loops, race themes, SFX, UI sounds, and weather loops with manifest provenance metadata for every audio file.",
+      "requirement": "The production procedural audio bank ships original music loops, race themes, SFX, UI sounds, and weather loops with manifest provenance metadata for every audio file.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/audio/",
@@ -132,16 +132,19 @@
         "scripts/__tests__/placeholder-audio-bank.test.ts",
         "scripts/__tests__/check-audio-manifest.test.ts"
       ],
-      "followupRefs": ["VibeGear2-implement-placeholder-audio-94594c41"]
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-audio-94594c41",
+        "VibeGear2-feat-audio-replace-71d72deb"
+      ]
     },
     {
-      "id": "GDD-18-PLACEHOLDER-MUSIC-INTENSITY-STEMS",
+      "id": "GDD-18-PRODUCTION-MUSIC-INTENSITY-STEMS",
       "gddSections": [
         "docs/gdd/18-sound-and-music-design.md",
         "docs/gdd/24-content-plan.md",
         "docs/gdd/26-open-source-project-guidance.md"
       ],
-      "requirement": "The placeholder audio bank ships original drive and lead intensity stem files for every race region, with manifest provenance metadata for each generated file.",
+      "requirement": "The production procedural audio bank ships original drive and lead intensity stem files for every race region, with manifest provenance metadata for each generated file.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/audio/music/stems/",
@@ -149,7 +152,10 @@
         "scripts/generate-placeholder-audio.ts"
       ],
       "testRefs": ["scripts/__tests__/placeholder-audio-bank.test.ts"],
-      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+      "followupRefs": [
+        "VibeGear2-implement-sound-music-1611f9dd",
+        "VibeGear2-feat-audio-replace-71d72deb"
+      ]
     },
     {
       "id": "GDD-18-MUSIC-RUNTIME",
