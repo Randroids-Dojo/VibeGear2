@@ -181,6 +181,7 @@ const MENU_BACKGROUNDS = [
   { id: "options", region: "moss-frontier", label: "OPTIONS" },
   { id: "loading", region: "breakwater-isles", label: "LOADING" },
 ] as const;
+type MenuBackgroundId = (typeof MENU_BACKGROUNDS)[number]["id"];
 
 const ROADSIDE_PROPS: readonly RoadsideProp[] = [
   { id: "marker-light", category: "sign" },
@@ -583,7 +584,7 @@ function menuBackgroundSvg(menu: (typeof MENU_BACKGROUNDS)[number]): string {
   );
 }
 
-function menuSceneSvg(id: (typeof MENU_BACKGROUNDS)[number]["id"], region: RegionArt): string {
+function menuSceneSvg(id: MenuBackgroundId, region: RegionArt): string {
   const car = `<g transform="translate(820 770) scale(1.55)"><path d="M30 96 L46 42 L82 18 L130 18 L166 42 L182 96 Z" fill="${region.accent}"/><path d="M66 38 L96 28 L132 38 L144 62 L54 62 Z" fill="#101827"/><rect x="52" y="82" width="34" height="12" fill="#ff4d3d"/><rect x="126" y="82" width="34" height="12" fill="#ff4d3d"/><path d="M24 100 L188 100 L176 112 L36 112 Z" fill="#101827" opacity="0.65"/></g>`;
   if (id === "title") {
     return [
@@ -650,13 +651,16 @@ function menuSceneSvg(id: (typeof MENU_BACKGROUNDS)[number]["id"], region: Regio
       '<circle cx="1200" cy="792" r="32" fill="#f5d45f"/>',
     ].join("\n");
   }
-  return [
-    '<rect x="520" y="650" width="880" height="70" fill="#d7dde6" opacity="0.22"/>',
-    '<rect x="620" y="730" width="680" height="42" fill="#d7dde6" opacity="0.16"/>',
-    `<rect x="720" y="808" width="480" height="24" fill="${region.accent}" opacity="0.78"/>`,
-    '<circle cx="1280" cy="840" r="24" fill="#f5d45f"/>',
-    car,
-  ].join("\n");
+  if (id === "loading") {
+    return [
+      '<rect x="520" y="650" width="880" height="70" fill="#d7dde6" opacity="0.22"/>',
+      '<rect x="620" y="730" width="680" height="42" fill="#d7dde6" opacity="0.16"/>',
+      `<rect x="720" y="808" width="480" height="24" fill="${region.accent}" opacity="0.78"/>`,
+      '<circle cx="1280" cy="840" r="24" fill="#f5d45f"/>',
+      car,
+    ].join("\n");
+  }
+  throw new Error(`Unknown menu scene id: ${id satisfies never}`);
 }
 
 for (const region of REGIONS) {

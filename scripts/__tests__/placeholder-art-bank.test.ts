@@ -28,6 +28,16 @@ const MENU_BACKGROUND_IDS = [
   "options",
   "loading",
 ] as const;
+const MENU_SCENE_MARKERS = {
+  title: ['width="680" height="46"', 'stroke-width="18"'],
+  world: ['cx="520" cy="690"', 'cx="1390" cy="494"'],
+  garage: ['width="1080" height="350"', 'x="840" y="610"'],
+  "race-prep": ['width="1000" height="150"', 'x="1220" y="700"'],
+  results: ['width="400" height="126"', 'x="1126" y="690"'],
+  daily: ['width="740" height="260"', 'r="46" fill="#f5d45f"'],
+  options: ['width="700" height="320"', 'cx="1250" cy="640"'],
+  loading: ['width="880" height="70"', 'cx="1280" cy="840"'],
+} satisfies Record<(typeof MENU_BACKGROUND_IDS)[number], readonly string[]>;
 
 function readManifest(): ArtManifestEntry[] {
   return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as ArtManifestEntry[];
@@ -118,6 +128,9 @@ describe("placeholder art bank", () => {
       expect(svg).not.toContain("PLACEHOLDER");
       expect(svg).not.toContain("placeholder art");
       expect(svg).toContain("production menu background");
+      for (const marker of MENU_SCENE_MARKERS[menuId]) {
+        expect(svg).toContain(marker);
+      }
     }
   });
 });
