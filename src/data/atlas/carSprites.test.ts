@@ -55,10 +55,24 @@ describe("per-car sprite atlas metadata", () => {
       expect(svg).toContain('id="totaled"');
       expect(svg).toContain('id="wet-trail"');
       expect(svg).toContain('id="snow-trail"');
+      expect(svg).toContain("production car sprite sheet");
+      expect(svg).not.toContain("PLACEHOLDER");
       expect(svg).toContain('translate(32 144)');
       expect(svg).toContain('translate(32 176)');
       expect(svg).toContain('translate(96 176)');
     }
+  });
+
+  it("ships distinct per-car silhouette language", () => {
+    const sheetBodies = new Map<string, string>();
+    for (const [id, meta] of Object.entries(CAR_ATLAS_METAS)) {
+      const svg = readFileSync(path.join(PUBLIC_DIR, meta.image), "utf8");
+      const bodyPath = svg.match(/<g id="clean"><path d="([^"]+)"/)?.[1];
+      expect(bodyPath).toBeDefined();
+      sheetBodies.set(id, bodyPath ?? "");
+    }
+
+    expect(new Set(sheetBodies.values()).size).toBe(sheetBodies.size);
   });
 
   it("falls back to the starter atlas for unknown visual profiles", () => {

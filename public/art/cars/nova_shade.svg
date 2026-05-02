@@ -1,67 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 768 384" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 768 384" role="img" aria-label="Nova Shade production car sprite sheet">
 <rect width="768" height="384" fill="none"/>
 <defs>
-<g id="shadow"><ellipse cx="0" cy="13" rx="29" ry="5" fill="#10151f" opacity="0.55"/></g>
-<g id="clean"><path d="M-27 12 L27 12 L21 -8 L12 -14 L-12 -14 L-21 -8 Z" fill="#5b4bd7"/><path d="M-14 -7 L14 -7 L9 4 L-9 4 Z" fill="#14182b"/><path d="M-22 7 L-12 7 L-12 11 L-22 11 Z" fill="#ff3d38"/><path d="M12 7 L22 7 L22 11 L12 11 Z" fill="#ff3d38"/><path d="M-24 12 L-18 15 L18 15 L24 12 Z" fill="#171326"/><path d="M-18 -5 L18 -5" stroke="#ff5bd6" stroke-width="2"/></g>
-<g id="dented"><use href="#clean"/><path d="M-23 -1 L-17 4 L-21 7" fill="none" stroke="#ff5bd6" stroke-width="2" opacity="0.8"/><rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>
-<g id="battered"><use href="#clean"/><path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="#171326" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="#171326" stroke-width="2"/><rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>
-<g id="totaled"><use href="#battered"/><path d="M-26 12 L-18 -4 L-6 8 L8 -6 L24 12" fill="none" stroke="#171326" stroke-width="3"/><path d="M-18 2 L-8 -5 M11 -7 L21 2" stroke="#ff5bd6" stroke-width="2"/><rect x="-23" y="7" width="11" height="4" fill="#8f2626"/><rect x="12" y="7" width="10" height="4" fill="#8f2626"/></g>
+<g id="shadow"><ellipse cx="0" cy="14" rx="31" ry="5" fill="#10151f" opacity="0.58"/></g>
+<g id="clean"><path d="M-29 13 L29 13 L28 -5 L15 -14 L-15 -14 L-28 -5 Z" fill="#5b4bd7"/><path d="M-15 -8 L15 -8 L10 4 L-10 4 Z" fill="#14182b"/><path d="M-9 -7 L9 -7 L6 3 L-6 3 Z" fill="#14182b" opacity="0.8"/><path d="M-24 7 L-12 7 L-12 11 L-24 11 Z" fill="#ff3d38"/><path d="M12 7 L24 7 L24 11 L12 11 Z" fill="#ff3d38"/><path d="M-26 12 L-18 15 L18 15 L26 12 Z" fill="#171326"/><rect x="-30" y="8" width="60" height="4" fill="#ff5bd6"/><rect x="-24" y="11" width="48" height="3" fill="#171326"/><path d="M-20 -8 L-2 11 L20 -8" fill="none" stroke="#ff5bd6" stroke-width="3"/><path d="M-13 6 L13 6" stroke="#f2dcff" stroke-width="2"/><path d="M-20 -10 L-10 -14 L10 -14 L20 -10" fill="none" stroke="#f2dcff" stroke-width="1.5" opacity="0.8"/></g>
+<g id="dented"><use href="#clean"/><path d="M-23 -1 L-17 4 L-21 7" fill="none" stroke="#ff5bd6" stroke-width="2" opacity="0.85"/><path d="M12 -8 L20 -3" stroke="#171326" stroke-width="1.5"/><rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>
+<g id="battered"><use href="#clean"/><path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="#171326" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="#171326" stroke-width="2"/><circle cx="-18" cy="-4" r="2" fill="#ff5bd6" opacity="0.9"/><rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>
+<g id="totaled"><use href="#battered"/><path d="M-27 12 L-18 -5 L-6 8 L8 -7 L25 12" fill="none" stroke="#171326" stroke-width="3"/><path d="M-19 1 L-8 -6 M10 -8 L22 2" stroke="#ff5bd6" stroke-width="2"/><path d="M-12 -11 L-2 -5 L10 -12" fill="none" stroke="#171326" stroke-width="2"/><rect x="-23" y="7" width="11" height="4" fill="#8f2626"/><rect x="12" y="7" width="10" height="4" fill="#8f2626"/></g>
 <g id="brake"><use href="#clean"/><rect x="-24" y="6" width="13" height="6" fill="#ff4a44"/><rect x="11" y="6" width="13" height="6" fill="#ff4a44"/></g>
 <g id="nitro"><use href="#clean"/><path d="M-14 15 L0 26 L14 15 Z" fill="#44d7ff" opacity="0.75"/><path d="M-8 15 L0 23 L8 15 Z" fill="#e75cff" opacity="0.8"/></g>
 <g id="wet-trail"><path d="M-28 4 L-8 14 L-32 23 Z" fill="#d8f4ff" opacity="0.55"/><path d="M28 4 L8 14 L32 23 Z" fill="#d8f4ff" opacity="0.55"/><path d="M-22 13 L-3 19 M22 13 L3 19" stroke="#9fd7ef" stroke-width="2" opacity="0.7"/></g>
 <g id="snow-trail"><path d="M-24 9 L24 9 L34 24 L-34 24 Z" fill="#edf7ff" opacity="0.64"/><circle cx="-18" cy="17" r="2" fill="#ffffff" opacity="0.7"/><circle cx="0" cy="20" r="2" fill="#ffffff" opacity="0.7"/><circle cx="17" cy="16" r="2" fill="#ffffff" opacity="0.7"/></g>
 </defs>
-<g transform="translate(32 16) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(96 16) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(160 16) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(224 16) skewX(12)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(288 16) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(352 16) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(416 16) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(480 16) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(544 16) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(608 16) skewX(-12)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(672 16) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(736 16) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(32 48) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(96 48) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(160 48) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(224 48) skewX(12)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(288 48) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(352 48) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(416 48) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(480 48) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(544 48) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(608 48) skewX(-12)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(672 48) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(736 48) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(32 80) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(96 80) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(160 80) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(224 80) skewX(12)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(288 80) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(352 80) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(416 80) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(480 80) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(544 80) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(608 80) skewX(-12)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(672 80) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(736 80) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(32 144) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(96 144) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(160 144) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(224 144) skewX(12)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(288 144) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(352 144) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(416 144) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(480 144) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(544 144) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(608 144) skewX(-12)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(672 144) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(736 144) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(32 16) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(96 16) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(160 16) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(224 16) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(288 16) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(352 16) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(416 16) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(480 16) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(544 16) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(608 16) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(672 16) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(736 16) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
+<g transform="translate(32 48) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(96 48) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(160 48) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(224 48) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(288 48) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(352 48) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(416 48) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(480 48) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(544 48) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(608 48) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(672 48) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(736 48) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
+<g transform="translate(32 80) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(96 80) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(160 80) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(224 80) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(288 80) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(352 80) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(416 80) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(480 80) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(544 80) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(608 80) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(672 80) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(736 80) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
+<g transform="translate(32 144) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(96 144) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(160 144) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(224 144) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(288 144) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(352 144) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(416 144) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(480 144) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(544 144) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(608 144) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(672 144) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
+<g transform="translate(736 144) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
 <g transform="translate(32 112)"><use href="#shadow"/><use href="#brake"/></g>
 <g transform="translate(96 112)"><use href="#shadow"/><use href="#nitro"/></g>
 <g transform="translate(32 176)"><use href="#wet-trail"/></g>
 <g transform="translate(96 176)"><use href="#snow-trail"/></g>
-<text x="704" y="360" text-anchor="middle" font-family="monospace" font-size="16" font-weight="700" fill="#ff5bd6">PLACEHOLDER</text>
+<text x="704" y="360" text-anchor="middle" font-family="monospace" font-size="16" font-weight="700" fill="#ff5bd6">Nova Shade</text>
 </svg>
