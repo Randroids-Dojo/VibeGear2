@@ -1456,6 +1456,29 @@
       "followupRefs": []
     },
     {
+      "id": "GDD-20-TOUR-PRESSURE-SURFACES",
+      "gddSections": [
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Between World Tour races, garage, pre-race, and results surfaces show current standing pressure, advancement gate, repair room, and next-upgrade affordability so the player understands the next race's stakes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/tourPressure.ts",
+        "src/app/garage/page.tsx",
+        "src/app/race/prep/page.tsx",
+        "src/app/race/results/page.tsx",
+        "src/game/preRaceCard.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/tourPressure.test.ts",
+        "src/game/__tests__/preRaceCard.test.ts",
+        "e2e/tour-pressure.spec.ts"
+      ],
+      "followupRefs": ["F-074"]
+    },
+    {
       "id": "GDD-13-GARAGE-REPAIR-PURCHASE",
       "gddSections": [
         "docs/gdd/05-core-gameplay-loop.md",

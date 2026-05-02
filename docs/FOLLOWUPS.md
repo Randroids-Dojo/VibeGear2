@@ -44,11 +44,16 @@ coverage verifies a visible position-change moment in a live race.
 ## F-074: Make first tour standings pressure visible between races
 **Created:** 2026-05-02
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-05-02)
 **Notes:** The arcade racer priority research found that the first tour should
 make standings pressure, cash needs, repair risk, and upgrade thresholds more
 visible between races. Strengthen the Velvet Coast between-race flow and cover
 it with browser evidence. Dot: `VibeGear2-feat-tour-make-ed6387da`.
+
+Closed by `feat/first-tour-standings-pressure`. Garage, pre-race, and results
+surfaces now share a tour-pressure summary for current standing, advancement
+gate, next race, cash after repairs, and next-upgrade shortfall. Unit and
+browser tests cover the in-progress Velvet Coast flow.
 
 ## F-073: Add projection and opponent readability checks to release playtests
 **Created:** 2026-05-02

@@ -35,7 +35,9 @@ describe("pre-race card", () => {
         activeTour: {
           tourId: "velvet-coast",
           raceIndex: 1,
-          results: [{ trackId: "velvet-coast/harbor-run", placement: 2, dnf: false }],
+          results: [
+            { trackId: "velvet-coast/harbor-run", placement: 2, dnf: false },
+          ],
         },
       },
     };
@@ -63,6 +65,8 @@ describe("pre-race card", () => {
     expect(card.cashOnHand).toBe(1250);
     expect(card.repairEstimate).toBeGreaterThan(0);
     expect(card.baseReward).toBe(1000);
+    expect(card.tourPressure?.standingsLabel).toBe("2nd of 2");
+    expect(card.tourPressure?.cashAfterRepair).toBeLessThan(1250);
     expect(card.carSummary.name).toBe("Sparrow GT");
     expect(card.setupSummary).toBe("Stock setup");
   });
