@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="breakwater-isles chevron-right roadside prop">
 <rect width="128" height="128" fill="none"/>
 <ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
-<rect x="59" y="62" width="10" height="50" fill="#d7dde6"/>
+<rect x="59" y="61" width="10" height="51" fill="#d7dde6"/>
+<rect x="56" y="62" width="4" height="50" fill="#326a84" opacity="0.5"/>
 <rect x="28" y="22" width="72" height="44" rx="3" fill="#a7e3ff"/>
+<rect x="32" y="26" width="64" height="36" rx="2" fill="#a7e3ff" opacity="0.62"/>
 <path d="M52 43 L80 64 L52 85" fill="none" stroke="#101827" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter"/>
-<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#a7e3ff">PLACEHOLDER</text>
+<rect x="63" y="102" width="28" height="5" fill="#a7e3ff" opacity="0.45"/>
 </svg>
