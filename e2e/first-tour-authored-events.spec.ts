@@ -28,16 +28,21 @@ test.describe("first-tour authored event pass", () => {
       await expect(canvas).toBeVisible();
       await canvas.focus();
       await page.keyboard.down("ArrowUp");
-      await expect
-        .poll(
-          async () =>
-            metricNumber(
-              await page.getByTestId("race-visible-pickup-count").textContent(),
-            ),
-          { timeout: 20_000 },
-        )
-        .toBeGreaterThan(0);
-      await page.keyboard.up("ArrowUp");
+      try {
+        await expect
+          .poll(
+            async () =>
+              metricNumber(
+                await page
+                  .getByTestId("race-visible-pickup-count")
+                  .textContent(),
+              ),
+            { timeout: 20_000 },
+          )
+          .toBeGreaterThan(0);
+      } finally {
+        await page.keyboard.up("ArrowUp");
+      }
     });
   }
 });
