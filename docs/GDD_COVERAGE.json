@@ -1022,6 +1022,25 @@
       ]
     },
     {
+      "id": "GDD-15-AI-ARCHETYPE-READABILITY",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "Live CPU opponents expose readable archetype behavior cues for rocket launch and fade, bully pressure, cautious low-visibility braking, chaotic missed apex events, and enduro consistency.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/ai.ts",
+        "src/game/aiArchetypes.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/ai.test.ts",
+        "e2e/race-ai-archetypes.spec.ts"
+      ]
+    },
+    {
       "id": "GDD-24-MVP-TRACK-SET",
       "gddSections": [
         "docs/gdd/09-track-design.md",

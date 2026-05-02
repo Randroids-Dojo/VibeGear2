@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Readable AI archetype cues
+
+**GDD sections touched:** §15, §20, and §27.
+**Branch / PR:** `feat/readable-ai-archetypes`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added explicit AI readability cues to the deterministic AI state so live
+  races can report rocket launch and fade, bully pressure, cautious
+  low-visibility braking, chaotic missed apex events, enduro consistency, and
+  overtakes.
+- Made cautious archetypes brake earlier on low-visibility curves instead of
+  relying only on generic weather skill and lane-mistake pressure.
+- Exposed hidden race-window telemetry for AI archetype roster and observed
+  behavior cues, then added a Playwright race check that verifies the cues
+  appear in a real fog race.
+
+### Verified
+- `npx vitest run src/game/__tests__/ai.test.ts` green, 40 passed.
+- `npx playwright test e2e/race-ai-archetypes.spec.ts` green, 1 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- Kept the cues on `AIState` instead of deriving them from screenshots. This
+  gives browser tests a deterministic signal while still coming from the same
+  runtime decisions the player sees.
+
+### Coverage ledger
+- Added `GDD-15-AI-ARCHETYPE-READABILITY`.
+- Uncovered adjacent requirements: AI nitro firing and fuller passing strategy
+  remain separate from this PR-sized slice.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: CI cross-browser timeout hotfix
 
 **GDD sections touched:** §21.

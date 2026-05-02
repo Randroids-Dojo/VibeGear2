@@ -100,6 +100,7 @@ import {
   type RankedCar,
   type GhostDriver,
   type GhostOverlay,
+  type AIReadabilityCue,
   type TimeTrialRecorder,
 } from "@/game";
 import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
@@ -753,6 +754,11 @@ interface RoadProjectionSnapshot {
   readonly horizonY: number;
 }
 
+interface AiReadabilitySnapshot {
+  readonly archetypeRoster: string;
+  readonly observedCueRoster: string;
+}
+
 function roadProjectionSnapshot(
   strips: readonly Strip[],
 ): RoadProjectionSnapshot | null {
@@ -777,6 +783,28 @@ function roadProjectionSnapshot(
     nearY: foreground.screenY,
     nearHalfWidth: foreground.screenW,
     horizonY: horizon.screenY,
+  };
+}
+
+function aiReadabilitySnapshot(input: {
+  config: Readonly<RaceSessionConfig>;
+  session: Readonly<RaceSessionState>;
+  roster: readonly AIDriver[];
+  observedCues: Set<AIReadabilityCue>;
+}): AiReadabilitySnapshot {
+  const archetypes = new Set<string>();
+  for (const driver of input.roster) {
+    archetypes.add(driver.archetype);
+  }
+  for (const entry of input.config.ai) {
+    archetypes.add(entry.driver.archetype);
+  }
+  for (const entry of input.session.ai) {
+    input.observedCues.add(entry.state.readabilityCue);
+  }
+  return {
+    archetypeRoster: Array.from(archetypes).sort().join(","),
+    observedCueRoster: Array.from(input.observedCues).sort().join(","),
   };
 }
 
@@ -1028,6 +1056,7 @@ function RaceCanvas({
   const raceMomentTimeoutRef = useRef<number | null>(null);
   const finishRouteTimeoutRef = useRef<number | null>(null);
   const pickupFeedbackRef = useRef<PickupFeedbackSnapshot | null>(null);
+  const observedAiCuesRef = useRef<Set<AIReadabilityCue>>(new Set());
   // Per-mount guard for the natural finish wiring. The render callback
   // fires every frame, so without this latch a `phase === "finished"`
   // tick would call `saveRaceResult` and `router.push` on every frame
@@ -1063,6 +1092,8 @@ function RaceCanvas({
   const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
   const [aiProjection, setAiProjection] =
     useState<AiProjectionSnapshot | null>(null);
+  const [aiReadability, setAiReadability] =
+    useState<AiReadabilitySnapshot | null>(null);
   const [roadProjection, setRoadProjection] =
     useState<RoadProjectionSnapshot | null>(null);
   const [visiblePickupCount, setVisiblePickupCount] = useState<number>(0);
@@ -1230,12 +1261,13 @@ function RaceCanvas({
       : pendingDamageForActiveCar(sessionSave);
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
+    const aiDriverRoster = resolveRaceAIDrivers(tourContext);
     const spawnedAi = ghostEnabled || practiceMode
       ? []
       : spawnGrid({
           trackSpawn: track.compiled.spawn,
           laneCount: track.compiled.laneCount,
-          aiDrivers: resolveRaceAIDrivers(tourContext).map((driver) => ({
+          aiDrivers: aiDriverRoster.map((driver) => ({
             driver,
             stats: playerStats,
           })),
@@ -1311,7 +1343,9 @@ function RaceCanvas({
     };
 
     pickupFeedbackRef.current = null;
+    observedAiCuesRef.current = new Set();
     setPickupFeedback(null);
+    setAiReadability(null);
     sessionRef.current = createRaceSession(config);
     resetTimeTrialRuntime();
     // Re-arm the natural-finish guard on every fresh mount. The
@@ -2020,6 +2054,14 @@ function RaceCanvas({
           totalLaps: hud.totalLaps,
           position: hud.position,
         });
+        setAiReadability(
+          aiReadabilitySnapshot({
+            config,
+            session,
+            roster: aiDriverRoster,
+            observedCues: observedAiCuesRef.current,
+          }),
+        );
         setInputSnapshot({
           steer: lastSteerRef.current,
           touchActive: inputManager.hasTouch(),
@@ -2133,6 +2175,14 @@ function RaceCanvas({
         <dd data-testid="race-field-size">{fieldSize}</dd>
         <dt>Visible AI:</dt>
         <dd data-testid="race-visible-ai-count">{aiVisibleCount}</dd>
+        <dt>AI archetypes:</dt>
+        <dd data-testid="race-ai-archetype-roster">
+          {aiReadability?.archetypeRoster ?? "none"}
+        </dd>
+        <dt>AI cues:</dt>
+        <dd data-testid="race-ai-observed-cues">
+          {aiReadability?.observedCueRoster ?? "none"}
+        </dd>
         <dt>Nearest AI depth:</dt>
         <dd data-testid="race-ai-nearest-depth">
           {aiProjection?.nearestDepthMeters.toFixed(2) ?? "none"}

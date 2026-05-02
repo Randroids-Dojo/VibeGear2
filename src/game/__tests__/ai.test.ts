@@ -349,6 +349,8 @@ describe("tickAI (§15 archetype behaviours)", () => {
     expect(lateRocket.nextAiState.targetSpeed).toBeLessThan(
       lateClean.nextAiState.targetSpeed,
     );
+    expect(earlyRocket.nextAiState.readabilityCue).toBe("rocket-launch");
+    expect(lateRocket.nextAiState.readabilityCue).toBe("rocket-fade");
   });
 
   it("bully drivers pressure toward nearby traffic", () => {
@@ -378,6 +380,7 @@ describe("tickAI (§15 archetype behaviours)", () => {
     );
 
     expect(bullyTick.input.steer).toBeGreaterThan(cleanTick.input.steer);
+    expect(bullyTick.nextAiState.readabilityCue).toBe("bully-pressure");
   });
 
   it("bully pressure uses the player's position relative to the AI", () => {
@@ -438,6 +441,47 @@ describe("tickAI (§15 archetype behaviours)", () => {
     expect(cautiousTick.input.brake).toBeGreaterThan(cleanTick.input.brake);
   });
 
+  it("cautious drivers brake earlier on low-visibility curves", () => {
+    const cautious = archetypeDriver("defender");
+    const aiCar = freshCar({ z: 900, speed: 40 });
+    const clearTick = tickAI(
+      cautious,
+      freshAi(),
+      aiCar,
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+    );
+    const fogTick = tickAI(
+      cautious,
+      freshAi(),
+      aiCar,
+      PLAYER_FAR_BEHIND,
+      SWEEPER_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1.5,
+    );
+
+    expect(fogTick.nextAiState.targetSpeed).toBeLessThan(
+      clearTick.nextAiState.targetSpeed,
+    );
+    expect(fogTick.input.brake).toBeGreaterThan(clearTick.input.brake);
+    expect(fogTick.nextAiState.readabilityCue).toBe(
+      "cautious-low-visibility",
+    );
+  });
+
   it("chaotic drivers produce more seeded lane mistakes than enduro drivers", () => {
     const chaotic = archetypeDriver("wet_specialist", { mistakeRate: 0.2 });
     const enduro = archetypeDriver("endurance", { mistakeRate: 0.2 });
@@ -461,6 +505,17 @@ describe("tickAI (§15 archetype behaviours)", () => {
     expect(countSteeringMistakes(chaotic)).toBeGreaterThan(
       countSteeringMistakes(enduro),
     );
+    expect(
+      tickAI(
+        enduro,
+        freshAi(),
+        freshCar({ speed: 20 }),
+        PLAYER_FAR_BEHIND,
+        STRAIGHT_TRACK,
+        RACING,
+        STARTER_STATS,
+      ).nextAiState.readabilityCue,
+    ).toBe("enduro-consistent");
   });
 });
 
