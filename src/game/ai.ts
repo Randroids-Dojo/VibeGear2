@@ -65,7 +65,7 @@
  * - Damage-aware rub avoidance and contact fairness scoring.
  */
 
-import type { AIDriver, CarBaseStats } from "@/data/schemas";
+import type { AIArchetype, AIDriver, CarBaseStats } from "@/data/schemas";
 import { CURVATURE_SCALE, ROAD_WIDTH, SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
 import type { CpuDifficultyModifiers } from "./aiDifficulty";
@@ -117,7 +117,19 @@ export interface AIState {
   intent: "defend" | "overtake" | "recover" | "conserve";
   targetSpeed: number;
   seed: number;
+  readabilityCue: AIReadabilityCue;
 }
+
+export type AIReadabilityCue =
+  | "clean-line"
+  | "rocket-launch"
+  | "rocket-fade"
+  | "bully-pressure"
+  | "cautious-low-visibility"
+  | "chaotic-missed-apex"
+  | "chaotic-brilliant"
+  | "enduro-consistent"
+  | "overtake";
 
 /**
  * Initial AI state convenience: stationary at the start of the track
@@ -132,6 +144,7 @@ export const INITIAL_AI_STATE: Readonly<AIState> = Object.freeze({
   intent: "conserve",
   targetSpeed: 0,
   seed: 1,
+  readabilityCue: "clean-line",
 });
 
 /**
@@ -366,7 +379,11 @@ export function tickAI(
   const curvePenalty =
     1 -
     AI_TUNING.CLEAN_LINE_CURVE_DECEL *
-      behaviour.curveBrakeScalar *
+      visibilityCurveBrakeScalar(
+        behaviour.curveBrakeScalar,
+        behaviour.lowVisibilityBrakeScalar,
+        visibilityRiskScalar,
+      ) *
       Math.abs(authoredCurve);
   const lapProgressFraction = lapFraction(track.totalLength, aiCar.z);
   const launchPaceBonus =
@@ -399,6 +416,17 @@ export function tickAI(
     intent: overtake.active ? "overtake" : aiState.intent === "overtake" ? "recover" : aiState.intent,
     targetSpeed,
     seed: nextSeed,
+    readabilityCue: readabilityCueFor({
+      archetype: driver.archetype,
+      launchPaceBonus,
+      fadePacePenalty,
+      trafficLaneOffset,
+      visibilityRiskScalar,
+      authoredCurve,
+      mistakeOffset,
+      brilliantPaceBonus,
+      overtakeActive: overtake.active,
+    }),
   };
 
   // Countdown: do not integrate inputs. Per the dot stress-test item 10
@@ -529,6 +557,52 @@ function overtakeOffset(
     active: true,
     offset: clamp(target - aiCar.x, -AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, AI_TUNING.OVERTAKE_LANE_SHIFT_METERS),
   };
+}
+
+function visibilityCurveBrakeScalar(
+  curveBrakeScalar: number,
+  lowVisibilityBrakeScalar: number,
+  visibilityRiskScalar: number,
+): number {
+  const visibilityPressure = clamp(visibilityRiskScalar - 1, 0, 1);
+  return curveBrakeScalar * (1 + lowVisibilityBrakeScalar * visibilityPressure);
+}
+
+function readabilityCueFor(input: {
+  archetype: AIArchetype;
+  launchPaceBonus: number;
+  fadePacePenalty: number;
+  trafficLaneOffset: number;
+  visibilityRiskScalar: number;
+  authoredCurve: number;
+  mistakeOffset: number;
+  brilliantPaceBonus: number;
+  overtakeActive: boolean;
+}): AIReadabilityCue {
+  if (input.overtakeActive) return "overtake";
+  if (input.archetype === "nitro_burst") {
+    if (input.launchPaceBonus > 0) return "rocket-launch";
+    if (input.fadePacePenalty > 0) return "rocket-fade";
+  }
+  if (
+    input.archetype === "aggressive" &&
+    Math.abs(input.trafficLaneOffset) > 0.05
+  ) {
+    return "bully-pressure";
+  }
+  if (
+    input.archetype === "defender" &&
+    input.visibilityRiskScalar > 1.05 &&
+    Math.abs(input.authoredCurve) > 0.05
+  ) {
+    return "cautious-low-visibility";
+  }
+  if (input.archetype === "wet_specialist") {
+    if (input.mistakeOffset !== 0) return "chaotic-missed-apex";
+    if (input.brilliantPaceBonus > 0) return "chaotic-brilliant";
+  }
+  if (input.archetype === "endurance") return "enduro-consistent";
+  return "clean-line";
 }
 
 // Numeric helpers ----------------------------------------------------------

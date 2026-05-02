@@ -10,6 +10,7 @@ export interface AIBehaviour {
   readonly recoveryScalar: number;
   readonly launchPaceBonus: number;
   readonly fadePacePenalty: number;
+  readonly lowVisibilityBrakeScalar: number;
   readonly brilliantChance: number;
   readonly brilliantPaceBonus: number;
   /**
@@ -31,6 +32,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       recoveryScalar: 0.9,
       launchPaceBonus: 0.08,
       fadePacePenalty: 0.04,
+      lowVisibilityBrakeScalar: 0,
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0.05,
@@ -45,6 +47,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       recoveryScalar: 1,
       launchPaceBonus: 0,
       fadePacePenalty: 0,
+      lowVisibilityBrakeScalar: 0,
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0,
@@ -59,6 +62,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       recoveryScalar: 1.05,
       launchPaceBonus: 0.02,
       fadePacePenalty: 0,
+      lowVisibilityBrakeScalar: 0,
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0.45,
@@ -73,6 +77,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       recoveryScalar: 0.75,
       launchPaceBonus: 0,
       fadePacePenalty: 0,
+      lowVisibilityBrakeScalar: 0.28,
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: -0.2,
@@ -87,6 +92,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       recoveryScalar: 1,
       launchPaceBonus: 0.01,
       fadePacePenalty: 0,
+      lowVisibilityBrakeScalar: 0,
       brilliantChance: 0.015,
       brilliantPaceBonus: 0.06,
       trafficLanePressure: 0.2,
@@ -101,6 +107,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       recoveryScalar: 0.85,
       launchPaceBonus: 0,
       fadePacePenalty: 0,
+      lowVisibilityBrakeScalar: 0,
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0,
