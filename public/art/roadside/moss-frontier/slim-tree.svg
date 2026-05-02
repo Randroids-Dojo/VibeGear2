@@ -1,9 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="moss-frontier slim-tree roadside prop">
 <rect width="128" height="128" fill="none"/>
 <ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
 <rect x="59" y="72" width="10" height="40" fill="#6b4a2e"/>
+<rect x="63" y="74" width="4" height="38" fill="#3f2d1f" opacity="0.45"/>
 <path d="M64 16 L40 88 L88 88 Z" fill="#204f32"/>
 <path d="M64 8 L46 66 L82 66 Z" fill="#37694b" opacity="0.9"/>
+<path d="M64 26 C41 48 49 72 49 86" fill="none" stroke="#c2e879" stroke-width="3" opacity="0.28"/>
 <rect x="48" y="68" width="10" height="6" fill="#c2e879" opacity="0.35"/>
-<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#c2e879">PLACEHOLDER</text>
+<rect x="24" y="102" width="28" height="5" fill="#c2e879" opacity="0.45"/>
 </svg>

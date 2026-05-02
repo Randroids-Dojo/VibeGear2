@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="glass-ridge marker-light roadside prop">
 <rect width="128" height="128" fill="none"/>
 <ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
-<rect x="59" y="62" width="10" height="50" fill="#d7dde6"/>
+<rect x="59" y="61" width="10" height="51" fill="#d7dde6"/>
+<rect x="56" y="62" width="4" height="50" fill="#8da8bc" opacity="0.5"/>
 <rect x="28" y="22" width="72" height="44" rx="3" fill="#d8f4ff"/>
-<rect x="42" y="38" width="44" height="12" fill="#101827"/>
-<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#d8f4ff">PLACEHOLDER</text>
+<rect x="32" y="26" width="64" height="36" rx="2" fill="#d8f4ff" opacity="0.62"/>
+<circle cx="64" cy="43" r="14" fill="#d8f4ff"/><circle cx="64" cy="43" r="6" fill="#ffffff" opacity="0.72"/>
+<rect x="24" y="102" width="28" height="5" fill="#d8f4ff" opacity="0.45"/>
 </svg>

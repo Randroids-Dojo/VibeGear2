@@ -74,9 +74,20 @@ describe("placeholder art bank", () => {
     }
   });
 
-  it("ships the GDD roadside prop volume across every region", () => {
+  it("ships production roadside prop art across every region", () => {
     const propEntries = readManifest().filter((entry) => entry.id.startsWith("roadside:"));
     const regionalProps = propEntries.filter((entry) => entry.path.split("/").length === 4);
+    for (const entry of propEntries) {
+      expect(entry.license).toBe("CC-BY-4.0");
+      expect(entry.source).toContain("production roadside prop set");
+      expect(entry.originality).toContain("Original stylized roadside prop art");
+      expect(entry.originality).not.toContain("placeholder");
+
+      const svg = readFileSync(path.join(PUBLIC_DIR, entry.path), "utf8");
+      expect(svg).not.toContain("PLACEHOLDER");
+      expect(svg).not.toContain("placeholder art");
+    }
+
     expect(regionalProps.length).toBeGreaterThanOrEqual(80);
     expect(regionalProps.length).toBeLessThanOrEqual(120);
     for (const regionId of REGION_IDS) {
@@ -84,8 +95,9 @@ describe("placeholder art bank", () => {
       expect(entries.length).toBeGreaterThanOrEqual(10);
       for (const entry of entries) {
         expect(existsSync(path.join(PUBLIC_DIR, entry.path))).toBe(true);
-        expect(entry.license).toBe("CC0");
-        expect(entry.originality).toContain("Original geometric placeholder art");
+
+        const svg = readFileSync(path.join(PUBLIC_DIR, entry.path), "utf8");
+        expect(svg).toContain("roadside prop");
       }
     }
   });

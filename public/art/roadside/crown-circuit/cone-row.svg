@@ -1,11 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="crown-circuit cone-row roadside prop">
 <rect width="128" height="128" fill="none"/>
 <ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
-<rect x="32" y="72" width="64" height="12" fill="#d7dde6"/>
-<rect x="32" y="90" width="64" height="10" fill="#ffd85a"/>
-<rect x="34" y="68" width="8" height="42" fill="#b7c0ca"/>
-<rect x="86" y="68" width="8" height="42" fill="#b7c0ca"/>
-
-<path d="M38 98 L48 66 L58 98 Z" fill="#ff7a1a"/><path d="M60 98 L70 66 L80 98 Z" fill="#ff7a1a"/><path d="M82 98 L92 66 L102 98 Z" fill="#ff7a1a"/>
-<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#ffd85a">PLACEHOLDER</text>
+<rect x="34" y="66" width="8" height="44" fill="#b7c0ca"/>
+<rect x="86" y="66" width="8" height="44" fill="#b7c0ca"/>
+<path d="M32 100 L44 62 L56 100 Z" fill="#ff7a1a"/><path d="M58 100 L70 62 L82 100 Z" fill="#ff7a1a"/><path d="M84 100 L96 62 L108 100 Z" fill="#ff7a1a"/><rect x="36" y="82" width="16" height="5" fill="#fff3d8"/><rect x="62" y="82" width="16" height="5" fill="#fff3d8"/><rect x="88" y="82" width="16" height="5" fill="#fff3d8"/>
+<rect x="63" y="102" width="28" height="5" fill="#ffd85a" opacity="0.45"/>
 </svg>

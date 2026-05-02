@@ -1,9 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="neon-meridian wide-tree roadside prop">
 <rect width="128" height="128" fill="none"/>
 <ellipse cx="64" cy="116" rx="42" ry="8" fill="#10151f" opacity="0.35"/>
 <rect x="59" y="72" width="10" height="40" fill="#6b4a2e"/>
+<rect x="63" y="74" width="4" height="38" fill="#3f2d1f" opacity="0.45"/>
 <path d="M64 16 L32 88 L96 88 Z" fill="#22324f"/>
 <path d="M64 8 L38 66 L90 66 Z" fill="#4c3d79" opacity="0.9"/>
+<path d="M64 26 C40 48 50 72 41 86" fill="none" stroke="#ff5bd6" stroke-width="3" opacity="0.28"/>
 <rect x="50" y="68" width="10" height="6" fill="#ff5bd6" opacity="0.35"/>
-<text x="64" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#ff5bd6">PLACEHOLDER</text>
+<rect x="37" y="102" width="28" height="5" fill="#ff5bd6" opacity="0.45"/>
 </svg>

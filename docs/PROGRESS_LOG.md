@@ -6,6 +6,54 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Production roadside props
+
+**GDD sections touched:** §16, §17, §24, and §26.
+**Branch / PR:** `feat/production-roadside-props`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Replaced 96 regional roadside prop SVGs with production-labeled original
+  sign, barrier, tree, and building assets while preserving the existing
+  generator-owned file layout.
+- Removed visible `PLACEHOLDER` labels and placeholder aria labels from all
+  regional roadside prop SVGs and the legacy temperate roadside atlas.
+- Added regional accent details to props so every tour keeps distinct color
+  and shape language at race scale.
+- Updated roadside manifest provenance to CC BY 4.0 production prop art.
+
+### Verified
+- `npm run art:generate` green.
+- `npx vitest run scripts/__tests__/placeholder-art-bank.test.ts` green, 5 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+- `npx playwright test e2e/projection-readability.spec.ts --project=chromium` green, 1 passed.
+- `git diff --check` clean.
+- Changed-file dash scan clean.
+
+### Decisions and assumptions
+- Kept the existing 128 x 128 per-prop SVG contract so compiled trackside
+  sprite placement and atlas loading remain compatible.
+- Left menu backgrounds, backdrops, HUD icons, FX sheets, and audio bank
+  replacement for later production-polish slices.
+
+### Coverage ledger
+- Replaced `GDD-17-PLACEHOLDER-ROADSIDE-PROPS` with
+  `GDD-17-PRODUCTION-ROADSIDE-PROPS`.
+- Closes `VibeGear2-feat-art-replace-e8c6168e`.
+- Uncovered adjacent requirements: production menu backgrounds, backdrops,
+  HUD icons, FX sheets, and final audio assets remain separate polish work.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Production car sprite sheets
 
 **GDD sections touched:** §11, §16, §17, §24, and §26.
