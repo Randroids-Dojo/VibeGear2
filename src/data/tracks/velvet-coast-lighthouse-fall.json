@@ -11,7 +11,17 @@
   "difficulty": 2,
   "segments": [
     { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": [] },
-    { "len": 180, "curve": -0.1, "grade": 0.05, "roadsideLeft": "rock_boulder", "roadsideRight": "fence_post", "hazards": [] },
+    {
+      "len": 180,
+      "curve": -0.1,
+      "grade": 0.05,
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "fence_post",
+      "hazards": [],
+      "pickups": [
+        { "id": "lighthouse-fall-keeper-cash", "kind": "cash", "laneOffset": 0.4, "value": 100 }
+      ]
+    },
     { "len": 240, "curve": -0.08, "grade": -0.06, "roadsideLeft": "tree_pine", "roadsideRight": "rock_boulder", "hazards": ["puddle"] },
     { "len": 240, "curve": 0.12, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
     { "len": 324, "curve": 0.06, "grade": 0.03, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": [] },

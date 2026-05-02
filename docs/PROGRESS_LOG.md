@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: First-tour authored events
+
+**GDD sections touched:** §9, §14, §16, §20, and §22.
+**Branch / PR:** `feat/first-tour-authored-events`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added visible authored pickup lines to Sunpier Loop, Cliffline Arc, and
+  Lighthouse Fall so every Velvet Coast race now has at least one readable
+  non-curve decision point.
+- Kept the existing first-tour physical hazards in place so each race combines
+  pickup routing with a shared-rule road condition that applies through the
+  hazard runtime.
+- Added content coverage that enforces first-tour pickup coverage, shared-rule
+  hazard coverage, pickup id uniqueness, nitro value consistency, and cash
+  pickup budget limits.
+- Added browser coverage that boots every Velvet Coast race route and verifies
+  a live authored pickup becomes visible from the race camera.
+
+### Verified
+- `npx vitest run src/data/__tests__/tracks-content.test.ts` green, 91 passed.
+- `npx playwright test e2e/first-tour-authored-events.spec.ts --project=chromium`
+  green, 4 passed.
+
+### Decisions and assumptions
+- Treated pickups as the visible authored player decision because the GDD
+  explicitly documents that AI ignores pickups in v1. Hazards remain the
+  shared-rule event surface for player and AI physics.
+- Limited first-tour cash pickups to 150 credits per race so authored rewards
+  stay below a meaningful race-payout budget.
+
+### Coverage ledger
+- Added `GDD-09-FIRST-TOUR-AUTHORED-EVENTS`.
+- Closes `VibeGear2-feat-tracks-first-10ebfec0`.
+- Uncovered adjacent requirements: richer visible hazard sprites, AI hazard
+  avoidance steering, and second-tour authored event passes remain separate
+  backlog work.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: First-tour standings pressure
 
 **GDD sections touched:** §8, §12, and §20.
