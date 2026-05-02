@@ -1,12 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="VibeGear2 placeholder art">
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="title production menu background">
 <rect width="1920" height="1080" fill="#1c2345"/>
-<path d="M0 340 L220 160 L420 340 L690 185 L940 340 L1180 140 L1410 340 L1660 180 L1920 300 L1920 520 L0 520 Z" fill="#55608a" opacity="0.6"/>
-<path d="M0 470 C260 420 500 486 730 430 C1020 360 1230 460 1460 410 C1670 365 1800 405 1920 370 L1920 650 L0 650 Z" fill="#2e355b" opacity="0.78"/>
-<rect x="0" y="640" width="1920" height="440" fill="#0b1019" opacity="0.45"/>
-<path d="M760 1080 L910 650 L1010 650 L1160 1080 Z" fill="#535b60" opacity="0.8"/>
-<path d="M928 1080 L955 650 L965 650 L992 1080 Z" fill="#ffd85a" opacity="0.75"/>
-<rect x="116" y="116" width="480" height="18" fill="#ffd85a" opacity="0.7"/>
-<rect x="116" y="156" width="320" height="10" fill="#ffd85a" opacity="0.32"/>
-<rect x="1324" y="812" width="360" height="18" fill="#ffd85a" opacity="0.45"/>
-<text x="960" y="1000" text-anchor="middle" font-family="monospace" font-size="44" font-weight="700" fill="#ffd85a" opacity="0.82">TITLE PLACEHOLDER</text>
+<path d="M0 330 L220 150 L420 330 L690 176 L940 330 L1180 130 L1410 330 L1660 170 L1920 290 L1920 520 L0 520 Z" fill="#55608a" opacity="0.62"/>
+<path d="M0 462 C260 410 500 478 730 420 C1020 350 1230 450 1460 398 C1670 354 1800 396 1920 360 L1920 650 L0 650 Z" fill="#2e355b" opacity="0.82"/>
+<rect x="0" y="636" width="1920" height="444" fill="#0b1019" opacity="0.42"/>
+<path d="M-120 1080 C260 870 590 790 960 812 C1320 832 1600 902 2040 790 L2040 1080 Z" fill="#172033" opacity="0.72"/>
+<path d="M720 1080 L900 642 L1020 642 L1200 1080 Z" fill="#535b60" opacity="0.82"/>
+<path d="M926 1080 L955 642 L965 642 L994 1080 Z" fill="#ffd85a" opacity="0.76"/>
+<path d="M100 218 C330 174 540 230 760 188 C980 146 1200 230 1420 188 C1630 148 1780 170 1920 144 L1920 216 C1710 240 1500 222 1270 246 C980 276 790 214 520 260 C330 292 180 260 100 282 Z" fill="#ffd85a" opacity="0.12"/>
+<rect x="112" y="118" width="420" height="16" fill="#ffd85a" opacity="0.64"/>
+<rect x="112" y="154" width="260" height="8" fill="#ffd85a" opacity="0.28"/>
+<rect x="620" y="620" width="680" height="46" fill="#d7dde6" opacity="0.42"/>
+<g transform="translate(820 770) scale(1.55)"><path d="M30 96 L46 42 L82 18 L130 18 L166 42 L182 96 Z" fill="#ffd85a"/><path d="M66 38 L96 28 L132 38 L144 62 L54 62 Z" fill="#101827"/><rect x="52" y="82" width="34" height="12" fill="#ff4d3d"/><rect x="126" y="82" width="34" height="12" fill="#ff4d3d"/><path d="M24 100 L188 100 L176 112 L36 112 Z" fill="#101827" opacity="0.65"/></g>
+<path d="M640 704 C790 654 1050 654 1260 704" fill="none" stroke="#ffd85a" stroke-width="18" opacity="0.55"/>
+<rect x="710" y="548" width="500" height="28" fill="#d7dde6" opacity="0.78"/>
 </svg>

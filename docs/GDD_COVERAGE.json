@@ -93,13 +93,13 @@
       ]
     },
     {
-      "id": "GDD-17-PLACEHOLDER-MENU-BACKGROUNDS",
+      "id": "GDD-17-PRODUCTION-MENU-BACKGROUNDS",
       "gddSections": [
         "docs/gdd/17-art-direction.md",
         "docs/gdd/24-content-plan.md",
         "docs/gdd/26-open-source-project-guidance.md"
       ],
-      "requirement": "The placeholder art bank ships original menu background assets for the main menu screens, with manifest provenance metadata for every background file.",
+      "requirement": "The production art bank ships original menu background assets for the main menu screens, with screen-specific scene composition and manifest provenance metadata for every background file.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/art/menu/",
@@ -107,7 +107,10 @@
         "scripts/generate-placeholder-art.ts"
       ],
       "testRefs": ["scripts/__tests__/placeholder-art-bank.test.ts"],
-      "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-art-d68d1ee2",
+        "VibeGear2-feat-art-replace-5e2e9c74"
+      ]
     },
     {
       "id": "GDD-18-PLACEHOLDER-AUDIO-BANK",

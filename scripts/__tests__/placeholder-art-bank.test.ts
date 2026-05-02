@@ -102,15 +102,22 @@ describe("placeholder art bank", () => {
     }
   });
 
-  it("ships placeholder backgrounds for the main menu screens", () => {
+  it("ships production backgrounds for the main menu screens", () => {
     const manifest = readManifest();
     for (const menuId of MENU_BACKGROUND_IDS) {
       const entry = manifest.find((item) => item.id === `menu:${menuId}:background`);
       expect(entry).toBeDefined();
       expect(entry?.path).toBe(`art/menu/${menuId}.svg`);
       expect(existsSync(path.join(PUBLIC_DIR, `art/menu/${menuId}.svg`))).toBe(true);
-      expect(entry?.license).toBe("CC0");
-      expect(entry?.originality).toContain("Original geometric placeholder art");
+      expect(entry?.license).toBe("CC-BY-4.0");
+      expect(entry?.source).toContain("production menu scenes");
+      expect(entry?.originality).toContain("Original stylized menu scene art");
+      expect(entry?.originality).not.toContain("placeholder");
+
+      const svg = readFileSync(path.join(PUBLIC_DIR, `art/menu/${menuId}.svg`), "utf8");
+      expect(svg).not.toContain("PLACEHOLDER");
+      expect(svg).not.toContain("placeholder art");
+      expect(svg).toContain("production menu background");
     }
   });
 });
