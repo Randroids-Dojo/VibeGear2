@@ -6,6 +6,48 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Race mix and event emphasis
+
+**GDD sections touched:** §10, §13, §18, and §20.
+**Branch / PR:** `feat/race-audio-mix-pass`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a race-mix ducking policy so countdown, nitro, finish, collision,
+  pickup, tire, surface, and damage-warning cues can sit above race music
+  without muting the music bed.
+- Added a severe-damage warning audio event when the player crosses the
+  75% damage band before the wreck gate.
+- Wired the race route to apply music ducking around countdown and live
+  race SFX events, with hidden telemetry for browser smoke coverage.
+- Added a procedural damage-warning SFX cue and tests for race-mix priority,
+  warning SFX shape, and race-session warning emission.
+
+### Verified
+- `npx vitest run src/audio/raceMix.test.ts src/audio/sfx.test.ts src/game/__tests__/raceSession.test.ts` green, 144 passed.
+- `npx playwright test e2e/race-audio-mix.spec.ts --project=chromium` green, 1 passed.
+
+### Decisions and assumptions
+- Kept this as runtime mix policy and procedural SFX tuning. It does not
+  replace the underlying generated audio assets.
+- Used the existing severe damage band as the warning threshold because it
+  is the first band with heavy power loss and sits below the wreck gate.
+
+### Coverage ledger
+- Added `GDD-18-RACE-MIX-EVENT-EMPHASIS`.
+- Closes `VibeGear2-feat-audio-race-a656eed2`.
+- Uncovered adjacent requirements: production-quality music composition,
+  region-specific mastering, and richer multi-tone warning patterns remain
+  separate polish work.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: First-tour authored events
 
 **GDD sections touched:** §9, §14, §16, §20, and §22.

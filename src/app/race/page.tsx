@@ -180,6 +180,11 @@ import {
   raceMusicIntensity,
   weatherMusicStem,
 } from "@/audio/music";
+import {
+  applyRaceMusicDucking,
+  raceMusicDuckingForAudioEvents,
+  raceMusicDuckingForCountdownStep,
+} from "@/audio/raceMix";
 
 const VIEWPORT_WIDTH = 800;
 const VIEWPORT_HEIGHT = 480;
@@ -311,6 +316,8 @@ function playRaceSfxEvents(
       runtime.playLapComplete({ audio });
     } else if (event.kind === "raceFinish") {
       runtime.playResultsStinger({ audio });
+    } else if (event.kind === "damageWarning") {
+      runtime.playDamageWarning({ audio });
     } else if (event.kind === "brakeScrub") {
       runtime.playBrakeScrub({ speedFactor: event.speedFactor, audio });
     } else if (event.kind === "tireSqueal") {
@@ -377,6 +384,17 @@ function playerPickupFeedbackFromEvents(
     };
   }
   return latest;
+}
+
+function mergeObservedAudioEvents(
+  current: string,
+  next: ReadonlyArray<string>,
+): string {
+  const observed = new Set(
+    current === "none" ? [] : current.split(",").filter(Boolean),
+  );
+  for (const event of next) observed.add(event);
+  return observed.size === 0 ? "none" : Array.from(observed).sort().join(",");
 }
 
 function finishMomentTitle(place: number): string {
@@ -1151,6 +1169,11 @@ function RaceCanvas({
   const [visiblePickupCount, setVisiblePickupCount] = useState<number>(0);
   const [collectedPickupCount, setCollectedPickupCount] = useState<number>(0);
   const [playerNitroActive, setPlayerNitroActive] = useState<boolean>(false);
+  const [lastRaceAudioEvent, setLastRaceAudioEvent] = useState<string>("none");
+  const [observedRaceAudioEvents, setObservedRaceAudioEvents] =
+    useState<string>("none");
+  const [raceMusicDuckTelemetry, setRaceMusicDuckTelemetry] =
+    useState<number>(1);
   const [pickupFeedback, setPickupFeedback] =
     useState<PickupFeedbackSnapshot | null>(null);
   const [touchLayout, setTouchLayout] = useState<TouchLayout>(() =>
@@ -1473,6 +1496,8 @@ function RaceCanvas({
       speed: 0,
       topSpeed: playerStats.topSpeed,
     });
+    let raceMusicDuckingScale = 1;
+    let raceMusicDuckingUntilMs = 0;
     let latestWeatherMusicStem = weatherMusicStem(weather);
     let tunnelState = OPEN_TUNNEL_STATE;
     let engineStartPending = false;
@@ -1498,7 +1523,13 @@ function RaceCanvas({
           raceMusic.play(
             raceMusicCueForSession,
             persistedSettings.audio,
-            latestRaceMusicIntensity,
+            {
+              ...latestRaceMusicIntensity,
+              volumeScale: applyRaceMusicDucking(
+                latestRaceMusicIntensity.volumeScale,
+                { volumeScale: raceMusicDuckingScale, holdMs: 0 },
+              ),
+            },
           );
           raceMusic.playWeatherStem(
             latestWeatherMusicStem,
@@ -1559,6 +1590,9 @@ function RaceCanvas({
       previousRaceStoryCarsRef.current = null;
       lastRaceStoryMomentMsRef.current = 0;
       setLastRaceStoryMoment(null);
+      setLastRaceAudioEvent("none");
+      setObservedRaceAudioEvents("none");
+      setRaceMusicDuckTelemetry(1);
       sessionRef.current = createRaceSession(config);
       resetTimeTrialRuntime();
       tunnelState = OPEN_TUNNEL_STATE;
@@ -1749,10 +1783,21 @@ function RaceCanvas({
         const renderWeather = activeWeatherForState(session.weather);
         latestWeatherMusicStem = weatherMusicStem(renderWeather);
         const audioUpdateMs = performance.now();
+        if (audioUpdateMs >= raceMusicDuckingUntilMs) {
+          raceMusicDuckingScale = 1;
+          setRaceMusicDuckTelemetry(1);
+        }
+        const duckedRaceMusicIntensity = {
+          ...latestRaceMusicIntensity,
+          volumeScale: applyRaceMusicDucking(
+            latestRaceMusicIntensity.volumeScale,
+            { volumeScale: raceMusicDuckingScale, holdMs: 0 },
+          ),
+        };
         if (audioUpdateMs - lastEngineAudioUpdateMs >= 50) {
           lastEngineAudioUpdateMs = audioUpdateMs;
           engineAudio.update(latestEngineInput);
-          raceMusic.update(persistedSettings.audio, latestRaceMusicIntensity);
+          raceMusic.update(persistedSettings.audio, duckedRaceMusicIntensity);
           raceMusic.updateWeatherStem(
             latestWeatherMusicStem,
             persistedSettings.audio,
@@ -1760,11 +1805,33 @@ function RaceCanvas({
         }
         if (lastRaceSfxTick !== session.tick) {
           lastRaceSfxTick = session.tick;
+          const ducking = raceMusicDuckingForAudioEvents(session.audioEvents);
+          if (ducking.volumeScale < raceMusicDuckingScale) {
+            raceMusicDuckingScale = ducking.volumeScale;
+            raceMusicDuckingUntilMs = audioUpdateMs + ducking.holdMs;
+            setRaceMusicDuckTelemetry(ducking.volumeScale);
+            raceMusic.update(persistedSettings.audio, {
+              ...latestRaceMusicIntensity,
+              volumeScale: applyRaceMusicDucking(
+                latestRaceMusicIntensity.volumeScale,
+                ducking,
+              ),
+            });
+          }
           playRaceSfxEvents(
             raceSfx,
             session.audioEvents,
             persistedSettings.audio,
           );
+          if (session.audioEvents.length > 0) {
+            setLastRaceAudioEvent(session.audioEvents[0]!.kind);
+            setObservedRaceAudioEvents((current) =>
+              mergeObservedAudioEvents(
+                current,
+                session.audioEvents.map((event) => event.kind),
+              ),
+            );
+          }
           const pickupFeedbackFromTick = playerPickupFeedbackFromEvents(
             session.audioEvents,
             performance.now(),
@@ -2049,6 +2116,21 @@ function RaceCanvas({
           const countdownStep = Math.ceil(session.race.countdownRemainingSec);
           if (countdownStep !== lastCountdownSfxStep) {
             lastCountdownSfxStep = countdownStep;
+            const ducking = raceMusicDuckingForCountdownStep(countdownStep);
+            raceMusicDuckingScale = ducking.volumeScale;
+            raceMusicDuckingUntilMs = performance.now() + ducking.holdMs;
+            setRaceMusicDuckTelemetry(ducking.volumeScale);
+            setLastRaceAudioEvent("countdown");
+            setObservedRaceAudioEvents((current) =>
+              mergeObservedAudioEvents(current, ["countdown"]),
+            );
+            raceMusic.update(persistedSettings.audio, {
+              ...latestRaceMusicIntensity,
+              volumeScale: applyRaceMusicDucking(
+                latestRaceMusicIntensity.volumeScale,
+                ducking,
+              ),
+            });
             raceSfx.playCountdownTick({
               step: countdownStep,
               audio: persistedSettings.audio,
@@ -2157,6 +2239,21 @@ function RaceCanvas({
           }
         } else if (lastCountdownSfxStep !== 0) {
           lastCountdownSfxStep = 0;
+          const ducking = raceMusicDuckingForCountdownStep(0);
+          raceMusicDuckingScale = ducking.volumeScale;
+          raceMusicDuckingUntilMs = performance.now() + ducking.holdMs;
+          setRaceMusicDuckTelemetry(ducking.volumeScale);
+          setLastRaceAudioEvent("countdown");
+          setObservedRaceAudioEvents((current) =>
+            mergeObservedAudioEvents(current, ["countdown"]),
+          );
+          raceMusic.update(persistedSettings.audio, {
+            ...latestRaceMusicIntensity,
+            volumeScale: applyRaceMusicDucking(
+              latestRaceMusicIntensity.volumeScale,
+              ducking,
+            ),
+          });
           raceSfx.playCountdownTick({
             step: 0,
             audio: persistedSettings.audio,
@@ -2348,6 +2445,16 @@ function RaceCanvas({
         <dt>Nitro active:</dt>
         <dd data-testid="race-player-nitro-active">
           {playerNitroActive ? "yes" : "no"}
+        </dd>
+        <dt>Last race audio:</dt>
+        <dd data-testid="race-last-audio-event">{lastRaceAudioEvent}</dd>
+        <dt>Observed race audio:</dt>
+        <dd data-testid="race-observed-audio-events">
+          {observedRaceAudioEvents}
+        </dd>
+        <dt>Music duck:</dt>
+        <dd data-testid="race-music-duck-scale">
+          {raceMusicDuckTelemetry.toFixed(2)}
         </dd>
         <dt>Last pickup:</dt>
         <dd data-testid="race-last-pickup-kind">

@@ -72,6 +72,10 @@ export interface ResultsStingerSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export interface DamageWarningSfxInput {
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface BrakeScrubSfxInput {
   readonly speedFactor: number;
   readonly audio: AudioSettings | undefined;
@@ -198,6 +202,17 @@ export class ProceduralSfxRuntime {
       gainScale: 0.8,
       durationSeconds: 0.34,
       endFrequency: 1320,
+    });
+  }
+
+  playDamageWarning(input: DamageWarningSfxInput): boolean {
+    return this.playTone({
+      audio: input.audio,
+      frequency: 440,
+      oscillatorType: "square",
+      gainScale: 0.72,
+      durationSeconds: 0.28,
+      endFrequency: 330,
     });
   }
 
