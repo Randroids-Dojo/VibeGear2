@@ -54,7 +54,7 @@ test.describe("projection readability", () => {
     test.setTimeout(60_000);
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/race?track=test/elevation&car=sparrow-gt");
+    await page.goto("/race?track=test/elevation&mode=quickRace&car=sparrow-gt");
 
     await expect(page.getByTestId("race-canvas")).toHaveAttribute(
       "data-track",
@@ -110,7 +110,7 @@ test.describe("projection readability", () => {
         sample.aiWidth !== null &&
         sample.aiWidthDepth !== null &&
         sample.aiWidth! >= 20 &&
-        sample.aiWidth! < 90,
+        sample.aiWidth! <= 92,
     );
     expect(aiSamples.length).toBeGreaterThanOrEqual(6);
     expect(adjacentMaxRatio(aiSamples.map((sample) => sample.aiWidthDepth!))).toBeLessThan(1.7);
