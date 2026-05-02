@@ -737,6 +737,29 @@
       "followupRefs": ["F-072"]
     },
     {
+      "id": "GDD-09-FIRST-TOUR-AUTHORED-EVENTS",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Every Velvet Coast race has at least one visible authored pickup line and at least one authored physical hazard, giving the first tour readable non-curve decisions with content validation and browser route coverage.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/velvet-coast-harbor-run.json",
+        "src/data/tracks/velvet-coast-sunpier-loop.json",
+        "src/data/tracks/velvet-coast-cliffline-arc.json",
+        "src/data/tracks/velvet-coast-lighthouse-fall.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "e2e/first-tour-authored-events.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-feat-tracks-first-10ebfec0"]
+    },
+    {
       "id": "GDD-20-GAME-UI-SELECTION",
       "gddSections": [
         "docs/gdd/20-hud-and-ui-ux.md",

@@ -11,7 +11,17 @@
   "difficulty": 2,
   "segments": [
     { "len": 240, "curve": 0, "grade": 0.01, "roadsideLeft": "rock_boulder", "roadsideRight": "sign_marker", "hazards": [] },
-    { "len": 240, "curve": 0.14, "grade": 0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "fence_post", "hazards": [] },
+    {
+      "len": 240,
+      "curve": 0.14,
+      "grade": 0.04,
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "fence_post",
+      "hazards": [],
+      "pickups": [
+        { "id": "cliffline-arc-climb-nitro", "kind": "nitro", "laneOffset": 0.35, "value": 25 }
+      ]
+    },
     { "len": 180, "curve": 0.06, "grade": -0.03, "roadsideLeft": "tree_pine", "roadsideRight": "rock_boulder", "hazards": [] },
     { "len": 240, "curve": -0.14, "grade": 0, "roadsideLeft": "sign_marker", "roadsideRight": "light_pole", "hazards": ["gravel_band"] },
     { "len": 300, "curve": -0.04, "grade": -0.02, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] },

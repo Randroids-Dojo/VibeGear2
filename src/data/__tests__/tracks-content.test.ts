@@ -27,6 +27,13 @@ const EXPECTED_MVP_TRACK_IDS = [
   "iron-borough/outer-exchange",
 ];
 
+const EXPECTED_VELVET_COAST_TRACK_IDS = [
+  "velvet-coast/harbor-run",
+  "velvet-coast/sunpier-loop",
+  "velvet-coast/cliffline-arc",
+  "velvet-coast/lighthouse-fall",
+];
+
 const EXPECTED_AUTHORED_TOUR_TRACK_IDS = [
   ...EXPECTED_MVP_TRACK_IDS,
   "ember-steppe/redglass-straight",
@@ -174,6 +181,50 @@ describe("§24 MVP track set", () => {
         track.segments.some((segment) => segment.grade !== 0),
       ),
     ).toBe(true);
+  });
+});
+
+describe("§9 Velvet Coast authored events", () => {
+  it("gives every first-tour race a visible pickup line and a shared-rule hazard", () => {
+    for (const id of EXPECTED_VELVET_COAST_TRACK_IDS) {
+      const parsed = TrackSchema.parse(TRACK_RAW[id]);
+      const pickups = parsed.segments.flatMap((segment) => segment.pickups ?? []);
+      const hazards = parsed.segments.flatMap((segment) => segment.hazards);
+
+      expect(pickups.length, `${id} pickup count`).toBeGreaterThan(0);
+      expect(hazards.length, `${id} hazard count`).toBeGreaterThan(0);
+      expect(
+        new Set(pickups.map((pickup) => pickup.id)).size,
+        `${id} pickup ids`,
+      ).toBe(pickups.length);
+      expect(
+        pickups.every((pickup) => pickup.kind === "cash" || pickup.value === 25),
+        `${id} nitro pickup values`,
+      ).toBe(true);
+      expect(
+        pickups
+          .filter((pickup) => pickup.kind === "cash")
+          .reduce((total, pickup) => total + pickup.value, 0),
+        `${id} cash pickup budget`,
+      ).toBeLessThanOrEqual(150);
+    }
+  });
+
+  it("mixes pickup decisions and hazard pressure across the first tour", () => {
+    const pickups = new Set<string>();
+    const hazards = new Set<string>();
+    for (const id of EXPECTED_VELVET_COAST_TRACK_IDS) {
+      const parsed = TrackSchema.parse(TRACK_RAW[id]);
+      for (const segment of parsed.segments) {
+        for (const pickup of segment.pickups ?? []) pickups.add(pickup.kind);
+        for (const hazard of segment.hazards) hazards.add(hazard);
+      }
+    }
+
+    expect(pickups.has("cash")).toBe(true);
+    expect(pickups.has("nitro")).toBe(true);
+    expect(hazards.has("puddle")).toBe(true);
+    expect(hazards.has("gravel_band")).toBe(true);
   });
 });
 
