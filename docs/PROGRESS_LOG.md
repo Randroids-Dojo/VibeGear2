@@ -8,8 +8,8 @@ Correct them by adding a new entry that references the old one.
 
 ## 2026-05-02: Slice: Arcade racer priority research
 
-**GDD references reviewed:** §3, §4, §5, §15, §16, §17, §18, and §20.
-**Branch / PR:** `docs/arcade-racer-priority-stack`, PR pending.
+**GDD sections touched:** §3, §4, §5, §15, §16, §17, §18, and §20.
+**Branch / PR:** `docs/arcade-racer-priority-stack`, PR #154 merged.
 **Status:** Implemented.
 
 ### Done
@@ -33,13 +33,23 @@ Correct them by adding a new entry that references the old one.
 - AI personality, first-tour authored events, race audio, and production car
   art remain the highest-impact implementation stack after the playtest gate.
 
+### Coverage ledger
+- Planning-only slice. No new coverage ledger id was added because no runtime,
+  GDD requirement, schema, or test coverage changed.
+- Referenced existing ledger ids: `GDD-04-FIRST-RACE-FUN-LOOP`,
+  `GDD-16-OPPONENT-HILL-PROJECTION`, and `GDD-16-CAR-SPRITE-ATLAS`.
+- Uncovered adjacent requirements: AI archetype personality, first-tour
+  authored events, race audio emphasis, production car art, and release-fun
+  automation remain tracked as implementation dots and followups.
+
 ### Followups created
 - F-073, backed by `VibeGear2-feat-playtest-add-4ba02811`.
 - F-074, backed by `VibeGear2-feat-tour-make-ed6387da`.
 - F-075, backed by `VibeGear2-feat-feedback-add-880f1fd2`.
 
 ### GDD edits
-None.
+None. This research PR referenced existing GDD sections to rank backlog work,
+but did not change the GDD source files.
 
 ---
 
