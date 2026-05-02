@@ -201,7 +201,8 @@ const AI_FALLBACK_FILLS = Object.freeze([
   "#d980ff",
   "#ff9f43",
 ]);
-const AI_MIN_PROJECTED_WIDTH = 20;
+const AI_MIN_PROJECTED_WIDTH_DESKTOP = 20;
+const AI_MIN_PROJECTED_WIDTH_MOBILE = 12;
 const EMPTY_COLLECTED_PICKUP_SET: ReadonlySet<string> = new Set<string>();
 
 /**
@@ -677,7 +678,11 @@ function projectOpponentCar(input: {
   if (!anchorStrip?.visible) return null;
 
   const projectedScreenW = projection.screenW * 0.3;
-  if (projectedScreenW < AI_MIN_PROJECTED_WIDTH) return null;
+  const minProjectedWidth =
+    input.viewport.width < 500
+      ? AI_MIN_PROJECTED_WIDTH_MOBILE
+      : AI_MIN_PROJECTED_WIDTH_DESKTOP;
+  if (projectedScreenW < minProjectedWidth) return null;
   const screenW = Math.min(92, projectedScreenW);
   return {
     screenX: projection.screenX,
