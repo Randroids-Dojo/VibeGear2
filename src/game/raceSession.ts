@@ -252,6 +252,12 @@ export interface RaceSessionRaceFinishAudioEvent {
   readonly carId: string;
 }
 
+export interface RaceSessionDamageWarningAudioEvent {
+  readonly kind: "damageWarning";
+  readonly carId: string;
+  readonly damagePercent: number;
+}
+
 export interface RaceSessionBrakeScrubAudioEvent {
   readonly kind: "brakeScrub";
   readonly carId: string;
@@ -290,6 +296,7 @@ export type RaceSessionAudioEvent =
   | RaceSessionGearShiftAudioEvent
   | RaceSessionLapCompleteAudioEvent
   | RaceSessionRaceFinishAudioEvent
+  | RaceSessionDamageWarningAudioEvent
   | RaceSessionBrakeScrubAudioEvent
   | RaceSessionTireSquealAudioEvent
   | RaceSessionSurfaceHushAudioEvent
@@ -661,6 +668,7 @@ const BRAKE_SCRUB_SPEED_M_PER_S = 8;
 const TIRE_SQUEAL_SPEED_M_PER_S = 18;
 const TIRE_SQUEAL_STEER_THRESHOLD = 0.65;
 const SURFACE_HUSH_SPEED_M_PER_S = 10;
+const DAMAGE_WARNING_THRESHOLD = 0.75;
 
 /**
  * Reference top speed (m/s) used to normalise the §13 `speedFactor`
@@ -1614,6 +1622,17 @@ export function stepRaceSession(
     hitsByCarId.get(PLAYER_CAR_ID) ?? [],
     playerAssistScalars,
   );
+  const playerDamageWarningEvents: RaceSessionDamageWarningAudioEvent[] =
+    state.player.damage.total < DAMAGE_WARNING_THRESHOLD &&
+    playerDamageResult.damage.total >= DAMAGE_WARNING_THRESHOLD
+      ? [
+          {
+            kind: "damageWarning",
+            carId: PLAYER_CAR_ID,
+            damagePercent: Math.round(playerDamageResult.damage.total * 100),
+          },
+        ]
+      : [];
   const aiAfterDamage: RaceSessionAICar[] = nextAi.map((entry, index) => {
     const id = aiCarId(index);
     const result = advanceDamage(
@@ -1882,6 +1901,7 @@ export function stepRaceSession(
     playerNitroEvents.length > 0 ||
     playerShiftEvents.length > 0 ||
     playerLapEvents.length > 0 ||
+    playerDamageWarningEvents.length > 0 ||
     playerSurfaceAudio.events.length > 0 ||
     playerPickupAudioEvents.length > 0;
   const nextAudioEvents: ReadonlyArray<RaceSessionAudioEvent> =
@@ -1890,6 +1910,7 @@ export function stepRaceSession(
           ...playerNitroEvents,
           ...playerShiftEvents,
           ...playerLapEvents,
+          ...playerDamageWarningEvents,
           ...playerSurfaceAudio.events,
           ...playerPickupAudioEvents,
           ...playerImpactEvents,

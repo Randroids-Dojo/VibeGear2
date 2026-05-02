@@ -187,6 +187,30 @@
       "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
     },
     {
+      "id": "GDD-18-RACE-MIX-EVENT-EMPHASIS",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Race music, engine, weather, and one-shot SFX share a ducking policy so countdown, nitro, finish, collision, pickup, tire, surface, and damage-warning cues remain readable together.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/raceMix.ts",
+        "src/audio/sfx.ts",
+        "src/game/raceSession.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/audio/raceMix.test.ts",
+        "src/audio/sfx.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "e2e/race-audio-mix.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-feat-audio-race-a656eed2"]
+    },
+    {
       "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
       "gddSections": [
         "docs/gdd/06-game-modes.md",

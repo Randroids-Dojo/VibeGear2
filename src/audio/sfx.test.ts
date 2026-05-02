@@ -272,6 +272,30 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[1]?.stop).toHaveBeenCalledWith(0.34);
   });
 
+  it("plays a distinct damage warning cue", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(runtime.playDamageWarning({ audio: AUDIO })).toBe(true);
+
+    expect(context.oscillators[0]?.type).toBe("square");
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      440,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(330, 0.28);
+    expect(context.gains[0]?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1 * 0.9 * 0.2 * 0.72,
+      0.01,
+    );
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.28);
+  });
+
   it("plays surface cues with speed-scaled ramps", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralSfxRuntime({

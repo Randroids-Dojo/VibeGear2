@@ -2345,6 +2345,45 @@ describe("stepRaceSession (§13 damage wiring, F-047)", () => {
     );
   });
 
+  it("emits a damage warning when the player enters the severe band", () => {
+    const config = buildConfig({ countdownSec: 0 });
+    let session = createRaceSession(config);
+    const nearSevere = createDamageState({
+      engine: 0.75,
+      tires: 0.75,
+      body: 0.74,
+    });
+    expect(nearSevere.total).toBeLessThan(0.75);
+    session = {
+      ...session,
+      player: {
+        ...session.player,
+        car: { ...session.player.car, x: 0, z: 100, speed: 40 },
+        damage: nearSevere,
+      },
+      ai: session.ai.map((entry) => ({
+        ...entry,
+        car: { ...entry.car, x: 0, z: 101, speed: 40 },
+      })),
+    };
+
+    session = stepRaceSession(session, fullThrottle(), config, DT);
+
+    expect(session.player.damage.total).toBeGreaterThanOrEqual(0.75);
+    expect(session.audioEvents).toContainEqual({
+      kind: "damageWarning",
+      carId: "player",
+      damagePercent: Math.round(session.player.damage.total * 100),
+    });
+    expect(session.audioEvents).toContainEqual(
+      expect.objectContaining({
+        kind: "impact",
+        carId: "player",
+        hitKind: "carHit",
+      }),
+    );
+  });
+
   it("does not register a collision when cars are laterally separated past CAR_WIDTH_M", () => {
     // Snap the player to one side of the road and the AI to the other
     // so the lateral gap (~4 m) sits comfortably outside the §13
