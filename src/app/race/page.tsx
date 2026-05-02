@@ -2161,7 +2161,7 @@ function RaceCanvas({
         <dd data-testid="race-road-near-y">
           {roadProjection?.nearY.toFixed(2) ?? "none"}
         </dd>
-        <dt>Road near width:</dt>
+        <dt>Road near half-width:</dt>
         <dd data-testid="race-road-near-half-width">
           {roadProjection?.nearHalfWidth.toFixed(2) ?? "none"}
         </dd>
