@@ -29,12 +29,17 @@ feedback, finish routing, and optional production smoke through
 ## F-075: Add pass and rival-pressure HUD moments
 **Created:** 2026-05-02
 **Priority:** polish
-**Status:** open
+**Status:** done (2026-05-02)
 **Notes:** The arcade racer priority research found that AI personality needs
 player-facing feedback after the behavior lands. Add short HUD or canvas
 moments for clean passes, being challenged by a rival, and losing a position
 so AI pressure reads as a race story instead of background traffic. Dot:
 `VibeGear2-feat-feedback-add-880f1fd2`.
+
+Closed by `feat/pass-rival-hud-moments`. Live race HUD moments now announce
+position gains, lost positions, and close trailing rival pressure from the same
+ranked car snapshot as the HUD. Pure tests pin each story case, and browser
+coverage verifies a visible position-change moment in a live race.
 
 ## F-074: Make first tour standings pressure visible between races
 **Created:** 2026-05-02

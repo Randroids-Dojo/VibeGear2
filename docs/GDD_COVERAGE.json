@@ -1041,6 +1041,24 @@
       ]
     },
     {
+      "id": "GDD-20-RACE-STORY-MOMENTS",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Live races surface short HUD story moments for player position gains, lost positions, and close trailing rival pressure so the CPU field reads as active race pressure.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceMoments.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceMoments.test.ts",
+        "e2e/race-story-moments.spec.ts"
+      ],
+      "followupRefs": ["F-075"]
+    },
+    {
       "id": "GDD-24-MVP-TRACK-SET",
       "gddSections": [
         "docs/gdd/09-track-design.md",

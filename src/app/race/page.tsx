@@ -59,11 +59,7 @@ import {
   carAtlasMetaForVisualProfile,
   carSpriteSetForVisualProfile,
 } from "@/data/atlas/carSprites";
-import {
-  TrackSchema,
-  type AudioSettings,
-  type Track,
-} from "@/data/schemas";
+import { TrackSchema, type AudioSettings, type Track } from "@/data/schemas";
 import {
   applyTimeTrialResult,
   buildFinalCarInputsFromSession,
@@ -75,6 +71,7 @@ import {
   createTimeTrialRecorder,
   damageDeltaFromState,
   deriveHudState,
+  deriveRaceStoryMoment,
   deriveSplitsState,
   pendingDamageForActiveCar,
   applyRaceDamageToGarage,
@@ -101,6 +98,7 @@ import {
   type GhostDriver,
   type GhostOverlay,
   type AIReadabilityCue,
+  type RaceStoryMoment,
   type TimeTrialRecorder,
 } from "@/game";
 import { DEFAULT_TOUCH_LAYOUT, type TouchLayout } from "@/game/inputTouch";
@@ -175,10 +173,7 @@ import {
   type EngineAudioContextLike,
   type EngineRuntimeInput,
 } from "@/audio/engineRuntime";
-import {
-  ProceduralSfxRuntime,
-  type SfxAudioContextLike,
-} from "@/audio/sfx";
+import { ProceduralSfxRuntime, type SfxAudioContextLike } from "@/audio/sfx";
 import {
   MusicRuntime,
   raceMusicCue,
@@ -193,6 +188,9 @@ const TOUR_PLACEHOLDER_TRACK_ID = "test/straight";
 const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
 const PLAYER_ID = "player";
 const LAP_MOMENT_MS = 900;
+const RACE_STORY_MOMENT_MS = 1000;
+const RACE_STORY_MOMENT_COOLDOWN_MS = 1600;
+const RIVAL_PRESSURE_DISTANCE_METERS = SEGMENT_LENGTH * 8;
 const FINISH_MOMENT_MS = 1250;
 const AI_FALLBACK_FILLS = Object.freeze([
   "#ff6b5f",
@@ -214,10 +212,18 @@ const EMPTY_COLLECTED_PICKUP_SET: ReadonlySet<string> = new Set<string>();
 const MINIMAP_PADDING = 16;
 const MINIMAP_SIZE = 120;
 
-function minimapBoxFor(viewport: Viewport): { x: number; y: number; w: number; h: number } {
+function minimapBoxFor(viewport: Viewport): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
   return {
     x: MINIMAP_PADDING,
-    y: Math.max(MINIMAP_PADDING, viewport.height - MINIMAP_PADDING - MINIMAP_SIZE),
+    y: Math.max(
+      MINIMAP_PADDING,
+      viewport.height - MINIMAP_PADDING - MINIMAP_SIZE,
+    ),
     w: MINIMAP_SIZE,
     h: MINIMAP_SIZE,
   };
@@ -231,7 +237,10 @@ function resizeCanvasBackingStore(
   const rect = canvas.getBoundingClientRect();
   const width = Math.max(1, Math.round(rect.width || VIEWPORT_WIDTH));
   const height = Math.max(1, Math.round(rect.height || VIEWPORT_HEIGHT));
-  const dpr = clampDevicePixelRatio(window.devicePixelRatio || 1, pixelRatioCap);
+  const dpr = clampDevicePixelRatio(
+    window.devicePixelRatio || 1,
+    pixelRatioCap,
+  );
   const backingWidth = Math.max(1, Math.round(width * dpr));
   const backingHeight = Math.max(1, Math.round(height * dpr));
   if (canvas.width !== backingWidth) canvas.width = backingWidth;
@@ -317,7 +326,7 @@ function playRaceSfxEvents(
 }
 
 interface RaceMoment {
-  kind: "lap" | "finish";
+  kind: "lap" | "finish" | RaceStoryMoment["kind"];
   title: string;
   detail: string;
 }
@@ -389,7 +398,9 @@ function createLayerCanvas(
   return canvas;
 }
 
-function createTemperateParallaxLayers(viewport: Viewport): readonly ParallaxLayer[] {
+function createTemperateParallaxLayers(
+  viewport: Viewport,
+): readonly ParallaxLayer[] {
   const sky = createLayerCanvas(512, 256, (ctx, width, height) => {
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, "#0e1730");
@@ -415,8 +426,18 @@ function createTemperateParallaxLayers(viewport: Viewport): readonly ParallaxLay
     ctx.fillStyle = "#265c2d";
     ctx.beginPath();
     ctx.moveTo(0, height);
-    ctx.quadraticCurveTo(width * 0.18, height * 0.3, width * 0.36, height * 0.7);
-    ctx.quadraticCurveTo(width * 0.58, height * 1.05, width * 0.78, height * 0.45);
+    ctx.quadraticCurveTo(
+      width * 0.18,
+      height * 0.3,
+      width * 0.36,
+      height * 0.7,
+    );
+    ctx.quadraticCurveTo(
+      width * 0.58,
+      height * 1.05,
+      width * 0.78,
+      height * 0.45,
+    );
     ctx.quadraticCurveTo(width * 0.9, height * 0.18, width, height * 0.5);
     ctx.lineTo(width, height);
     ctx.closePath();
@@ -429,7 +450,13 @@ function createTemperateParallaxLayers(viewport: Viewport): readonly ParallaxLay
   });
 
   return [
-    { id: "sky", image: sky, scrollX: 0, bandHeight: viewport.height, yAnchor: 0 },
+    {
+      id: "sky",
+      image: sky,
+      scrollX: 0,
+      bandHeight: viewport.height,
+      yAnchor: 0,
+    },
     {
       id: "mountains",
       image: mountains,
@@ -511,10 +538,17 @@ function resolveTrack(
     requestedId !== null &&
     tourContext !== null &&
     requestedId === tourContext.plannedTrackId;
-  const runtimeId = knownId ?? (useTourPlaceholder ? TOUR_PLACEHOLDER_TRACK_ID : DEFAULT_TRACK_ID);
+  const runtimeId =
+    knownId ??
+    (useTourPlaceholder ? TOUR_PLACEHOLDER_TRACK_ID : DEFAULT_TRACK_ID);
   const id = useTourPlaceholder ? requestedId : runtimeId;
   const parsed = TrackSchema.parse(TRACK_RAW[runtimeId]);
-  return { id, runtimeId, version: parsed.version, compiled: loadTrack(runtimeId) };
+  return {
+    id,
+    runtimeId,
+    version: parsed.version,
+    compiled: loadTrack(runtimeId),
+  };
 }
 
 type RaceMode = "race" | "timeTrial" | "quickRace" | "practice";
@@ -536,7 +570,9 @@ function resolveRaceWeather(
 ): RaceSessionConfig["weather"] {
   const parsed = WeatherOptionSchema.safeParse(raw);
   if (!parsed.success) return undefined;
-  return track.compiled.weatherOptions.includes(parsed.data) ? parsed.data : undefined;
+  return track.compiled.weatherOptions.includes(parsed.data)
+    ? parsed.data
+    : undefined;
 }
 
 function resolveDailyChallengeMarker(input: {
@@ -616,10 +652,9 @@ function resolveRaceAIDrivers(
   tourContext: TourRaceContext | null,
 ): readonly AIDriver[] {
   if (tourContext === null) return AI_DRIVERS.slice(0, 1);
-  const tourRoster =
-    tourContext.aiDriverIds
-      .map((driverId) => getAIDriver(driverId))
-      .filter((driver): driver is AIDriver => driver !== undefined);
+  const tourRoster = tourContext.aiDriverIds
+    .map((driverId) => getAIDriver(driverId))
+    .filter((driver): driver is AIDriver => driver !== undefined);
   return tourRoster.length > 0 ? tourRoster : AI_DRIVERS.slice(0, 11);
 }
 
@@ -637,7 +672,8 @@ function toMinimapCar(
   totalLength: number,
   isPlayer: boolean,
 ): MinimapCar {
-  const wrappedZ = totalLength > 0 ? ((carZ % totalLength) + totalLength) % totalLength : 0;
+  const wrappedZ =
+    totalLength > 0 ? ((carZ % totalLength) + totalLength) % totalLength : 0;
   const continuousIndex = wrappedZ / SEGMENT_LENGTH;
   const segmentIndex = Math.floor(continuousIndex) % Math.max(1, totalSegments);
   const progress = continuousIndex - Math.floor(continuousIndex);
@@ -663,9 +699,11 @@ function projectOpponentCar(input: {
   damageTotal: number;
 }): NonNullable<DrawRoadOptions["aiCars"]>[number] | null {
   const depthMeters = input.carZ - input.camera.z;
-  if (!Number.isFinite(depthMeters) || depthMeters < input.camera.depth) return null;
+  if (!Number.isFinite(depthMeters) || depthMeters < input.camera.depth)
+    return null;
   if (depthMeters > 200) return null;
-  if (!Number.isFinite(input.trackLength) || input.trackLength <= 0) return null;
+  if (!Number.isFinite(input.trackLength) || input.trackLength <= 0)
+    return null;
 
   const projection = projectGhostCar(
     input.segments,
@@ -846,7 +884,10 @@ function commitRaceCredits(input: {
   baseTrackReward: number;
   damageAfter?: Readonly<DamageState>;
   activeCarId?: string | null;
-  transformCommit?: (save: SaveGame, result: RaceResult) => {
+  transformCommit?: (
+    save: SaveGame,
+    result: RaceResult,
+  ) => {
     readonly save: SaveGame;
     readonly result: RaceResult;
   };
@@ -902,11 +943,10 @@ function commitRaceCredits(input: {
     ...result,
     creditsAwarded: award.cashEarned ?? 0,
   };
-  const transformed =
-    transformCommit?.(nextSave, creditedResult) ?? {
-      save: nextSave,
-      result: creditedResult,
-    };
+  const transformed = transformCommit?.(nextSave, creditedResult) ?? {
+    save: nextSave,
+    result: creditedResult,
+  };
   saveSave(transformed.save);
 
   return transformed.result;
@@ -1047,7 +1087,9 @@ function RaceCanvas({
   const lastBrakeRef = useRef<number>(0);
   const pauseInputHeldRef = useRef<boolean>(false);
   const carAtlasRef = useRef<LoadedAtlas | null>(null);
-  const aiCarAtlasesRef = useRef<Partial<Record<CarSpriteSetId, LoadedAtlas>>>({});
+  const aiCarAtlasesRef = useRef<Partial<Record<CarSpriteSetId, LoadedAtlas>>>(
+    {},
+  );
   const carSpriteSetRef = useRef<CarSpriteSet>(
     carSpriteSetForVisualProfile("sparrow_gt"),
   );
@@ -1063,6 +1105,8 @@ function RaceCanvas({
   const raceMomentTimeoutRef = useRef<number | null>(null);
   const finishRouteTimeoutRef = useRef<number | null>(null);
   const pickupFeedbackRef = useRef<PickupFeedbackSnapshot | null>(null);
+  const previousRaceStoryCarsRef = useRef<readonly RankedCar[] | null>(null);
+  const lastRaceStoryMomentMsRef = useRef<number>(0);
   const observedAiCuesRef = useRef<Set<AIReadabilityCue>>(new Set());
   // Per-mount guard for the natural finish wiring. The render callback
   // fires every frame, so without this latch a `phase === "finished"`
@@ -1097,8 +1141,9 @@ function RaceCanvas({
   } | null>(null);
   const [fieldSize, setFieldSize] = useState<number>(1);
   const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
-  const [aiProjection, setAiProjection] =
-    useState<AiProjectionSnapshot | null>(null);
+  const [aiProjection, setAiProjection] = useState<AiProjectionSnapshot | null>(
+    null,
+  );
   const [aiReadability, setAiReadability] =
     useState<AiReadabilitySnapshot | null>(null);
   const [roadProjection, setRoadProjection] =
@@ -1113,6 +1158,8 @@ function RaceCanvas({
   );
   const [resultMs, setResultMs] = useState<number | null>(null);
   const [raceMoment, setRaceMoment] = useState<RaceMoment | null>(null);
+  const [lastRaceStoryMoment, setLastRaceStoryMoment] =
+    useState<RaceStoryMoment | null>(null);
 
   const clearRaceMomentTimeout = useCallback(() => {
     if (raceMomentTimeoutRef.current === null) return;
@@ -1261,7 +1308,9 @@ function RaceCanvas({
     const noCampaignMode = recordsOnlyMode || practiceMode;
     const economyEnabled = mode === "race";
     const sessionCar = resolveSessionCar(sessionSave, selectedCarId);
-    carSpriteSetRef.current = carSpriteSetForVisualProfile(sessionCar.spriteSet);
+    carSpriteSetRef.current = carSpriteSetForVisualProfile(
+      sessionCar.spriteSet,
+    );
     const playerStats = sessionCar.stats;
     const initialPlayerDamage = noCampaignMode
       ? PRISTINE_DAMAGE_STATE
@@ -1269,17 +1318,18 @@ function RaceCanvas({
     const raceSeed = 1;
     let timeTrialSaveSnapshot = sessionSave;
     const aiDriverRoster = resolveRaceAIDrivers(tourContext);
-    const spawnedAi = ghostEnabled || practiceMode
-      ? []
-      : spawnGrid({
-          trackSpawn: track.compiled.spawn,
-          laneCount: track.compiled.laneCount,
-          aiDrivers: aiDriverRoster.map((driver) => ({
-            driver,
-            stats: playerStats,
-          })),
-          seed: raceSeed,
-        });
+    const spawnedAi =
+      ghostEnabled || practiceMode
+        ? []
+        : spawnGrid({
+            trackSpawn: track.compiled.spawn,
+            laneCount: track.compiled.laneCount,
+            aiDrivers: aiDriverRoster.map((driver) => ({
+              driver,
+              stats: playerStats,
+            })),
+            seed: raceSeed,
+          });
 
     const config: RaceSessionConfig = {
       track: track.compiled,
@@ -1309,8 +1359,8 @@ function RaceCanvas({
       }
       const currentGhost =
         ghostSource === "downloaded"
-          ? timeTrialSaveSnapshot.downloadedGhosts?.[track.id] ?? null
-          : timeTrialSaveSnapshot.ghosts?.[track.id] ?? null;
+          ? (timeTrialSaveSnapshot.downloadedGhosts?.[track.id] ?? null)
+          : (timeTrialSaveSnapshot.ghosts?.[track.id] ?? null);
       const ghostCarStats =
         currentGhost === null
           ? playerStats
@@ -1366,7 +1416,11 @@ function RaceCanvas({
       z: 0,
       depth: CAMERA_DEPTH,
     };
-    let viewport = resizeCanvasBackingStore(canvas, ctx, graphics.pixelRatioCap);
+    let viewport = resizeCanvasBackingStore(
+      canvas,
+      ctx,
+      graphics.pixelRatioCap,
+    );
     setTouchLayout(touchLayoutFor(viewport));
     let parallaxLayers = createTemperateParallaxLayers(viewport);
 
@@ -1429,7 +1483,11 @@ function RaceCanvas({
     let cachedCollectedPickups: ReadonlyArray<string> | null = null;
     let cachedCollectedPickupSet: ReadonlySet<string> = new Set<string>();
     const tryStartEngineAudio = (): void => {
-      if (engineAudioTeardown || engineStartPending || engineAudio.isRunning()) {
+      if (
+        engineAudioTeardown ||
+        engineStartPending ||
+        engineAudio.isRunning()
+      ) {
         return;
       }
       engineStartPending = true;
@@ -1476,6 +1534,8 @@ function RaceCanvas({
       raceMusic.stop();
       handleRef.current = null;
       sessionRef.current = null;
+      previousRaceStoryCarsRef.current = null;
+      lastRaceStoryMomentMsRef.current = 0;
       inputManager.dispose();
     };
 
@@ -1496,6 +1556,9 @@ function RaceCanvas({
       setRaceMoment(null);
       pickupFeedbackRef.current = null;
       setPickupFeedback(null);
+      previousRaceStoryCarsRef.current = null;
+      lastRaceStoryMomentMsRef.current = 0;
+      setLastRaceStoryMoment(null);
       sessionRef.current = createRaceSession(config);
       resetTimeTrialRuntime();
       tunnelState = OPEN_TUNNEL_STATE;
@@ -1540,8 +1603,7 @@ function RaceCanvas({
         totalLaps: retired.race.totalLaps,
         cars: buildFinalCarInputsFromSession(retired),
       });
-      const save =
-        persisted.kind === "loaded" ? persisted.save : defaultSave();
+      const save = persisted.kind === "loaded" ? persisted.save : defaultSave();
       // `buildRaceResult` reads `track.id` and `track.difficulty` from
       // the Track shape; pass a minimal stand-in cast to `Track` so we
       // do not have to re-parse the bundled JSON just to satisfy the
@@ -1698,7 +1760,11 @@ function RaceCanvas({
         }
         if (lastRaceSfxTick !== session.tick) {
           lastRaceSfxTick = session.tick;
-          playRaceSfxEvents(raceSfx, session.audioEvents, persistedSettings.audio);
+          playRaceSfxEvents(
+            raceSfx,
+            session.audioEvents,
+            persistedSettings.audio,
+          );
           const pickupFeedbackFromTick = playerPickupFeedbackFromEvents(
             session.audioEvents,
             performance.now(),
@@ -1712,6 +1778,7 @@ function RaceCanvas({
             session.race.totalLaps,
           );
           if (playerMoment !== null) {
+            lastRaceStoryMomentMsRef.current = performance.now();
             showRaceMoment(
               playerMoment,
               playerMoment.kind === "finish" ? 0 : LAP_MOMENT_MS,
@@ -1737,7 +1804,11 @@ function RaceCanvas({
             : performance.now() - pickupFeedbackRef.current.createdAtMs;
         const playerFrameIndex = playerCarFrameIndex(
           lastSteerRef.current,
-          upcomingCurvature(track.compiled.segments, camera.z, SEGMENT_LENGTH * 5),
+          upcomingCurvature(
+            track.compiled.segments,
+            camera.z,
+            SEGMENT_LENGTH * 5,
+          ),
         );
         const aiCars = session.ai
           .map((entry, index) => {
@@ -1817,7 +1888,10 @@ function RaceCanvas({
           pickupFeedback:
             pickupFeedbackRef.current !== null &&
             pickupFeedbackAgeMs < PICKUP_FEEDBACK_TTL_MS
-              ? { kind: pickupFeedbackRef.current.kind, ageMs: pickupFeedbackAgeMs }
+              ? {
+                  kind: pickupFeedbackRef.current.kind,
+                  ageMs: pickupFeedbackAgeMs,
+                }
               : null,
           aiCars,
           ghostCar: ghostOverlayRef.current
@@ -1864,6 +1938,27 @@ function RaceCanvas({
             };
           }),
         ];
+        if (session.race.phase === "racing") {
+          const raceStoryMoment = deriveRaceStoryMoment({
+            playerId: PLAYER_ID,
+            previousCars: previousRaceStoryCarsRef.current,
+            currentCars: cars,
+            threatDistanceMeters: RIVAL_PRESSURE_DISTANCE_METERS,
+          });
+          const nowMs = performance.now();
+          if (
+            raceStoryMoment !== null &&
+            nowMs - lastRaceStoryMomentMsRef.current >=
+              RACE_STORY_MOMENT_COOLDOWN_MS
+          ) {
+            lastRaceStoryMomentMsRef.current = nowMs;
+            setLastRaceStoryMoment(raceStoryMoment);
+            showRaceMoment(raceStoryMoment, RACE_STORY_MOMENT_MS);
+          }
+          previousRaceStoryCarsRef.current = cars;
+        } else if (session.race.phase === "countdown") {
+          previousRaceStoryCarsRef.current = null;
+        }
 
         const nitroUpgradeTier = nitroUpgradeTierForUpgrades(
           config.player.upgrades ?? null,
@@ -1911,11 +2006,23 @@ function RaceCanvas({
         const minimapCars: MinimapCar[] = [];
         if (totalSegments > 0 && totalLength > 0) {
           minimapCars.push(
-            toMinimapCar(minimapPoints, session.player.car.z, totalSegments, totalLength, true),
+            toMinimapCar(
+              minimapPoints,
+              session.player.car.z,
+              totalSegments,
+              totalLength,
+              true,
+            ),
           );
           for (const entry of session.ai) {
             minimapCars.push(
-              toMinimapCar(minimapPoints, entry.car.z, totalSegments, totalLength, false),
+              toMinimapCar(
+                minimapPoints,
+                entry.car.z,
+                totalSegments,
+                totalLength,
+                false,
+              ),
             );
           }
         }
@@ -1985,8 +2092,7 @@ function RaceCanvas({
               playerStartPosition: 1,
               damageBefore: damageDeltaFromState(initialPlayerDamage),
               damageAfter: damageDeltaFromState(session.player.damage),
-              recordPBs:
-                !practiceMode && session.player.status === "finished",
+              recordPBs: !practiceMode && session.player.status === "finished",
               championship: tourContext?.championship,
               tourId: tourContext?.tourId,
               currentTrackIndex: tourContext?.raceIndex,
@@ -2041,6 +2147,7 @@ function RaceCanvas({
               },
               0,
             );
+            lastRaceStoryMomentMsRef.current = performance.now();
             stopRaceRuntime({ stopSfx: false });
             finishRouteTimeoutRef.current = window.setTimeout(() => {
               finishRouteTimeoutRef.current = null;
@@ -2180,6 +2287,10 @@ function RaceCanvas({
         </dd>
         <dt>Position:</dt>
         <dd data-testid="hud-position">{hudSnapshot.position}</dd>
+        <dt>Race story moment:</dt>
+        <dd data-testid="race-story-moment-kind">
+          {lastRaceStoryMoment?.kind ?? "none"}
+        </dd>
         <dt>Field size:</dt>
         <dd data-testid="race-field-size">{fieldSize}</dd>
         <dt>Visible AI:</dt>

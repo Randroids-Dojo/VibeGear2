@@ -6,6 +6,50 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Pass and rival-pressure HUD moments
+
+**GDD sections touched:** §15 and §20.
+**Branch / PR:** `feat/pass-rival-hud-moments`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a pure race-story moment helper that compares previous and current
+  ranked car snapshots for clean passes, lost positions, and close trailing
+  rival pressure.
+- Wired the race page to show those story moments through the existing
+  center-screen race moment overlay, with cooldown gating so lap and finish
+  moments stay readable.
+- Added hidden last-story-moment telemetry for deterministic browser coverage.
+
+### Verified
+- `npx vitest run src/game/__tests__/raceMoments.test.ts src/game/__tests__/hudState.test.ts` green, 57 passed.
+- `npx playwright test e2e/race-story-moments.spec.ts` green, 1 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- Derived the moments from the HUD-ranked car snapshot instead of duplicating
+  race-order logic. This keeps pass and pressure feedback aligned with the
+  visible position number.
+- Browser coverage asserts a live position-change moment. The pure helper
+  covers the exact clean-pass, lost-position, and rival-pressure cases.
+
+### Coverage ledger
+- Added `GDD-20-RACE-STORY-MOMENTS`.
+- Closes F-075.
+- Uncovered adjacent requirements: richer rival identity labels and audio
+  callouts remain separate polish.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Readable AI archetype cues
 
 **GDD sections touched:** §15, §20, and §27.
