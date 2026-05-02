@@ -58,7 +58,7 @@ jobs:
         run: npm run test
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+        run: npx playwright install chromium
 
       - name: Build for e2e
         run: npm run build
@@ -68,6 +68,9 @@ jobs:
 
       - name: Playwright e2e
         run: npm run test:e2e
+
+      - name: Install cross-browser smoke browsers
+        run: npx playwright install firefox webkit
 
       - name: Cross-browser smoke
         run: npm run test:e2e:cross-browser

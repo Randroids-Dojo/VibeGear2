@@ -45,6 +45,8 @@ Correct them by adding a new entry that references the old one.
   loop even though quick races do not award campaign credits.
 - The full CI verify job now has a 30 minute timeout. Browser install on the
   GitHub runner consumed the old 15 minute budget before tests could run.
+- CI installs Chromium before the gating e2e suite and defers Firefox and
+  WebKit installation until the cross-browser smoke step.
 
 ### Coverage ledger
 - Added `GDD-04-FIRST-RACE-FUN-LOOP`.
@@ -52,7 +54,8 @@ Correct them by adding a new entry that references the old one.
   tour authored events remain separate backlog items.
 
 ### Followups created
-None.
+- `VibeGear2-fix-cpu-opponent-009867d7`: CPU opponent sprite scale is
+  inconsistent on hills.
 
 ### GDD edits
 - `docs/GDD_COVERAGE.json`: added first-race fun loop coverage.
