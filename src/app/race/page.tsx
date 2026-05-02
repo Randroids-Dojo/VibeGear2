@@ -130,6 +130,7 @@ import {
   type CompiledSegment,
   type CompiledTrack,
   type MinimapPoint,
+  type Strip,
   type Viewport,
 } from "@/road";
 import {
@@ -200,6 +201,8 @@ const AI_FALLBACK_FILLS = Object.freeze([
   "#d980ff",
   "#ff9f43",
 ]);
+const AI_MIN_PROJECTED_WIDTH_DESKTOP = 20;
+const AI_MIN_PROJECTED_WIDTH_MOBILE = 12;
 const EMPTY_COLLECTED_PICKUP_SET: ReadonlySet<string> = new Set<string>();
 
 /**
@@ -646,6 +649,7 @@ function projectOpponentCar(input: {
   carZ: number;
   camera: Camera;
   segments: readonly CompiledSegment[];
+  strips: readonly Strip[];
   viewport: Viewport;
   trackLength: number;
   atlas: LoadedAtlas | null;
@@ -670,8 +674,36 @@ function projectOpponentCar(input: {
     input.carX,
   );
   if (!projection.visible || projection.screenW <= 0) return null;
+  let anchorStrip = input.strips[projection.segmentOffset];
+  if (anchorStrip?.visible !== true) {
+    const canUseNearPlaneFallback =
+      projection.segmentOffset <= 0 ||
+      anchorStrip?.scale === 0 ||
+      anchorStrip?.screenW === 0;
+    if (!canUseNearPlaneFallback) return null;
 
-  const screenW = Math.max(16, Math.min(92, projection.screenW * 0.3));
+    anchorStrip = undefined;
+    for (
+      let index = Math.max(0, projection.segmentOffset);
+      index < input.strips.length;
+      index += 1
+    ) {
+      const strip = input.strips[index];
+      if (strip?.visible === true) {
+        anchorStrip = strip;
+        break;
+      }
+    }
+  }
+  if (!anchorStrip?.visible) return null;
+
+  const projectedScreenW = projection.screenW * 0.3;
+  const minProjectedWidth =
+    input.viewport.width < 500
+      ? AI_MIN_PROJECTED_WIDTH_MOBILE
+      : AI_MIN_PROJECTED_WIDTH_DESKTOP;
+  if (projectedScreenW < minProjectedWidth) return null;
+  const screenW = Math.min(92, projectedScreenW);
   return {
     screenX: projection.screenX,
     screenY: projection.screenY,
@@ -685,6 +717,66 @@ function projectOpponentCar(input: {
     nitroActive: input.nitroActive,
     speedMetersPerSecond: input.speedMetersPerSecond,
     damageTotal: input.damageTotal,
+  };
+}
+
+interface AiProjectionSnapshot {
+  readonly nearestDepthMeters: number;
+  readonly nearestScreenX: number;
+  readonly nearestScreenW: number;
+  readonly nearestWidthDepthProduct: number;
+}
+
+function aiProjectionSnapshot(
+  cars: readonly NonNullable<DrawRoadOptions["aiCars"]>[number][],
+): AiProjectionSnapshot | null {
+  let nearest: NonNullable<DrawRoadOptions["aiCars"]>[number] | null = null;
+  for (const car of cars) {
+    if (nearest === null || car.depthMeters < nearest.depthMeters) {
+      nearest = car;
+    }
+  }
+  if (nearest === null) return null;
+  return {
+    nearestDepthMeters: nearest.depthMeters,
+    nearestScreenX: nearest.screenX,
+    nearestScreenW: nearest.screenW,
+    nearestWidthDepthProduct: nearest.screenW * nearest.depthMeters,
+  };
+}
+
+interface RoadProjectionSnapshot {
+  readonly visibleStrips: number;
+  readonly nearCenterX: number;
+  readonly nearY: number;
+  readonly nearHalfWidth: number;
+  readonly horizonY: number;
+}
+
+function roadProjectionSnapshot(
+  strips: readonly Strip[],
+): RoadProjectionSnapshot | null {
+  let visibleStrips = 0;
+  let near: Strip | null = null;
+  let horizon: Strip | null = null;
+  for (const strip of strips) {
+    if (!strip.visible) continue;
+    visibleStrips += 1;
+    near ??= strip;
+    horizon = strip;
+  }
+  if (!near || !horizon) return null;
+  const foreground = near.foreground ?? {
+    screenX: near.screenX,
+    screenY: near.screenY,
+    screenW: near.screenW,
+  };
+  return {
+    visibleStrips,
+    nearCenterX: foreground.screenX,
+    nearY: foreground.screenY,
+    nearHalfWidth: foreground.screenW,
+    horizonY: horizon.screenY,
   };
 }
 
@@ -969,6 +1061,10 @@ function RaceCanvas({
   } | null>(null);
   const [fieldSize, setFieldSize] = useState<number>(1);
   const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
+  const [aiProjection, setAiProjection] =
+    useState<AiProjectionSnapshot | null>(null);
+  const [roadProjection, setRoadProjection] =
+    useState<RoadProjectionSnapshot | null>(null);
   const [visiblePickupCount, setVisiblePickupCount] = useState<number>(0);
   const [collectedPickupCount, setCollectedPickupCount] = useState<number>(0);
   const [playerNitroActive, setPlayerNitroActive] = useState<boolean>(false);
@@ -1584,6 +1680,7 @@ function RaceCanvas({
         const strips = project(track.compiled.segments, camera, viewport, {
           drawDistance: graphics.drawDistanceSegments,
         });
+        setRoadProjection(roadProjectionSnapshot(strips));
         const pickupSprites = projectPickupSprites({
           strips,
           pickupsById: track.compiled.pickupsById,
@@ -1609,6 +1706,7 @@ function RaceCanvas({
               carZ: entry.car.z,
               camera,
               segments: track.compiled.segments,
+              strips,
               viewport,
               trackLength: track.compiled.totalLengthMeters,
               atlas: aiCarAtlasesRef.current[aiSpriteSetId] ?? null,
@@ -1633,6 +1731,7 @@ function RaceCanvas({
               car !== null,
           );
         setAiVisibleCount(aiCars.length);
+        setAiProjection(aiProjectionSnapshot(aiCars));
         if (
           ghostEnabled &&
           session.race.phase === "racing" &&
@@ -2012,6 +2111,7 @@ function RaceCanvas({
         style={metricsStyle}
         data-testid="race-metrics"
         data-phase={phase}
+        aria-hidden="true"
       >
         <dt>Phase:</dt>
         <dd data-testid="race-phase">{phase}</dd>
@@ -2033,6 +2133,42 @@ function RaceCanvas({
         <dd data-testid="race-field-size">{fieldSize}</dd>
         <dt>Visible AI:</dt>
         <dd data-testid="race-visible-ai-count">{aiVisibleCount}</dd>
+        <dt>Nearest AI depth:</dt>
+        <dd data-testid="race-ai-nearest-depth">
+          {aiProjection?.nearestDepthMeters.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Nearest AI width:</dt>
+        <dd data-testid="race-ai-nearest-width">
+          {aiProjection?.nearestScreenW.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Nearest AI x:</dt>
+        <dd data-testid="race-ai-nearest-x">
+          {aiProjection?.nearestScreenX.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Nearest AI width-depth:</dt>
+        <dd data-testid="race-ai-width-depth-product">
+          {aiProjection?.nearestWidthDepthProduct.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Road strips:</dt>
+        <dd data-testid="race-road-visible-strips">
+          {roadProjection?.visibleStrips ?? 0}
+        </dd>
+        <dt>Road near center:</dt>
+        <dd data-testid="race-road-near-center-x">
+          {roadProjection?.nearCenterX.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Road near y:</dt>
+        <dd data-testid="race-road-near-y">
+          {roadProjection?.nearY.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Road near half-width:</dt>
+        <dd data-testid="race-road-near-half-width">
+          {roadProjection?.nearHalfWidth.toFixed(2) ?? "none"}
+        </dd>
+        <dt>Road horizon y:</dt>
+        <dd data-testid="race-road-horizon-y">
+          {roadProjection?.horizonY.toFixed(2) ?? "none"}
+        </dd>
         <dt>Visible pickups:</dt>
         <dd data-testid="race-visible-pickup-count">{visiblePickupCount}</dd>
         <dt>Collected pickups:</dt>

@@ -6,7 +6,7 @@ function metricNumber(text: string | null): number {
 
 test.describe("race pickups", () => {
   test("renders pickups, collects one, and reports feedback", async ({ page }) => {
-    await page.goto("/race?track=test/straight");
+    await page.goto("/race?track=test/straight&mode=practice");
 
     const canvas = page.getByTestId("race-canvas-element");
     await expect(canvas).toBeVisible();

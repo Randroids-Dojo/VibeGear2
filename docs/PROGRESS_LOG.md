@@ -6,6 +6,49 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Projection readability playtest checks
+
+**GDD sections touched:** §4, §15, and §16.
+**Branch / PR:** `feat/playtest-projection-readability`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added live race projection telemetry for the nearest visible opponent and
+  the road strip window so browser tests can catch visual trust regressions.
+- Hid live opponent sprites when their anchor road strip is hidden behind a
+  hill crest and removed the old tiny far-car width clamp.
+- Added `e2e/projection-readability.spec.ts`, which drives `test/elevation`
+  and samples road projection, opponent scale, crest occlusion, and lateral
+  stability.
+
+### Verified
+- `npm run typecheck` green.
+- `npx vitest run src/road/__tests__/segmentProjector.test.ts` green, 37 tests
+  passed.
+- `npx playwright test e2e/projection-readability.spec.ts --project=chromium`
+  green, 1 test passed.
+
+### Decisions and assumptions
+- Opponent visibility should be tied to the road strip visibility contract,
+  not only standalone car projection. If a crest hides the road strip, it also
+  hides the opponent anchored to that strip.
+- Far opponents that project below the readable minimum are skipped instead of
+  clamped to a tiny billboard.
+
+### Coverage ledger
+- Updated `GDD-16-OPPONENT-HILL-PROJECTION`.
+- Closes F-073.
+- Uncovered adjacent requirements: F-076 still tracks the full release-fun
+  checklist runner, including deployed smoke and broader route evidence.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Release-fun playtest checklist
 
 **GDD sections touched:** §4, §5, and §20.
