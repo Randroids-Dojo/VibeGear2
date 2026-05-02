@@ -82,19 +82,18 @@ Route:
 Actions:
 1. Enter Velvet Coast from the world screen.
 2. Complete race one.
-3. Visit results, repair or skip repair, visit upgrade screen, and advance to
-   the next race card.
+3. On results, use the continue-tour CTA to advance to the next race.
 4. Continue until the first tour standings change is visible.
 
 Pass criteria:
 - The player understands that the tour is a four-race block.
-- Current standings, cash, repair risk, and next-race forecast are visible
-  before the next start.
+- Current standings, cash, and next-race context are visible during the
+  results-to-next-race handoff that exists today.
 - The route does not strand the player on a dead-end screen.
 
 Automation hooks:
 - Reuse tour-flow coverage and add assertions for standings visibility, repair
-  estimate visibility, and next race CTA text.
+  estimate visibility once F-074 lands, and continue-tour CTA text.
 
 ## Script D: Upgrade Purchase
 
@@ -117,7 +116,7 @@ Automation hooks:
 ## Script E: Weather Prep
 
 Route:
-`/race/prep`
+`/race/prep?track=velvet-coast%2Fharbor-run&tour=velvet-coast&raceIndex=0&weather=rain`
 
 Actions:
 1. Open a race with rain, snow, fog, or low visibility.
@@ -130,7 +129,8 @@ Pass criteria:
 - Visibility effects do not hide hazards unfairly.
 
 Automation hooks:
-- Use forecast text, tire selector state, and `race` HUD grip telemetry.
+- Use forecast text, tire selector state, and the resulting `/race` weather
+  query until normal race HUD grip telemetry is exposed by F-076.
 
 ## Script F: AI Pass
 
@@ -221,7 +221,7 @@ Do not call the game releasable if any of these occur:
 ## Automation Backlog
 
 - `VibeGear2-feat-playtest-automate-9d148438`: implement the full checklist
-  runner.
+  runner tracked by F-076.
 - `VibeGear2-feat-playtest-add-4ba02811`: add projection and opponent
   readability checks to the runner.
 - `VibeGear2-feat-feedback-add-880f1fd2`: add pass and rival-pressure telemetry

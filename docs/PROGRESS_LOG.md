@@ -37,7 +37,7 @@ Correct them by adding a new entry that references the old one.
   rival-pressure telemetry still needs F-075.
 
 ### Followups created
-None.
+- F-076, backed by `VibeGear2-feat-playtest-automate-9d148438`.
 
 ### GDD edits
 None.
