@@ -1,5 +1,6 @@
 import { getCar } from "@/data/cars";
-import type { Championship, SaveGame, UpgradeCategory } from "@/data/schemas";
+import { TrackSchema, type Championship, type SaveGame } from "@/data/schemas";
+import { TRACK_RAW } from "@/data/tracks";
 import { UPGRADES } from "@/data/upgrades";
 
 import { tourComplete } from "./championship";
@@ -86,7 +87,7 @@ export function buildTourPressureSummary(input: {
     tourName: displayTourName(tour.id),
     progressLabel: `Race ${Math.min(totalRaces, activeTour.raceIndex + 1)} of ${totalRaces}, ${completedRaces} complete`,
     nextRaceId,
-    nextRaceLabel: nextRaceId ?? "Tour complete",
+    nextRaceLabel: nextRaceId ? trackName(nextRaceId) : "Tour complete",
     standingsLabel:
       playerStanding === null
         ? "No standing yet"
@@ -144,7 +145,7 @@ function cheapestNextUpgrade(
     const cap = activeCar.upgradeCaps[upgrade.category];
     return upgrade.tier === currentTier + 1 && upgrade.tier <= cap;
   }).map((upgrade) => ({
-    label: `${upgradeLabel(upgrade.category)} ${tierLabel(upgrade.tier)}`,
+    label: upgrade.name,
     cost: upgrade.cost,
   }));
 
@@ -185,38 +186,6 @@ function damageFromPending(
   };
 }
 
-function upgradeLabel(category: UpgradeCategory): string {
-  switch (category) {
-    case "dryTires":
-      return "Dry tires";
-    case "wetTires":
-      return "Wet tires";
-    case "nitro":
-      return "Nitro";
-    case "armor":
-      return "Armor";
-    case "aero":
-      return "Aero";
-    default:
-      return `${category.charAt(0).toUpperCase()}${category.slice(1)}`;
-  }
-}
-
-function tierLabel(tier: number): string {
-  switch (tier) {
-    case 1:
-      return "Street";
-    case 2:
-      return "Sport";
-    case 3:
-      return "Factory";
-    case 4:
-      return "Extreme";
-    default:
-      return `Tier ${tier}`;
-  }
-}
-
 function displayTourName(tourId: string): string {
   return tourId
     .split("-")
@@ -237,4 +206,9 @@ function ordinal(n: number): string {
     default:
       return `${n}th`;
   }
+}
+
+function trackName(trackId: string): string {
+  const parsed = TrackSchema.safeParse(TRACK_RAW[trackId]);
+  return parsed.success ? parsed.data.name : trackId;
 }

@@ -72,11 +72,12 @@ describe("buildTourPressureSummary", () => {
       tourId: "velvet-coast",
       progressLabel: "Race 2 of 4, 1 complete",
       nextRaceId: "velvet-coast/sunpier-loop",
+      nextRaceLabel: "Sunpier Loop",
       gateLabel: "Need 4th or better to advance",
       playerStanding: 6,
       requiredStanding: 4,
       playerPoints: 8,
-      nextUpgradeLabel: "Cooling Street",
+      nextUpgradeLabel: "Street Cooling",
       nextUpgradeCost: 1000,
     });
     expect(summary?.repairEstimate).toBeGreaterThan(0);
