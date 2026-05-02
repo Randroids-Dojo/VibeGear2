@@ -1,7 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="768" height="384" viewBox="0 0 768 384" role="img" aria-label="Bastion LM production car sprite sheet">
 <rect width="768" height="384" fill="none"/>
 <defs>
-<g id="shadow"><ellipse cx="0" cy="14" rx="31" ry="5" fill="#10151f" opacity="0.58"/></g>
+<clipPath id="car-cell-0"><rect x="0" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-1"><rect x="64" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-2"><rect x="128" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-3"><rect x="192" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-4"><rect x="256" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-5"><rect x="320" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-6"><rect x="384" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-7"><rect x="448" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-8"><rect x="512" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-9"><rect x="576" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-10"><rect x="640" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-11"><rect x="704" y="0" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-12"><rect x="0" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-13"><rect x="64" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-14"><rect x="128" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-15"><rect x="192" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-16"><rect x="256" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-17"><rect x="320" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-18"><rect x="384" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-19"><rect x="448" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-20"><rect x="512" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-21"><rect x="576" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-22"><rect x="640" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-23"><rect x="704" y="32" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-24"><rect x="0" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-25"><rect x="64" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-26"><rect x="128" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-27"><rect x="192" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-28"><rect x="256" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-29"><rect x="320" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-30"><rect x="384" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-31"><rect x="448" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-32"><rect x="512" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-33"><rect x="576" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-34"><rect x="640" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-35"><rect x="704" y="64" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-36"><rect x="0" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-37"><rect x="64" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-38"><rect x="128" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-39"><rect x="192" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-40"><rect x="256" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-41"><rect x="320" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-42"><rect x="384" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-43"><rect x="448" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-44"><rect x="512" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-45"><rect x="576" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-46"><rect x="640" y="96" width="64" height="32"/></clipPath>
+<clipPath id="car-cell-47"><rect x="704" y="96" width="64" height="32"/></clipPath>
+<g id="shadow"><ellipse cx="0" cy="14" rx="27" ry="4" fill="#10151f" opacity="0.58"/></g>
 <g id="clean"><path d="M-27 12 L27 12 L24 -7 L17 -14 L-17 -14 L-24 -7 Z" fill="#d7dde6"/><path d="M-15 -8 L15 -8 L10 4 L-10 4 Z" fill="#1f2b3a"/><path d="M-9 -7 L9 -7 L6 3 L-6 3 Z" fill="#1f2b3a" opacity="0.8"/><path d="M-24 7 L-12 7 L-12 11 L-24 11 Z" fill="#ff3d38"/><path d="M12 7 L24 7 L24 11 L12 11 Z" fill="#ff3d38"/><path d="M-26 12 L-18 15 L18 15 L26 12 Z" fill="#32363d"/><rect x="-28" y="10" width="56" height="4" fill="#32363d"/><rect x="-23" y="7" width="4" height="8" fill="#32363d"/><rect x="19" y="7" width="4" height="8" fill="#32363d"/><rect x="-24" y="-3" width="48" height="5" fill="#8c939d" opacity="0.85"/><path d="M-18 7 L18 7" stroke="#f5d45f" stroke-width="3"/><path d="M-20 -10 L-10 -14 L10 -14 L20 -10" fill="none" stroke="#fff6c9" stroke-width="1.5" opacity="0.8"/></g>
 <g id="dented"><use href="#clean"/><path d="M-23 -1 L-17 4 L-21 7" fill="none" stroke="#f5d45f" stroke-width="2" opacity="0.85"/><path d="M12 -8 L20 -3" stroke="#32363d" stroke-width="1.5"/><rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>
 <g id="battered"><use href="#clean"/><path d="M-24 -2 L-15 5 L-23 8" fill="none" stroke="#32363d" stroke-width="2"/><path d="M14 -4 L22 1 L18 7" fill="none" stroke="#32363d" stroke-width="2"/><circle cx="-18" cy="-4" r="2" fill="#f5d45f" opacity="0.9"/><rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>
@@ -11,54 +59,54 @@
 <g id="wet-trail"><path d="M-28 4 L-8 14 L-32 23 Z" fill="#d8f4ff" opacity="0.55"/><path d="M28 4 L8 14 L32 23 Z" fill="#d8f4ff" opacity="0.55"/><path d="M-22 13 L-3 19 M22 13 L3 19" stroke="#9fd7ef" stroke-width="2" opacity="0.7"/></g>
 <g id="snow-trail"><path d="M-24 9 L24 9 L34 24 L-34 24 Z" fill="#edf7ff" opacity="0.64"/><circle cx="-18" cy="17" r="2" fill="#ffffff" opacity="0.7"/><circle cx="0" cy="20" r="2" fill="#ffffff" opacity="0.7"/><circle cx="17" cy="16" r="2" fill="#ffffff" opacity="0.7"/></g>
 </defs>
-<g transform="translate(32 16) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(96 16) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(160 16) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(224 16) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(288 16) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(352 16) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(416 16) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(480 16) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(544 16) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(608 16) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(672 16) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(736 16) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g>
-<g transform="translate(32 48) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(96 48) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(160 48) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(224 48) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(288 48) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(352 48) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(416 48) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(480 48) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(544 48) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(608 48) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(672 48) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(736 48) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g>
-<g transform="translate(32 80) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(96 80) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(160 80) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(224 80) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(288 80) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(352 80) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(416 80) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(480 80) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(544 80) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(608 80) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(672 80) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(736 80) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g>
-<g transform="translate(32 144) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(96 144) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(160 144) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(224 144) scale(1.05 0.91) skewX(12)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(288 144) scale(1.05 0.95) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(352 144) scale(1.05 0.98) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(416 144) scale(1.05 1) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(480 144) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(544 144) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(608 144) scale(1.05 0.91) skewX(-12)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(672 144) scale(1.05 0.95) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g>
-<g transform="translate(736 144) scale(1.05 0.98) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g>
+<g clip-path="url(#car-cell-0)"><g transform="translate(32 16) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-1)"><g transform="translate(96 16) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-2)"><g transform="translate(160 16) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-3)"><g transform="translate(224 16) scale(1.01 0.91) skewX(12)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-4)"><g transform="translate(288 16) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-5)"><g transform="translate(352 16) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-6)"><g transform="translate(416 16) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-7)"><g transform="translate(480 16) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-8)"><g transform="translate(544 16) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-9)"><g transform="translate(608 16) scale(1.01 0.91) skewX(-12)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-10)"><g transform="translate(672 16) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-11)"><g transform="translate(736 16) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#clean"/></g></g>
+<g clip-path="url(#car-cell-12)"><g transform="translate(32 48) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-13)"><g transform="translate(96 48) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-14)"><g transform="translate(160 48) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-15)"><g transform="translate(224 48) scale(1.01 0.91) skewX(12)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-16)"><g transform="translate(288 48) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-17)"><g transform="translate(352 48) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-18)"><g transform="translate(416 48) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-19)"><g transform="translate(480 48) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-20)"><g transform="translate(544 48) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-21)"><g transform="translate(608 48) scale(1.01 0.91) skewX(-12)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-22)"><g transform="translate(672 48) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-23)"><g transform="translate(736 48) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#dented"/></g></g>
+<g clip-path="url(#car-cell-24)"><g transform="translate(32 80) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-25)"><g transform="translate(96 80) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-26)"><g transform="translate(160 80) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-27)"><g transform="translate(224 80) scale(1.01 0.91) skewX(12)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-28)"><g transform="translate(288 80) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-29)"><g transform="translate(352 80) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-30)"><g transform="translate(416 80) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-31)"><g transform="translate(480 80) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-32)"><g transform="translate(544 80) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-33)"><g transform="translate(608 80) scale(1.01 0.91) skewX(-12)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-34)"><g transform="translate(672 80) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-35)"><g transform="translate(736 80) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#battered"/></g></g>
+<g clip-path="url(#car-cell-36)"><g transform="translate(32 144) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-37)"><g transform="translate(96 144) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-38)"><g transform="translate(160 144) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-39)"><g transform="translate(224 144) scale(1.01 0.91) skewX(12)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-40)"><g transform="translate(288 144) scale(1.01 0.95) skewX(8)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-41)"><g transform="translate(352 144) scale(1.01 0.98) skewX(4)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-42)"><g transform="translate(416 144) scale(1.01 1) skewX(0)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-43)"><g transform="translate(480 144) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-44)"><g transform="translate(544 144) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-45)"><g transform="translate(608 144) scale(1.01 0.91) skewX(-12)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-46)"><g transform="translate(672 144) scale(1.01 0.95) skewX(-8)"><use href="#shadow"/><use href="#totaled"/></g></g>
+<g clip-path="url(#car-cell-47)"><g transform="translate(736 144) scale(1.01 0.98) skewX(-4)"><use href="#shadow"/><use href="#totaled"/></g></g>
 <g transform="translate(32 112)"><use href="#shadow"/><use href="#brake"/></g>
 <g transform="translate(96 112)"><use href="#shadow"/><use href="#nitro"/></g>
 <g transform="translate(32 176)"><use href="#wet-trail"/></g>

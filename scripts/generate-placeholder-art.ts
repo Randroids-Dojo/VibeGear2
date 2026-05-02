@@ -439,7 +439,12 @@ function carDecals(car: CarSheet): string {
 function carSheetSvg(car: CarSheet): string {
   const skews = [0, 4, 8, 12, 8, 4, 0, -4, -8, -12, -8, -4];
   const squash = [1, 0.98, 0.95, 0.91, 0.95, 0.98, 1, 0.98, 0.95, 0.91, 0.95, 0.98];
-  const stanceScale = car.stance === "wide" ? 1.05 : car.stance === "narrow" ? 0.94 : 1;
+  const stanceScale = car.stance === "wide" ? 1.01 : car.stance === "narrow" ? 0.94 : 0.98;
+  const clipDefs = Array.from(
+    { length: 48 },
+    (_, index) =>
+      `<clipPath id="car-cell-${index}"><rect x="${(index % 12) * 64}" y="${Math.floor(index / 12) * 32}" width="64" height="32"/></clipPath>`,
+  );
   const damageRows = [
     { y: 16, id: "clean", extra: "" },
     {
@@ -461,10 +466,12 @@ function carSheetSvg(car: CarSheet): string {
   const dentedExtra = damageRows.find((row) => row.id === "dented")?.extra ?? "";
   const batteredExtra = damageRows.find((row) => row.id === "battered")?.extra ?? "";
   const frames: string[] = [];
-  for (const row of damageRows) {
+  for (let rowIndex = 0; rowIndex < damageRows.length; rowIndex += 1) {
+    const row = damageRows[rowIndex]!;
     for (let i = 0; i < skews.length; i += 1) {
+      const clipIndex = rowIndex * skews.length + i;
       frames.push(
-        `<g transform="translate(${32 + i * 64} ${row.y}) scale(${stanceScale} ${squash[i]}) skewX(${skews[i]})"><use href="#shadow"/><use href="#${row.id}"/></g>`,
+        `<g clip-path="url(#car-cell-${clipIndex})"><g transform="translate(${32 + i * 64} ${row.y}) scale(${stanceScale} ${squash[i]}) skewX(${skews[i]})"><use href="#shadow"/><use href="#${row.id}"/></g></g>`,
       );
     }
   }
@@ -474,7 +481,8 @@ function carSheetSvg(car: CarSheet): string {
     [
       '<rect width="768" height="384" fill="none"/>',
       '<defs>',
-      '<g id="shadow"><ellipse cx="0" cy="14" rx="31" ry="5" fill="#10151f" opacity="0.58"/></g>',
+      ...clipDefs,
+      '<g id="shadow"><ellipse cx="0" cy="14" rx="27" ry="4" fill="#10151f" opacity="0.58"/></g>',
       `<g id="clean"><path d="${carBodyPath(car)}" fill="${car.body}"/><path d="M-15 -8 L15 -8 L10 4 L-10 4 Z" fill="${car.glass}"/><path d="M-9 -7 L9 -7 L6 3 L-6 3 Z" fill="${car.glass}" opacity="0.8"/><path d="M-24 7 L-12 7 L-12 11 L-24 11 Z" fill="#ff3d38"/><path d="M12 7 L24 7 L24 11 L12 11 Z" fill="#ff3d38"/><path d="M-26 12 L-18 15 L18 15 L26 12 Z" fill="${car.trim}"/>${carWing(car)}${carDecals(car)}<path d="M-20 -10 L-10 -14 L10 -14 L20 -10" fill="none" stroke="${car.stripe}" stroke-width="1.5" opacity="0.8"/></g>`,
       `<g id="dented"><use href="#clean"/>${dentedExtra}<rect x="13" y="7" width="9" height="4" fill="#d72f31"/></g>`,
       `<g id="battered"><use href="#clean"/>${batteredExtra}<rect x="-22" y="7" width="10" height="4" fill="#b83232"/><rect x="13" y="7" width="9" height="4" fill="#b83232"/></g>`,

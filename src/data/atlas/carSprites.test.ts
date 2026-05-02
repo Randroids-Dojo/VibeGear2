@@ -15,6 +15,13 @@ import {
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 
+function firstCleanPath(svg: string): string | null {
+  const cleanGroup = svg.match(/<g\b[^>]*\bid="clean"[^>]*>([\s\S]*?)<\/g>/);
+  if (!cleanGroup) return null;
+
+  return cleanGroup[1]?.match(/<path\b[^>]*\bd="([^"]+)"/)?.[1] ?? null;
+}
+
 describe("per-car sprite atlas metadata", () => {
   it("covers every bundled car visual profile", () => {
     for (const car of CARS) {
@@ -67,7 +74,7 @@ describe("per-car sprite atlas metadata", () => {
     const sheetBodies = new Map<string, string>();
     for (const [id, meta] of Object.entries(CAR_ATLAS_METAS)) {
       const svg = readFileSync(path.join(PUBLIC_DIR, meta.image), "utf8");
-      const bodyPath = svg.match(/<g id="clean"><path d="([^"]+)"/)?.[1];
+      const bodyPath = firstCleanPath(svg);
       expect(bodyPath).toBeDefined();
       sheetBodies.set(id, bodyPath ?? "");
     }
