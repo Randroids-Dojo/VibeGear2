@@ -18,7 +18,7 @@ test.describe("race AI archetype readability", () => {
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(
-      "/race?track=moss-frontier/mistbarrow&mode=quickRace&weather=fog&tour=velvet-coast&raceIndex=0",
+      "/race?track=glass-ridge/hollow-crest&mode=quickRace&weather=fog&tour=velvet-coast&raceIndex=0",
     );
     await expect(page.getByTestId("race-phase")).toHaveText("racing", {
       timeout: 10_000,

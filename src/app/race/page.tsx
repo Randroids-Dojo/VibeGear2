@@ -759,6 +759,15 @@ interface AiReadabilitySnapshot {
   readonly observedCueRoster: string;
 }
 
+function observeAiReadabilityCues(input: {
+  session: Readonly<RaceSessionState>;
+  observedCues: Set<AIReadabilityCue>;
+}): void {
+  for (const entry of input.session.ai) {
+    input.observedCues.add(entry.state.readabilityCue);
+  }
+}
+
 function roadProjectionSnapshot(
   strips: readonly Strip[],
 ): RoadProjectionSnapshot | null {
@@ -788,19 +797,17 @@ function roadProjectionSnapshot(
 
 function aiReadabilitySnapshot(input: {
   config: Readonly<RaceSessionConfig>;
-  session: Readonly<RaceSessionState>;
-  roster: readonly AIDriver[];
-  observedCues: Set<AIReadabilityCue>;
+  observedCues: ReadonlySet<AIReadabilityCue>;
 }): AiReadabilitySnapshot {
-  const archetypes = new Set<string>();
-  for (const driver of input.roster) {
-    archetypes.add(driver.archetype);
+  if (input.config.ai.length === 0) {
+    return {
+      archetypeRoster: "",
+      observedCueRoster: "",
+    };
   }
+  const archetypes = new Set<string>();
   for (const entry of input.config.ai) {
     archetypes.add(entry.driver.archetype);
-  }
-  for (const entry of input.session.ai) {
-    input.observedCues.add(entry.state.readabilityCue);
   }
   return {
     archetypeRoster: Array.from(archetypes).sort().join(","),
@@ -2054,11 +2061,13 @@ function RaceCanvas({
           totalLaps: hud.totalLaps,
           position: hud.position,
         });
+        observeAiReadabilityCues({
+          session,
+          observedCues: observedAiCuesRef.current,
+        });
         setAiReadability(
           aiReadabilitySnapshot({
             config,
-            session,
-            roster: aiDriverRoster,
             observedCues: observedAiCuesRef.current,
           }),
         );

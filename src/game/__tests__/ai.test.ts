@@ -505,6 +505,20 @@ describe("tickAI (§15 archetype behaviours)", () => {
     expect(countSteeringMistakes(chaotic)).toBeGreaterThan(
       countSteeringMistakes(enduro),
     );
+    const chaoticMistakeCue = Array.from({ length: 160 }, (_, index) => index + 1)
+      .map((seed) =>
+        tickAI(
+          chaotic,
+          freshAi({ seed }),
+          freshCar({ speed: 20, z: seed * 6 }),
+          PLAYER_FAR_BEHIND,
+          STRAIGHT_TRACK,
+          RACING,
+          STARTER_STATS,
+        ).nextAiState.readabilityCue,
+      )
+      .find((cue) => cue === "chaotic-missed-apex");
+    expect(chaoticMistakeCue).toBe("chaotic-missed-apex");
     expect(
       tickAI(
         enduro,
@@ -535,6 +549,7 @@ describe("tickAI (visible overtake intent)", () => {
     );
 
     expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.nextAiState.readabilityCue).toBe("overtake");
     expect(result.input.steer).toBeGreaterThan(0);
   });
 

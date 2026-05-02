@@ -579,6 +579,7 @@ function readabilityCueFor(input: {
   brilliantPaceBonus: number;
   overtakeActive: boolean;
 }): AIReadabilityCue {
+  if (input.overtakeActive) return "overtake";
   if (input.archetype === "nitro_burst") {
     if (input.launchPaceBonus > 0) return "rocket-launch";
     if (input.fadePacePenalty > 0) return "rocket-fade";
@@ -591,7 +592,8 @@ function readabilityCueFor(input: {
   }
   if (
     input.archetype === "defender" &&
-    input.visibilityRiskScalar > 1.05
+    input.visibilityRiskScalar > 1.05 &&
+    Math.abs(input.authoredCurve) > 0.05
   ) {
     return "cautious-low-visibility";
   }
@@ -600,7 +602,6 @@ function readabilityCueFor(input: {
     if (input.brilliantPaceBonus > 0) return "chaotic-brilliant";
   }
   if (input.archetype === "endurance") return "enduro-consistent";
-  if (input.overtakeActive) return "overtake";
   return "clean-line";
 }
 
