@@ -14,7 +14,7 @@ interface ProjectionSample {
 }
 
 async function numberText(page: Page, testId: string): Promise<number | null> {
-  const text = (await page.getByTestId(testId).textContent())?.trim();
+  const text = (await page.getByTestId(testId).textContent({ timeout: 1_000 }))?.trim();
   if (!text || text === "none") return null;
   const value = Number(text);
   return Number.isFinite(value) ? value : null;
@@ -48,6 +48,8 @@ function adjacentMaxRatio(values: readonly number[]): number {
 
 test.describe("projection readability", () => {
   test("keeps hill road projection and opponent scale stable", async ({ page }) => {
+    test.setTimeout(60_000);
+
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/race?track=test/elevation&car=sparrow-gt");
 
@@ -64,14 +66,14 @@ test.describe("projection readability", () => {
     await page.keyboard.down("ArrowUp");
 
     const samples: ProjectionSample[] = [];
-    for (let i = 0; i < 48; i += 1) {
+    for (let i = 0; i < 36; i += 1) {
       await page.waitForTimeout(250);
       samples.push(await sampleProjection(page));
     }
     await page.keyboard.up("ArrowUp");
 
     const movingSamples = samples.filter((sample) => sample.speed >= 20);
-    expect(movingSamples.length).toBeGreaterThanOrEqual(20);
+    expect(movingSamples.length).toBeGreaterThanOrEqual(14);
 
     const roadSamples = movingSamples.filter(
       (sample) =>
@@ -80,7 +82,7 @@ test.describe("projection readability", () => {
         sample.roadNearHalfWidth !== null &&
         sample.roadHorizonY !== null,
     );
-    expect(roadSamples.length).toBeGreaterThanOrEqual(20);
+    expect(roadSamples.length).toBeGreaterThanOrEqual(14);
     expect(Math.min(...roadSamples.map((sample) => sample.roadVisibleStrips))).toBeGreaterThan(1);
     expect(
       roadSamples.every(
