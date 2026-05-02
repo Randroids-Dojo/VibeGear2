@@ -6,6 +6,43 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Arcade racer priority research
+
+**GDD references reviewed:** §3, §4, §5, §15, §16, §17, §18, and §20.
+**Branch / PR:** `docs/arcade-racer-priority-stack`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `docs/ARCADE_RACER_PRIORITY_STACK.md` to rank the remaining
+  player-visible work from race readability through AI personality, authored
+  first-tour events, audio emphasis, production car art, and release-fun
+  automation.
+- Refreshed the Top Gear 2 reference stack against the manual, Sega-16,
+  GameFAQs, and OpenRetro summaries.
+- Created implementation dots and followups for missing release-readiness
+  checks, first-tour standings pressure, and rival-pressure feedback.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- The next highest release risk is not another isolated feature. It is a
+  repeatable playtest gate that catches visual trust regressions before a
+  feature PR is called done.
+- AI personality, first-tour authored events, race audio, and production car
+  art remain the highest-impact implementation stack after the playtest gate.
+
+### Followups created
+- F-073, backed by `VibeGear2-feat-playtest-add-4ba02811`.
+- F-074, backed by `VibeGear2-feat-tour-make-ed6387da`.
+- F-075, backed by `VibeGear2-feat-feedback-add-880f1fd2`.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: CPU opponent hill scale fix
 
 **GDD sections touched:**

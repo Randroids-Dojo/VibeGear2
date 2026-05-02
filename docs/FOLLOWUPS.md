@@ -10,6 +10,35 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-075: Add pass and rival-pressure HUD moments
+**Created:** 2026-05-02
+**Priority:** polish
+**Status:** open
+**Notes:** The arcade racer priority research found that AI personality needs
+player-facing feedback after the behavior lands. Add short HUD or canvas
+moments for clean passes, being challenged by a rival, and losing a position
+so AI pressure reads as a race story instead of background traffic. Dot:
+`VibeGear2-feat-feedback-add-880f1fd2`.
+
+## F-074: Make first tour standings pressure visible between races
+**Created:** 2026-05-02
+**Priority:** polish
+**Status:** open
+**Notes:** The arcade racer priority research found that the first tour should
+make standings pressure, cash needs, repair risk, and upgrade thresholds more
+visible between races. Strengthen the Velvet Coast between-race flow and cover
+it with browser evidence. Dot: `VibeGear2-feat-tour-make-ed6387da`.
+
+## F-073: Add projection and opponent readability checks to release playtests
+**Created:** 2026-05-02
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The arcade racer priority research found that release-fun automation
+must catch road projection and opponent scale regressions. Extend the playtest
+automation with assertions or evidence for road projection stability, opponent
+car scale on hills, pickup visibility, result routing, and garage continuation.
+Dot: `VibeGear2-feat-playtest-add-4ba02811`.
+
 ## F-072: Render pickups and collection feedback in the race view
 **Created:** 2026-05-01
 **Priority:** blocks-release
