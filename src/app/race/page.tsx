@@ -676,8 +676,18 @@ function projectOpponentCar(input: {
   if (!projection.visible || projection.screenW <= 0) return null;
   let anchorStrip = input.strips[projection.segmentOffset];
   if (anchorStrip?.visible !== true) {
+    const canUseNearPlaneFallback =
+      projection.segmentOffset <= 0 ||
+      anchorStrip?.scale === 0 ||
+      anchorStrip?.screenW === 0;
+    if (!canUseNearPlaneFallback) return null;
+
     anchorStrip = undefined;
-    for (let index = Math.max(0, projection.segmentOffset); index < input.strips.length; index += 1) {
+    for (
+      let index = Math.max(0, projection.segmentOffset);
+      index < input.strips.length;
+      index += 1
+    ) {
       const strip = input.strips[index];
       if (strip?.visible === true) {
         anchorStrip = strip;
