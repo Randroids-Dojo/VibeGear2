@@ -33,6 +33,9 @@ Correct them by adding a new entry that references the old one.
   green, 244 tests passed.
 - `npx playwright test e2e/first-race-fun.spec.ts --project=chromium` green,
   1 test passed.
+- `npx playwright test e2e/first-race-fun.spec.ts e2e/race-pickups.spec.ts
+  --project=chromium` green, 2 tests passed.
+- `npm run content-lint` green.
 
 ### Decisions and assumptions
 - The first Quick Race teaches pickups with a centerline cash reward and a
@@ -40,6 +43,8 @@ Correct them by adding a new entry that references the old one.
   steering feel and AI traffic are more readable.
 - Quick Race results continue to the garage so a new player sees the broader
   loop even though quick races do not award campaign credits.
+- The full CI verify job now has a 30 minute timeout. Browser install on the
+  GitHub runner consumed the old 15 minute budget before tests could run.
 
 ### Coverage ledger
 - Added `GDD-04-FIRST-RACE-FUN-LOOP`.
