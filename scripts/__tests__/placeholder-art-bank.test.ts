@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -34,7 +34,7 @@ function readManifest(): ArtManifestEntry[] {
 }
 
 describe("placeholder art bank", () => {
-  it("ships a placeholder sprite sheet for every bundled car visual profile", () => {
+  it("ships a production sprite sheet for every bundled car visual profile", () => {
     const manifest = readManifest();
     const manifestPaths = new Set(manifest.map((entry) => entry.path));
     for (const car of CARS) {
@@ -44,14 +44,33 @@ describe("placeholder art bank", () => {
     }
   });
 
-  it("lists generated car sheets as original placeholder art", () => {
+  it("lists generated car sheets as original production car art", () => {
     const carEntries = readManifest().filter((entry) =>
       entry.id.startsWith("car:") && entry.id.endsWith(":sprite-sheet"),
     );
     expect(carEntries).toHaveLength(CARS.length);
     for (const entry of carEntries) {
-      expect(entry.license).toBe("CC0");
-      expect(entry.originality).toContain("Original geometric placeholder art");
+      expect(entry.license).toBe("CC-BY-4.0");
+      expect(entry.source).toContain("production car sheets");
+      expect(entry.originality).toContain("Original stylized car sprite sheets");
+      expect(entry.originality).not.toContain("placeholder");
+
+      const svg = readFileSync(path.join(PUBLIC_DIR, entry.path), "utf8");
+      expect(svg).not.toContain("PLACEHOLDER");
+      expect(svg).not.toContain("placeholder art");
+      expect(svg).toContain("production car sprite sheet");
+    }
+  });
+
+  it("has no placeholder labels in shipped car SVGs", () => {
+    const carDir = path.join(PUBLIC_DIR, "art/cars");
+    for (const fileName of readdirSync(carDir)) {
+      if (!fileName.endsWith(".svg")) continue;
+
+      const svg = readFileSync(path.join(carDir, fileName), "utf8");
+      expect(svg).not.toContain("PLACEHOLDER");
+      expect(svg).not.toContain("placeholder art");
+      expect(svg).toContain("production car sprite sheet");
     }
   });
 

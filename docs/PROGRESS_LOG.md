@@ -6,6 +6,52 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: Production car sprite sheets
+
+**GDD sections touched:** §11, §16, §17, §24, and §26.
+**Branch / PR:** `feat/production-car-sheets`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Replaced the six generated car visual-profile sheets with production-labeled
+  original SVG sheets that keep the existing 12 directional frames, three
+  damage tiers plus totaled state, brake, nitro, wet trail, and snow trail
+  atlas contract.
+- Added distinct fictional coupe silhouette grammar for each bundled car:
+  nose, tail, wing, stance, color, stripe, and decal differences now separate
+  Sparrow GT, Breaker S, Vanta XR, Tempest R, Bastion LM, and Nova Shade.
+- Regenerated the legacy `sparrow.svg` compatibility atlas from the same
+  production Sparrow GT grammar so no shipped car SVG still presents as a
+  placeholder.
+- Updated manifest provenance for generated car sheets to CC BY 4.0
+  production car art, matching the asset licensing model in the README.
+
+### Verified
+- `npm run art:generate` green.
+- `npx vitest run scripts/__tests__/placeholder-art-bank.test.ts src/data/atlas/carSprites.test.ts` green, 10 passed.
+- `npx playwright test e2e/projection-readability.spec.ts --project=chromium` green, 1 passed.
+
+### Decisions and assumptions
+- Kept the existing SVG atlas dimensions and frame map so live race rendering,
+  ghost rendering, and atlas tests remain compatible.
+- Left roadside props, menu backgrounds, HUD icons, and backdrops as separate
+  placeholder-art work because this slice is scoped to car sprites.
+
+### Coverage ledger
+- Replaced `GDD-17-PLACEHOLDER-CAR-SPRITES` with
+  `GDD-17-PRODUCTION-CAR-SPRITE-SHEETS`.
+- Closes `VibeGear2-feat-art-replace-176f701d`.
+- Uncovered adjacent requirements: higher-detail hand-authored pixel art,
+  optional decals, and raster export passes remain polish.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Race mix and event emphasis
 
 **GDD sections touched:** §10, §13, §18, and §20.

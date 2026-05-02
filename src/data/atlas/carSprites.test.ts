@@ -15,6 +15,13 @@ import {
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 
+function firstCleanPath(svg: string): string | null {
+  const cleanGroup = svg.match(/<g\b[^>]*\bid="clean"[^>]*>([\s\S]*?)<\/g>/);
+  if (!cleanGroup) return null;
+
+  return cleanGroup[1]?.match(/<path\b[^>]*\bd="([^"]+)"/)?.[1] ?? null;
+}
+
 describe("per-car sprite atlas metadata", () => {
   it("covers every bundled car visual profile", () => {
     for (const car of CARS) {
@@ -55,10 +62,24 @@ describe("per-car sprite atlas metadata", () => {
       expect(svg).toContain('id="totaled"');
       expect(svg).toContain('id="wet-trail"');
       expect(svg).toContain('id="snow-trail"');
+      expect(svg).toContain("production car sprite sheet");
+      expect(svg).not.toContain("PLACEHOLDER");
       expect(svg).toContain('translate(32 144)');
       expect(svg).toContain('translate(32 176)');
       expect(svg).toContain('translate(96 176)');
     }
+  });
+
+  it("ships distinct per-car silhouette language", () => {
+    const sheetBodies = new Map<string, string>();
+    for (const [id, meta] of Object.entries(CAR_ATLAS_METAS)) {
+      const svg = readFileSync(path.join(PUBLIC_DIR, meta.image), "utf8");
+      const bodyPath = firstCleanPath(svg);
+      expect(bodyPath).toBeDefined();
+      sheetBodies.set(id, bodyPath ?? "");
+    }
+
+    expect(new Set(sheetBodies.values()).size).toBe(sheetBodies.size);
   });
 
   it("falls back to the starter atlas for unknown visual profiles", () => {

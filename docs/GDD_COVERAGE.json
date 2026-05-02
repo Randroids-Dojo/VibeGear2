@@ -48,22 +48,28 @@
       "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
     },
     {
-      "id": "GDD-17-PLACEHOLDER-CAR-SPRITES",
+      "id": "GDD-17-PRODUCTION-CAR-SPRITE-SHEETS",
       "gddSections": [
         "docs/gdd/11-cars-and-stats.md",
         "docs/gdd/17-art-direction.md",
         "docs/gdd/24-content-plan.md",
         "docs/gdd/26-open-source-project-guidance.md"
       ],
-      "requirement": "Every bundled car visual profile has an original placeholder sprite sheet asset with 12 directional frames, damage variants, brake and nitro frames, and manifest provenance metadata.",
+      "requirement": "Every bundled car visual profile has an original production sprite sheet asset with 12 directional frames, damage variants, brake and nitro frames, wet and snow trail variants, distinct fictional silhouette language, and manifest provenance metadata.",
       "coverage": ["implemented-code", "automated-test"],
       "implementationRefs": [
         "public/art/cars/",
         "public/art.manifest.json",
         "scripts/generate-placeholder-art.ts"
       ],
-      "testRefs": ["scripts/__tests__/placeholder-art-bank.test.ts"],
-      "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
+      "testRefs": [
+        "scripts/__tests__/placeholder-art-bank.test.ts",
+        "src/data/atlas/carSprites.test.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-art-d68d1ee2",
+        "VibeGear2-feat-art-replace-176f701d"
+      ]
     },
     {
       "id": "GDD-17-PLACEHOLDER-ROADSIDE-PROPS",
