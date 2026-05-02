@@ -335,6 +335,7 @@ export interface GhostCarProjection {
   scale: number;
   worldX: number;
   worldY: number;
+  segmentOffset: number;
 }
 
 const HIDDEN_GHOST_PROJECTION: Readonly<GhostCarProjection> = Object.freeze({
@@ -345,6 +346,7 @@ const HIDDEN_GHOST_PROJECTION: Readonly<GhostCarProjection> = Object.freeze({
   scale: 0,
   worldX: 0,
   worldY: 0,
+  segmentOffset: 0,
 });
 
 /**
@@ -493,5 +495,6 @@ export function projectGhostCar(
     scale,
     worldX,
     worldY,
+    segmentOffset: ghostSegmentOffset,
   };
 }

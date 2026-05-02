@@ -42,12 +42,18 @@ it with browser evidence. Dot: `VibeGear2-feat-tour-make-ed6387da`.
 ## F-073: Add projection and opponent readability checks to release playtests
 **Created:** 2026-05-02
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-05-02)
 **Notes:** The arcade racer priority research found that release-fun automation
 must catch road projection and opponent scale regressions. Extend the playtest
 automation with assertions or evidence for road projection stability, opponent
 car scale on hills, pickup visibility, result routing, and garage continuation.
 Dot: `VibeGear2-feat-playtest-add-4ba02811`.
+
+Closed by `feat/playtest-projection-readability`. Live opponent projection now
+uses the same hill-crest strip visibility and far-distance readability gate as
+the road renderer, and `e2e/projection-readability.spec.ts` samples the
+elevation track for road projection, opponent scale, crest occlusion, and
+lateral stability.
 
 ## F-072: Render pickups and collection feedback in the race view
 **Created:** 2026-05-01
