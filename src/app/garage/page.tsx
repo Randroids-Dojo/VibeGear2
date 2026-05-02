@@ -9,7 +9,11 @@ import {
   buildGarageSummaryView,
   selectStarterCar,
 } from "@/components/garage/garageSummaryState";
+import { getChampionship } from "@/data";
+import { buildTourPressureSummary } from "@/game/tourPressure";
 import { defaultSave, loadSave, saveSave } from "@/persistence";
+
+const CHAMPIONSHIP_ID = "world-tour-standard";
 
 interface PageStatus {
   readonly kind: "idle" | "info" | "error";
@@ -41,6 +45,11 @@ export default function GaragePage() {
   const view = useMemo(
     () => (save ? buildGarageSummaryView(save) : null),
     [save],
+  );
+  const championship = useMemo(() => getChampionship(CHAMPIONSHIP_ID), []);
+  const tourPressure = useMemo(
+    () => (save ? buildTourPressureSummary({ save, championship }) : null),
+    [championship, save],
   );
 
   const persist = useCallback((next: SaveGame, message: string) => {
@@ -91,20 +100,37 @@ export default function GaragePage() {
         <div>
           <h1 style={titleStyle}>Garage</h1>
           <p style={mutedTextStyle}>
-            Credits: <strong data-testid="garage-credits">{view.credits}</strong>
+            Credits:{" "}
+            <strong data-testid="garage-credits">{view.credits}</strong>
           </p>
         </div>
         <nav style={navStyle} aria-label="Garage actions">
-          <Link href="/garage/cars" style={linkStyle} data-testid="garage-cars-link">
+          <Link
+            href="/garage/cars"
+            style={linkStyle}
+            data-testid="garage-cars-link"
+          >
             Cars
           </Link>
-          <Link href="/garage/repair" style={linkStyle} data-testid="garage-repair-link">
+          <Link
+            href="/garage/repair"
+            style={linkStyle}
+            data-testid="garage-repair-link"
+          >
             Repairs
           </Link>
-          <Link href="/garage/upgrade" style={linkStyle} data-testid="garage-upgrade-link">
+          <Link
+            href="/garage/upgrade"
+            style={linkStyle}
+            data-testid="garage-upgrade-link"
+          >
             Upgrades
           </Link>
-          <Link href="/world" style={primaryLinkStyle} data-testid="garage-next-race-link">
+          <Link
+            href="/world"
+            style={primaryLinkStyle}
+            data-testid="garage-next-race-link"
+          >
             Next race
           </Link>
         </nav>
@@ -126,12 +152,16 @@ export default function GaragePage() {
         <section style={panelStyle} data-testid="garage-starter-pick">
           <h2 style={sectionTitleStyle}>Pick your starter car</h2>
           <p style={mutedTextStyle}>
-            Your save does not point at an owned active car. Choose an
-            available starter to continue.
+            Your save does not point at an owned active car. Choose an available
+            starter to continue.
           </p>
           <ul style={cardGridStyle}>
             {view.starterCars.map((car) => (
-              <li key={car.id} style={cardStyle} data-testid={`starter-${car.id}`}>
+              <li
+                key={car.id}
+                style={cardStyle}
+                data-testid={`starter-${car.id}`}
+              >
                 <h3 style={cardTitleStyle}>{car.name}</h3>
                 <p style={mutedTextStyle}>Class: {car.class}</p>
                 <button
@@ -191,10 +221,57 @@ export default function GaragePage() {
 
           <aside style={nextRacePanelStyle} data-testid="garage-next-card">
             <h2 style={sectionTitleStyle}>Next race</h2>
-            <p style={nextRaceTextStyle}>
-              Pick the next World Tour event, then return here for repairs and
-              upgrades between races.
-            </p>
+            {tourPressure ? (
+              <dl style={summaryGridStyle} data-testid="garage-tour-pressure">
+                <div style={summaryRowStyle}>
+                  <dt>Tour</dt>
+                  <dd data-testid="garage-pressure-tour">
+                    {tourPressure.tourName}
+                  </dd>
+                </div>
+                <div style={summaryRowStyle}>
+                  <dt>Progress</dt>
+                  <dd data-testid="garage-pressure-progress">
+                    {tourPressure.progressLabel}
+                  </dd>
+                </div>
+                <div style={summaryRowStyle}>
+                  <dt>Standing</dt>
+                  <dd data-testid="garage-pressure-standing">
+                    {tourPressure.standingsLabel}
+                  </dd>
+                </div>
+                <div style={summaryRowStyle}>
+                  <dt>Gate</dt>
+                  <dd data-testid="garage-pressure-gate">
+                    {tourPressure.gateLabel}
+                  </dd>
+                </div>
+                <div style={summaryRowStyle}>
+                  <dt>Plan</dt>
+                  <dd data-testid="garage-pressure-plan">
+                    {tourPressure.pressureLabel}
+                  </dd>
+                </div>
+                <div style={summaryRowStyle}>
+                  <dt>Repair room</dt>
+                  <dd data-testid="garage-pressure-cash-after-repair">
+                    {tourPressure.cashAfterRepair} cr
+                  </dd>
+                </div>
+                <div style={summaryRowStyle}>
+                  <dt>Upgrade gap</dt>
+                  <dd data-testid="garage-pressure-upgrade-shortfall">
+                    {tourPressure.upgradeShortfall} cr
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p style={nextRaceTextStyle}>
+                Pick the next World Tour event, then return here for repairs and
+                upgrades between races.
+              </p>
+            )}
             <Link
               href="/world"
               style={primaryLinkStyle}

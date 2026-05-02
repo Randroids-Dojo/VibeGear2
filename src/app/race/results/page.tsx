@@ -48,9 +48,17 @@ import {
   loadRaceResult,
 } from "@/components/results/raceResultStorage";
 import { DailyShareButton } from "@/app/daily/DailyShareButton";
+import { getChampionship } from "@/data";
 import { formatDailyChallengeShareText } from "@/game/modes/dailyChallenge";
 import type { RaceResult } from "@/game/raceResult";
 import type { FinalCarRecord } from "@/game/raceRules";
+import {
+  buildTourPressureSummary,
+  type TourPressureSummary,
+} from "@/game/tourPressure";
+import { loadSave } from "@/persistence/save";
+
+const CHAMPIONSHIP_ID = "world-tour-standard";
 
 export default function RaceResultsPage(): ReactElement {
   return (
@@ -64,11 +72,25 @@ function ResultsShell(): ReactElement {
   const router = useRouter();
   // Hydration-safe pattern: reading sessionStorage at render time would
   // mismatch the SSR snapshot. Defer the read to a client-only effect.
-  const [result, setResult] = useState<RaceResult | null | "loading">("loading");
+  const [result, setResult] = useState<RaceResult | null | "loading">(
+    "loading",
+  );
+  const [tourPressure, setTourPressure] = useState<TourPressureSummary | null>(
+    null,
+  );
   const continueRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     setResult(loadRaceResult());
+    const save = loadSave();
+    if (save.kind === "loaded") {
+      setTourPressure(
+        buildTourPressureSummary({
+          save: save.save,
+          championship: getChampionship(CHAMPIONSHIP_ID),
+        }),
+      );
+    }
   }, []);
 
   // Default focus on Continue once the result resolves; mirrors the
@@ -97,17 +119,25 @@ function ResultsShell(): ReactElement {
     return <NoResultFallback />;
   }
 
-  return <ResultsView result={result} onRematch={handleRematch} continueRef={continueRef} />;
+  return (
+    <ResultsView
+      result={result}
+      tourPressure={tourPressure}
+      onRematch={handleRematch}
+      continueRef={continueRef}
+    />
+  );
 }
 
 interface ResultsViewProps {
   result: RaceResult;
+  tourPressure: TourPressureSummary | null;
   onRematch: () => void;
   continueRef: React.Ref<HTMLAnchorElement>;
 }
 
 function ResultsView(props: ResultsViewProps): ReactElement {
-  const { result, onRematch, continueRef } = props;
+  const { result, tourPressure, onRematch, continueRef } = props;
 
   const placementLabel = useMemo(() => {
     if (result.playerPlacement === null) {
@@ -129,9 +159,8 @@ function ResultsView(props: ResultsViewProps): ReactElement {
   // status pill plus the optional top-N. DNF rows skip the network call.
   const playerRow = useMemo<FinalCarRecord | null>(
     () =>
-      result.finishingOrder.find(
-        (row) => row.carId === result.playerCarId,
-      ) ?? null,
+      result.finishingOrder.find((row) => row.carId === result.playerCarId) ??
+      null,
     [result.finishingOrder, result.playerCarId],
   );
   const playerFinished = playerRow?.status === "finished";
@@ -245,6 +274,43 @@ function ResultsView(props: ResultsViewProps): ReactElement {
                 ? ` Unlocked ${formatTourName(tourProgress.unlockedTourId)}.`
                 : ""}
             </p>
+          ) : null}
+          {tourPressure ? (
+            <section
+              style={tourPressurePanelStyle}
+              data-testid="results-tour-pressure"
+              aria-label="Tour pressure"
+            >
+              <h3 style={subHeading}>Tour pressure</h3>
+              <dl style={pressureListStyle}>
+                <dt style={dtStyle}>Standing</dt>
+                <dd data-testid="results-pressure-standing" style={ddStyle}>
+                  {tourPressure.standingsLabel}
+                </dd>
+                <dt style={dtStyle}>Gate</dt>
+                <dd data-testid="results-pressure-gate" style={ddStyle}>
+                  {tourPressure.gateLabel}
+                </dd>
+                <dt style={dtStyle}>Plan</dt>
+                <dd data-testid="results-pressure-plan" style={ddStyle}>
+                  {tourPressure.pressureLabel}
+                </dd>
+                <dt style={dtStyle}>Cash after repairs</dt>
+                <dd
+                  data-testid="results-pressure-cash-after-repair"
+                  style={ddStyle}
+                >
+                  {tourPressure.cashAfterRepair.toLocaleString("en-US")} cr
+                </dd>
+                <dt style={dtStyle}>Upgrade gap</dt>
+                <dd
+                  data-testid="results-pressure-upgrade-shortfall"
+                  style={ddStyle}
+                >
+                  {tourPressure.upgradeShortfall.toLocaleString("en-US")} cr
+                </dd>
+              </dl>
+            </section>
           ) : null}
 
           <LeaderboardPanel
@@ -433,6 +499,19 @@ const rewardsListStyle: CSSProperties = {
   gridTemplateColumns: "max-content 1fr",
   gap: "0.25rem 1rem",
   margin: 0,
+};
+
+const pressureListStyle: CSSProperties = {
+  ...rewardsListStyle,
+};
+
+const tourPressurePanelStyle: CSSProperties = {
+  display: "grid",
+  gap: "0.4rem",
+  border: "1px solid rgba(255, 209, 102, 0.45)",
+  borderRadius: "8px",
+  padding: "0.75rem",
+  background: "rgba(255, 209, 102, 0.07)",
 };
 
 const dtStyle: CSSProperties = {

@@ -6,6 +6,51 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: First-tour standings pressure
+
+**GDD sections touched:** §8, §12, and §20.
+**Branch / PR:** `feat/first-tour-standings-pressure`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a shared tour-pressure summary for in-progress World Tour state,
+  current standing, advancement gate, next race, full-repair estimate,
+  cash after repairs, and next-upgrade affordability.
+- Rendered the same pressure summary in the garage next-race card, pre-race
+  card, and results screen so the first tour reads as a connected
+  four-race contest instead of isolated race entries.
+- Added browser coverage for a seeded in-progress Velvet Coast tour and unit
+  coverage for the shared pressure derivation.
+
+### Verified
+- `npx vitest run src/game/__tests__/tourPressure.test.ts src/game/__tests__/preRaceCard.test.ts src/components/garage/__tests__/garageSummaryState.test.ts` green, 29 passed.
+- `npx playwright test e2e/tour-pressure.spec.ts` green, 1 passed.
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- Kept the pressure model read-only. It explains standing and wallet pressure
+  without changing rewards, repairs, upgrades, or tour progression rules.
+- Chose the cheapest eligible next upgrade as the affordability target so the
+  guidance remains concrete even before richer recommended-upgrade strategy
+  lands.
+
+### Coverage ledger
+- Added `GDD-20-TOUR-PRESSURE-SURFACES`.
+- Closes F-074.
+- Uncovered adjacent requirements: richer recommended-upgrade strategy and
+  named rival standings remain separate polish.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Pass and rival-pressure HUD moments
 
 **GDD sections touched:** §15 and §20.

@@ -165,8 +165,16 @@ function RacePrepShell(): ReactElement {
               testId="pre-race-difficulty"
               value={`${card.difficulty.value} (${card.difficulty.label})`}
             />
-            <Field label="Base reward" testId="pre-race-base-reward" value={card.baseReward} />
-            <Field label="Standings" testId="pre-race-standings" value={card.standings} />
+            <Field
+              label="Base reward"
+              testId="pre-race-base-reward"
+              value={card.baseReward}
+            />
+            <Field
+              label="Standings"
+              testId="pre-race-standings"
+              value={card.standings}
+            />
           </dl>
         </article>
 
@@ -203,7 +211,11 @@ function RacePrepShell(): ReactElement {
               testId="pre-race-surface-temp"
               value={card.forecast.surfaceTemperatureBand}
             />
-            <Field label="Grip" testId="pre-race-grip" value={card.forecast.gripRating} />
+            <Field
+              label="Grip"
+              testId="pre-race-grip"
+              value={card.forecast.gripRating}
+            />
             <Field
               label="Visibility"
               testId="pre-race-visibility"
@@ -214,7 +226,10 @@ function RacePrepShell(): ReactElement {
 
         <article style={panelStyle}>
           <h2 style={sectionTitleStyle}>Tires</h2>
-          <p style={recommendationStyle} data-testid="pre-race-recommended-tire">
+          <p
+            style={recommendationStyle}
+            data-testid="pre-race-recommended-tire"
+          >
             Recommended: {card.recommendedTire}
           </p>
           <div style={segmentedStyle} role="group" aria-label="Tire choice">
@@ -222,7 +237,9 @@ function RacePrepShell(): ReactElement {
               <button
                 key={tire}
                 type="button"
-                style={selectedTire === tire ? activeSegmentStyle : segmentStyle}
+                style={
+                  selectedTire === tire ? activeSegmentStyle : segmentStyle
+                }
                 aria-pressed={selectedTire === tire}
                 onClick={() => setSelectedTire(tire)}
                 data-testid={`pre-race-tire-${tire}`}
@@ -255,8 +272,16 @@ function RacePrepShell(): ReactElement {
               testId="pre-race-car-class"
               value={card.carSummary.className}
             />
-            <Field label="Setup" testId="pre-race-setup" value={card.setupSummary} />
-            <Field label="Cash" testId="pre-race-cash" value={card.cashOnHand} />
+            <Field
+              label="Setup"
+              testId="pre-race-setup"
+              value={card.setupSummary}
+            />
+            <Field
+              label="Cash"
+              testId="pre-race-cash"
+              value={card.cashOnHand}
+            />
             <Field
               label="Repair estimate"
               testId="pre-race-repair-estimate"
@@ -264,10 +289,56 @@ function RacePrepShell(): ReactElement {
             />
           </dl>
         </article>
+
+        {card.tourPressure ? (
+          <article style={panelStyle} data-testid="pre-race-tour-pressure">
+            <h2 style={sectionTitleStyle}>Tour pressure</h2>
+            <dl style={summaryGridStyle}>
+              <Field
+                label="Standing"
+                testId="pre-race-pressure-standing"
+                value={card.tourPressure.standingsLabel}
+              />
+              <Field
+                label="Gate"
+                testId="pre-race-pressure-gate"
+                value={card.tourPressure.gateLabel}
+              />
+              <Field
+                label="Plan"
+                testId="pre-race-pressure-plan"
+                value={card.tourPressure.pressureLabel}
+              />
+              <Field
+                label="After repairs"
+                testId="pre-race-pressure-cash-after-repair"
+                value={`${card.tourPressure.cashAfterRepair} cr`}
+              />
+              <Field
+                label="Next upgrade"
+                testId="pre-race-pressure-next-upgrade"
+                value={
+                  card.tourPressure.nextUpgradeCost === null
+                    ? card.tourPressure.nextUpgradeLabel
+                    : `${card.tourPressure.nextUpgradeLabel} (${card.tourPressure.nextUpgradeCost} cr)`
+                }
+              />
+              <Field
+                label="Shortfall"
+                testId="pre-race-pressure-upgrade-shortfall"
+                value={`${card.tourPressure.upgradeShortfall} cr`}
+              />
+            </dl>
+          </article>
+        ) : null}
       </section>
 
       <footer style={footerStyle}>
-        <Link href={startHref} style={primaryLinkStyle} data-testid="pre-race-start-link">
+        <Link
+          href={startHref}
+          style={primaryLinkStyle}
+          data-testid="pre-race-start-link"
+        >
           Start race
         </Link>
       </footer>
@@ -320,7 +391,8 @@ function raceHref(input: {
     tire: input.tire,
   });
   if (input.tourId) params.set("tour", input.tourId);
-  if (input.raceIndex !== null) params.set("raceIndex", String(input.raceIndex));
+  if (input.raceIndex !== null)
+    params.set("raceIndex", String(input.raceIndex));
   return `/race?${params.toString()}`;
 }
 

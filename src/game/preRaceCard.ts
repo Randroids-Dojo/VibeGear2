@@ -8,17 +8,17 @@ import type {
   WeatherOption,
 } from "@/data/schemas";
 
-import { applyRepairCost, baseRewardForTrackDifficulty } from "./economy";
-import { createDamageState, type DamageState } from "./damage";
+import { baseRewardForTrackDifficulty } from "./economy";
 import {
   visibilityForWeather,
   weatherGripScalar,
   type TireKind,
 } from "./weather";
-
-const REPAIR_ZONES = ["engine", "tires", "body"] as const;
-
-type PendingGarageDamage = NonNullable<SaveGame["garage"]["pendingDamage"]>[string];
+import {
+  buildTourPressureSummary,
+  estimateFullRepair,
+  type TourPressureSummary,
+} from "./tourPressure";
 
 export interface PreRaceCard {
   readonly trackName: string;
@@ -43,6 +43,7 @@ export interface PreRaceCard {
   readonly cashOnHand: number;
   readonly repairEstimate: number;
   readonly baseReward: number;
+  readonly tourPressure: TourPressureSummary | null;
   readonly carSummary: {
     readonly id: string;
     readonly name: string;
@@ -77,7 +78,7 @@ export function buildPreRaceCard(input: BuildPreRaceCardInput): PreRaceCard {
   const selectedTire = input.selectedTire ?? recommendTire(weather);
   const recommendedTire = recommendTire(weather);
   const activeTour = championship
-    ? championship.tours.find((tour) => tour.id === tourId) ?? null
+    ? (championship.tours.find((tour) => tour.id === tourId) ?? null)
     : null;
 
   return {
@@ -101,8 +102,11 @@ export function buildPreRaceCard(input: BuildPreRaceCardInput): PreRaceCard {
     },
     standings: standingsSummary(save, activeTour, raceIndex),
     cashOnHand: save.garage.credits,
-    repairEstimate: repairEstimate(save),
+    repairEstimate: estimateFullRepair(save),
     baseReward: baseRewardForTrackDifficulty(track.difficulty),
+    tourPressure: championship
+      ? buildTourPressureSummary({ save, championship })
+      : null,
     carSummary: carSummary(save.garage.activeCarId, car),
     setupSummary: setupSummary(save.garage.activeCarId, save),
   };
@@ -217,50 +221,18 @@ function standingsSummary(
   raceIndex: number | null,
 ): string {
   const activeTour = save.progress.activeTour;
-  if (!tour || !activeTour || activeTour.tourId !== tour.id) return "No tour standings yet";
+  if (!tour || !activeTour || activeTour.tourId !== tour.id)
+    return "No tour standings yet";
   const completed = activeTour.results.length;
   const total = tour.tracks.length;
   const next = raceIndex === null ? activeTour.raceIndex : raceIndex;
   return `Race ${Math.min(total, next + 1)} of ${total}, ${completed} complete`;
 }
 
-function repairEstimate(save: SaveGame): number {
-  const carId = save.garage.activeCarId;
-  const pending = save.garage.pendingDamage?.[carId];
-  const damage = damageFromPending(pending);
-  const quoteSave: SaveGame = {
-    ...save,
-    garage: {
-      ...save.garage,
-      credits: Number.MAX_SAFE_INTEGER,
-    },
-  };
-  const result = applyRepairCost(quoteSave, {
-    carId,
-    damage,
-    tourTier: 1,
-    zones: REPAIR_ZONES,
-    repairKind: "full",
-    lastRaceCashEarned: save.garage.lastRaceCashEarned ?? 0,
-  });
-  return result.ok ? result.cashSpent ?? 0 : 0;
-}
-
-function damageFromPending(
-  pending: PendingGarageDamage | undefined,
-): DamageState {
-  if (!pending) return createDamageState({});
-  return {
-    ...createDamageState({
-      engine: pending.zones.engine,
-      tires: pending.zones.tires,
-      body: pending.zones.body,
-    }),
-    offRoadAccumSeconds: pending.offRoadAccumSeconds,
-  };
-}
-
-function carSummary(activeCarId: string, car: Car | undefined): PreRaceCard["carSummary"] {
+function carSummary(
+  activeCarId: string,
+  car: Car | undefined,
+): PreRaceCard["carSummary"] {
   if (!car) {
     return {
       id: activeCarId,
@@ -284,8 +256,13 @@ function carSummary(activeCarId: string, car: Car | undefined): PreRaceCard["car
 function setupSummary(activeCarId: string, save: SaveGame): string {
   const upgrades = save.garage.installedUpgrades?.[activeCarId];
   if (!upgrades) return "Stock setup";
-  const totalTiers = Object.values(upgrades).reduce((sum, tier) => sum + tier, 0);
-  return totalTiers === 0 ? "Stock setup" : `${totalTiers} upgrade tiers installed`;
+  const totalTiers = Object.values(upgrades).reduce(
+    (sum, tier) => sum + tier,
+    0,
+  );
+  return totalTiers === 0
+    ? "Stock setup"
+    : `${totalTiers} upgrade tiers installed`;
 }
 
 function displayTourName(tourId: string): string {
