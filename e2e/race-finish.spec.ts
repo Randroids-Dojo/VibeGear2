@@ -177,6 +177,12 @@ test.describe("race-finish wiring (F-029 multi-lap)", () => {
       // generously above the analytical floor.
       test.setTimeout(180_000);
 
+      await page.goto("/");
+      await page.evaluate(
+        ({ key, save }) => window.localStorage.setItem(key, JSON.stringify(save)),
+        { key: SAVE_KEY, save: buildRaceDamageSave("easy") },
+      );
+
       await page.goto("/race?track=test/straight&laps=3");
 
       const canvas = page.getByTestId("race-canvas-element");
@@ -338,7 +344,9 @@ test.describe("quick race result persistence", () => {
   });
 });
 
-function buildRaceDamageSave() {
+function buildRaceDamageSave(
+  difficultyPreset: "easy" | "normal" | "hard" | "master" = "normal",
+) {
   return {
     version: 4,
     profileName: "RaceDamageTester",
@@ -349,7 +357,7 @@ function buildRaceDamageSave() {
         autoNitro: false,
         weatherVisualReduction: false,
       },
-      difficultyPreset: "normal",
+      difficultyPreset,
       transmissionMode: "auto",
       audio: { master: 1, music: 1, sfx: 1 },
       accessibility: {

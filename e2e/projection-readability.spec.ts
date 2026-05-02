@@ -14,7 +14,10 @@ interface ProjectionSample {
 }
 
 async function numberText(page: Page, testId: string): Promise<number | null> {
-  const text = (await page.getByTestId(testId).textContent({ timeout: 5_000 }))?.trim();
+  const text = await page.evaluate((id) => {
+    const element = document.querySelector(`[data-testid="${id}"]`);
+    return element?.textContent?.trim() ?? null;
+  }, testId);
   if (!text || text === "none") return null;
   const value = Number(text);
   return Number.isFinite(value) ? value : null;
