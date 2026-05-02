@@ -66,14 +66,14 @@ test.describe("projection readability", () => {
     await page.keyboard.down("ArrowUp");
 
     const samples: ProjectionSample[] = [];
-    for (let i = 0; i < 36; i += 1) {
-      await page.waitForTimeout(250);
+    for (let i = 0; i < 56; i += 1) {
+      await page.waitForTimeout(200);
       samples.push(await sampleProjection(page));
     }
     await page.keyboard.up("ArrowUp");
 
     const movingSamples = samples.filter((sample) => sample.speed >= 20);
-    expect(movingSamples.length).toBeGreaterThanOrEqual(14);
+    expect(movingSamples.length).toBeGreaterThanOrEqual(18);
 
     const roadSamples = movingSamples.filter(
       (sample) =>
@@ -82,7 +82,7 @@ test.describe("projection readability", () => {
         sample.roadNearHalfWidth !== null &&
         sample.roadHorizonY !== null,
     );
-    expect(roadSamples.length).toBeGreaterThanOrEqual(14);
+    expect(roadSamples.length).toBeGreaterThanOrEqual(18);
     expect(Math.min(...roadSamples.map((sample) => sample.roadVisibleStrips))).toBeGreaterThan(1);
     expect(
       roadSamples.every(
