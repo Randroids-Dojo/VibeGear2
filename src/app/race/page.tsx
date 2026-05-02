@@ -674,7 +674,12 @@ function projectOpponentCar(input: {
     input.carX,
   );
   if (!projection.visible || projection.screenW <= 0) return null;
-  const anchorStrip = input.strips[projection.segmentOffset];
+  const anchorStrip =
+    input.strips[projection.segmentOffset]?.visible === true
+      ? input.strips[projection.segmentOffset]
+      : input.strips.find(
+          (strip, index) => index >= projection.segmentOffset && strip.visible,
+        );
   if (!anchorStrip?.visible) return null;
 
   const projectedScreenW = projection.screenW * 0.3;
@@ -736,9 +741,15 @@ interface RoadProjectionSnapshot {
 function roadProjectionSnapshot(
   strips: readonly Strip[],
 ): RoadProjectionSnapshot | null {
-  const visible = strips.filter((strip) => strip.visible);
-  const near = visible[0];
-  const horizon = visible[visible.length - 1];
+  let visibleStrips = 0;
+  let near: Strip | null = null;
+  let horizon: Strip | null = null;
+  for (const strip of strips) {
+    if (!strip.visible) continue;
+    visibleStrips += 1;
+    near ??= strip;
+    horizon = strip;
+  }
   if (!near || !horizon) return null;
   const foreground = near.foreground ?? {
     screenX: near.screenX,
@@ -746,7 +757,7 @@ function roadProjectionSnapshot(
     screenW: near.screenW,
   };
   return {
-    visibleStrips: visible.length,
+    visibleStrips,
     nearCenterX: foreground.screenX,
     nearY: foreground.screenY,
     nearHalfWidth: foreground.screenW,

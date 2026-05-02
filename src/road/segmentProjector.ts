@@ -326,6 +326,10 @@ export function upcomingCurvature(
  * future renderer slice (e.g. the F-022 atlas-frame upgrade) can sample
  * the same camera-space position the road draw used without recomputing
  * the integration.
+ *
+ * `segmentOffset` is the car's strip-window index relative to the current
+ * camera segment. Callers can use it to anchor the car to the same projected
+ * road strip window that owns crest occlusion.
  */
 export interface GhostCarProjection {
   visible: boolean;
