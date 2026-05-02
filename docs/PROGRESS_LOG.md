@@ -6,6 +6,39 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-02: Slice: CI cross-browser timeout hotfix
+
+**GDD sections touched:** §21.
+**Branch / PR:** `fix/ci-cross-browser-timeout`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Raised the main CI verify job timeout from 30 minutes to 45 minutes so the
+  required cross-browser smoke has time to install Firefox and WebKit after the
+  full Chromium e2e suite.
+
+### Verified
+- `npm run docs:check` green.
+- `npm run content-lint` green.
+
+### Decisions and assumptions
+- Main deploy was already serving the merged build, but the deploy verification
+  job was skipped because the verify job hit its timeout during browser
+  installation. The immediate fix is to restore a healthy main gate without
+  changing test coverage.
+
+### Coverage ledger
+- Referenced existing ledger id: `GDD-21-CI-DEPLOY-HEALTH`.
+- Uncovered adjacent requirements: none.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-02: Slice: Release-fun playtest automation
 
 **GDD sections touched:** §4, §5, §16, and §20.

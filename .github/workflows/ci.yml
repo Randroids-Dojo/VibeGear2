@@ -33,7 +33,7 @@ jobs:
   verify:
     name: Lint, typecheck, unit, e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
 
