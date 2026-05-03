@@ -55,19 +55,26 @@ function readManifest(): AudioManifestEntry[] {
   return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as AudioManifestEntry[];
 }
 
-describe("placeholder audio bank", () => {
-  it("ships title and race theme placeholders", () => {
+function expectProductionProvenance(entry: AudioManifestEntry | undefined): void {
+  expect(entry?.license).toBe("CC-BY-4.0");
+  expect(entry?.source).toBeTruthy();
+  expect(entry?.originality).toBeTruthy();
+  expect(entry?.source).not.toContain("placeholder");
+  expect(entry?.originality).not.toContain("placeholder");
+}
+
+describe("production procedural audio bank", () => {
+  it("ships title and race theme production cues", () => {
     const manifest = readManifest();
     for (const id of MUSIC_IDS) {
       const entry = manifest.find((item) => item.id === `music:${id}`);
       expect(entry?.path).toBe(`audio/music/${id}.opus`);
       expect(existsSync(path.join(PUBLIC_DIR, `audio/music/${id}.opus`))).toBe(true);
-      expect(entry?.license).toBe("CC0");
-      expect(entry?.originality).toContain("Original procedural placeholder audio");
+      expectProductionProvenance(entry);
     }
   });
 
-  it("ships race music intensity stem placeholders", () => {
+  it("ships race music intensity production stems", () => {
     const manifest = readManifest();
     for (const id of RACE_MUSIC_IDS) {
       for (const layer of MUSIC_INTENSITY_LAYERS) {
@@ -78,7 +85,7 @@ describe("placeholder audio bank", () => {
         expect(
           existsSync(path.join(PUBLIC_DIR, `audio/music/stems/${id}-${layer}.opus`)),
         ).toBe(true);
-        expect(entry?.license).toBe("CC0");
+        expectProductionProvenance(entry);
         expect(entry?.durationSeconds).toBe(4);
       }
     }
@@ -94,16 +101,18 @@ describe("placeholder audio bank", () => {
       const entry = manifest.find((item) => item.id === `sfx:${id}`);
       expect(entry?.path).toBe(`audio/sfx/${id}.opus`);
       expect(existsSync(path.join(PUBLIC_DIR, `audio/sfx/${id}.opus`))).toBe(true);
+      expectProductionProvenance(entry);
     }
   });
 
-  it("ships weather loop placeholders and keeps the bank small", () => {
+  it("ships weather loop production cues and keeps the bank small", () => {
     const manifest = readManifest();
     for (const id of WEATHER_IDS) {
       const entry = manifest.find((item) => item.id === `weather:${id}`);
       expect(entry?.path).toBe(`audio/weather/${id}.opus`);
       expect(existsSync(path.join(PUBLIC_DIR, `audio/weather/${id}.opus`))).toBe(true);
       expect(entry?.sampleRate).toBe(48_000);
+      expectProductionProvenance(entry);
     }
     const totalBytes = manifest.reduce(
       (sum, entry) => sum + statSync(path.join(PUBLIC_DIR, entry.path)).size,
