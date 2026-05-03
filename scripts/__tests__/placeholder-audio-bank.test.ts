@@ -55,6 +55,14 @@ function readManifest(): AudioManifestEntry[] {
   return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as AudioManifestEntry[];
 }
 
+function expectProductionProvenance(entry: AudioManifestEntry | undefined): void {
+  expect(entry?.license).toBe("CC-BY-4.0");
+  expect(entry?.source).toBeTruthy();
+  expect(entry?.originality).toBeTruthy();
+  expect(entry?.source).not.toContain("placeholder");
+  expect(entry?.originality).not.toContain("placeholder");
+}
+
 describe("production procedural audio bank", () => {
   it("ships title and race theme production cues", () => {
     const manifest = readManifest();
@@ -62,10 +70,7 @@ describe("production procedural audio bank", () => {
       const entry = manifest.find((item) => item.id === `music:${id}`);
       expect(entry?.path).toBe(`audio/music/${id}.opus`);
       expect(existsSync(path.join(PUBLIC_DIR, `audio/music/${id}.opus`))).toBe(true);
-      expect(entry?.license).toBe("CC-BY-4.0");
-      expect(entry?.source).toContain("production procedural audio");
-      expect(entry?.originality).toContain("Original production procedural audio");
-      expect(entry?.originality).not.toContain("placeholder");
+      expectProductionProvenance(entry);
     }
   });
 
@@ -80,10 +85,7 @@ describe("production procedural audio bank", () => {
         expect(
           existsSync(path.join(PUBLIC_DIR, `audio/music/stems/${id}-${layer}.opus`)),
         ).toBe(true);
-        expect(entry?.license).toBe("CC-BY-4.0");
-        expect(entry?.source).toContain("production procedural audio");
-        expect(entry?.originality).toContain("Original production procedural audio");
-        expect(entry?.originality).not.toContain("placeholder");
+        expectProductionProvenance(entry);
         expect(entry?.durationSeconds).toBe(4);
       }
     }
@@ -99,10 +101,7 @@ describe("production procedural audio bank", () => {
       const entry = manifest.find((item) => item.id === `sfx:${id}`);
       expect(entry?.path).toBe(`audio/sfx/${id}.opus`);
       expect(existsSync(path.join(PUBLIC_DIR, `audio/sfx/${id}.opus`))).toBe(true);
-      expect(entry?.license).toBe("CC-BY-4.0");
-      expect(entry?.source).toContain("production procedural audio");
-      expect(entry?.originality).toContain("Original production procedural audio");
-      expect(entry?.originality).not.toContain("placeholder");
+      expectProductionProvenance(entry);
     }
   });
 
@@ -113,10 +112,7 @@ describe("production procedural audio bank", () => {
       expect(entry?.path).toBe(`audio/weather/${id}.opus`);
       expect(existsSync(path.join(PUBLIC_DIR, `audio/weather/${id}.opus`))).toBe(true);
       expect(entry?.sampleRate).toBe(48_000);
-      expect(entry?.license).toBe("CC-BY-4.0");
-      expect(entry?.source).toContain("production procedural audio");
-      expect(entry?.originality).toContain("Original production procedural audio");
-      expect(entry?.originality).not.toContain("placeholder");
+      expectProductionProvenance(entry);
     }
     const totalBytes = manifest.reduce(
       (sum, entry) => sum + statSync(path.join(PUBLIC_DIR, entry.path)).size,
