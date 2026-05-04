@@ -2,7 +2,7 @@
 
 ## Keyboard layout
 
-Default keyboard bindings should preserve VibeRacer’s current clarity—accelerate, brake/reverse, left, right, handbrake—with remapping as a first-class feature, because the current repo already persists control settings and keyboard input via local storage and hooks. [21]
+Default keyboard bindings should preserve VibeRacer’s current clarity - accelerate, brake/reverse, left, right, handbrake - with remapping as a first-class feature, because the current repo already persists control settings and keyboard input via local storage and hooks. [21]
 
 Default layout
 

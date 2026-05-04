@@ -1,0 +1,2133 @@
+{
+  "version": 1,
+  "requirements": [
+    {
+      "id": "GDD-17-REGION-THEME-REGISTRY",
+      "gddSections": [
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Each World Tour region has a typed art theme package covering palette, sky treatment, road shoulder type, prop categories, weather presets, tunnel materials, and UI accent color. Bundled track weather options must be allowed by the owning region theme.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/data/regions/",
+        "src/data/index.ts",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "testRefs": [
+        "src/data/regions/__tests__/regions-content.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-region-art-43d6f582"]
+    },
+    {
+      "id": "GDD-17-PLACEHOLDER-ART-MANIFEST",
+      "gddSections": [
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The placeholder art bank includes licensed and original region backdrops, HUD icons, effect sheets, and a roadside atlas asset, with a manifest check that fails when public art files lack provenance metadata.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art.manifest.json",
+        "public/art/backdrops/",
+        "public/art/effects/",
+        "public/art/hud/",
+        "public/art/roadside/temperate.svg",
+        "scripts/generate-placeholder-art.ts",
+        "scripts/check-art-manifest.ts"
+      ],
+      "testRefs": [
+        "scripts/__tests__/check-art-manifest.test.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-placeholder-art-d68d1ee2"]
+    },
+    {
+      "id": "GDD-17-PRODUCTION-CAR-SPRITE-SHEETS",
+      "gddSections": [
+        "docs/gdd/11-cars-and-stats.md",
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Every bundled car visual profile has an original production sprite sheet asset with 12 directional frames, damage variants, brake and nitro frames, wet and snow trail variants, distinct fictional silhouette language, and manifest provenance metadata.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art/cars/",
+        "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts"
+      ],
+      "testRefs": [
+        "scripts/__tests__/placeholder-art-bank.test.ts",
+        "src/data/atlas/carSprites.test.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-art-d68d1ee2",
+        "VibeGear2-feat-art-replace-176f701d"
+      ]
+    },
+    {
+      "id": "GDD-17-PRODUCTION-ROADSIDE-PROPS",
+      "gddSections": [
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The production art bank ships 80 to 120 original roadside prop assets distributed across all eight regions, with regional sign, barrier, tree, and building shape language and manifest provenance metadata for every prop file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art/roadside/",
+        "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts"
+      ],
+      "testRefs": ["scripts/__tests__/placeholder-art-bank.test.ts"],
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-art-d68d1ee2",
+        "VibeGear2-feat-art-replace-e8c6168e"
+      ]
+    },
+    {
+      "id": "GDD-17-PRODUCTION-MENU-BACKGROUNDS",
+      "gddSections": [
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The production art bank ships original menu background assets for the main menu screens, with screen-specific scene composition and manifest provenance metadata for every background file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art/menu/",
+        "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts"
+      ],
+      "testRefs": ["scripts/__tests__/placeholder-art-bank.test.ts"],
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-art-d68d1ee2",
+        "VibeGear2-feat-art-replace-5e2e9c74"
+      ]
+    },
+    {
+      "id": "GDD-18-PRODUCTION-PROCEDURAL-AUDIO-BANK",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The production procedural audio bank ships original music loops, race themes, SFX, UI sounds, and weather loops with manifest provenance metadata for every audio file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/audio/",
+        "public/audio/manifest.json",
+        "scripts/generate-placeholder-audio.ts",
+        "scripts/check-audio-manifest.ts"
+      ],
+      "testRefs": [
+        "scripts/__tests__/placeholder-audio-bank.test.ts",
+        "scripts/__tests__/check-audio-manifest.test.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-placeholder-audio-94594c41",
+        "VibeGear2-feat-audio-replace-71d72deb"
+      ]
+    },
+    {
+      "id": "GDD-18-PRODUCTION-MUSIC-INTENSITY-STEMS",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The production procedural audio bank ships original drive and lead intensity stem files for every race region, with manifest provenance metadata for each generated file.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/audio/music/stems/",
+        "public/audio/manifest.json",
+        "scripts/generate-placeholder-audio.ts"
+      ],
+      "testRefs": ["scripts/__tests__/placeholder-audio-bank.test.ts"],
+      "followupRefs": [
+        "VibeGear2-implement-sound-music-1611f9dd",
+        "VibeGear2-feat-audio-replace-71d72deb"
+      ]
+    },
+    {
+      "id": "GDD-18-MUSIC-RUNTIME",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "Menu and race routes can play the shipped music bank through the persisted music mixer bus, with regional race cue selection and speed, nitro, and final-lap intensity scaling.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/music.ts",
+        "src/components/audio/MenuMusicDirector.tsx",
+        "src/app/layout.tsx",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": ["src/audio/music.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-WEATHER-MUSIC-STEMS",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Race music supports optional weather stem loops for rainy, heavy rain, foggy, and snowy races through the persisted music mixer bus, with smooth fades as weather state changes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/music.ts",
+        "src/app/race/page.tsx",
+        "public/audio/weather/"
+      ],
+      "testRefs": ["src/audio/music.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-MUSIC-INTENSITY-STEM-RUNTIME",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Race music runtime mixes the regional base groove with drive and lead intensity stem loops, fading those stems from speed, nitro, and final-lap race pressure.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/audio/music.ts", "src/app/race/page.tsx"],
+      "testRefs": ["src/audio/music.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-RACE-MIX-EVENT-EMPHASIS",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Race music, engine, weather, and one-shot SFX share a ducking policy so countdown, nitro, finish, collision, pickup, tire, surface, and damage-warning cues remain readable together.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/raceMix.ts",
+        "src/audio/sfx.ts",
+        "src/game/raceSession.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/audio/raceMix.test.ts",
+        "src/audio/sfx.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "e2e/race-audio-mix.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-feat-audio-race-a656eed2"]
+    },
+    {
+      "id": "GDD-06-DAILY-CHALLENGE-SELECTION",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The daily challenge mode derives a deterministic UTC-day seed, selects a fixed bundled track and authored weather option, recommends a car class for that day, and exposes a shareable entry route.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/dailyChallenge.ts",
+        "src/app/daily/page.tsx",
+        "src/app/daily/DailyShareButton.tsx",
+        "src/app/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/dailyChallenge.test.ts",
+        "src/app/__tests__/page.test.tsx",
+        "e2e/title-screen.spec.ts",
+        "e2e/daily-challenge.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-daily-challenge-a44efeff"]
+    },
+    {
+      "id": "GDD-06-DAILY-CHALLENGE-RESULT-SHARE",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Finished Daily Challenge runs carry the fixed daily marker into the race result and render a copyable share string based on the actual best lap.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/dailyChallenge.ts",
+        "src/game/raceResult.ts",
+        "src/app/race/page.tsx",
+        "src/app/race/results/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/dailyChallenge.test.ts",
+        "src/game/__tests__/raceResult.test.ts",
+        "e2e/results-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-result-backed-4fece8d6"]
+    },
+    {
+      "id": "GDD-06-TIME-TRIAL-PB-RECORDS",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Finished Time Trial runs persist personal-best lap and race records without awarding campaign credits or persisting race damage.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/game/raceResult.ts",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceResult.test.ts",
+        "e2e/race-finish.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The Time Trial entry surface lists unlocked tracks, shows saved personal bests, displays official developer benchmark targets, and starts the selected track in Time Trial mode.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/timeTrialTargets.ts",
+        "src/app/time-trial/page.tsx",
+        "src/app/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/timeTrialTargets.test.ts",
+        "e2e/time-trial.spec.ts",
+        "e2e/title-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-time-trial-9135b1e7"]
+    },
+    {
+      "id": "GDD-06-TIME-TRIAL-DOWNLOADED-GHOST",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Time Trial supports a separate downloaded ghost replay slot per track, lets the player import a valid replay for an unlocked track, and can start a Time Trial using that downloaded ghost instead of the personal-best ghost.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/persistence/save.ts",
+        "src/game/modes/timeTrialTargets.ts",
+        "src/app/time-trial/page.tsx",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/data/schemas.test.ts",
+        "src/persistence/save.test.ts",
+        "src/game/modes/__tests__/timeTrialTargets.test.ts",
+        "e2e/time-trial.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-time-trial-40c02d43"]
+    },
+    {
+      "id": "GDD-06-QUICK-RACE-MODE",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Quick Race lets the player choose an unlocked track, authored weather option, and owned car, then runs a single race with AI present, personal records enabled, and campaign economy and damage persistence disabled.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/modes/quickRace.ts",
+        "src/app/quick-race/page.tsx",
+        "src/app/race/page.tsx",
+        "src/app/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/modes/__tests__/quickRace.test.ts",
+        "e2e/title-screen.spec.ts",
+        "e2e/race-finish.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-practice-quick-ad3ba399"]
+    },
+    {
+      "id": "GDD-04-FIRST-RACE-FUN-LOOP",
+      "gddSections": [
+        "docs/gdd/04-player-experience-goals.md",
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/07-race-rules-and-structure.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The default Quick Race path demonstrates the first-race loop with a visible rival, nitro use, authored pickup rewards, a natural finish, results feedback, and a clear garage next step.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/quick-race/page.tsx",
+        "src/app/race/page.tsx",
+        "src/data/tracks/velvet-coast-harbor-run.json"
+      ],
+      "testRefs": [
+        "e2e/first-race-fun.spec.ts",
+        "e2e/release-fun-playtest.spec.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-feat-tuning-first-74ba5505",
+        "F-076"
+      ]
+    },
+    {
+      "id": "GDD-06-PRACTICE-MODE",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Practice mode starts a no-stakes test session with restart, checkpoint reset, visible grip telemetry, and instant weather swap controls.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/game/raceSessionActions.ts",
+        "src/app/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSessionActions.test.ts",
+        "e2e/title-screen.spec.ts",
+        "e2e/practice-mode.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-practice-quick-ad3ba399"]
+    },
+    {
+      "id": "GDD-10-GRASS-RESTART-PHYSICS",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Off-road grass applies strong drag and a speed cap without trapping a stopped car at zero speed when the player reapplies throttle.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/game/physics.ts"],
+      "testRefs": ["src/game/__tests__/physics.test.ts"],
+      "followupRefs": ["VibeGear2-bug-car-can-94bcb553"]
+    },
+    {
+      "id": "GDD-18-AUDIO-ENGINE-MIXER-PRIMITIVES",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The audio layer has pure primitives for speed-driven engine pitch and metadata-driven master, music, and SFX bus gain resolution.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/engine.ts",
+        "src/audio/mixer.ts"
+      ],
+      "testRefs": [
+        "src/audio/engine.test.ts",
+        "src/audio/mixer.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-AUDIO-CONTEXT-LIFECYCLE",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The audio layer can lazily create, resume, and suspend a shared Web Audio context while treating unavailable Web Audio as a no-op and suspending audio when the page is hidden.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/audio/context.ts"],
+      "testRefs": ["src/audio/context.test.ts"],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-ENGINE-RUNTIME",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races can start a procedural engine oscillator after a user gesture, update pitch from player speed, apply persisted master and SFX mix levels, and stop the graph on race teardown.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/engineRuntime.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/audio/engineRuntime.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-COUNTDOWN-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races play procedural countdown and go tones through the shared Web Audio context and persisted SFX mixer gain, while no-context and silent-mixer paths remain no-op.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/audio/sfx.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-IMPACT-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races emit player impact cues from the pure race-session damage pass and play procedural impact tones through the shared SFX runtime for car contact, wall, hazard, and rub-style hits.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceSession.ts",
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSession.test.ts",
+        "src/audio/sfx.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-NITRO-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races emit a player nitro-engage cue from the pure nitro reducer when a fresh charge starts and play a short rising procedural SFX tone through the shared SFX runtime.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceSession.ts",
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSession.test.ts",
+        "src/audio/sfx.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-PICKUP-SFX",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races emit deterministic player pickup collection events and play distinct cash and nitro procedural SFX one-shots through the shared SFX runtime.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceSession.ts",
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSession.test.ts",
+        "src/audio/sfx.test.ts"
+      ],
+      "followupRefs": ["F-071"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-RACE-MILESTONE-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races emit player gear-shift, lap-complete, and race-finish cues from deterministic race-session state and play distinct procedural SFX one-shots through the shared SFX runtime.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceSession.ts",
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSession.test.ts",
+        "src/audio/sfx.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-18-PROCEDURAL-SURFACE-SFX",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races emit gated player brake-scrub, tire-squeal, and wet or snow surface-hush cues from deterministic input, surface, speed, and weather state, then play distinct procedural SFX one-shots through the shared SFX runtime.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceSession.ts",
+        "src/audio/sfx.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceSession.test.ts",
+        "src/game/__tests__/raceSessionActions.test.ts",
+        "src/audio/sfx.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-14-OVERCAST-WEATHER-OPTION",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "Overcast is a valid authored weather option and resolves as a clear-adjacent, grip-neutral condition with a mild visibility reduction.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/game/weather.ts",
+        "src/game/preRaceCard.ts",
+        "src/game/nitro.ts",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/data/schemas.test.ts",
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/preRaceCard.test.ts",
+        "src/game/__tests__/nitro.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-WEATHER-ACCESSIBILITY-SETTINGS",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Players can persist weather display controls for particle intensity, fog readability, high-contrast roadside signs, reduced glare, and flash reduction, and live races apply them to the weather renderer.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/options/AccessibilityPane.tsx",
+        "src/components/options/accessibilityPaneState.ts",
+        "src/data/schemas.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/accessibilityPaneState.test.ts",
+        "src/data/__tests__/settings-schema.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/options-accessibility.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-WEATHER-RENDER-EFFECTS",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Live races render active weather as rain streaks, snow particles, fog read-distance fade, and dusk or night bloom, with the visual weather assist reducing effect intensity.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-WEATHER-DEPTH-PARTICLES",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Rain, snow, and fog render from projected road strip bands so precipitation and draw-distance haze have depth, parallax, and camera-relative motion instead of a fixed screen overlay.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-20-PRE-RACE-TIRE-SELECTION",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "World Tour entry passes through a pre-race card that shows track, tour, weather forecast, laps, difficulty, tire recommendation, standings, cash, repair estimate, car summary, and carries the selected tire into race physics.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/preRaceCard.ts",
+        "src/app/race/prep/page.tsx",
+        "src/app/world/page.tsx",
+        "src/app/race/page.tsx",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/preRaceCard.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "e2e/pre-race.spec.ts",
+        "e2e/world-tour.spec.ts",
+        "e2e/tour-flow.spec.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-20-HUD-DAMAGE-WEATHER",
+      "gddSections": [
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race HUD shows damage, active weather, and a grip hint from the current weather and tire setup.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/hudState.ts",
+        "src/render/uiRenderer.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/hudState.test.ts",
+        "src/render/__tests__/uiRenderer.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-20-HUD-GEAR-NITRO",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race HUD shows the current gear, RPM, and nitro charge meter from the runtime transmission and nitro state.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/hudState.ts",
+        "src/render/uiRenderer.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/hudState.test.ts",
+        "src/render/__tests__/uiRenderer.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-20-HUD-CASH-DELTA",
+      "gddSections": [
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race HUD shows a guarded cash delta row from the current projected race payout.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/hudState.ts",
+        "src/render/uiRenderer.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/hudState.test.ts",
+        "src/render/__tests__/uiRenderer.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-09-PICKUP-RENDER-FEEDBACK",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Authored cash and nitro pickups are visible in the live race view before collection, disappear after collection, and emit player-facing collection feedback.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pickupSprites.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx",
+        "src/data/tracks/test-straight.json"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pickupSprites.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/race-pickups.spec.ts"
+      ],
+      "followupRefs": ["F-072"]
+    },
+    {
+      "id": "GDD-09-FIRST-TOUR-AUTHORED-EVENTS",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Every Velvet Coast race has at least one visible authored pickup line and at least one authored physical hazard, giving the first tour readable non-curve decisions with content validation and browser route coverage.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/velvet-coast-harbor-run.json",
+        "src/data/tracks/velvet-coast-sunpier-loop.json",
+        "src/data/tracks/velvet-coast-cliffline-arc.json",
+        "src/data/tracks/velvet-coast-lighthouse-fall.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "e2e/first-tour-authored-events.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-feat-tracks-first-10ebfec0"]
+    },
+    {
+      "id": "GDD-20-GAME-UI-SELECTION",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The game shell suppresses browser text selection on non-editable UI and race surfaces while keeping editable form controls selectable.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/app/globals.css"],
+      "testRefs": ["e2e/ui-selection.spec.ts"],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-20-PAUSE-SETTINGS-ACTION",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race pause menu exposes Settings as a working action that tears down the race runtime and routes to the options screen.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/pause/usePauseActions.ts",
+        "src/components/pause/PauseOverlay.tsx",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/pause/__tests__/usePauseActions.test.tsx",
+        "e2e/pause-actions.spec.ts",
+        "e2e/pause-overlay.spec.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-pause-settings-626c3ecf",
+        "F-070"
+      ]
+    },
+    {
+      "id": "GDD-20-PAUSE-GHOSTS-ACTION",
+      "gddSections": [
+        "docs/gdd/06-game-modes.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The live race pause menu exposes the leaderboard or ghost slot as a working local Ghosts action that tears down the race runtime and routes to the Time Trial ghost surface.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/pause/usePauseActions.ts",
+        "src/components/pause/PauseOverlay.tsx",
+        "src/app/race/page.tsx",
+        "src/app/time-trial/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/pause/__tests__/usePauseActions.test.tsx",
+        "e2e/pause-actions.spec.ts",
+        "e2e/pause-overlay.spec.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-pause-ghosts-c7f0391b",
+        "F-070",
+        "Q-011"
+      ]
+    },
+    {
+      "id": "GDD-20-MOBILE-TITLE-CENTERING",
+      "gddSections": [
+        "docs/gdd/04-player-experience-goals.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The title screen stays centered, fully visible, and free of horizontal overflow on short mobile viewports so players can launch quickly from the main menu.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/app/page.module.css"],
+      "testRefs": ["e2e/title-screen.spec.ts"],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-WEATHER-GRIP-RUNTIME",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "Live race sessions apply active weather to player and AI grip, expose read-distance scalars, and map full weather options onto compact AI weather-skill rows.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/weather.ts",
+        "src/game/physics.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/physics.test.ts",
+        "src/game/__tests__/raceSession.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-VISIBILITY-AI-RISK",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/15-cpu-opponents-and-ai.md"
+      ],
+      "requirement": "Low-visibility weather increases deterministic AI lane-mistake pressure, with weather skill mitigating the extra risk.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/weather.ts",
+        "src/game/ai.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/ai.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-WEATHER-STATE-MACHINE",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Race sessions carry deterministic weather state constrained to the track's authored weather options, with smooth opt-in transitions between allowed states.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/weather.ts",
+        "src/game/raceSession.ts",
+        "src/game/raceSessionActions.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/weather.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "src/game/__tests__/raceSessionActions.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-TUNNEL-LIGHT-ADAPTATION",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Authored tunnel segment metadata survives track compilation, drives visual light adaptation in the live road renderer, exposes a deterministic audio filter spec, and remains non-colliding for hazard physics.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/road/trackCompiler.ts",
+        "src/game/tunnelState.ts",
+        "src/render/tunnelRenderer.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/audio/tunnelBus.ts",
+        "src/app/race/page.tsx",
+        "src/data/tracks/iron-borough-rivet-tunnel.json"
+      ],
+      "testRefs": [
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/game/__tests__/tunnelState.test.ts",
+        "src/render/__tests__/tunnelRenderer.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "src/audio/tunnelBus.test.ts",
+        "src/game/__tests__/hazards.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-HEAT-SHIMMER",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/17-art-direction.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "Desert tour races can enable a deterministic heat shimmer visual pass without consuming random state or changing gameplay physics.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": [
+        "VibeGear2-implement-region-art-43d6f582"
+      ]
+    },
+    {
+      "id": "GDD-14-RAIN-ROAD-SHEEN",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md"
+      ],
+      "requirement": "Rain weather paints deterministic wet-road sheen alongside rain streaks, with accessibility weather intensity controls scaling the effect.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-14-SNOW-ROADSIDE-WHITENING",
+      "gddSections": [
+        "docs/gdd/14-weather-and-environmental-systems.md",
+        "docs/gdd/16-rendering-and-visual-design.md"
+      ],
+      "requirement": "Snow weather paints deterministic soft roadside whitening alongside snow particles, with accessibility weather intensity controls scaling the effect.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-21-RNG-CONSUMERS",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "Game-runtime randomness consumers use the owned deterministic PRNG surface so replay-relevant AI seeding and mistake rolls are reproducible from stable seeds.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/rng.ts",
+        "src/game/aiGrid.ts",
+        "src/game/ai.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/rng.test.ts",
+        "src/game/__tests__/no-math-random.test.ts",
+        "src/game/__tests__/aiGrid.test.ts",
+        "src/game/__tests__/ai.test.ts",
+        "src/game/__tests__/raceSession.test.ts"
+      ]
+    },
+    {
+      "id": "GDD-09-HAZARDS-RUNTIME",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "Authored track hazard ids resolve through a typed registry, and live races evaluate physical hazards for grip, breakable objects, and damage events.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/hazards.json",
+        "src/data/hazards.ts",
+        "src/game/hazards.ts",
+        "src/game/raceSession.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/data/__tests__/hazards-content.test.ts",
+        "src/game/__tests__/hazards.test.ts",
+        "src/game/__tests__/raceSession.test.ts"
+      ]
+    },
+    {
+      "id": "GDD-15-AI-GRID-SPAWNER",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/25-development-roadmap.md"
+      ],
+      "requirement": "World Tour races can spawn a deterministic campaign-size AI field from per-tour driver rosters while preserving time-trial and prototype route behavior.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/aiGrid.ts",
+        "src/app/race/page.tsx",
+        "src/data/championships/world-tour-standard.json",
+        "src/data/schemas.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/aiGrid.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "e2e/twelve-car-field.spec.ts",
+        "e2e/race-demo.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-15-AI-ARCHETYPE-READABILITY",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "Live CPU opponents expose readable archetype behavior cues for rocket launch and fade, bully pressure, cautious low-visibility braking, chaotic missed apex events, and enduro consistency.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/ai.ts",
+        "src/game/aiArchetypes.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/ai.test.ts",
+        "e2e/race-ai-archetypes.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-20-RACE-STORY-MOMENTS",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Live races surface short HUD story moments for player position gains, lost positions, and close trailing rival pressure so the CPU field reads as active race pressure.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/raceMoments.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceMoments.test.ts",
+        "e2e/race-story-moments.spec.ts"
+      ],
+      "followupRefs": ["F-075"]
+    },
+    {
+      "id": "GDD-24-MVP-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The MVP content set includes the first two World Tour regions with eight registered, schema-valid, compiler-valid bundled track JSON files that cover clear, rain, fog, curves, and elevation.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/velvet-coast-harbor-run.json",
+        "src/data/tracks/velvet-coast-sunpier-loop.json",
+        "src/data/tracks/velvet-coast-cliffline-arc.json",
+        "src/data/tracks/velvet-coast-lighthouse-fall.json",
+        "src/data/tracks/iron-borough-freightline-ring.json",
+        "src/data/tracks/iron-borough-rivet-tunnel.json",
+        "src/data/tracks/iron-borough-foundry-mile.json",
+        "src/data/tracks/iron-borough-outer-exchange.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts",
+        "e2e/tour-flow.spec.ts",
+        "e2e/world-tour.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-24-EMBER-STEPPE-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Ember Steppe World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and desert hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/ember-steppe-redglass-straight.json",
+        "src/data/tracks/ember-steppe-mesa-coil.json",
+        "src/data/tracks/ember-steppe-dustbreak-causeway.json",
+        "src/data/tracks/ember-steppe-cinder-gate.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-ember-steppe-5d879662"]
+    },
+    {
+      "id": "GDD-24-BREAKWATER-ISLES-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Breakwater Isles World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and wet hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/breakwater-isles-tidewire.json",
+        "src/data/tracks/breakwater-isles-storm-span.json",
+        "src/data/tracks/breakwater-isles-gull-point.json",
+        "src/data/tracks/breakwater-isles-sealight-shelf.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-breakwater-isles-c55d6f60"]
+    },
+    {
+      "id": "GDD-24-GLASS-RIDGE-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Glass Ridge World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and alpine hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/glass-ridge-whitepass.json",
+        "src/data/tracks/glass-ridge-frostrelay.json",
+        "src/data/tracks/glass-ridge-hollow-crest.json",
+        "src/data/tracks/glass-ridge-summit-echo.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-glass-ridge-1dfc8d6b"]
+    },
+    {
+      "id": "GDD-24-NEON-MERIDIAN-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Neon Meridian World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and urban hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/neon-meridian-arc-boulevard.json",
+        "src/data/tracks/neon-meridian-prism-cut.json",
+        "src/data/tracks/neon-meridian-skyline-drain.json",
+        "src/data/tracks/neon-meridian-afterglow-run.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-neon-meridian-f803dd00"]
+    },
+    {
+      "id": "GDD-24-MOSS-FRONTIER-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Moss Frontier World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and wet forest hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/moss-frontier-pine-switchback.json",
+        "src/data/tracks/moss-frontier-millstream.json",
+        "src/data/tracks/moss-frontier-wetroot-drive.json",
+        "src/data/tracks/moss-frontier-mistbarrow.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-moss-frontier-54c8953e"]
+    },
+    {
+      "id": "GDD-24-CROWN-CIRCUIT-TRACK-SET",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The Crown Circuit World Tour region has four registered, schema-valid, compiler-valid bundled track JSON files matching the §24 track list, region weather profile, and finale hazard palette.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/index.ts",
+        "src/data/tracks/crown-circuit-embassy-loop.json",
+        "src/data/tracks/crown-circuit-victory-causeway.json",
+        "src/data/tracks/crown-circuit-grand-meridian.json",
+        "src/data/tracks/crown-circuit-final-horizon.json"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/data/__tests__/championship-content.test.ts",
+        "src/data/regions/__tests__/regions-content.test.ts",
+        "src/data/__tests__/content-budget.test.ts",
+        "src/road/__tests__/trackCompiler.test.ts",
+        "src/road/__tests__/trackCompiler.golden.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-crown-circuit-0dcaa786"]
+    },
+    {
+      "id": "GDD-19-MOBILE-RACE-INPUT",
+      "gddSections": [
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The live race route fills mobile viewports without page scroll and mounts transient left-half steering plus reachable right-thumb touch controls that feed steering, throttle, brake, nitro, and pause into the race input pipeline.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/components/touch/TouchControls.tsx",
+        "src/game/inputTouch.ts",
+        "src/game/input.ts"
+      ],
+      "testRefs": [
+        "src/game/inputTouch.test.ts",
+        "e2e/touch-input.spec.ts",
+        "e2e/race-mobile.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-26-CONTRIBUTING-GUIDE",
+      "gddSections": [
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Contributor documentation explains PR workflow, originality confirmation, licensing, asset manifest rules, schema checks, and issue labels.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "docs/CONTRIBUTING.md",
+        "README.md"
+      ]
+    },
+    {
+      "id": "GDD-26-ISSUE-LABELS-STARTERS",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The GitHub repo has the §26 issue-label set, issue templates for bugs, design discussion, and starter tasks, plus seeded good-first-issue tasks for v1.0 contributor onboarding.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        ".github/labels.yml",
+        ".github/workflows/labels.yml",
+        ".github/ISSUE_TEMPLATE/good-first-issue.md",
+        ".github/ISSUE_TEMPLATE/bug-report.md",
+        ".github/ISSUE_TEMPLATE/design-discussion.md",
+        "scripts/seed-good-first-issues.sh",
+        "docs/CONTRIBUTING.md"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-26-DEVELOPER-ONBOARDING",
+      "gddSections": [
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Contributor onboarding includes a complete npm script catalogue, local development troubleshooting guide, and automated doc-parity checks for shared workflow rules.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "docs/SCRIPTS.md",
+        "docs/LOCAL_DEV.md",
+        "scripts/check-doc-parity.ts",
+        "package.json",
+        ".github/workflows/ci.yml",
+        "AGENTS.md",
+        "docs/CONTRIBUTING.md"
+      ],
+      "testRefs": ["scripts/check-doc-parity.ts"],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-26-DATA-MOD-LOADER",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Official builds support data-only mods under /mods/<mod-id>/ through a strict manifest schema, provenance fields, safe relative paths, no executable plugin references, and schema validation for referenced track, car, upgrade, AI driver, and championship JSON.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/schemas.ts",
+        "src/mods/manifest.ts",
+        "scripts/content-lint.ts",
+        "docs/MODDING.md"
+      ],
+      "testRefs": [
+        "src/mods/__tests__/manifest.test.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-26-STARTER-MOD-SAMPLE",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The repo ships a small starter data mod under public/mods with a schema-valid manifest and track JSON, plus a browser smoke that loads the pack through the official data-only mod loader.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/mods/starter-sample/manifest.json",
+        "public/mods/starter-sample/README.md",
+        "public/mods/starter-sample/tracks/sample-loop.json",
+        "src/app/dev/mods/page.tsx",
+        "docs/MODDING.md"
+      ],
+      "testRefs": [
+        "e2e/mod-loader.spec.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-26-DEV-TRACK-EDITOR",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "Core authors have a dev-only, schema-backed track JSON editor with segment, checkpoint, spawn grid, import, export, validation, and live compile preview surfaces gated out of production.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        ".env.development.example",
+        "src/app/dev/track-editor/page.tsx",
+        "src/components/render/RoadCanvas.tsx",
+        "src/components/track-editor/"
+      ],
+      "testRefs": [
+        "src/app/dev/track-editor/__tests__/page.test.tsx",
+        "src/components/render/__tests__/RoadCanvas.test.tsx",
+        "src/components/track-editor/__tests__/TrackEditor.test.tsx",
+        "src/components/track-editor/__tests__/io.test.ts",
+        "src/components/track-editor/__tests__/trackEditorState.test.ts",
+        "e2e/track-editor-gate.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-mod-loader-e9b8b51f"]
+    },
+    {
+      "id": "GDD-21-CI-DEPLOY-HEALTH",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The CI workflow verifies the production Vercel Git deployment for pushed main commits by checking that the live app serves the expected build id.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        ".github/workflows/ci.yml",
+        "src/app/api/version/route.ts"
+      ],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-21-LEADERBOARD-STORAGE-GATE",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "Online leaderboard production storage must use a currently available provider and must not be provisioned until the dev approves the provider, pricing plan, and production environment changes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/leaderboard/store.ts",
+        "src/leaderboard/store-upstash-redis.ts",
+        "docs/LEADERBOARD_BACKEND.md",
+        "docs/OPEN_QUESTIONS.md",
+        "docs/FOLLOWUPS.md",
+        "docs/PROGRESS_LOG.md"
+      ],
+      "testRefs": [
+        "src/leaderboard/__tests__/store.test.ts",
+        "src/leaderboard/__tests__/store-vercel-kv.test.ts"
+      ],
+      "questionRefs": [],
+      "followupRefs": ["F-069"]
+    },
+    {
+      "id": "GDD-05-GARAGE-SUMMARY",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/11-cars-and-stats.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The garage hub summarizes the active car, credits, installed upgrades, owned-car state, and next race actions before race entry.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/page.tsx",
+        "src/app/garage/page.tsx",
+        "src/app/garage/repair/page.tsx",
+        "src/app/garage/upgrade/page.tsx",
+        "src/components/garage/garageSummaryState.ts"
+      ],
+      "testRefs": [
+        "src/components/garage/__tests__/garageSummaryState.test.ts",
+        "e2e/garage-summary.spec.ts",
+        "e2e/garage-flow.spec.ts",
+        "e2e/title-screen.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-20-GARAGE-NEXT-RACE-LAYOUT",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The garage next race card presents its explanatory copy and World Tour action as readable, non-overlapping controls at narrow desktop widths.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/app/garage/page.tsx"],
+      "testRefs": ["e2e/garage-summary.spec.ts"],
+      "followupRefs": []
+    },
+    {
+      "id": "GDD-20-TOUR-PRESSURE-SURFACES",
+      "gddSections": [
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "Between World Tour races, garage, pre-race, and results surfaces show current standing pressure, advancement gate, repair room, and next-upgrade affordability so the player understands the next race's stakes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/tourPressure.ts",
+        "src/app/garage/page.tsx",
+        "src/app/race/prep/page.tsx",
+        "src/app/race/results/page.tsx",
+        "src/game/preRaceCard.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/tourPressure.test.ts",
+        "src/game/__tests__/preRaceCard.test.ts",
+        "e2e/tour-pressure.spec.ts"
+      ],
+      "followupRefs": ["F-074"]
+    },
+    {
+      "id": "GDD-13-GARAGE-REPAIR-PURCHASE",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The garage repair shop shows active-car pending damage, quotes full and essential repairs, applies the essential-repair cap from last race cash, debits credits, persists repaired damage, and reflects pending damage on the garage hub.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/garage/repair/page.tsx",
+        "src/app/garage/page.tsx",
+        "src/components/garage/garageRepairState.ts",
+        "src/components/garage/garageSummaryState.ts",
+        "src/data/schemas.ts",
+        "src/persistence/save.ts",
+        "src/game/economy.ts"
+      ],
+      "testRefs": [
+        "src/components/garage/__tests__/garageRepairState.test.ts",
+        "src/components/garage/__tests__/garageSummaryState.test.ts",
+        "src/data/schemas.test.ts",
+        "e2e/garage-repairs.spec.ts",
+        "e2e/garage-summary.spec.ts",
+        "src/game/__tests__/economy.test.ts"
+      ]
+    },
+    {
+      "id": "GDD-13-RACE-DAMAGE-PERSISTENCE",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/13-damage-repairs-and-risk.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Race finish and retire paths persist the active car's final damage into the garage repair queue, record the credited race payout for the essential-repair cap, and seed the next race from queued active-car damage.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/game/raceDamagePersistence.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/raceDamagePersistence.test.ts",
+        "src/game/__tests__/raceSession.test.ts",
+        "e2e/race-finish.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-08-TOUR-PROGRESSION",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "World Tour race results persist active tour progress, advance to the next race, aggregate tour completion, clear the active cursor, and unlock the next tour on pass.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/app/race/results/page.tsx",
+        "src/components/world/worldTourState.ts",
+        "src/game/tourProgress.ts",
+        "src/game/championship.ts",
+        "src/game/raceResult.ts",
+        "src/data/schemas.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/tourProgress.test.ts",
+        "src/game/__tests__/raceResult.test.ts",
+        "src/components/world/__tests__/worldTourState.test.ts",
+        "src/data/schemas.test.ts",
+        "e2e/tour-flow.spec.ts",
+        "e2e/results-screen.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-08-WORLD-TOUR-HUB",
+      "gddSections": [
+        "docs/gdd/08-world-and-progression-design.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/24-content-plan.md"
+      ],
+      "requirement": "The world hub renders the canonical World Tour as four-race tour cards, unlocks the first tour for fresh saves, disables locked tours with the gating tour named, persists tour entry, and hands the chosen tour's first race to the race route.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/world/page.tsx",
+        "src/components/world/worldTourState.ts",
+        "src/data/championships/world-tour-standard.json",
+        "src/game/championship.ts"
+      ],
+      "testRefs": [
+        "src/components/world/__tests__/worldTourState.test.ts",
+        "e2e/world-tour.spec.ts",
+        "e2e/title-screen.spec.ts"
+      ]
+    },
+    {
+      "id": "GDD-12-GARAGE-UPGRADE-PURCHASE",
+      "gddSections": [
+        "docs/gdd/05-core-gameplay-loop.md",
+        "docs/gdd/12-upgrade-and-economy-system.md",
+        "docs/gdd/20-hud-and-ui-ux.md"
+      ],
+      "requirement": "The garage upgrade shop shows current versus next tier for each upgrade category, enforces sequential install and car caps, debits credits, persists installed tiers, and explains lockouts inline.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/garage/upgrade/page.tsx",
+        "src/components/garage/garageUpgradeState.ts",
+        "src/game/economy.ts"
+      ],
+      "testRefs": [
+        "src/components/garage/__tests__/garageUpgradeState.test.ts",
+        "e2e/garage-upgrades.spec.ts",
+        "src/game/__tests__/economy.test.ts"
+      ]
+    },
+    {
+      "id": "GDD-09-ELEVATION-LIVE",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The live race view projects authored track grade so crests, dips, and plateaus are visible while driving.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/data/tracks/test-elevation.json",
+        "src/data/tracks/index.ts",
+        "src/app/race/page.tsx",
+        "src/road/segmentProjector.ts",
+        "src/road/trackCompiler.ts"
+      ],
+      "testRefs": [
+        "src/data/__tests__/tracks-content.test.ts",
+        "src/road/__tests__/segmentProjector.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["F-050", "F-054", "F-057", "F-059"]
+    },
+    {
+      "id": "GDD-16-ROAD-MARKINGS",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Road edge and lane markings remain visually stable across camera motion, grade changes, and segment boundaries.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": ["src/render/pseudoRoadCanvas.ts"],
+      "testRefs": ["src/render/__tests__/pseudoRoadCanvas.test.ts"],
+      "followupRefs": ["F-055", "F-056"]
+    },
+    {
+      "id": "GDD-16-CAR-SPRITE-ATLAS",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/17-art-direction.md"
+      ],
+      "requirement": "Live cars use original directional sprite atlas frames with damage, brake, nitro, wet spray, and snow trail variants. Ghost cars keep the directional atlas path.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "public/art/cars/sparrow.svg",
+        "public/art/cars/sparrow_gt.svg",
+        "public/art/cars/breaker_s.svg",
+        "public/art/cars/vanta_xr.svg",
+        "public/art/cars/bastion_lm.svg",
+        "public/art/cars/tempest_r.svg",
+        "public/art/cars/nova_shade.svg",
+        "public/art.manifest.json",
+        "scripts/generate-placeholder-art.ts",
+        "src/data/atlas/carSprites.ts",
+        "src/data/atlas/cars.json",
+        "src/app/race/page.tsx",
+        "src/render/carSpriteCompositor.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/render/spriteAtlas.ts"
+      ],
+      "testRefs": [
+        "src/data/atlas/carSprites.test.ts",
+        "src/render/__tests__/carSpriteCompositor.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "src/render/__tests__/spriteAtlas.test.ts",
+        "src/render/__tests__/carFrame.test.ts"
+      ],
+      "followupRefs": ["F-051", "F-059", "F-060"]
+    },
+    {
+      "id": "GDD-16-OPPONENT-HILL-PROJECTION",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/16-rendering-and-visual-design.md"
+      ],
+      "requirement": "Opponent and ghost car sprites scale from projected depth while sampling the road height at their exact track position across hills and crests. Live opponents obey the same hill-crest occlusion and far-distance readability gate as the road strip projection.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/road/segmentProjector.ts",
+        "src/app/race/page.tsx",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/road/__tests__/segmentProjector.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/projection-readability.spec.ts",
+        "e2e/release-fun-playtest.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-fix-cpu-opponent-009867d7", "F-073"]
+    },
+    {
+      "id": "GDD-16-CAR-WEATHER-VARIANTS",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/17-art-direction.md"
+      ],
+      "requirement": "Cars render wet spray and snow trail variants from weather-aware visual state.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": ["src/render/__tests__/pseudoRoadCanvas.test.ts"],
+      "followupRefs": ["F-058"]
+    },
+    {
+      "id": "GDD-15-CPU-DIFFICULTY-RUNTIME",
+      "gddSections": [
+        "docs/gdd/15-cpu-opponents-and-ai.md",
+        "docs/gdd/23-balancing-tables.md"
+      ],
+      "requirement": "CPU difficulty tiers affect AI pace, light recovery, and mistake frequency through the §23 modifier table.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/game/ai.ts",
+        "src/game/aiDifficulty.ts",
+        "src/game/raceSession.ts"
+      ],
+      "testRefs": [
+        "src/game/__tests__/ai.test.ts",
+        "src/game/__tests__/aiDifficulty.test.ts",
+        "src/data/__tests__/balancing.test.ts"
+      ],
+      "followupRefs": ["F-048"]
+    },
+    {
+      "id": "GDD-16-PARALLAX-ROADSIDE",
+      "gddSections": [
+        "docs/gdd/09-track-design.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The race renderer consumes region parallax layers and compiled roadside sprite ids at distinct depths.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/race/page.tsx",
+        "src/render/parallax.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/data/tracks/test-elevation.json"
+      ],
+      "testRefs": [
+        "src/render/__tests__/parallax.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "e2e/race-demo.spec.ts"
+      ],
+      "followupRefs": ["F-052"]
+    },
+    {
+      "id": "GDD-16-VFX-FLASH-SHAKE",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Race rendering supports deterministic flash and light camera-shake VFX with a reduced-motion gate for shake.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/vfx.ts",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/vfx.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-visual-polish-7d31d112"]
+    },
+    {
+      "id": "GDD-16-OFF-ROAD-DUST",
+      "gddSections": [
+        "docs/gdd/10-driving-model-and-physics.md",
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "Off-road driving can emit bounded deterministic dust particles from player surface and speed state, and the road renderer can draw the dust pool over road strips.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/render/dust.ts",
+        "src/render/pseudoRoadCanvas.ts"
+      ],
+      "testRefs": [
+        "src/render/__tests__/dust.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-visual-polish-7d31d112"]
+    },
+    {
+      "id": "GDD-25-LOOP-COVERAGE-LEDGER",
+      "gddSections": [
+        "docs/IMPLEMENTATION_PLAN.md",
+        "docs/WORKING_AGREEMENT.md"
+      ],
+      "requirement": "Each GDD-touching slice ties its progress log entry to a machine-checkable coverage ledger and lists uncovered adjacent requirements.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "docs/GDD_COVERAGE.json",
+        "scripts/content-lint.ts",
+        "docs/IMPLEMENTATION_PLAN.md",
+        "docs/WORKING_AGREEMENT.md"
+      ],
+      "testRefs": ["scripts/__tests__/content-lint.test.ts"],
+      "followupRefs": ["F-053"]
+    },
+    {
+      "id": "GDD-21-PROJECT-SKELETON",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/IMPLEMENTATION_PLAN.md"
+      ],
+      "requirement": "The web implementation has a Next.js and TypeScript project skeleton with lint, typecheck, unit tests, e2e smoke coverage, content lint, and a CI verify gate.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "package.json",
+        "src/app/page.tsx",
+        "vitest.config.ts",
+        "playwright.config.ts",
+        ".github/workflows/ci.yml"
+      ],
+      "testRefs": [
+        "src/app/__tests__/page.test.tsx",
+        "e2e/title-screen.spec.ts",
+        "scripts/__tests__/content-lint.test.ts"
+      ],
+      "followupRefs": ["F-002"]
+    },
+    {
+      "id": "GDD-21-VERCEL-DEPLOY",
+      "gddSections": [
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "README.md"
+      ],
+      "requirement": "Production deploys from main go to Vercel Hobby only after the GitHub Actions verify job passes.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        ".github/workflows/ci.yml",
+        "vercel.json",
+        "README.md"
+      ],
+      "followupRefs": ["F-003"]
+    },
+    {
+      "id": "GDD-20-OPTIONS-RESET",
+      "gddSections": [
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The options screen can reset shipped settings panes to defaults without overwriting settings owned by unshipped panes or profile data.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/options/page.tsx",
+        "src/components/options/optionsResetState.ts",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/optionsResetState.test.ts",
+        "src/app/options/__tests__/page.test.tsx",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["F-049"]
+    },
+    {
+      "id": "GDD-20-DISPLAY-OPTIONS-PANE",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The options screen exposes persisted speed-unit display settings backed by save settings and consumed by race HUD state.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/options/page.tsx",
+        "src/components/options/DisplayPane.tsx",
+        "src/components/options/displayPaneState.ts",
+        "src/components/options/optionsResetState.ts",
+        "src/app/race/page.tsx"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/displayPaneState.test.ts",
+        "src/components/options/__tests__/optionsResetState.test.ts",
+        "src/app/options/__tests__/page.test.tsx",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-hud-ui-6c1b130d"]
+    },
+    {
+      "id": "GDD-20-AUDIO-OPTIONS-PANE",
+      "gddSections": [
+        "docs/gdd/18-sound-and-music-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "The options screen exposes persisted master, music, and SFX sliders backed by the save audio settings and consumed by the audio mixer contract.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/app/options/page.tsx",
+        "src/components/options/AudioPane.tsx",
+        "src/components/options/audioPaneState.ts",
+        "src/components/options/optionsResetState.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/audioPaneState.test.ts",
+        "src/components/options/__tests__/optionsResetState.test.ts",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-sound-music-1611f9dd"]
+    },
+    {
+      "id": "GDD-19-KEY-REMAPPING",
+      "gddSections": [
+        "docs/gdd/19-controls-and-input.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/22-data-schemas.md"
+      ],
+      "requirement": "Desktop keyboard actions can be remapped in options, conflicts are rejected, bindings persist to the save, and races consume the persisted bindings at session start.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/options/ControlsPane.tsx",
+        "src/components/options/controlsPaneState.ts",
+        "src/app/options/page.tsx",
+        "src/app/race/page.tsx",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/controlsPaneState.test.ts",
+        "src/components/options/__tests__/ControlsPane.test.tsx",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["F-014"]
+    },
+    {
+      "id": "GDD-27-PERFORMANCE-SETTINGS",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/22-data-schemas.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The options screen exposes persisted draw distance, sprite density, and pixel-ratio caps, and the race renderer consumes those settings at session start.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/options/PerformancePane.tsx",
+        "src/components/options/performancePaneState.ts",
+        "src/render/graphicsSettings.ts",
+        "src/render/pseudoRoadCanvas.ts",
+        "src/app/options/page.tsx",
+        "src/app/race/page.tsx",
+        "src/persistence/migrations/v3ToV4.ts",
+        "src/persistence/save.ts"
+      ],
+      "testRefs": [
+        "src/components/options/__tests__/performancePaneState.test.ts",
+        "src/components/options/__tests__/PerformancePane.test.tsx",
+        "src/render/__tests__/graphicsSettings.test.ts",
+        "src/render/__tests__/pseudoRoadCanvas.test.ts",
+        "src/persistence/migrations/v3ToV4.test.ts",
+        "e2e/options-screen.spec.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-performance-settings-2de5d437"]
+    },
+    {
+      "id": "GDD-27-CROSS-BROWSER-SMOKE",
+      "gddSections": [
+        "docs/gdd/20-hud-and-ui-ux.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The release hardening path runs a core compatibility smoke across Chromium, Firefox, and WebKit, including route boot, race canvas boot, Steam Deck viewport bounds, reduced-motion media query support, and keyboard-only title to race to garage navigation.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "playwright.config.ts",
+        ".github/workflows/ci.yml",
+        "package.json",
+        "docs/COMPATIBILITY_MATRIX.md"
+      ],
+      "testRefs": ["e2e/cross-browser-smoke.spec.ts"],
+      "followupRefs": ["VibeGear2-implement-cross-browser-7cf643ce"]
+    },
+    {
+      "id": "GDD-25-BROWSER-COMPATIBILITY-MATRIX",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The v1.0 release docs publish a browser compatibility matrix with supported browser, OS, viewport, build SHA, date, result, and evidence rows for automated and manual smoke targets.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "docs/BROWSER_COMPATIBILITY.md",
+        "docs/COMPATIBILITY_MATRIX.md",
+        "README.md"
+      ],
+      "followupRefs": ["VibeGear2-implement-browser-61518e15"]
+    },
+    {
+      "id": "GDD-27-CI-QUALITY-GATES",
+      "gddSections": [
+        "docs/gdd/16-rendering-and-visual-design.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md",
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/27-risks-and-mitigations.md"
+      ],
+      "requirement": "The release hardening path gates CI with production-build bundle budgets, Lighthouse performance and accessibility scores, and axe coverage for core routes.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        ".github/workflows/ci.yml",
+        "package.json",
+        "scripts/check-bundle-budget.ts",
+        "scripts/check-lighthouse.ts",
+        "docs/SCRIPTS.md",
+        "docs/COMPATIBILITY_MATRIX.md"
+      ],
+      "testRefs": [
+        "e2e/accessibility-gate.spec.ts",
+        "scripts/check-bundle-budget.ts",
+        "scripts/check-lighthouse.ts"
+      ],
+      "followupRefs": ["VibeGear2-implement-ci-bundle-57af4a04"]
+    },
+    {
+      "id": "GDD-25-V0-2-0-RELEASE-REFRESH",
+      "gddSections": [
+        "docs/gdd/24-content-plan.md",
+        "docs/gdd/25-development-roadmap.md"
+      ],
+      "requirement": "The post-v0.1.0 release metadata reflects the content-complete World Tour build after all 32 planned v1.0 track ids resolve in the bundled catalogue.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "package.json",
+        "package-lock.json",
+        "CHANGELOG.md",
+        "docs/PROGRESS_LOG.md"
+      ],
+      "followupRefs": ["VibeGear2-prepare-v0-2-3715851c"]
+    },
+    {
+      "id": "GDD-25-STABLE-RELEASE-BRANCH",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "The v1.0 release process has a stable release branch contract, a documented v0.2 branch target, and CI coverage for release branch backport verification without production deployment.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "docs/RELEASES.md",
+        ".github/workflows/ci.yml",
+        "README.md"
+      ],
+      "followupRefs": ["VibeGear2-implement-v0-2-cdf8bf7a"]
+    },
+    {
+      "id": "GDD-25-RELEASE-MEDIA-KIT",
+      "gddSections": [
+        "docs/gdd/25-development-roadmap.md",
+        "docs/gdd/26-open-source-project-guidance.md"
+      ],
+      "requirement": "The v1.0 release process has a repeatable launch screenshot pack and trailer source capture workflow, including required views, artifact location, and public-release review checks.",
+      "coverage": ["implemented-code"],
+      "implementationRefs": [
+        "scripts/capture-release-media.ts",
+        "docs/RELEASE_MEDIA.md",
+        "docs/SCRIPTS.md",
+        "README.md",
+        "package.json"
+      ],
+      "followupRefs": ["VibeGear2-docs-add-release-ad43a325"]
+    }
+  ]
+}

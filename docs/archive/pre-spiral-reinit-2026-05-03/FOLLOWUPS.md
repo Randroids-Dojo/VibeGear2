@@ -1728,7 +1728,7 @@ plus the stateful `createTouchInputSource`; `src/game/input.ts` exposes
 `mergeInputs(keyboard, pad)`. Visual overlay lives at
 `src/components/touch/TouchControls.tsx` and gates on `pointer:coarse`.
 
-## F-004 - Playwright save/load round-trip via the garage UI
+## F-004 — Playwright save/load round-trip via the garage UI
 **Created:** 2026-04-26
 **Priority:** nice-to-have
 **Status:** done
@@ -1774,7 +1774,7 @@ F-003 deploy target choice; landed in
 strict typecheck, Vitest, Playwright e2e, content lint, GitHub Actions CI,
 and Vercel production deploy path were all present and green on `main`.
 
-## F-001 - Author GDD sections 18-28
+## F-001 — Author GDD sections 18–28
 **Created:** 2026-04-26
 **Priority:** blocks-release
 **Status:** done

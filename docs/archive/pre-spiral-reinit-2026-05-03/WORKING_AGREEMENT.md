@@ -70,7 +70,7 @@ build*; this agreement wins for *how to operate*.
 - After merge, the agent must:
   1. Watch the deploy job.
   2. Hit the deployed URL and verify it loads to at least the title screen.
-  3. If the deploy or smoke test fails, the immediate next slice is a hotfix  - 
+  3. If the deploy or smoke test fails, the immediate next slice is a hotfix —
      no new feature work until the deployed build is healthy again.
 - Treat a broken deploy on `main` as a P0. Roll forward with a fix; do not
   revert unless rolling forward would take longer than reverting.
@@ -86,7 +86,7 @@ For every slice, before marking it done:
   marked ready.
 - For features with a user-visible surface, run the dev server and exercise
   the feature in a real browser. If the agent's environment cannot drive a
-  browser, say so explicitly in the log and request manual verification - do
+  browser, say so explicitly in the log and request manual verification — do
   not claim the UI works.
 - For physics, AI, or numeric systems, write a deterministic test that pins
   the behaviour. Floating-point comparisons use tolerances, not equality.
@@ -178,7 +178,7 @@ The loop stops, and the agent reports completion, only when all three of:
 3. A tagged release has deployed cleanly and the agent has smoke-tested the
    deployed build.
 
-Short of that, the agent keeps looping - across days, weeks, or months - and
+Short of that, the agent keeps looping — across days, weeks, or months — and
 treats every loop as the next move in a long game, not the last.
 
 ## 13. Tone for log and PR text

@@ -2,7 +2,7 @@
 
 ## Music direction
 
-Top Gear 2’s identity is inseparable from its score, and the broader Top Gear series’ music remains one of the most cited reasons fans remember the games at all, even when some players still single out the first game’s soundtrack as the more iconic one. VibeGear2 should therefore treat music as a first-class system, not background dressing—but it must be wholly original in melody, harmony, arrangement, and sound design. [19]
+Top Gear 2’s identity is inseparable from its score, and the broader Top Gear series’ music remains one of the most cited reasons fans remember the games at all, even when some players still single out the first game’s soundtrack as the more iconic one. VibeGear2 should therefore treat music as a first-class system, not background dressing - but it must be wholly original in melody, harmony, arrangement, and sound design. [19]
 
 ## Music style
 

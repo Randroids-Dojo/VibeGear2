@@ -19,7 +19,7 @@ behave** while executing it.
    green build, automated tests passing, and a successful auto-deploy.
 3. Keep the GDD as the single source of truth. When the implementation diverges
    from the GDD, either change the GDD (with a logged decision) or change the
-   code - never let them drift silently.
+   code — never let them drift silently.
 4. Maintain a transparent, auditable trail (`PROGRESS_LOG.md`,
    `OPEN_QUESTIONS.md`, `FOLLOWUPS.md`) so a new agent or human can pick up the
    work mid-flight without context loss.
@@ -31,8 +31,8 @@ behave** while executing it.
 
 The implementation target is everything reachable from `GDD.md`:
 
-- The 28 numbered sections listed in `GDD.md` (sections 18-28 must be authored
-  before they can be implemented - see Phase 0).
+- The 28 numbered sections listed in `GDD.md` (sections 18–28 must be authored
+  before they can be implemented — see Phase 0).
 - Any cross-referenced schema, table, or appendix.
 - The `docs/` tree as it grows.
 
@@ -41,10 +41,10 @@ canonical.
 
 ## 3. Phases
 
-The loop runs through phases. Phases are not strict gates - later phases can
-revisit earlier ones - but each phase has a primary focus.
+The loop runs through phases. Phases are not strict gates — later phases can
+revisit earlier ones — but each phase has a primary focus.
 
-### Phase 0 - Foundations and GDD completion
+### Phase 0 — Foundations and GDD completion
 - Verify all 28 GDD section files exist. Author missing files
   ([`docs/gdd/18-sound-and-music-design.md`](gdd/18-sound-and-music-design.md) through [`docs/gdd/28-appendices-and-research-references.md`](gdd/28-appendices-and-research-references.md))
   by drafting from the parent index and any cross-references, then flagging
@@ -57,7 +57,7 @@ revisit earlier ones - but each phase has a primary focus.
 - Define the JSON schemas in [`docs/gdd/22-data-schemas.md`](gdd/22-data-schemas.md) as TypeScript types and
   runtime validators.
 
-### Phase 1 - Vertical slice (drivable road)
+### Phase 1 — Vertical slice (drivable road)
 - Pseudo-3D road renderer (Canvas2D) with one straight + one curve track.
 - Player car with arcade physics from [`docs/gdd/10-driving-model-and-physics.md`](gdd/10-driving-model-and-physics.md)
   (acceleration, top speed, steering, basic collision feedback).
@@ -67,7 +67,7 @@ revisit earlier ones - but each phase has a primary focus.
 - Goal: a 30-second drive feels like the design pillars in
   [`docs/gdd/01-title-and-high-concept.md`](gdd/01-title-and-high-concept.md).
 
-### Phase 2 - Race rules and economy
+### Phase 2 — Race rules and economy
 - Full race rules from [`docs/gdd/07-race-rules-and-structure.md`](gdd/07-race-rules-and-structure.md) (countdown, laps,
   placement, DNF rules).
 - Damage model from [`docs/gdd/13-damage-repairs-and-risk.md`](gdd/13-damage-repairs-and-risk.md).
@@ -77,33 +77,33 @@ revisit earlier ones - but each phase has a primary focus.
 - Save / load from [`docs/gdd/21-technical-design-for-web-implementation.md`](gdd/21-technical-design-for-web-implementation.md) (local
   storage MVP).
 
-### Phase 3 - World, tours, and content
+### Phase 3 — World, tours, and content
 - Region and tour structure from [`docs/gdd/08-world-and-progression-design.md`](gdd/08-world-and-progression-design.md).
 - Track authoring pipeline using the schema in [`docs/gdd/22-data-schemas.md`](gdd/22-data-schemas.md).
 - The track set required by [`docs/gdd/24-content-plan.md`](gdd/24-content-plan.md) for MVP.
 - Car set and stats from [`docs/gdd/11-cars-and-stats.md`](gdd/11-cars-and-stats.md).
 - Balancing pass against [`docs/gdd/23-balancing-tables.md`](gdd/23-balancing-tables.md).
 
-### Phase 4 - Atmosphere and feel
+### Phase 4 — Atmosphere and feel
 - Weather and environmental systems ([`docs/gdd/14-weather-and-environmental-systems.md`](gdd/14-weather-and-environmental-systems.md)).
 - Sound and music ([`docs/gdd/18-sound-and-music-design.md`](gdd/18-sound-and-music-design.md)).
 - Visual polish from [`docs/gdd/16-rendering-and-visual-design.md`](gdd/16-rendering-and-visual-design.md) and [`docs/gdd/17-art-direction.md`](gdd/17-art-direction.md).
 - HUD/UX polish from [`docs/gdd/20-hud-and-ui-ux.md`](gdd/20-hud-and-ui-ux.md).
 
-### Phase 5 - Modes, modding, and stretch
+### Phase 5 — Modes, modding, and stretch
 - Time trial, daily challenge, and any additional modes in [`docs/gdd/06-game-modes.md`](gdd/06-game-modes.md).
 - Track editor and mod loading per [`docs/gdd/26-open-source-project-guidance.md`](gdd/26-open-source-project-guidance.md).
 - Optional ghost racing / leaderboard hooks.
 
-### Phase 6 - Hardening and release
+### Phase 6 — Hardening and release
 - Risks/mitigations sweep from [`docs/gdd/27-risks-and-mitigations.md`](gdd/27-risks-and-mitigations.md).
 - Cross-browser, performance, and accessibility verification.
 - Versioned release, changelog, and tagged deploy.
 
 ## 4. The Loop
 
-Every iteration follows the same shape. A loop is a small, ship-shaped slice  - 
-typically 1-3 days of agent work, never more than what fits in a single PR.
+Every iteration follows the same shape. A loop is a small, ship-shaped slice —
+typically 1–3 days of agent work, never more than what fits in a single PR.
 
 ```text
 ┌─ select slice ──────────────────────────────────────────┐
@@ -179,7 +179,7 @@ question instead.
 Every loop appends a single entry, newest at the top:
 
 ```markdown
-## YYYY-MM-DD - Slice: <short title>
+## YYYY-MM-DD — Slice: <short title>
 
 **GDD sections touched:** §X.Y, §X.Z
 **Branch / PR:** <branch>, #<pr>
@@ -210,7 +210,7 @@ Every loop appends a single entry, newest at the top:
   surfaced it. Each entry has an id (`F-NNN`), a one-line description, the
   triggering loop, and a priority (`blocks-release`, `nice-to-have`, `polish`).
 
-Both files are append-mostly. Do not delete entries - mark them `answered`,
+Both files are append-mostly. Do not delete entries — mark them `answered`,
 `done`, or `obsolete` so the history is preserved.
 
 ## 8. Definition of Done (per slice)

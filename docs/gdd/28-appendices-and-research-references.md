@@ -85,21 +85,21 @@ The research base is strong on Top Gear 2’s structure, upgrade categories, cou
 
 ## Research references
 
-- Top Gear 2 manual scan — primary evidence for championship scoring, passwords, and advice to buy wet tires for rain and snow. [5]
-- MobyGames Top Gear 2 page — release metadata, credits, critical average, and a useful player-review summary of speed feel, track variety, and turbo tactics. [26]
-- GameFAQs cheats/password page — reliable country progression order through the password system. [6]
-- GameFAQs FAQ by cnick — strongest practical reference for controls, upgrade categories, upgrade prices, and strategy implications of weather, armor, gearbox, and nitro. [27]
-- Wikipedia / Top Gear 2 overview — broad confirmation of the 64-track, 16-country structure and the sequel’s emphasis on damage, upgrades, and weather. [28]
-- Top Gear 1 GameFAQs guide — useful comparison point for what changed between the first game and Top Gear 2. [29]
-- Top Gear 3000 GameFAQs FAQ and MobyGames page — useful comparison point for the series’ later evolution into credits, weapons, route splits, and full-screen single-player options. [30]
-- Community sentiment snippets on Reddit and MobyGames — player memory around soundtrack love, speed feel, and some criticism of repetition during long runs. [31]
-- Sega-16 retrospective — useful reminder that weather overlays, fog, and visibility reduction were part of the remembered presentation, while also illustrating how port differences can distort perception. [32]
-- Speedrun/TAS references — useful for confirming that the game is still actively studied at the track level and for surfacing quirks/glitches that VibeGear2 should avoid reproducing accidentally. [33]
-- Jake Gordon JavaScript racer repo and curves article — strongest modern web reference for segment-based pseudo-3D road rendering, center-line curve offsets, hills, and practical web implementation tradeoffs. [34]
-- Lou’s Pseudo-3D page search result — concise supporting reference for the raster-road framing of pseudo-3D racing visuals. [35]
-- VibeRacer repository README and docs index — confirms current project goals, URL-as-track concept, and expectation that the design can be reimplemented across stacks. [36]
-- VibeRacer package.json — confirms stack: Next.js, React, Three.js, Zod, Upstash Redis, Vitest, and Playwright. [37]
-- VibeRacer source files — key evidence for the current architecture: React session orchestration in Game.tsx, the rAF-driven renderer loop in RaceCanvas.tsx, deterministic simulation in tick.ts, physics parameters in physics.ts, track validation/editor systems, local control/tuning persistence, and signed leaderboard submissions. [38]
+- Top Gear 2 manual scan - primary evidence for championship scoring, passwords, and advice to buy wet tires for rain and snow. [5]
+- MobyGames Top Gear 2 page - release metadata, credits, critical average, and a useful player-review summary of speed feel, track variety, and turbo tactics. [26]
+- GameFAQs cheats/password page - reliable country progression order through the password system. [6]
+- GameFAQs FAQ by cnick - strongest practical reference for controls, upgrade categories, upgrade prices, and strategy implications of weather, armor, gearbox, and nitro. [27]
+- Wikipedia / Top Gear 2 overview - broad confirmation of the 64-track, 16-country structure and the sequel’s emphasis on damage, upgrades, and weather. [28]
+- Top Gear 1 GameFAQs guide - useful comparison point for what changed between the first game and Top Gear 2. [29]
+- Top Gear 3000 GameFAQs FAQ and MobyGames page - useful comparison point for the series’ later evolution into credits, weapons, route splits, and full-screen single-player options. [30]
+- Community sentiment snippets on Reddit and MobyGames - player memory around soundtrack love, speed feel, and some criticism of repetition during long runs. [31]
+- Sega-16 retrospective - useful reminder that weather overlays, fog, and visibility reduction were part of the remembered presentation, while also illustrating how port differences can distort perception. [32]
+- Speedrun/TAS references - useful for confirming that the game is still actively studied at the track level and for surfacing quirks/glitches that VibeGear2 should avoid reproducing accidentally. [33]
+- Jake Gordon JavaScript racer repo and curves article - strongest modern web reference for segment-based pseudo-3D road rendering, center-line curve offsets, hills, and practical web implementation tradeoffs. [34]
+- Lou’s Pseudo-3D page search result - concise supporting reference for the raster-road framing of pseudo-3D racing visuals. [35]
+- VibeRacer repository README and docs index - confirms current project goals, URL-as-track concept, and expectation that the design can be reimplemented across stacks. [36]
+- VibeRacer package.json - confirms stack: Next.js, React, Three.js, Zod, Upstash Redis, Vitest, and Playwright. [37]
+- VibeRacer source files - key evidence for the current architecture: React session orchestration in Game.tsx, the rAF-driven renderer loop in RaceCanvas.tsx, deterministic simulation in tick.ts, physics parameters in physics.ts, track validation/editor systems, local control/tuning persistence, and signed leaderboard submissions. [38]
 
 [1] [3] [28] Top Gear 2
 
