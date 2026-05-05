@@ -46,5 +46,9 @@ next-env.d.ts
 
 # claude code per-developer agent state
 .claude/
+# but track the spiral path-scoped rules (referenced by docs/AGENTS.md symlinks)
+!.claude/
+!.claude/rules/
+!.claude/rules/**
 .vercel
 .env*.local
