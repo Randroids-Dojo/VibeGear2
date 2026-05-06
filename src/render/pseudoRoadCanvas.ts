@@ -93,7 +93,16 @@ export const PLAYER_CAR_HEIGHT_FRACTION = 0.18;
 export const PLAYER_CAR_WIDTH_TO_HEIGHT = 1.15;
 export const PLAYER_CAR_DEFAULT_SPRITE_ID = "sparrow_clean";
 export const ROADSIDE_DRAW_PERIOD = 10;
-export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.22;
+/**
+ * Maximum on-screen height a roadside prop may take, as a fraction of the
+ * viewport height. Iter-5 / Q-017 dropped this from 0.22 to 0.18 so close-in
+ * props clamp at exactly the player car silhouette (`PLAYER_CAR_HEIGHT_FRACTION
+ * = 0.18`); pre-fix a near-field tree could draw at 74% viewport, dwarfing
+ * the player. The clamp pairs with the per-kind heightRoadFactor retune
+ * below; either alone would still leave outliers (fence_post at 2x correct
+ * height, or mid-far trees still dwarfing the silhouette).
+ */
+export const ROADSIDE_MAX_HEIGHT_FRACTION = 0.18;
 export const WEATHER_EFFECT_REDUCTION_SCALE = 0.35;
 export const HEAT_SHIMMER_FILL = "#f4ddb0";
 export const HEAT_SHIMMER_MAX_ALPHA = 0.16;
@@ -301,18 +310,41 @@ interface RoadsideSpriteStyle {
   minHeight: number;
 }
 
+/**
+ * Per-kind sprite style table, with `heightRoadFactor` tuned to the physical
+ * height of the prop divided by the road half-width (4.5 m). Q-017 recommended
+ * defaults adopted on 2026-05-06:
+ *
+ *   tree_pine:    10 m -> 2.22
+ *   palms_sparse:  8 m -> 1.78
+ *   light_pole:    9 m -> 2.00
+ *   sign_marker:   3 m -> 0.67
+ *   marina_signs:  3.5 m -> 0.78
+ *   heat_sign:     3 m -> 0.67
+ *   fence_post:    0.7 m -> 0.16
+ *   guardrail:     0.7 m -> 0.16
+ *   rock_boulder:  1.5 m -> 0.33
+ *   water_wall:    1.0 m -> 0.22
+ *   rock_spire:    6 m -> 1.33
+ *
+ * The pre-fix table read fence and guardrail at 0.5 (about 2.25 m physical),
+ * roughly 3x the correct 0.7 m height; trees at 1.35 (6 m physical) about
+ * 60% of the correct 10 m height. Combined with the 0.18 maxHeight clamp,
+ * close-in props now match the player-car silhouette and far props read at
+ * physically plausible scale.
+ */
 const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
-  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.85, minHeight: 8 },
-  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.35, minHeight: 12 },
-  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.5, minHeight: 5 },
-  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.42, minHeight: 5 },
-  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 1.9, minHeight: 14 },
-  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.35, minHeight: 12 },
-  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.85, minHeight: 8 },
-  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.5, minHeight: 5 },
-  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.42, minHeight: 5 },
-  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 0.95, minHeight: 9 },
-  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.8, minHeight: 8 },
+  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.67, minHeight: 8 },
+  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 2.22, minHeight: 12 },
+  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 5 },
+  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.33, minHeight: 5 },
+  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 2.00, minHeight: 14 },
+  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.78, minHeight: 12 },
+  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.78, minHeight: 8 },
+  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 5 },
+  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.22, minHeight: 5 },
+  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 1.33, minHeight: 9 },
+  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.67, minHeight: 8 },
 };
 
 const DEFAULT_RECOLOUR_IN_FLIGHT = new Set<string>();
@@ -778,7 +810,11 @@ function drawRoadsideSprite(
   );
   const width = height * style.widthToHeight;
   const sideSign = side === "left" ? -1 : 1;
-  const baseX = strip.screenX + sideSign * strip.screenW * 1.32;
+  // Q-017 recommended default: lift the placement offset from 1.32 to 1.70
+  // so props sit roughly 3 to 5 m off the rumble strip instead of 1.5 m off.
+  // The pre-fix offset put trees and poles uncomfortably close to the road
+  // edge, which read as a road-side wall rather than a roadside scene.
+  const baseX = strip.screenX + sideSign * strip.screenW * 1.7;
   const baseY = strip.screenY;
 
   if (baseY < 0 || baseY - height > viewport.height) return;
