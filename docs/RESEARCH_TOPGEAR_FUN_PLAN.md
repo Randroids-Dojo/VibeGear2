@@ -463,6 +463,230 @@ is a one-line physics fix that changes the felt skill ceiling of
 every race; the iter-3 grid slice still ships first because it is
 mode-wiring and runs in parallel with any physics work.
 
+## Iteration 4 - pain point #4 diagnosed
+
+### Diagnosis (numbers)
+
+Read `src/game/physics.ts` line by line. The lateral integration ends
+at lines 401-418:
+
+```
+const yawDelta = steerInput * steerRate * dt * tractionScalar;   // L402
+let lateralVelocity = yawDelta * nextSpeed;                       // L405
+lateralVelocity = lateralVelocity * (1 - steeringAssistScale);    // L417
+const nextX = state.x + lateralVelocity;                          // L418
+```
+
+The variable `yawDelta` already has `dt` baked in (rad per tick). The
+product `yawDelta * nextSpeed` therefore has units `rad * m/s = m/s` and
+is correctly named `lateralVelocity`. The bug is on the next line:
+`state.x + lateralVelocity` adds a velocity (m/s) directly to a position
+(m) without integrating over `dt`. Equivalently: the line treats
+`lateralVelocity` as a per-tick displacement, so the displacement-per-
+tick equals the m/s value. At 60 Hz that is 60x too much lateral motion
+per second.
+
+#### Plain-physics derivation
+
+For steer input `s in [-1, 1]`, forward speed `v` in m/s, time step
+`dt` in seconds, traction scalar `T`, steerRate band `r(v)`:
+
+- yaw rate (rad/s) = `r(v) * s * T`
+- yaw delta over dt (rad) = `r(v) * s * T * dt` (matches §10 verbatim)
+- lateral velocity at this instant (m/s) = `yawRate * v = r(v) * s * T * v`
+- correct displacement over dt (m) = `lateralVelocity * dt =
+  r(v) * s * T * v * dt`
+
+The current code computes `yawDelta * v = r(v) * s * T * dt * v` and
+adds it directly to `x`. That is a displacement of
+`r(v) * s * T * v * dt` per tick, but the time interval over which it
+applies is `dt`, so the IMPLIED velocity is
+`(r(v) * s * T * v * dt) / dt = r(v) * s * T * v` per second. Compare
+to the physical lateral velocity `r(v) * s * T * v * dt` per second
+(once heading state is added back in for a proper bicycle model, the
+`* dt` factor falls out as the first-order linearization of
+`v * sin(heading)` for a heading that builds up over time). The result:
+the code applies the lateral velocity as if `dt = 1 second`, regardless
+of frame rate.
+
+The minimum correct fix is the literal line change:
+
+```
+const nextX = state.x + lateralVelocity * dt;
+```
+
+#### Time-to-cross numbers
+
+`ROAD_WIDTH = 4.5` (`src/road/constants.ts:14`) is the half-width;
+the drivable surface spans `[-4.5, +4.5]` for total 9 m. Using the
+Sparrow GT starter (`baseStats.topSpeed = 61`,
+`baseStats.gripDry = 1.0` from §23) at full steer with
+`steerRateHigh = 1.25 rad/s`:
+
+| Speed | Steer | Code today (per tick) | Code today (per s) | Time to cross 4.5 m | Top Gear 2 reference |
+| --- | --- | --- | --- | --- | --- |
+| 5 m/s | 1.0 | 0.192 m | 11.5 m/s | 0.39 s | ~1.5 s |
+| 30 m/s | 1.0 | 0.658 m | 39.5 m/s | 0.114 s | ~1.5 s |
+| 61 m/s | 1.0 | 1.27 m | 76.2 m/s | 0.059 s | ~1.5 s |
+
+After the surgical fix (`+ lateralVelocity * dt`):
+
+| Speed | Steer | Per-tick displacement | Per-s lateral velocity | Time to cross 4.5 m |
+| --- | --- | --- | --- | --- |
+| 5 m/s | 1.0 | 0.0032 m | 0.19 m/s | 23.6 s |
+| 30 m/s | 1.0 | 0.0110 m | 0.66 m/s | 6.8 s |
+| 61 m/s | 1.0 | 0.0212 m | 1.27 m/s | 3.5 s |
+
+The post-fix top-speed crossing time (3.5 s) is too slow vs the
+~1.5 s TG2 reference. That confirms two things:
+
+1. The surgical fix lands the code in the right order of magnitude,
+   removing the 60x over-shoot.
+2. The §10 starter steer-rate constants (low 2.3 / high 1.25 rad/s)
+   were authored to read correctly on a buggy integrator that ran
+   60x hot, so the cornering tuning slice has to re-pin them once
+   the integrator is correct. A factor-of-2 lift on `steerRateHigh`
+   (`1.25 -> 2.5 rad/s`) restores ~1.7 s top-speed cross which is
+   inside the TG2 band, but is a tuning judgement that wants
+   playtest evidence in the cornering-tuning slice.
+
+#### §10 quotes
+
+§10 "Steering model" pins the formula verbatim:
+
+> ```
+> steerRate = lerp(steerRateLow, steerRateHigh, speedNorm)
+> yawDelta = steerInput * steerRate * dt * tractionScalar
+> ```
+
+§10 "Steering model" desired behaviour:
+
+> - Low speed: tight, confident rotation.
+> - Mid speed: stable but expressive.
+> - High speed: enough authority to place the car, not enough to
+>   zig-zag unrealistically.
+
+§10 says nothing about how `yawDelta` becomes lateral motion. The
+current code's fork-in-the-road interpretation ("lateralVelocity =
+yawDelta * nextSpeed; nextX = state.x + lateralVelocity") only matches
+§10's intent if the integration step is multiplied by `dt`. Today it is
+not. §10's "max lateral acceleration" / "g-load" is also silent;
+filed as Q-016.
+
+#### Other physics gaps surfaced during the read
+
+1. **No g-load cap.** The integrator allows `lateralVelocity` to
+   spike to `yawRate * topSpeed` within one tick (~2.6 g
+   instantaneously even after the surgical fix). Real tyres saturate
+   around 1.0-1.1 g; arcade targets sit ~1.2 g. Filed as the
+   racing-line tension slice with Q-016 defaults.
+2. **No centripetal coupling.** When the road curves
+   (`CompiledSegment.curve`), the player car does not feel an
+   outward push proportional to `v^2 / r`. The renderer projects
+   curvature, but the physics step never reads it. The car can be
+   driven through a 0.22 curve at top speed without any lateral bias,
+   so the player feels they steer in vacuum. Out of scope for the
+   surgical fix; the racing-line tension slice handles part of this
+   indirectly via the over-cap scrub when the player demands more
+   lateral acceleration than grip allows.
+3. **No understeer at high speed.** §10 "Mild lateral slip appears
+   at high steer + high speed" is not implemented; once the cap
+   lands, the over-cap scrub term is the smallest correct slice.
+4. **No banking response.** Schema has no `bank` field (F-082).
+   F-086 lifts the cap once F-082 ships.
+5. **Heading state.** The state shape (`CarState`) has no `heading`
+   field. The lateral integration linearizes around heading=0 each
+   tick, which is the same simplification arcade pseudo-3D racers
+   ship with; full bicycle / yaw modelling is out of scope.
+
+#### Tests that would have caught this
+
+The existing physics test file
+(`src/game/__tests__/physics.test.ts`) has six steering tests but
+each one only asserts a sign or a relative ordering (e.g. "steers
+right at moderate speed", "lower weather grip reduces lateral
+authority"). None of them pin the absolute magnitude of `state.x`
+after a tick or assert that lateral displacement scales linearly with
+`dt`. A single test of the form
+
+```ts
+it("at top speed full steer crosses 4.5m road in >= 2s", () => {
+  const start = freshState({ speed: STARTER_STATS.topSpeed });
+  let s = start;
+  for (let i = 0; i < 60 * 2; i++) {
+    s = step(s, withInput({ steer: 1 }), STARTER_STATS, ROAD, 1 / 60);
+  }
+  expect(s.x).toBeLessThan(ROAD.roadHalfWidth);
+});
+```
+
+would have failed since iteration 1 of the engine. Add it as part
+of the surgical fix slice.
+
+### Slices filed this iteration
+
+- `VibeGear2-implement-fix-lateral-b2503f6f` - surgical fix to the
+  lateral integration unit error. One-line src diff (`+ lateralVelocity
+  * dt` on `physics.ts:418`) plus the new pinning unit tests and a
+  Playwright spec. Bumps `PHYSICS_VERSION` 3 -> 4 (invalidates v3
+  ghost replays per the existing pattern at `physics.ts:103`). NO
+  `after:` because the bug is dimensional and lands without any
+  prerequisite content or tuning work.
+- `VibeGear2-implement-cornering-tuning-62491aea` - cornering tuning
+  pass that re-pins the §10 starter / mid / late steer-rate band and
+  the §23 per-car `gripDry` numbers against the corrected integrator
+  feel. `after:` `VibeGear2-implement-fix-lateral-b2503f6f` because
+  the tuning is dimensional-only after the bug is gone.
+- `VibeGear2-implement-racing-line-7b2cbd41` - racing-line tension
+  slice. Adds `MAX_LATERAL_ACCEL_M_PER_S2 = 12` cap and a quadratic
+  understeer scrub so hairpins must be braked into. `after:`
+  `VibeGear2-implement-cornering-tuning-62491aea` AND
+  `VibeGear2-implement-re-author-47323741` so the §9 hairpin geometry
+  exists to feel the cap.
+
+### Open questions filed
+
+- Q-016: max lateral acceleration cap, understeer onset, and banking
+  response for the §10 racing-line slice. Recommended default
+  (`MAX_LATERAL_ACCEL_M_PER_S2 = 12`, quadratic scrub
+  `UNDERSTEER_SCRUB_K = 6 m/s^2`, banking deferred to F-086) unblocks
+  the iter-4 racing-line tension slice.
+
+### Followups filed
+
+- F-086: banked-corner cap lift; lands after F-082 (per-segment
+  banking schema + renderer).
+
+### Top-3 update
+
+The original "Top 3 slices" block at the top of this document is
+preserved. With the iter-4 evidence in, the working order through the
+next four iterations becomes:
+
+1. `VibeGear2-implement-fix-lateral-b2503f6f` (iter-4, ready, ONE-LINE
+   FIX). Promoted to position 1 because it is a one-line diff that
+   changes the felt skill ceiling of every race.
+2. `VibeGear2-implement-classify-tracks-b41307c8` (iter-1, ready).
+3. `VibeGear2-implement-bump-prod-076ae7e7` (iter-1, blocked on 2).
+4. `VibeGear2-implement-quick-race-78084a95` (iter-3, blocked on 3).
+5. `VibeGear2-implement-stretch-the-be459bc4` (iter-3, blocked on 4).
+6. `VibeGear2-implement-lift-opponent-8764ce5e` (iter-3, blocked on 4).
+7. `VibeGear2-implement-re-author-47323741` (iter-2, blocked on 3).
+8. `VibeGear2-implement-cornering-tuning-62491aea` (iter-4, blocked on 1).
+9. `VibeGear2-implement-lap-rollover-7fcb891e` (iter-1, parallel).
+10. `VibeGear2-implement-9-track-e22793ca` (iter-2, blocked on 7).
+11. `VibeGear2-implement-racing-line-7b2cbd41` (iter-4, blocked on 8 and 7).
+
+The lateral-fix slice jumps to position 1: it is the smallest src
+diff in the entire plan (a single `* dt` on a single line) and has no
+content prerequisites. It is also the only slice that addresses pain
+point #4 directly. The iter-1 ordering (1: classify, 2: bump-prod,
+3: lap-rollover) survives behind it; the iter-3 grid slices keep
+their relative position; the iter-2 re-author moves up so the
+racing-line slice can land on the §9 hairpin geometry it needs.
+After iter-4 the only deferred pain point is #5 (roadside prop
+scale).
+
 ### How this plan changes per iteration
 
 Each future research iteration appends a new section ("Iteration 2 -

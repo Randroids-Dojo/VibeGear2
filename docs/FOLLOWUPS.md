@@ -10,6 +10,24 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-086: Banked-corner lateral cap lift on the §10 racing-line tension slice
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The iter-4 racing-line tension slice
+(`VibeGear2-implement-racing-line-7b2cbd41`) ships a flat-road
+`MAX_LATERAL_ACCEL_M_PER_S2 = 12` cap per Q-016. Once F-082 (renderer +
+schema support for per-segment banking) lands, the cap should lift on
+the inside of a banked corner so a player who reads the camber and
+holds the racing line can corner harder than a player who grips through
+on flat asphalt. Recommended scalar: `cap *= 1 + max(0, bank * 1.5)`
+clamped to `1.6 *` baseline (max 19.2 m/s^2 at `bank = 0.4`). Keep the
+quadratic scrub term unchanged so over-cap input still bleeds forward
+speed; banking only raises the ceiling, it does not eliminate the
+penalty for pushing past the new cap. Land this slice after F-082; the
+iter-4 racing-line slice cannot consume the bank value because the
+schema field does not exist yet.
+
 ## F-085: Late-race overtake decisions and racing-line overtake awareness
 **Created:** 2026-05-05
 **Priority:** nice-to-have

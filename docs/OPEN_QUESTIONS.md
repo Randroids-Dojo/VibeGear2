@@ -9,6 +9,78 @@ they are part of the design history.
 
 ---
 
+## Q-016: Max lateral acceleration cap and understeer onset for the §10 racing-line slice
+
+**GDD reference:** [§10](gdd/10-driving-model-and-physics.md) "Steering
+model" / "Traction and drifting", [§11](gdd/11-cars-and-stats.md) "Stat
+categories" (`Grip`, `Stability`), [§23](gdd/23-balancing-tables.md) "Core
+car balance sheet" (`gripDry`).
+**Status:** open
+**Asked in loop:** 2026-05-05
+
+**Question.** §10 names the desired feel ("enough authority to place the
+car, not enough to zig-zag unrealistically", "Mild lateral slip appears
+at high steer + high speed"), but does not pin a concrete max lateral
+acceleration. The iter-4 surgical fix removes the 60x lateral over-shoot
+but the integrator still allows the car to spike from `lateralVelocity =
+0` to `lateralVelocity = yawRate * topSpeed` within a single tick the
+moment the player taps full steer at top speed. Without a cap that is
+roughly 76 m/s / 60 Hz = 1.27 m/s of step lateral velocity per tick (the
+correct number after the fix; the buggy integration was 60x worse), or
+~2.6 g of instantaneous lateral acceleration. No tyre patch can deliver
+that.
+
+Three sub questions are silent in the GDD:
+
+1. What is the max sustained lateral acceleration cap a tyre on the §10
+   `gripDry = 1.0` baseline can produce? Real-world summer street tyres
+   peak around 1.0-1.1 g (~10 m/s^2). Top Gear 2's reference feel is
+   tighter than a real car but looser than a kart racer; an arcade
+   target between 10-14 m/s^2 reads as "tight but not telepathic".
+2. At what speed does understeer begin to bleed forward speed? §10
+   ("Mild lateral slip appears at high steer + high speed") implies the
+   onset is somewhere above the mid-tier transition; below it the car
+   should feel locked-on. A safe default: scrub speed only when the
+   steer demand exceeds the lateral cap, scaled by the over-cap delta.
+3. Does the §10 banked-corner camber response need to land in the same
+   slice, or is it deferred behind F-082 (per-segment banking)? The
+   schema has no `bank` field today (F-082 covers it). Without banking,
+   a g-load cap alone is the smallest correct slice.
+
+**Recommended default.** Unblock the iter-4 racing-line tension slice
+(`VibeGear2-implement-racing-line-7b2cbd41`) with three concrete
+defaults:
+
+1. **`MAX_LATERAL_ACCEL_M_PER_S2 = 12`** for `gripDry = 1.0` (~1.2 g).
+   Scales linearly with the composite grip term:
+   `cap = MAX_LATERAL_ACCEL * baseGrip * (offRoad ? 0.5 : 1)`. This
+   matches an arcade-tight ceiling (above realistic street tyres,
+   below race slicks) and lets per-car `gripDry` from §23 (0.93 to
+   1.08) translate into a felt cornering hierarchy.
+2. **Understeer onset = "any tick where requested |yawRate \* v|
+   exceeds `cap`"**, with a quadratic scrub:
+   `scrubM = UNDERSTEER_SCRUB_K * (excess / cap)^2 * dt` taken off
+   `nextSpeed`, where `UNDERSTEER_SCRUB_K = 6` m/s^2 (chosen so that
+   a player holding 30 percent over-cap for one second loses ~5 m/s
+   of forward speed, enough to feel the cost). Below the cap the
+   scrub term is zero, so a player who corners on the limit pays
+   nothing and a player who pushes pays in proportion to how far
+   over the line they go.
+3. **Banking response is deferred to F-082.** The iter-4 racing-line
+   slice ships flat-road g-load behaviour only; once F-082 lands the
+   per-segment `bank` value lifts the cap on the inside of a banked
+   corner. Filing this as a follow-up (F-086) instead of expanding
+   the iter-4 slice keeps the slice surgical.
+
+**Blocking?** No. The iter-4 surgical fix
+(`VibeGear2-implement-fix-lateral-b2503f6f`) and tuning pass
+(`VibeGear2-implement-cornering-tuning-62491aea`) need no answer here;
+they are dimensional and per-§10 / §23 respectively. Only the
+racing-line tension slice consumes Q-016 and proceeds under the
+recommended defaults.
+
+---
+
 ## Q-015: Quick Race opponent count and pack-stretch limits
 
 **GDD reference:** [§7](gdd/07-race-rules-and-structure.md) "Starting

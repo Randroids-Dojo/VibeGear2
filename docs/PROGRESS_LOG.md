@@ -6,6 +6,149 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: research(topgear-fun): pain point #4 - lateral integration unit error and racing-line tension
+
+**GDD sections touched (research only, no spec edits):** [§10](gdd/10-driving-model-and-physics.md)
+"Steering model" / "Traction and drifting" / "Suggested tunable
+constants", [§11](gdd/11-cars-and-stats.md) "Stat categories",
+[§22](gdd/22-data-schemas.md) "Car JSON schema",
+[§23](gdd/23-balancing-tables.md) "Core car balance sheet" (gripDry).
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Research filed.
+
+### Done
+
+- Diagnosed pain point #4 line by line in `src/game/physics.ts`. The
+  lateral integration at lines 401-418 builds `yawDelta = steerInput
+  * steerRate * dt * tractionScalar` (rad per tick, matches §10
+  verbatim) and computes `lateralVelocity = yawDelta * nextSpeed`
+  (units rad * m/s = m/s, correct). The bug is on line 418:
+  `nextX = state.x + lateralVelocity` adds a velocity directly to a
+  position without integrating over `dt`. At 60 Hz the lateral motion
+  is therefore 60x larger per second than the integrator should
+  produce.
+- Pinned the time-to-cross numbers. `ROAD_WIDTH = 4.5`
+  (`src/road/constants.ts:14`) is the half-width; drivable surface is
+  9 m wide. With the Sparrow GT starter (`baseStats.topSpeed = 61`,
+  `baseStats.gripDry = 1.0`) at full steer:
+  - Today: 1.27 m per tick at top speed = 76 m/s effective lateral
+    velocity. 0.059 s to cross the half-road (4.5 m). 0.118 s to
+    cross the whole drivable surface.
+  - After the surgical fix (`+ lateralVelocity * dt`): 0.0212 m per
+    tick = 1.27 m/s. 3.5 s to cross the half-road. Top Gear 2's
+    reference is ~1.5 s per lane on dry road, so the fix lands the
+    integrator in the right order of magnitude; the residual gap is
+    the §10 starter steer-rate constants which were authored against
+    the buggy 60x-hot integrator and need re-pinning in the cornering
+    tuning slice.
+- Confirmed the §10 spec is intact and unambiguous. The §10 formula
+  block (`yawDelta = steerInput * steerRate * dt * tractionScalar`)
+  reads correctly; the bug is the integration step that happens
+  AFTER `yawDelta` is computed. §10 is silent on max lateral
+  acceleration / g-load cap; filed as Q-016.
+- Identified the secondary physics gaps surfaced by the read:
+  no g-load cap, no centripetal coupling on
+  `CompiledSegment.curve`, no understeer at high speed, no banking
+  response (schema has no `bank` field, F-082). The smallest correct
+  surgical fix is the one-line `* dt` patch; cornering tuning and
+  racing-line tension are independent slices behind it.
+- Filed three implementation dots in dependency order:
+  - `VibeGear2-implement-fix-lateral-b2503f6f` - surgical fix slice.
+    Single-line src diff, bumps `PHYSICS_VERSION` 3 -> 4, adds two
+    pinning unit tests plus one Playwright spec. NO `after:`; the
+    bug is dimensional.
+  - `VibeGear2-implement-cornering-tuning-62491aea` - tuning pass
+    that re-pins §10 starter / mid / late steer-rate band and §23
+    per-car `gripDry` numbers against the corrected integrator.
+    `after:` the surgical fix.
+  - `VibeGear2-implement-racing-line-7b2cbd41` - racing-line tension
+    slice. Adds `MAX_LATERAL_ACCEL_M_PER_S2 = 12` cap and a
+    quadratic understeer scrub so hairpins must be braked into.
+    `after:` the tuning slice AND the iter-2 re-author slice
+    (`VibeGear2-implement-re-author-47323741`) so the §9 hairpin
+    geometry exists to feel the cap.
+- Filed Q-016 (max lateral acceleration cap, understeer onset,
+  banking response) with recommended defaults so the racing-line
+  tension slice is unblocked.
+- Filed F-086 (banked-corner cap lift on the racing-line slice;
+  lands after F-082).
+- Updated `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` with a "Pain point #4"
+  section (the equation, the time-to-cross numbers, the §10 quote,
+  the test that would have caught the bug) and a "Top-3 update"
+  block that promotes the surgical fix to position 1. Preserved the
+  original iter-1 / iter-2 / iter-3 ordering blocks as audit trail.
+
+### Verified
+
+- Walked `src/game/physics.ts` line by line (469 lines). The lateral
+  block at L389-L418 is the integration site; L405 builds
+  `lateralVelocity` (m/s) correctly, L418 integrates without `* dt`.
+  The other lateral consumers (`steeringAssistScale` clamp at L417,
+  `surfaceAt` classification at L428) are downstream of the bug and
+  do not change the diagnosis.
+- Confirmed the existing physics test file
+  (`src/game/__tests__/physics.test.ts`) has six steering tests
+  (L161-L203) and each one asserts a sign or a relative ordering
+  ("steers right at moderate speed", "respects analog steer
+  magnitude", etc.). None pin the absolute magnitude of `state.x`
+  after a tick or assert that lateral displacement scales linearly
+  with `dt`. A single absolute-magnitude assertion would have caught
+  the bug since the engine's first commit. The surgical fix slice
+  adds two such tests by name.
+- Confirmed the §10 quote ("yawDelta = steerInput * steerRate * dt
+  * tractionScalar") is verbatim in `docs/gdd/10-driving-model-
+  and-physics.md` "Steering model" section. The §10 spec text is
+  intact; the gap is the integration step that follows.
+- Confirmed `CompiledSegment.curve` is read by the renderer (per
+  iter-2 evidence, `src/road/segmentProjector.ts`) but never read by
+  `physics.step()`. Centripetal coupling is a deeper slice than the
+  iter-4 lateral fix; the racing-line tension slice handles part of
+  the felt symptom indirectly via the over-cap scrub term.
+- `dot tree` shows the three new implement dots wired with the
+  correct `after:` chain
+  (`fix-lateral` standalone -> `cornering-tuning` -> `racing-line`
+  with a parallel dependency on `re-author`).
+- `npm run content-lint` was not run because this iteration is
+  research-only (no `src/` writes per the loop rules and no track
+  JSON edits). The lint will run inside the surgical-fix slice that
+  consumes this research.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. The §10 "Steering model"
+requirement reads `partial` because the engine wires the formula but
+the integration step has the unit error. The fix is the iter-4
+surgical slice. The §10 "Traction and drifting" requirement also
+reads `partial` (no g-load cap, no understeer onset); the fix is the
+iter-4 racing-line tension slice. F-082 (banking) and F-086
+(banking response on the racing-line cap) keep their `partial`
+status.
+
+### Followups created
+
+- F-086: banked-corner cap lift on the §10 racing-line tension
+  slice. Lands after F-082 (per-segment banking schema + renderer).
+
+### Open questions created
+
+- Q-016: max lateral acceleration cap and understeer onset for the
+  §10 racing-line slice. Recommended default
+  (`MAX_LATERAL_ACCEL_M_PER_S2 = 12`, quadratic scrub
+  `UNDERSTEER_SCRUB_K = 6 m/s^2`, banking deferred to F-086)
+  unblocks the iter-4 racing-line tension slice.
+
+### GDD edits
+
+None. The §10 "Steering model" formula, the §10 "Traction and
+drifting" intent, the §11 stat categories, the §22 car schema, and
+the §23 balance sheet are all intact and unambiguous; the gap is
+execution against them, not spec text. The "Suggested tunable
+constants" table in §10 will be re-pinned by the cornering tuning
+slice once the integrator is correct, but the table itself does not
+need a spec edit.
+
+---
+
 ## 2026-05-05: research(topgear-fun): pain point #3 - opponent grid density and visibility
 
 **GDD sections touched (research only, no spec edits):** [§7](gdd/07-race-rules-and-structure.md)
