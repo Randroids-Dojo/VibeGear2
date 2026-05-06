@@ -694,3 +694,318 @@ pain point #2 diagnosed") below this one. The "Top 3 slices" block
 above is updated only when the diagnosis evidence justifies a re-rank.
 Old iteration sections stay in place to preserve the audit trail; that
 is the same append-only discipline used in the four ledger files.
+
+## Iteration 5 - pain point #5 diagnosed
+
+### Diagnosis (numbers)
+
+Walked the prop pipeline end to end. The current scale function lives
+at `src/render/pseudoRoadCanvas.ts:304-316` (table) and
+`pseudoRoadCanvas.ts:774-779` (use). Three independent things make
+roadside props feel out of scale; the iter-1 quick read named one of
+them but inverted the unit interpretation, so the conclusions need
+correcting.
+
+#### Correction to iter-1 quick read
+
+Iter-1 said "trees render at 1.35x the road's pixel width in height,
+which is taller than the road is wide near the camera". That read
+treated `strip.screenW` as the FULL projected road width. It is the
+HALF-width. `segmentProjector.ts:167` builds
+`screenW = scale * ROAD_WIDTH * halfW`, where `ROAD_WIDTH = 4.5`
+(the half-width of the drivable surface, per
+`src/road/constants.ts:14`) and `halfW` is half the canvas width. The
+strip drawer paints road trapezoids using `nearX +/- nearHalfW = screenX
++/- screenW`, so the road occupies `2 * screenW` pixels horizontally.
+A `heightRoadFactor` of `f` therefore renders the prop at
+`f / 2` of the road's full screen-width in height. Iter-1's
+`heightRoadFactor: 1.35` for trees is 67.5% of full road width, not
+135%. The implication: in pure ratio terms, current trees render
+SHORTER than full road width, not taller.
+
+#### Gap A. Per-kind ratios versus physical reality
+
+Each `heightRoadFactor` corresponds to an implied physical prop
+height in metres of `factor * ROAD_WIDTH = factor * 4.5`. Holding the
+player car (~1.5 m visible) and lane (~3 m wide) as anchors:
+
+| Prop id | factor | implied height (m) | physical target (m) | verdict |
+| --- | --- | --- | --- | --- |
+| `sign_marker` | 0.85 | 3.83 | 2.5 to 3.0 (highway sign) | slightly tall |
+| `tree_pine` | 1.35 | 6.08 | 8 to 12 (mature pine) | too short |
+| `fence_post` | 0.50 | 2.25 | 1.0 (post and rail) | 2x too tall |
+| `rock_boulder` | 0.42 | 1.89 | 1.0 to 2.0 | OK |
+| `light_pole` | 1.90 | 8.55 | 8 to 10 | OK |
+| `palms_sparse` | 1.35 | 6.08 | 6 to 10 (palm) | OK to short |
+| `marina_signs` | 0.85 | 3.83 | 2.5 to 4.0 (marina sign) | OK |
+| `guardrail` | 0.50 | 2.25 | 0.7 (guardrail) | 3x too tall |
+| `water_wall` | 0.42 | 1.89 | 1.0 (sea wall) | 2x too tall |
+| `rock_spire` | 0.95 | 4.275 | 4 to 8 (spire) | OK to short |
+| `heat_sign` | 0.80 | 3.60 | 3.0 (desert sign) | OK |
+
+The two clear outliers are `fence_post` and `guardrail` at ~2x to 3x
+the correct height. Anything else that reads as "wrongly proportioned"
+is downstream of gap B (the maxHeight clamp).
+
+#### Gap B. The `ROADSIDE_MAX_HEIGHT_FRACTION = 0.22` clamp dominates the near field
+
+`pseudoRoadCanvas.ts:96`: `ROADSIDE_MAX_HEIGHT_FRACTION = 0.22`.
+`pseudoRoadCanvas.ts:774-778`:
+
+```
+const maxHeight = viewport.height * ROADSIDE_MAX_HEIGHT_FRACTION;
+const height = Math.max(
+  style.minHeight,
+  Math.min(maxHeight, strip.screenW * style.heightRoadFactor * SPRITE_BASE_SCALE),
+);
+```
+
+A prop hits the maxHeight clamp at 22% viewport height once
+`strip.screenW * heightRoadFactor >= viewport.height * 0.22`. Solving
+for the road's projected half-width: `strip.screenW >=
+viewport.height * 0.22 / heightRoadFactor`. For an 800x480 canvas
+(`viewport.height = 480`) and `heightRoadFactor = 1.35` (tree),
+strip.screenW >= 78 px clamp-engages at scale = 78/(4.5*400) = 0.0433,
+so z = camera.depth/scale = 0.839/0.0433 = 19.4 m. For
+`heightRoadFactor = 1.90` (pole): clamp at z <= 27.4 m.
+
+So every tree closer than ~20 m and every pole closer than ~27 m draws
+at exactly 22% of viewport height (105.6 px on an 800x480 canvas).
+PLAYER_CAR_HEIGHT_FRACTION (`pseudoRoadCanvas.ts:92`) is 0.18, so the
+player car renders at 86.4 px tall. In other words, every roadside
+tree and pole within ~25 m of the camera draws TALLER on screen than
+the player car. This is the dominant visual reading of "props feel
+oversized": they are clamped at a fraction (22%) that exceeds the
+player car's fixed fraction (18%).
+
+The 22% number is also the test pin
+(`pseudoRoadCanvas.test.ts:980`): `expect(draws[0]!.dh).toBeCloseTo(
+VIEWPORT.height * 0.22, 6)`. So the maxHeight clamp is load-bearing
+on the existing renderer test surface.
+
+#### Gap C. Procedural fallback shapes are what the live route renders
+
+`src/app/race/page.tsx` does not pass any `roadsideAtlas` to
+`drawRoad`. (Confirmed by `grep -n roadsideAtlas
+src/app/race/page.tsx`: zero matches.) The atlas image
+`public/art/roadside/temperate.svg` and the per-region SVG files under
+`public/art/roadside/<region>/*.svg` are loaded only on `/dev/road`
+(`src/app/dev/road/page.tsx:15-77`). The live race renderer therefore
+falls through `drawRoadsideAtlasSprite` (returns false because
+`roadsideAtlas?.atlas.image` is undefined) and paints the procedural
+shapes `drawTreeSprite`, `drawSignSprite`, `drawFenceSprite`,
+`drawRockSprite`, `drawPoleSprite` (`pseudoRoadCanvas.ts:803-819`). The
+"asset vs scale function" question therefore resolves to: the SCALE
+FUNCTION is what users see in production, the ASSETS only show on
+`/dev/road`. The fix is code-only.
+
+#### Gap D. Prop placement is too close to the road
+
+`pseudoRoadCanvas.ts:781`:
+`const baseX = strip.screenX + sideSign * strip.screenW * 1.32;`
+
+Props sit at 1.32 road-half-widths from the road centerline, which is
+0.32 road-half-widths past the road edge (rumble strip). In meters
+that is 4.5 * 0.32 = 1.44 m off the rumble. Real trees and poles sit
+5 to 15 m off the shoulder. Closer placement makes a correctly-sized
+tree look bigger than it would at a realistic offset. This is a
+secondary contributor to the "props feel large" reading. Bumping
+the offset to 1.7 to 2.0 of strip.screenW (i.e. 0.7 to 1.0 road half-
+widths past the edge, 3.15 to 4.5 m off the rumble) is a small tuning
+knob inside the calibration slice.
+
+#### Schema verdict
+
+`TrackSegmentSchema` (`src/data/schemas.ts:145-156`) carries
+`roadsideLeft` and `roadsideRight` as string ids. There is no
+physical-height field on the segment schema or on the
+`ROADSIDE_SPRITE_STYLES` table itself. Prop physical height is
+implicit in `heightRoadFactor` (multiplier on `strip.screenW`, which
+is half the road width in pixels). For the calibration slice this is
+fine. If a future slice wants real perspective, the cleanest
+extension is to add an explicit `heightMeters` field to the renderer
+table (NOT to the per-track JSON) and derive `heightRoadFactor =
+heightMeters / ROAD_WIDTH` at draw time. That is the second slice
+filed below.
+
+#### Per-region differences
+
+`public/art/roadside/<region>/` ships per-region SVGs (slim-tree,
+wide-tree, low-building, tower-building, long-rail, short-rail, etc.)
+but `src/data/atlas/roadside.json` only registers the global
+`temperate.svg`. The renderer never sees the per-region SVGs in
+production. So no region's PROP ART is broken differently; the
+diagnosis converges back to gap A and gap B for every region.
+
+#### Top Gear 2 reference
+
+A roadside tree should never visually exceed the height of an
+overpass. Light poles should look like light poles, not building-tall
+pillars. The car's silhouette should fit comfortably under tunnel
+arches and behind trees. Today gap B inverts this: every nearby tree
+and pole is taller than the player car, breaking the depth cue. The
+fix is to:
+
+1. Drop `ROADSIDE_MAX_HEIGHT_FRACTION` from 0.22 to 0.18 so close-in
+   props at most match the player car silhouette.
+2. Tune per-kind `heightRoadFactor` to physical targets so the far
+   field also reads correctly. `pine 1.35 -> 2.22` (10 m), `pole 1.90
+   -> 2.00` (9 m), `sign 0.85 -> 0.67` (3 m), `fence 0.50 -> 0.16`
+   (0.7 m guardrail; this is the worst current outlier), `boulder
+   0.42 -> 0.33` (1.5 m), `palm 1.35 -> 1.78` (8 m), `rock_spire 0.95
+   -> 1.33` (6 m), `water_wall 0.42 -> 0.22` (1 m), `marina_signs
+   0.85 -> 0.78` (3.5 m), `heat_sign 0.80 -> 0.67` (3 m).
+3. Bump prop placement to 1.7x strip.screenW so trees do not cling
+   to the rumble strip.
+4. Add a unit test pinning per-kind px-height at z=10, z=50, z=200 on
+   an 800x480 canvas, plus a Playwright golden-image of a fixed
+   `/dev/road` pose.
+
+### Slices filed this iteration
+
+- `VibeGear2-implement-calibrate-roadside-96e24f40` - calibrate
+  roadside prop scale function. Touches
+  `src/render/pseudoRoadCanvas.ts` only: rewrites
+  `ROADSIDE_SPRITE_STYLES` per the table above, drops
+  `ROADSIDE_MAX_HEIGHT_FRACTION` to 0.18, lifts the prop offset
+  multiplier from 1.32 to 1.7. Adds an `assertPropScaleAt(z)`
+  unit test (Vitest) that pins the px-height per kind at z=10, z=50,
+  z=200 on an 800x480 canvas. Adds a Playwright golden-image at
+  `/dev/road` for a fixed Velvet Coast pose. Updates the existing
+  `dh ~= VIEWPORT.height * 0.22` test pin to the new 0.18 fraction.
+  NO `after:` because the slice is renderer-only and ships
+  independently of the iter 1 to 4 dependency chain. Pain point #5
+  closes when this slice merges.
+- `VibeGear2-implement-extend-roadside-e541c8a5` - prop schema
+  migration. Promotes `ROADSIDE_SPRITE_STYLES` from `{kind,
+  widthToHeight, heightRoadFactor, minHeight}` to `{kind,
+  widthToHeight, heightMeters, minHeight}` and derives
+  `heightRoadFactor = heightMeters / ROAD_WIDTH` at draw time. Pure
+  refactor; the calibration values from the previous slice carry
+  over verbatim. `after:`
+  `VibeGear2-implement-calibrate-roadside-96e24f40` so the schema
+  migration ships on top of correct numbers, not on top of the
+  current ones. Optional polish; lower priority than the
+  calibration slice.
+
+### Open questions filed
+
+- Q-017: per-kind physical heights (target metres for `tree_pine`,
+  `light_pole`, `sign_marker`, `fence_post`, `rock_boulder`,
+  `palms_sparse`, `marina_signs`, `guardrail`, `water_wall`,
+  `rock_spire`, `heat_sign`) and the `ROADSIDE_MAX_HEIGHT_FRACTION`
+  cap. Recommended defaults (pine 10 m, pole 9 m, sign 3 m,
+  guardrail 0.7 m, boulder 1.5 m, palm 8 m, marina 3.5 m, water 1 m,
+  rock spire 6 m, heat sign 3 m, fence 0.7 m, max fraction 0.18)
+  unblock the calibration slice.
+
+### Followups filed
+
+None new. F-052 (parallax horizon and roadside sprites) is closed
+and references the procedural fallback shapes that the calibration
+slice tunes. The per-region SVG art in `public/art/roadside/<region>/`
+is not reachable from `/race` today; loading those atlases is a
+later content slice but is OUT OF SCOPE for pain point #5 because
+the procedural fallbacks are what users see in production.
+
+### Top-3 update
+
+The original "Top 3 slices" block at the top of this document is
+preserved. With iter-5 evidence in, the working order through the
+next several iterations becomes:
+
+1. `VibeGear2-implement-fix-lateral-b2503f6f` (iter-4, ready,
+   ONE-LINE FIX). Still position 1: smallest src diff, biggest
+   feel-impact.
+2. `VibeGear2-implement-calibrate-roadside-96e24f40` (iter-5, ready).
+   Promoted to position 2 because the slice is renderer-only, has
+   no `after:` chain, runs in parallel with the iter-1 to iter-4
+   work, and closes pain point #5 in a single PR.
+3. `VibeGear2-implement-classify-tracks-b41307c8` (iter-1, ready).
+4. `VibeGear2-implement-bump-prod-076ae7e7` (iter-1, blocked on 3).
+5. `VibeGear2-implement-quick-race-78084a95` (iter-3, blocked on 4).
+6. `VibeGear2-implement-stretch-the-be459bc4` (iter-3, blocked on 5).
+7. `VibeGear2-implement-lift-opponent-8764ce5e` (iter-3, blocked on 5).
+8. `VibeGear2-implement-re-author-47323741` (iter-2, blocked on 4).
+9. `VibeGear2-implement-cornering-tuning-62491aea` (iter-4,
+   blocked on 1).
+10. `VibeGear2-implement-lap-rollover-7fcb891e` (iter-1, parallel).
+11. `VibeGear2-implement-9-track-e22793ca` (iter-2, blocked on 8).
+12. `VibeGear2-implement-racing-line-7b2cbd41` (iter-4,
+    blocked on 9 and 8).
+13. `VibeGear2-implement-extend-roadside-e541c8a5` (iter-5,
+    blocked on 2). Optional schema polish.
+
+The calibration slice jumps to position 2 because it is the only
+remaining pain-point-closer that ships standalone. After iter-5 all
+five user-named pain points have at least one ready or near-ready
+slice on the chart, and the loop can hand off to implement mode.
+
+### Hand-off summary (all 5 pain points diagnosed)
+
+The implement-mode loop should pick up work in this order:
+
+**FIRST slice to land:** `VibeGear2-implement-fix-lateral-b2503f6f`
+(pain point #4 surgical fix).
+
+- Files touched (smallest possible src diff):
+  - `src/game/physics.ts` line 418: change
+    `const nextX = state.x + lateralVelocity;` to
+    `const nextX = state.x + lateralVelocity * dt;`.
+  - `src/game/physics.ts` line 103 area: bump `PHYSICS_VERSION`
+    from 3 to 4 (invalidates v3 ghost replays per the documented
+    pattern).
+  - `src/game/__tests__/physics.test.ts`: add two pinning unit tests
+    for the time-to-cross and the `dt` linearity.
+  - One Playwright spec under `tests-e2e/` that drives a 2 s full-
+    steer hold at top speed and asserts the player car does not
+    leave the road.
+- Verify steps:
+  - `npm run test` (Vitest), watching for the new pinning tests.
+  - `npm run test:e2e` (Playwright), watching the steer-hold spec.
+  - `npm run content-lint` (must stay clean).
+  - Manual smoke: load `/race`, hold full right at top speed,
+    confirm the car drifts toward the rumble in ~3 s rather than
+    ~0.06 s.
+- Q-NNN gates: none. Q-016 (lateral cap) is for the racing-line
+  slice that comes later; the surgical fix lands without it.
+
+**SECOND slice to land:**
+`VibeGear2-implement-calibrate-roadside-96e24f40` (pain point #5,
+parallel-able with the lateral fix).
+
+- Files touched (renderer only):
+  - `src/render/pseudoRoadCanvas.ts` line 96: drop
+    `ROADSIDE_MAX_HEIGHT_FRACTION = 0.22` to `0.18`.
+  - `src/render/pseudoRoadCanvas.ts` lines 304-316: rewrite
+    `ROADSIDE_SPRITE_STYLES` per the table in the iter-5 diagnosis:
+    `tree_pine` 1.35 -> 2.22, `light_pole` 1.90 -> 2.00,
+    `sign_marker` 0.85 -> 0.67, `fence_post` 0.50 -> 0.16,
+    `rock_boulder` 0.42 -> 0.33, `palms_sparse` 1.35 -> 1.78,
+    `marina_signs` 0.85 -> 0.78, `guardrail` 0.50 -> 0.16,
+    `water_wall` 0.42 -> 0.22, `rock_spire` 0.95 -> 1.33,
+    `heat_sign` 0.80 -> 0.67.
+  - `src/render/pseudoRoadCanvas.ts` line 781: lift the prop offset
+    from `strip.screenW * 1.32` to `strip.screenW * 1.7`.
+  - `src/render/__tests__/pseudoRoadCanvas.test.ts` line 980: update
+    the `dh ~= VIEWPORT.height * 0.22` pin to `0.18`. Add an
+    `assertPropScaleAt(z)` test that pins per-kind px-height at
+    z=10, z=50, z=200.
+  - One Playwright golden-image under `tests-e2e/` for a fixed
+    `/dev/road` pose on Velvet Coast.
+- Verify steps:
+  - `npm run test` (Vitest), watching the new px-height pin and the
+    updated `dh` assertion.
+  - `npm run test:e2e` (Playwright), capturing the new golden.
+  - `npm run content-lint` (must stay clean).
+  - Manual smoke: load `/dev/road`, scroll a few segments, confirm
+    no tree or pole renders taller on screen than the player car
+    sprite at any depth.
+- Q-NNN gates: Q-017 (prop physical heights). Recommended default
+  is pinned in the question entry; the slice ships against the
+  default unless playtest overrides it.
+
+After these two slices, all five pain points (1 laps, 2 turns, 3
+grid, 4 lateral fix, 5 props) have a ready or near-ready slice in
+the chart. The remaining work is the iter-1 / iter-2 / iter-3 chain
+to flesh the world out around the now-correct physics and props.

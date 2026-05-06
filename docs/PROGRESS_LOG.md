@@ -6,6 +6,208 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: research(topgear-fun): pain point #5 - roadside prop scale calibration
+
+**GDD sections touched (research only, no spec edits):**
+[§16](gdd/16-rendering-and-visual-design.md) "Sprite scaling" /
+"Roadside objects", [§17](gdd/17-art-direction.md) "Roadside props",
+[§22](gdd/22-data-schemas.md) "Track JSON schema"
+(`roadsideLeft` / `roadsideRight`),
+[§24](gdd/24-content-plan.md) prop atlas.
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Research filed. All 5 user-named pain points now diagnosed.
+
+### Done
+
+- Diagnosed pain point #5 end to end. Walked
+  `src/render/pseudoRoadCanvas.ts:304-316` (`ROADSIDE_SPRITE_STYLES`
+  table), `pseudoRoadCanvas.ts:774-779` (size compute),
+  `pseudoRoadCanvas.ts:96` (`ROADSIDE_MAX_HEIGHT_FRACTION = 0.22`),
+  `pseudoRoadCanvas.ts:781` (prop placement offset),
+  `src/road/segmentProjector.ts:167` (`screenW = scale * ROAD_WIDTH
+  * halfW`), and `src/road/constants.ts:14` (`ROAD_WIDTH = 4.5`,
+  the half-width). Identified four independent gaps that compose to
+  "props feel out of scale".
+- Corrected the iter-1 quick read. Iter-1 said "trees render at 1.35x
+  the road's pixel width in height, which is taller than the road is
+  wide near the camera". That treated `strip.screenW` as the FULL
+  projected road width. It is the HALF-width. The strip drawer paints
+  trapezoids with `nearX +/- nearHalfW`, so the road's full screen
+  diameter is `2 * screenW`. A `heightRoadFactor` of `f` therefore
+  represents `f / 2` of the road's full screen-width as height, and
+  implies a physical prop height of `f * ROAD_WIDTH = f * 4.5` metres.
+  In ratio terms current trees render at 67.5% of road full-width,
+  not 135%.
+- Pinned the per-kind implied physical heights vs targets. The
+  outliers are `fence_post` (current 2.25 m vs ~1 m post and rail),
+  `guardrail` (current 2.25 m vs 0.7 m highway guardrail), and
+  `water_wall` (current 1.89 m vs 1 m sea wall). `tree_pine` and
+  `palms_sparse` at current 6.08 m are slightly short of a mature
+  pine target (8 to 12 m) but plausible for medium specimens; the
+  calibration slice's recommended default lifts them to 10 m and 8 m.
+  `light_pole` at current 8.55 m is correct.
+- Identified the dominant visual contributor:
+  `ROADSIDE_MAX_HEIGHT_FRACTION = 0.22` clamp. On an 800x480 canvas
+  (max prop height 105.6 px), every tree closer than ~20 m and every
+  pole closer than ~27 m draws at exactly the clamp. The player car
+  is fixed at 0.18 viewport (86.4 px), so every nearby tree and pole
+  draws TALLER on screen than the player car. That is what users
+  read as "props are huge". Recommended default: drop the clamp to
+  0.18 so close-in props at most match the player car silhouette.
+- Confirmed gap C (procedural fallbacks). The live `/race` route
+  does not pass any `roadsideAtlas` to `drawRoad` (verified by
+  `grep -n roadsideAtlas src/app/race/page.tsx`: zero matches). The
+  per-region SVG art under `public/art/roadside/<region>/` is loaded
+  only on `/dev/road` (`src/app/dev/road/page.tsx:15-77`). Production
+  users see the procedural shapes `drawTreeSprite`, `drawSignSprite`,
+  `drawFenceSprite`, `drawRockSprite`, `drawPoleSprite` from
+  `pseudoRoadCanvas.ts:803-819`. The pain-point fix is therefore
+  CODE ONLY (heightRoadFactor + maxHeight + offset). Asset
+  redrawing is out of scope.
+- Identified the secondary gap (D): props sit at `strip.screenW *
+  1.32` from the road centerline, which is 0.32 road-half-widths
+  past the rumble strip = 1.44 m off the shoulder. Real trees and
+  poles sit 5 to 15 m off the shoulder. Closer placement makes a
+  correctly-sized tree look bigger than at a realistic offset.
+  Recommended default: lift the offset to `strip.screenW * 1.7` so
+  props sit ~3 m off the rumble.
+- Reviewed schema. `TrackSegmentSchema`
+  (`src/data/schemas.ts:145-156`) carries `roadsideLeft` and
+  `roadsideRight` as string ids. There is no physical-height field
+  on the per-track JSON or on the renderer table itself. Prop scale
+  is implicit in `heightRoadFactor`. The optional schema migration
+  slice promotes the table to `{kind, widthToHeight, heightMeters,
+  minHeight}` and derives `heightRoadFactor = heightMeters /
+  ROAD_WIDTH` at draw time; pure refactor on top of the calibration
+  values.
+- Filed two implementation dots:
+  - `VibeGear2-implement-calibrate-roadside-96e24f40` - calibrate
+    roadside prop scale function. Renderer-only slice. Closes pain
+    point #5. NO `after:`.
+  - `VibeGear2-implement-extend-roadside-e541c8a5` - prop schema
+    migration. `after:` the calibration slice. Optional polish.
+- Filed Q-017 (per-kind prop physical heights and max-height clamp)
+  with recommended defaults so the calibration slice is unblocked.
+- Updated `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` with the full iter-5
+  section and a "Hand-off summary" naming the FIRST and SECOND
+  slices for the implement-mode loop:
+  1. `VibeGear2-implement-fix-lateral-b2503f6f` (pain point #4
+     surgical fix; one-line src diff at `physics.ts:418`).
+  2. `VibeGear2-implement-calibrate-roadside-96e24f40` (pain point
+     #5 prop calibration; renderer-only slice).
+- Preserved iter-1 / iter-2 / iter-3 / iter-4 sections verbatim. The
+  Top-3 update for iter-5 promotes the calibration slice to position
+  2 (parallel-able with the lateral fix) and pushes the schema
+  migration to position 13 as optional polish.
+
+### Verified
+
+- Walked `src/render/pseudoRoadCanvas.ts` end-to-end for the prop
+  pipeline: `ROADSIDE_DRAW_PERIOD = 10` (line 95),
+  `ROADSIDE_MAX_HEIGHT_FRACTION = 0.22` (line 96),
+  `PLAYER_CAR_HEIGHT_FRACTION = 0.18` (line 92),
+  `ROADSIDE_SPRITE_STYLES` (lines 304-316), `roadsideStyleFor`
+  (line 703), `shouldDrawRoadsideSprite` (line 708),
+  `drawRoadsideSprites` (line 723), `drawRoadsideSprite`
+  (line 755-820, including the size compute at 774-779 and the
+  offset at 781), and the per-kind procedural drawers (lines
+  803-819 dispatch to `drawTreeSprite` / `drawSignSprite` /
+  `drawFenceSprite` / `drawRockSprite` / `drawPoleSprite`).
+- Walked `src/road/segmentProjector.ts:163-180` for the projection
+  contract. `screenW = scale * ROAD_WIDTH * halfW` is built per
+  strip; `ROAD_WIDTH = 4.5` is the half-width of the drivable surface
+  per `src/road/constants.ts:13-14`; `halfW = viewport.width / 2`.
+  The drawer at lines 1843-1852 uses `strip.screenW` as the half-
+  width when painting road trapezoids (`nearX +/- nearHalfW`). The
+  half-width interpretation is consistent across the projector and
+  the road drawer.
+- Confirmed the existing test pin
+  (`src/render/__tests__/pseudoRoadCanvas.test.ts:980`):
+  `expect(draws[0]!.dh).toBeCloseTo(VIEWPORT.height * 0.22, 6)`. The
+  calibration slice updates this constant to 0.18 in the same diff
+  that drops the clamp.
+- Confirmed `src/app/race/page.tsx` never passes `roadsideAtlas` to
+  `drawRoad` (zero `roadsideAtlas` matches in that file). Only
+  `src/app/dev/road/page.tsx` constructs and passes a roadside
+  atlas. Production users see procedural fallbacks; the slice is
+  code-only.
+- Reviewed `src/data/atlas/roadside.json` (the only registered
+  atlas; `temperate.svg` 512x256 with sprites for `sign_marker`
+  32x64, `tree_pine` 64x96, `fence_post` 16x32, `rock_boulder`
+  48x32, `light_pole` 16x128). Sprite source aspect ratios are
+  near the renderer's `widthToHeight` settings (within 5 to 30%);
+  not a redraw-blocker.
+- Reviewed `public/art/roadside/<region>/`: each region ships
+  per-region SVGs (`slim-tree.svg`, `wide-tree.svg`,
+  `tower-building.svg`, `long-rail.svg`, `low-building.svg`,
+  `marker-light.svg`, `speed-board.svg`, etc.). None of these are
+  registered in `src/data/atlas/roadside.json`, so they never reach
+  the live race renderer. No region's prop ART is differently
+  broken; the diagnosis converges to gaps A and B for every region.
+- Reviewed `docs/gdd/16-rendering-and-visual-design.md` "Sprite
+  scaling" (player car at 16 to 22% screen height) and "Roadside
+  objects" (sign / tree / fence / rock / pole / building / tunnel
+  categories). §16 does not name physical metres for any prop kind.
+  Filed as Q-017.
+- Reviewed `docs/gdd/17-art-direction.md` (line 69 sets the source
+  resolution band at "64x64 to 256x256" for roadside props; the
+  shipping `temperate.svg` sprites sit inside that band). §17 does
+  not name physical heights either; same Q-017.
+- Reviewed `docs/gdd/22-data-schemas.md`: `roadsideLeft` and
+  `roadsideRight` are string ids on each segment. No physical-height
+  field on the segment or on the renderer style table. The schema
+  migration slice promotes the renderer table only; per-track JSON
+  is unchanged.
+- `dot tree` shows the two new implement dots filed in dependency
+  order. The calibration slice is `ready` (no `after:`); the schema
+  migration slice is `blocked` on the calibration slice.
+- `npm run content-lint` was not run because this iteration is
+  research-only (no `src/` writes per the loop rules and no track
+  JSON edits). The lint will run inside the calibration slice that
+  consumes this research.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. The §16 "Sprite scaling"
+requirement reads `partial` because the player car follows the
+spec but roadside props use a clamp (0.22) that exceeds the player
+car's fixed (0.18). The §16 "Roadside objects" requirement reads
+`partial` because per-kind physical heights are implicit in
+`heightRoadFactor` and several values are mistuned (worst:
+`fence_post` and `guardrail` at 2 to 3x correct). Both close to
+`done` once the iter-5 calibration slice ships.
+
+### Followups created
+
+None new. F-052 (parallax horizon and roadside sprites) is closed
+and references the procedural fallback shapes that the calibration
+slice tunes. The per-region SVG art under
+`public/art/roadside/<region>/` is not reachable from `/race`
+today; loading those atlases is a later content slice but is OUT
+OF SCOPE for pain point #5 because the procedural fallbacks are
+what users see in production.
+
+### Open questions created
+
+- Q-017: per-kind roadside prop physical heights and max-height
+  clamp. Recommended defaults (pine 10 m, palm 8 m, pole 9 m, sign
+  3 m, marina sign 3.5 m, heat sign 3 m, fence 0.7 m, guardrail
+  0.7 m, boulder 1.5 m, water wall 1 m, rock spire 6 m, max
+  fraction 0.18, prop offset 1.7) unblock the calibration slice.
+
+### GDD edits
+
+None. The §16 "Sprite scaling" intent ("16 to 22% of screen height
+in standard camera mode") and the §16 "Roadside objects" prop
+category list are intact and unambiguous; the gap is execution
+against them, not spec text. The "Suggested per-kind heights"
+table is created in the calibration slice (renderer code), not in
+the spec, so authors can re-tune without a spec edit. §17 carries
+the "64x64 to 256x256" source resolution band; sprites are inside
+that band already.
+
+---
+
 ## 2026-05-05: research(topgear-fun): pain point #4 - lateral integration unit error and racing-line tension
 
 **GDD sections touched (research only, no spec edits):** [§10](gdd/10-driving-model-and-physics.md)

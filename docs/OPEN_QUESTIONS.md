@@ -9,6 +9,66 @@ they are part of the design history.
 
 ---
 
+## Q-017: Per-kind roadside prop physical heights and max-height clamp
+
+**GDD reference:** [§16](gdd/16-rendering-and-visual-design.md) "Sprite
+scaling" / "Roadside objects", [§17](gdd/17-art-direction.md) "Roadside
+props".
+**Status:** open
+**Asked in loop:** 2026-05-05
+
+**Question.** §16 specifies that the player car renders at 16 to 22%
+of screen height in standard camera mode. It does not name physical
+heights for trees, signs, fences, light poles, boulders, palms, or
+the per-region `marina_signs` / `guardrail` / `water_wall` /
+`rock_spire` / `heat_sign` ids. The current
+`ROADSIDE_SPRITE_STYLES` table in `src/render/pseudoRoadCanvas.ts:304-316`
+encodes physical scale implicitly through `heightRoadFactor`
+(multiplier on `strip.screenW`, which is half the road width in
+pixels). The iter-5 diagnosis showed two clear outliers (`fence_post`
+and `guardrail` at 2x to 3x the correct height) and a maxHeight
+clamp (`ROADSIDE_MAX_HEIGHT_FRACTION = 0.22`) that exceeds the
+player car's fixed 0.18 fraction, so every nearby tree and pole
+renders TALLER on screen than the player car. What physical heights
+should the calibration slice target, and what max-height clamp keeps
+close-in props inside the player car silhouette without flattening
+the depth cue?
+
+**Recommended default.**
+
+- Per-kind physical heights:
+  - `tree_pine`: 10 m
+  - `palms_sparse`: 8 m
+  - `light_pole`: 9 m
+  - `sign_marker`: 3 m
+  - `marina_signs`: 3.5 m
+  - `heat_sign`: 3 m
+  - `fence_post`: 0.7 m
+  - `guardrail`: 0.7 m
+  - `rock_boulder`: 1.5 m
+  - `water_wall`: 1.0 m
+  - `rock_spire`: 6 m
+- `ROADSIDE_MAX_HEIGHT_FRACTION`: drop from 0.22 to 0.18 so close-in
+  props at most match the player car silhouette height.
+- Prop placement offset: lift from `strip.screenW * 1.32` to
+  `strip.screenW * 1.7` so trees and poles sit roughly 3 to 5 m off
+  the rumble strip rather than 1.5 m off.
+- Derive `heightRoadFactor` from `heightMeters / ROAD_WIDTH` (the
+  half-width = 4.5 m). The current table reads as: tree 1.35 -> 2.22,
+  palm 1.35 -> 1.78, pole 1.90 -> 2.00, sign 0.85 -> 0.67, marina
+  0.85 -> 0.78, heat 0.80 -> 0.67, fence 0.50 -> 0.16, guardrail
+  0.50 -> 0.16, boulder 0.42 -> 0.33, water 0.42 -> 0.22, spire 0.95
+  -> 1.33.
+
+**Blocking?** Yes for
+`VibeGear2-implement-calibrate-roadside-96e24f40` (the iter-5 prop
+calibration slice) and for the optional follow-on
+`VibeGear2-implement-extend-roadside-e541c8a5` (schema migration).
+The recommended default unblocks both. A future playtest pass can
+re-tune individual values without editing the schema.
+
+---
+
 ## Q-016: Max lateral acceleration cap and understeer onset for the §10 racing-line slice
 
 **GDD reference:** [§10](gdd/10-driving-model-and-physics.md) "Steering
