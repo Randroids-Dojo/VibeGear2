@@ -6,6 +6,129 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): pre-flight top-3 slices for implement mode
+
+**GDD sections touched:** None (research-only, no spec edits).
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Iter-7 pre-flight pass. Iters 1-5 already diagnosed all five
+pain points; iter 6 validated the plan and pinned the Top-3 final
+ordering. This iteration simulates the implementor's first 30 minutes
+on each of the top-3 slices and pre-answers the obvious questions so
+implement-mode lands them on the first attempt.
+
+### Done
+
+- Read `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` end to end and the latest 6
+  PROGRESS_LOG entries (iters 1-6). Ran `dot tree` and `dot ready`;
+  confirmed the four truly-unblocked dots (`fix-lateral`,
+  `classify-tracks`, `lap-rollover`, `calibrate-roadside`) match the
+  iter-6 audit.
+- Slice #1 (`fix-lateral-b2503f6f`) - pre-wrote the unit-test
+  specification. For each of the four input cases named in the iter-7
+  prompt (steer left at 60 m/s, steer right at 30 m/s, neutral steer at
+  60 m/s, full-left steer at 0 m/s with x=0.5) computed the expected
+  post-fix `state.x` after one tick using the §10 source equation and
+  STARTER_STATS (topSpeed=61, gripDry=1.0,
+  STEER_RATE_LOW_RAD_PER_S=2.3, STEER_RATE_HIGH_RAD_PER_S=1.25). Cited
+  the exact source equation iter-4 captured (`physics.ts:401-418`) and
+  showed the math step by step. Wrote a code-ready Vitest block
+  (four `it()` cases plus the `>= 2s` time-to-cross pin and a `dt`
+  linearity case) and appended it to the dot's Implementation Notes.
+- Slice #1 - regression-risk audit. Walked every steering / lateral
+  assertion in `src/game/__tests__/physics.test.ts`,
+  `src/game/__tests__/raceSession.test.ts`, and every spec under
+  `e2e/`. Documented each assertion's verdict in the dot file. Result:
+  every existing assertion is sign-only or relative-ratio; the fix
+  preserves all of them verbatim because the `* dt` multiplier scales
+  every lateral term by the same factor. Zero existing assertions
+  encode the bug (no "59 ms full traverse" pin anywhere). The fix
+  slice does NOT need to update any existing test.
+- Slice #2 (`calibrate-roadside-96e24f40`) - assertion table.
+  Computed per-kind px-height at z=10, z=50, z=200 m on a 1280x720
+  canvas using the corrected iter-5 projection formula (`screenW =
+  CAMERA_DEPTH * ROAD_WIDTH * halfW / z`) and the Q-017 recommended
+  defaults. Maximum near-field height = 720 * 0.18 = 129.6 px = the
+  player-car silhouette height; this is the iter-5 design intent
+  ("close-in props never exceed the player car silhouette"). Confirmed
+  the arithmetic: post-fix tree_pine at z=10 hits the clamp at exactly
+  129.6 px, and the raw value of 536.22 px (74.5% viewport) without
+  the clamp would be 4.1x the player-car height. Spelled the
+  assertions out as Vitest pseudo-code (an `it.each` table over 33 rows
+  of `id / z / px`) plus a small `assertPropScaleAt` helper sketch.
+  Appended to the dot's Implementation Notes.
+- Slice #3 (`classify-tracks-b41307c8`) - track-class table. Walked
+  the 32 production track JSONs under `src/data/tracks/` and proposed
+  the per-track archetype label per the Q-013 recommended default:
+  4 short-sprint (Iron Borough), 16 standard (Velvet Coast, Ember
+  Steppe, Breakwater Isles, two Glass Ridge, four Neon Meridian),
+  8 long-scenic (two Glass Ridge tunnel/crest tracks, four Moss
+  Frontier), 4 endurance (Crown Circuit). Spelled the schema delta
+  out as a one-line `z.enum(...).default("standard")` insertion in
+  `TrackSchema`. Appended to the dot's Implementation Notes.
+- Q-NNN sweep. Re-read Q-013 through Q-017. All five recommended
+  defaults stand verbatim post-iter-6 cross-audit. No tightening
+  needed; documented the iter-7 confirmation in each of the three
+  dots' "Q-NNN sweep" subsections rather than editing
+  `docs/OPEN_QUESTIONS.md` (per the append-only rule, only append a
+  clarifying note when something changes).
+
+### Verified
+
+- `npm run content-lint` clean post-edit (research notes in dot files
+  and one PROGRESS_LOG entry, no `src/` writes).
+- `grep -nP '[\x{2013}\x{2014}]'` against the three dot files returns
+  zero matches: no em-dash or en-dash in the appended notes.
+- `dot tree` and `dot ready` unchanged: the iter-7 dot edits added
+  Implementation Notes only, no front-matter or status changes, so the
+  unblocked-dot graph is identical to iter-6.
+- Numbers cross-checked twice: once during derivation, once when
+  building the Vitest table. The TG2 reference number from iter-4 (~3
+  m/s lateral at 250 km/h dry, 1.5 s cross) reconciles with the
+  current STARTER_STATS post-fix lateralVelocity of ~1.27 m/s and
+  cross time ~3.5 s; the cornering-tuning slice is the right next
+  step to lift the steer-rate constant toward the TG2 feel target.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. Iter-7 is research-only and
+the five pain-point GDD rows (§7 lap structure, §9 corner grades, §15
+grid density, §10 lateral integration, §16 prop scaling) all stay
+`partial` until the implement loop ships the top-3 slices.
+
+### Followups created
+
+None. F-080 to F-086 from iters 1-5 stand as filed.
+
+### Open questions created
+
+None. Q-013 to Q-017 from iters 1-5 each ship a recommended default
+that unblocks the dependent slice. The iter-7 sweep confirmed all
+five defaults still stand without tightening.
+
+### GDD edits
+
+None. Iteration 7 is research-only.
+
+### Files appended this iteration
+
+- `.dots/VibeGear2-implement-fix-lateral-b2503f6f.md` (Implementation
+  Notes section: source equation replay, per-tick numerical table for
+  4 cases, code-ready Vitest block with 5 new test cases, TG2 reference
+  replay, full regression-risk audit naming every steering / lateral
+  assertion in physics.test.ts, raceSession.test.ts, and e2e/ specs).
+- `.dots/VibeGear2-implement-calibrate-roadside-96e24f40.md`
+  (Implementation Notes section: projection math derivation, per-kind
+  px-height table at z=10/50/200 on 1280x720 canvas, Vitest block with
+  `it.each` over 33 rows + helper sketch, golden-frame Playwright spec
+  guidance, Q-017 confirmation).
+- `.dots/VibeGear2-implement-classify-tracks-b41307c8.md`
+  (Implementation Notes section: per-tier track tables for all 32
+  production tracks naming the file path and tour, schema delta,
+  Q-013 confirmation).
+- `docs/PROGRESS_LOG.md` (this entry).
+
+---
+
 ## 2026-05-05: research(topgear-fun): plan validation and hand-off readiness
 
 **GDD sections touched:** None (research-only, no spec edits).
