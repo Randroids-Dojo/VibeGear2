@@ -6,21 +6,29 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
-## 2026-05-06: feat(render): wire dormant VfxState into the race renderer
+## 2026-05-06: feat(render): pure VfxState audio-event bridge module (dormant)
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)
 "Camera shake on impact" + "HUD flash on lap complete",
 [§19](gdd/19-accessibility.md) "Reduced motion".
 **Branch / PR:** `feat/fire-vfx-on-impact-and-lap`, PR pending.
-**Status:** Implemented.
+**Status:** Bridge module implemented and unit-tested. Wire-up deferred
+to F-088. The first attempt to wire the bridge into
+`src/app/race/page.tsx` regressed two `e2e/race-demo.spec.ts`
+canvas-pixel-sampling tests on the `test/elevation` track over two CI
+runs (`projects authored elevation` and `renders parallax and roadside
+billboard colours`), even with the `vfx` parameter gated to undefined
+when the state was empty. The unit suite below pins the bridge contract
+end-to-end so the follow-up wire-up slice can land without re-deriving
+the mapping.
 
 ### Done
-- Closed iter-8's high-impact dead-code finding. `src/render/vfx.ts`
-  shipped `fireFlash` / `fireShake` / `tickVfx` / `drawVfx` end-to-end
+- Captured iter-8's high-impact dead-code finding. `src/render/vfx.ts`
+  ships `fireFlash` / `fireShake` / `tickVfx` / `drawVfx` end-to-end
   with reduced-motion gating and `drawRoad` integration plumbed, but
-  every call site outside the module was zero. Net: every impact was
-  silent visually, every lap rollover was silent visually, and the
-  reduced-motion gate was irrelevant because the FX never ran.
+  every call site outside the module is zero. Net: every impact is
+  silent visually, every lap rollover is silent visually, and the
+  reduced-motion gate is irrelevant because the FX never run.
 - Added a pure bridge module
   `src/app/race/vfxBridge.ts` exporting `applyAudioEventToVfx` and
   `applyAudioEventsToVfx`. The bridge maps `RaceSessionAudioEvent`
@@ -32,12 +40,7 @@ Correct them by adding a new entry that references the old one.
   brakeScrub, tireSqueal, surfaceHush, pickupCollected, damageWarning)
   return state unchanged.
 - Filtered to player-only events. Rival impacts and rival lap rollovers
-  do NOT jolt the player camera, per §16.
-- Wired the bridge into `src/app/race/page.tsx`: a new `vfxRef` holds
-  the state, `applyAudioEventsToVfx` runs once per session-tick block
-  alongside the existing SFX play, `tickVfx` runs once per rAF using
-  the wall-clock delta (so flashes age in real time even when the rAF
-  drops below 60 Hz), and `drawRoad` receives `vfx: vfxRef.current`.
+  must NOT jolt the player camera, per §16.
 - Seeded shakes deterministically from `(session.tick) ^
   hitKindHash(hitKind)` so two runs at the same tick reproduce the same
   pixel offsets. The hash is a per-kind 32-bit constant.
@@ -54,8 +57,20 @@ Correct them by adding a new entry that references the old one.
 - `npm run test` 2816 / 2816 passed (148 suites; 10 new tests in the
   vfxBridge suite).
 - `npm run content-lint` clean.
-- Iter-8's finding stands verified one more time. Closes
-  `VibeGear2-implement-fire-camera-36ae8ff4`.
+
+### Deferred to F-088
+- The wire-up into `src/app/race/page.tsx` (own a `vfxRef`, call
+  `applyAudioEventsToVfx` once per session-tick block, call `tickVfx`
+  once per rAF, forward `vfx: vfxRef.current` to `drawRoad`). Two CI
+  attempts each regressed
+  `e2e/race-demo.spec.ts:90` (`centerRoadTopY` returned `0`, so the
+  road appeared at row 0 of the center column on the test/elevation
+  track) and
+  `e2e/race-demo.spec.ts:118` (mountain RGB ~(37,58,85) sampling
+  returned false). Even gating `vfx` to `undefined` when no flashes or
+  shakes are active did not eliminate the regression, so the failure
+  mode is not the `drawVfx` overlay — likely subtle module-load timing
+  or rAF cadence shift. Investigation queued under F-088.
 
 ### Decisions and assumptions
 - Off-road kinds (`offRoadObject`, `offRoadPersistent`) reuse the rub
@@ -69,30 +84,34 @@ Correct them by adding a new entry that references the old one.
 - Did NOT ship the e2e Playwright spec
   `e2e/vfx-impact-feedback.spec.ts` the dot named. The pixel-delta
   assertion the dot describes is a useful addition but the unit suite
-  pins the wiring contract end-to-end (audio event in, shake/flash
-  pushed onto VfxState, drawRoad reads VfxState). Filed as F-087 to
-  prevent silent regression in the future.
-- The wall-clock `tickVfx` cadence intentionally uses the same
-  `audioUpdateMs = performance.now()` value the SFX path already
-  computes. Reusing the existing timestamp avoids an extra
-  `performance.now()` call per frame and keeps the audio and visual
-  cues aligned to the same wall clock.
+  pins the bridge contract end-to-end (audio event in, shake/flash
+  pushed onto VfxState). Filed as F-087.
+- Shipping the bridge dormant rather than holding the slice until the
+  e2e regression is root-caused. The bridge contract is large and the
+  unit suite pins it; landing it now keeps the iter-8 finding moving
+  and lets a focused F-088 slice own the page-integration debug
+  without dragging the full bridge through the same review again.
 
 ### Coverage ledger
-- Updates the §16 visual-feel coverage with the bridge and the test
-  suite. Existing rows for `GDD-16-IMPACT-CAMERA-SHAKE` and
-  `GDD-16-LAP-FLASH` (or whichever §16 row the audit picks up) reflect
-  the wiring as new `implementationRefs` and `testRefs`.
-- Uncovered adjacent requirements: a Playwright pixel-delta spec
-  (F-087), the speed-coupled FOV / brake-dip slice
-  (`speed-coupled-3cc0838f`) which can now also pass `vfx: vfxRef.current`
-  to drawRoad without needing to introduce its own state-owner.
+- Adds bridge module + test suite under §16 visual-feel coverage.
+  Wiring (drawRoad receiving the live VfxState) is not yet shipped;
+  rows for impact-shake / lap-flash stay at "implementation in flight"
+  until F-088 lands.
 
 ### Followups created
 - F-087: e2e/vfx-impact-feedback.spec.ts. Drive a Velvet Coast race,
   induce a rub by holding hard steer at top speed (post-lateral-fix),
   capture a canvas screenshot pre-impact and post-impact, assert a
   non-zero pixel delta within 200 ms.
+- F-088: wire `src/app/race/vfxBridge.ts` into `src/app/race/page.tsx`
+  (own a `vfxRef`, run the bridge per session-tick block, run
+  `tickVfx` per rAF, forward `vfx` to `drawRoad`). Must root-cause the
+  `e2e/race-demo.spec.ts` regression on test/elevation that blocked
+  this slice's wire-up — even with the `vfx` parameter `undefined`
+  when no FX active, the canvas-pixel-sampling tests
+  `projects authored elevation` and `renders parallax and roadside
+  billboard colours` failed twice with retries. The bridge contract
+  itself is locked by the unit suite.
 
 ### GDD edits
 None.

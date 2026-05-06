@@ -10,6 +10,34 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-088: Wire `vfxBridge` into the race page (deferred from fire-camera slice)
+**Created:** 2026-05-06
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The fire-camera slice
+(`feat/fire-vfx-on-impact-and-lap`, PR pending) shipped the pure
+audio-event -> VfxState bridge module + Vitest suite but NOT the
+in-page integration. Two CI attempts at the wire-up consistently
+regressed two `e2e/race-demo.spec.ts` canvas-pixel-sampling tests on
+the `test/elevation` track —
+`projects authored elevation` (line 90: `centerRoadTopY` returned `0`,
+i.e. the road appeared at row 0 of the canvas center column) and
+`renders parallax and roadside billboard colours` (line 118: mountain
+RGB ~(37,58,85) sampling returned false). The regression reproduced
+with three retries on each run. Gating `vfx` to `undefined` when
+neither flashes nor shakes are active did NOT fix it, so the
+mechanism is not the `drawVfx` overlay path. Likely candidates:
+module-load timing shift from the new imports, rAF cadence shift from
+the per-frame `tickVfx` call, or a `performance.now()` quantum
+difference moving an AI car a sub-pixel that happens to fall on the
+sampled column. Recommended next steps: (1) bisect the page.tsx
+diff (try only the imports, then only the ref, then only the bridge
+call, then only the rAF tick) to find the smallest reproducer; (2)
+if cadence-related, lift the per-frame `tickVfx` to run only when
+state is non-empty; (3) if test is genuinely brittle on
+test/elevation, propose a pixel-count threshold instead of a
+"first non-zero row" boundary.
+
 ## F-087: Playwright pixel-delta spec for the VfxState wiring
 **Created:** 2026-05-06
 **Priority:** nice-to-have
