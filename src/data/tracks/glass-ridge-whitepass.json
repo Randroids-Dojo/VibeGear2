@@ -9,6 +9,7 @@
   "laneCount": 3,
   "weatherOptions": ["snow", "fog"],
   "difficulty": 4,
+  "archetype": "standard",
   "segments": [
     { "len": 260, "curve": 0, "grade": 0.02, "roadsideLeft": "tree_pine", "roadsideRight": "sign_marker", "hazards": [] },
     { "len": 220, "curve": -0.12, "grade": 0.06, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": ["snow_buildup"] },

@@ -103,3 +103,7 @@ Community tracks should follow these rules:
 - Validation for start, checkpoints, lap closure, and sprite density.
 - No copyrighted location names or derivative landmarks.
 - Optional “official-safe” lint mode that rejects risky naming.
+
+### Build log
+
+- 2026-05-06: Added `archetype` field to `TrackSchema` (enum: `short-sprint`, `standard`, `long-scenic`, `endurance`) so the section 7 lap targets become mechanically derivable per Q-013. All 32 production tracks declare an archetype; mod and benchmark fixtures default to `standard`. The actual distribution is 4 short-sprint, 18 standard, 6 long-scenic, 4 endurance per the Q-013 per-track mapping (the Q text totals of "16 / 8" were a math error; the per-track table is canonical). Files: `src/data/schemas.ts`, `src/data/tracks/*.json`, `src/data/__tests__/tracks-content.test.ts`.

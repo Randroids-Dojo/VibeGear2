@@ -9,6 +9,7 @@
   "laneCount": 3,
   "weatherOptions": ["rain", "overcast"],
   "difficulty": 3,
+  "archetype": "standard",
   "segments": [
     { "len": 280, "curve": 0, "grade": 0, "roadsideLeft": "marina_signs", "roadsideRight": "light_pole", "hazards": [] },
     { "len": 220, "curve": 0.1, "grade": 0.01, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },

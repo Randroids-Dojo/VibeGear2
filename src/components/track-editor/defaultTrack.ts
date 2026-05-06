@@ -12,6 +12,7 @@ export const DEFAULT_TRACK: Track = {
   lengthMeters: SEGMENT_LENGTH * 4,
   weatherOptions: ["clear"],
   difficulty: 1,
+  archetype: "standard",
   segments: [
     createDefaultSegment(),
     createDefaultSegment(),

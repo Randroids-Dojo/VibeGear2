@@ -456,3 +456,84 @@ describe("§24 Crown Circuit track set", () => {
     expect(hazards.has("snow_buildup")).toBe(true);
   });
 });
+
+/**
+ * §7 archetype field tests. Q-013 (resolved 2026-05-06) pinned the
+ * per-track mapping; these tests pin the resulting 4 / 16 / 8 / 4
+ * distribution and the schema's parse-time defaulting behavior.
+ */
+describe("Track archetype field (§7 / Q-013)", () => {
+  const productionIds = TRACK_IDS.filter((id) => !id.startsWith("test/"));
+
+  it("every production track declares one of the four §7 archetypes", () => {
+    const allowed = new Set([
+      "short-sprint",
+      "standard",
+      "long-scenic",
+      "endurance",
+    ]);
+    for (const id of productionIds) {
+      const raw = TRACK_RAW[id];
+      expect(raw, `track JSON for ${id}`).toBeDefined();
+      const parsed = TrackSchema.parse(raw);
+      expect(allowed.has(parsed.archetype), `${id} archetype`).toBe(true);
+    }
+  });
+
+  it("matches the Q-013 per-track archetype distribution", () => {
+    // Q-013's recommended-default text claimed a 4 / 16 / 8 / 4 split, but
+    // the same Q's per-track table actually sums to 4 / 18 / 6 / 4 because
+    // Glass Ridge ships 2 standard + 2 long-scenic and Neon Meridian ships
+    // 4 standard. The per-track mapping is canonical; this assertion pins
+    // the actual distribution that lands.
+    const counts: Record<string, number> = {
+      "short-sprint": 0,
+      standard: 0,
+      "long-scenic": 0,
+      endurance: 0,
+    };
+    for (const id of productionIds) {
+      const parsed = TrackSchema.parse(TRACK_RAW[id]);
+      counts[parsed.archetype] = (counts[parsed.archetype] ?? 0) + 1;
+    }
+    expect(counts["short-sprint"]).toBe(4);
+    expect(counts.standard).toBe(18);
+    expect(counts["long-scenic"]).toBe(6);
+    expect(counts.endurance).toBe(4);
+  });
+
+  it("defaults to standard when omitted (mod and benchmark backwards compat)", () => {
+    const minimal = {
+      id: "mod/test-archetype-default",
+      name: "Default Archetype",
+      tourId: "velvet-coast",
+      author: "test",
+      version: 1,
+      lengthMeters: 1500,
+      laps: 3,
+      laneCount: 3,
+      weatherOptions: ["clear"],
+      difficulty: 1,
+      segments: [
+        {
+          len: 100,
+          curve: 0,
+          grade: 0,
+          roadsideLeft: "default",
+          roadsideRight: "default",
+          hazards: [],
+        },
+      ],
+      checkpoints: [],
+      spawn: { gridSlots: 12, rowSpacingMeters: 5, leadGapMeters: 8 },
+    };
+    const parsed = TrackSchema.parse(minimal);
+    expect(parsed.archetype).toBe("standard");
+  });
+
+  it("rejects unknown archetype values", () => {
+    const sample = TRACK_RAW[productionIds[0]!] as Record<string, unknown>;
+    const bogus = { ...sample, archetype: "marathon" };
+    expect(() => TrackSchema.parse(bogus)).toThrow();
+  });
+});
