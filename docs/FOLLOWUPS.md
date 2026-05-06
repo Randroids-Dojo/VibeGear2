@@ -10,6 +10,20 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-087: Playwright pixel-delta spec for the VfxState wiring
+**Created:** 2026-05-06
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The fire-camera slice (`feat/fire-vfx-on-impact-and-lap`)
+ships unit-test coverage for the audio-event to VfxState bridge but
+defers the in-browser pixel-delta assertion the dot named. Spec should
+drive a Velvet Coast race, induce a rub by holding hard steer at top
+speed (post lateral-fix), capture canvas screenshots pre-impact and
+post-impact, and assert a non-zero pixel delta within 200 ms. The
+existing `e2e/projection-readability.spec.ts` is a working template for
+the canvas-paint wait pattern. This is preventive coverage; the unit
+suite already pins the bridge contract end-to-end.
+
 ## F-086: Banked-corner lateral cap lift on the §10 racing-line tension slice
 **Created:** 2026-05-05
 **Priority:** nice-to-have

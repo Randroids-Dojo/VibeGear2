@@ -137,6 +137,12 @@ import {
   drawRoad,
   type DrawRoadOptions,
 } from "@/render/pseudoRoadCanvas";
+import {
+  INITIAL_VFX_STATE,
+  tickVfx,
+  type VfxState,
+} from "@/render/vfx";
+import { applyAudioEventsToVfx } from "@/app/race/vfxBridge";
 import { projectPickupSprites } from "@/render/pickupSprites";
 import { playerCarFrameIndex } from "@/render/carFrame";
 import type { CarSpriteSet } from "@/render/carSpriteCompositor";
@@ -1123,6 +1129,14 @@ function RaceCanvas({
   const raceMomentTimeoutRef = useRef<number | null>(null);
   const finishRouteTimeoutRef = useRef<number | null>(null);
   const pickupFeedbackRef = useRef<PickupFeedbackSnapshot | null>(null);
+  // Iter-8 finding: `src/render/vfx.ts` ships fireFlash/fireShake/tickVfx
+  // end-to-end and `drawRoad` reads `options.vfx`, but the race page never
+  // owned a VfxState so impacts were silent visually and the §16 lap-flash
+  // never fired. The bridge in `./vfxBridge` reduces audio events into
+  // this state once per session tick; the rAF below ticks it and forwards
+  // it to drawRoad so the existing VFX module finally wakes up.
+  const vfxRef = useRef<VfxState>(INITIAL_VFX_STATE);
+  const lastVfxTickMsRef = useRef<number>(0);
   const previousRaceStoryCarsRef = useRef<readonly RankedCar[] | null>(null);
   const lastRaceStoryMomentMsRef = useRef<number>(0);
   const observedAiCuesRef = useRef<Set<AIReadabilityCue>>(new Set());
@@ -1823,6 +1837,17 @@ function RaceCanvas({
             session.audioEvents,
             persistedSettings.audio,
           );
+          // §16 visual partner for the same audio events: impact -> shake +
+          // flash, lapComplete / raceFinish -> flash. The bridge filters to
+          // player-only events so rival hits do not jolt the camera.
+          vfxRef.current = applyAudioEventsToVfx(
+            vfxRef.current,
+            session.audioEvents,
+            {
+              tick: session.tick,
+              carIsPlayer: (carId) => carId === PLAYER_ID,
+            },
+          );
           if (session.audioEvents.length > 0) {
             setLastRaceAudioEvent(session.audioEvents[0]!.kind);
             setObservedRaceAudioEvents((current) =>
@@ -1929,8 +1954,22 @@ function RaceCanvas({
           ghostOverlayRef.current = null;
           ghostOverlayTickRef.current = null;
         }
+        // Advance the VFX state by the wall-clock delta since the last
+        // frame so flashes and shakes age in real time rather than per-
+        // sim-tick (the sim runs at fixed 60 Hz but the rAF can fall
+        // below that on slow hardware).
+        const vfxNowMs = audioUpdateMs;
+        if (lastVfxTickMsRef.current === 0) {
+          lastVfxTickMsRef.current = vfxNowMs;
+        }
+        const vfxDtMs = Math.max(0, vfxNowMs - lastVfxTickMsRef.current);
+        lastVfxTickMsRef.current = vfxNowMs;
+        if (vfxDtMs > 0) {
+          vfxRef.current = tickVfx(vfxRef.current, vfxDtMs);
+        }
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
+          vfx: vfxRef.current,
           weatherEffects: {
             weather: renderWeather,
             visualReduction: persistedAssists.weatherVisualReduction,
