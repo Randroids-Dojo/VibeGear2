@@ -124,7 +124,9 @@ test.describe("release-fun playtest checklist", () => {
     browserName,
     page,
   }, testInfo) => {
-    test.setTimeout(120_000);
+    // Velvet Coast Harbor Run is now a 3-lap race (standard archetype);
+    // pre-bump the spec only needed 90-120 s for a single lap.
+    test.setTimeout(300_000);
 
     await page.goto("/quick-race");
     await page.getByTestId("quick-race-start").click();
@@ -135,7 +137,7 @@ test.describe("release-fun playtest checklist", () => {
     const canvas = page.getByTestId("race-canvas-element");
     await canvas.focus();
     await page.keyboard.down("ArrowUp");
-    await expect(page).toHaveURL(/\/race\/results/, { timeout: 90_000 });
+    await expect(page).toHaveURL(/\/race\/results/, { timeout: 240_000 });
     await page.keyboard.up("ArrowUp");
 
     await expect(page.getByTestId("race-results")).toBeVisible();

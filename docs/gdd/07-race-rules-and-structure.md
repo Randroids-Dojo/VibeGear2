@@ -49,3 +49,7 @@ Standings tie-breaks:
 - Fastest lap in tour.
 - Lowest total repair spend.
 - Earliest unlock order as deterministic fallback.
+
+### Build log
+
+- 2026-05-06: Bumped `laps` from 1 to the section 7 archetype target across all 32 production track JSONs. short-sprint -> 4 (4 tracks), standard -> 3 (18 tracks), long-scenic -> 2 (6 tracks), endurance -> 2 (4 tracks). Test and benchmark fixtures stay at laps=1. Closes the pain-point-1 collapse where every race ran a single 30-50 second lap. Files: `src/data/tracks/*.json`, `src/data/__tests__/tracks-content.test.ts`, `src/game/__tests__/preRaceCard.test.ts`.

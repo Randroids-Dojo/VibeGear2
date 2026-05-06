@@ -158,7 +158,7 @@ describe("§24 MVP track set", () => {
     for (const id of EXPECTED_MVP_TRACK_IDS) {
       const parsed = TrackSchema.parse(TRACK_RAW[id]);
       expect(parsed.tourId).toBe(id.split("/")[0]);
-      expect(parsed.laps).toBe(1);
+      expect(parsed.laps).toBeGreaterThanOrEqual(2);
       expect(parsed.laneCount).toBe(3);
       for (const option of parsed.weatherOptions) weather.add(option);
     }
@@ -251,7 +251,7 @@ describe("§24 Ember Steppe track set", () => {
     const hazards = new Set<string>();
     for (const track of tracks) {
       expect(track.tourId).toBe("ember-steppe");
-      expect(track.laps).toBe(1);
+      expect(track.laps).toBeGreaterThanOrEqual(2);
       expect(track.laneCount).toBe(3);
       for (const option of track.weatherOptions) weather.add(option);
       for (const segment of track.segments) {
@@ -289,7 +289,7 @@ describe("§24 Breakwater Isles track set", () => {
     const hazards = new Set<string>();
     for (const track of tracks) {
       expect(track.tourId).toBe("breakwater-isles");
-      expect(track.laps).toBe(1);
+      expect(track.laps).toBeGreaterThanOrEqual(2);
       expect(track.laneCount).toBe(3);
       for (const option of track.weatherOptions) weather.add(option);
       for (const segment of track.segments) {
@@ -327,7 +327,7 @@ describe("§24 Glass Ridge track set", () => {
     const hazards = new Set<string>();
     for (const track of tracks) {
       expect(track.tourId).toBe("glass-ridge");
-      expect(track.laps).toBe(1);
+      expect(track.laps).toBeGreaterThanOrEqual(2);
       expect(track.laneCount).toBe(3);
       for (const option of track.weatherOptions) weather.add(option);
       for (const segment of track.segments) {
@@ -365,7 +365,7 @@ describe("§24 Neon Meridian track set", () => {
     const hazards = new Set<string>();
     for (const track of tracks) {
       expect(track.tourId).toBe("neon-meridian");
-      expect(track.laps).toBe(1);
+      expect(track.laps).toBeGreaterThanOrEqual(2);
       expect(track.laneCount).toBe(3);
       for (const option of track.weatherOptions) weather.add(option);
       for (const segment of track.segments) {
@@ -404,7 +404,7 @@ describe("§24 Moss Frontier track set", () => {
     const hazards = new Set<string>();
     for (const track of tracks) {
       expect(track.tourId).toBe("moss-frontier");
-      expect(track.laps).toBe(1);
+      expect(track.laps).toBeGreaterThanOrEqual(2);
       expect(track.laneCount).toBe(3);
       for (const option of track.weatherOptions) weather.add(option);
       for (const segment of track.segments) {
@@ -443,7 +443,7 @@ describe("§24 Crown Circuit track set", () => {
     const hazards = new Set<string>();
     for (const track of tracks) {
       expect(track.tourId).toBe("crown-circuit");
-      expect(track.laps).toBe(1);
+      expect(track.laps).toBeGreaterThanOrEqual(2);
       expect(track.laneCount).toBe(3);
       for (const option of track.weatherOptions) weather.add(option);
       for (const segment of track.segments) {

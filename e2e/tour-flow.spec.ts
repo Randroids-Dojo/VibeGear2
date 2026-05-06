@@ -6,7 +6,12 @@ test.describe("World Tour race progression", () => {
   test("entering Velvet Coast from the world hub completes all four races", async ({
     page,
   }) => {
-    test.setTimeout(420_000);
+    // Velvet Coast = standard archetype = 3 laps per §7. Each track is
+    // 1500-1584 m; at top-speed full-throttle a Sparrow GT laps in
+    // ~50-75 s, so a 3-lap race plus countdown plus finish-line routing
+    // runs roughly 180-240 s. Four races plus inter-race CTAs comfortably
+    // fit in 15 minutes.
+    test.setTimeout(900_000);
 
     const result = await runFullTourFromWorld(page);
 
@@ -21,7 +26,10 @@ test.describe("World Tour race progression", () => {
   });
 
   test("final Velvet Coast race unlocks Iron Borough", async ({ page }) => {
-    test.setTimeout(70_000);
+    // Single 3-lap Velvet Coast race plus boot, countdown, and
+    // finish-line routing comfortably fits in 4 minutes; pre-fix the
+    // single-lap race only needed ~70 s.
+    test.setTimeout(240_000);
 
     await page.goto("/");
     await page.evaluate(
@@ -45,7 +53,9 @@ test.describe("World Tour race progression", () => {
 
     await canvas.focus();
     await page.keyboard.down("ArrowUp");
-    await expect(page).toHaveURL(/\/race\/results/, { timeout: 45_000 });
+    // Multi-lap §7 races take 150-240 s on Velvet Coast; the prior 45 s
+    // bound was sized to the single-lap pacing bug.
+    await expect(page).toHaveURL(/\/race\/results/, { timeout: 180_000 });
     await page.keyboard.up("ArrowUp");
 
     await expect(page.getByTestId("results-tour-complete")).toContainText(
@@ -133,7 +143,7 @@ async function finishCurrentRace(page: Page): Promise<string> {
 
   await canvas.focus();
   await page.keyboard.down("ArrowUp");
-  await expect(page).toHaveURL(/\/race\/results/, { timeout: 45_000 });
+  await expect(page).toHaveURL(/\/race\/results/, { timeout: 180_000 });
   await page.keyboard.up("ArrowUp");
   const root = page.getByTestId("race-results");
   await expect(root).toBeVisible();
