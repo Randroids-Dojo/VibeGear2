@@ -34,8 +34,9 @@ This rule loads when editing the four ledger files. They are the externalized me
 ### `docs/GDD_COVERAGE.json`
 
 - Update `status` and append to `implementationRefs` / `testRefs` / `followupRefs` as work ships.
-- Do not delete rows whose requirements got cut. Set `status: "out_of_scope"` and add a note.
+- Do not delete rows whose requirements got cut. Set `status: "deprecated"` and add a note explaining what removed the row from scope (e.g., the slice id, the Q-NNN that resolved to cut it).
 - The `id` of a row is permanent. Do not renumber.
+- Some projects use a `coverage: [...]` array of marker strings instead of a single `status` field (e.g., `coverage: ["implemented-code", "automated-test"]`). The same rule applies: add `"deprecated"` to the array on cut rows; do not delete the row. Keep the marker grep-able so a future reader can find every cut row in one read.
 
 ## Why this matters
 
