@@ -2368,3 +2368,197 @@ pass that confirms the cumulative perf budget after all 17+ filed
 slices ship sits at roughly 10-14% of the 60-fps frame budget on
 the §16-named lowest-spec target, and that all three motion-FX
 slices now share the same reduced-motion gate.
+
+## Iteration 12 - Q-013 to Q-018 resolutions and World-Tour-only scope cut
+
+Date: 2026-05-06.
+Owner: research loop.
+Mode: research only (no `src/` writes).
+
+The user answered all six open Q-NNN questions on 2026-05-06 and made
+one major scope decision. This iteration records the resolutions in
+`docs/OPEN_QUESTIONS.md` (per the append-only ledger discipline) and
+files the new highest-priority slice the Q-015 answer creates.
+
+### A. Q-NNN resolutions (one-line summaries)
+
+- **Q-013** (per-track archetype mapping): adopted the Researcher
+  mapping verbatim. 4 short-sprint Iron Borough, 16 standard, 8
+  long-scenic (Glass Ridge partial + Moss Frontier), 4 endurance
+  Crown Circuit. Unblocks
+  `VibeGear2-implement-classify-tracks-b41307c8`.
+- **Q-014** (corner-grade frequency budget): adopted the Researcher
+  budget verbatim. Short=3 events, Medium=3, Long=4, Endurance=4.
+  Tunnels: 1 each in Iron Borough, Glass Ridge, Neon Meridian; 0
+  elsewhere. Hairpin radius cap `|curve| = 0.85`; minimum spacing 200
+  m. Unblocks `VibeGear2-implement-re-author-47323741`.
+- **Q-015** (Quick Race opponent count + cull): **REJECTED ALL
+  OPTIONS**. The user's answer: "Gut any feature not related to the
+  world tour mode (the whole idea is to match TopGear2)." Quick Race,
+  Time Trial, Daily Challenge, and Practice are cut from v1.0. World
+  Tour is the only race surface that ships. The renderer cull change
+  (200 m -> 600 m with alpha fade) still stands but applies only to
+  Tour mode; that work remains in
+  `VibeGear2-implement-lift-opponent-8764ce5e`. Files a new
+  highest-priority slice (see B below).
+- **Q-016** (max lateral g cap + understeer scrub): adopted the
+  Researcher defaults verbatim. `MAX_LATERAL_ACCEL_M_PER_S2 = 12`;
+  `UNDERSTEER_SCRUB_K = 6 m/s^2`; banking deferred to F-082.
+  Unblocks `VibeGear2-implement-racing-line-7b2cbd41`.
+- **Q-017** (per-kind prop heights + clamp): adopted the Researcher
+  defaults verbatim. tree=10 m, palms_sparse=8 m, light_pole=9 m,
+  signs=3-3.5 m, fence/guardrail=0.7 m, boulder=1.5 m, water_wall=1
+  m, spire=6 m. Clamp 0.22 -> 0.18. Placement offset 1.32 -> 1.7.
+  Unblocks `VibeGear2-implement-calibrate-roadside-96e24f40` and
+  `VibeGear2-implement-extend-roadside-e541c8a5`.
+- **Q-018** (tire-scrub onset + intensity curve): adopted the
+  Researcher defaults verbatim. Onset `|steer| >= 0.65 AND speed
+  >= 18 m/s`. Intensity `((|steer| - 0.65) / 0.35) * speedNorm`.
+  Gain 0.40-0.85, pitch 860-1420 Hz. Brake-scrub mirrors with
+  speed-only intensity. Unblocks
+  `VibeGear2-implement-convert-tiresqueal-d2fd1407`.
+
+### B. New scope-cut slice filed
+
+Dot ID: `VibeGear2-implement-cut-non-fdcb3b2d`.
+Title: "implement: cut non-tour modes for World-Tour-only v1.0
+scope".
+Priority: 1. Independent (no `blocks:` / `after:` chain).
+
+Surface area (the implementor walks these per-route):
+
+- `src/app/quick-race/`, `src/app/time-trial/`, `src/app/daily/`
+  (route + page each).
+- `src/app/race/page.tsx` (`tourContext == null` path becomes a
+  guard).
+- `src/app/page.tsx` (title-screen menu items).
+- `src/components/track-editor/` (only if exclusively a non-Tour
+  surface).
+- `src/game/timeTrial.ts`, `src/game/dailyChallenge.ts`,
+  `src/game/practice.ts` (or wherever those state machines live;
+  grep first).
+- `src/leaderboard/` (Time Trial submission paths if they exist).
+- `e2e/` specs that drive the cut routes.
+- `tests/` unit tests covering the cut modules.
+- `docs/gdd/06-game-modes.md` (mark non-Tour modes out-of-scope for
+  v1.0; do NOT delete the section).
+- `docs/gdd/24-content-plan.md` ("Daily Challenge" / "Time Trial"
+  entries).
+- `docs/FOLLOWUPS.md` (mark obsolete F-NNN with append-only
+  superseded-by notes; do NOT delete).
+- `docs/GDD_COVERAGE.json` (update `coverage` arrays for rows
+  touching cut modes; mark `out_of_scope_v1` and add a note).
+
+Expected diff direction: large net-negative LOC. Recommended PR size
+guard: if the diff exceeds ~1500 LOC delta, split into two PRs (route
+delete + page surface; tests + docs).
+
+### C. `quick-race-78084a95` superseded
+
+`VibeGear2-implement-quick-race-78084a95` (the iter-3 grid-density
+slice) is now obsolete. A "Note (2026-05-06)" block was appended at
+the top of `.dots/VibeGear2-implement-quick-race-78084a95.md` per the
+append-only-but-don't-delete principle for `.dots/`. The note names
+the supersession, the Q-015 resolution that drove it, and instructs
+the implementor of `cut-non-fdcb3b2d` to soft-close the dot via
+`dot off ... -r "superseded by cut-non-fdcb3b2d (Q-015 resolution,
+2026-05-06)"` once the scope-cut PR lands. The dot file itself stays
+in place.
+
+### D. Top-3 update (iter 12)
+
+Iter-12 promotes a new scope-cut slice to position 0; previous slices
+shift down one. Rationale:
+
+- The new slice is independent (no `blocks:` / `after:` chain). It
+  permanently shrinks the surface every other slice has to integrate
+  against.
+- It directly answers the user's most explicit feedback ("doesn't
+  feel like a racer; it feels like a series of menus" -> cutting
+  non-Tour modes is the most direct response).
+- The diff is net-negative LOC, so it lowers risk for every
+  subsequent slice rather than adding it.
+
+New top-3 ordering:
+
+- **Slice #0 (NEW):** `VibeGear2-implement-cut-non-fdcb3b2d`
+  (World-Tour-only scope cut).
+- **Slice #1:** `VibeGear2-implement-fix-lateral-b2503f6f` (off-by-dt
+  physics fix). Was iter-6 / iter-8 position 1; shifts to position 1
+  behind the scope cut.
+- **Slice #2:** `VibeGear2-implement-calibrate-roadside-96e24f40`
+  (prop scale calibration). Was position 2; stays.
+- **Slice #3:** `VibeGear2-implement-classify-tracks-b41307c8` (lap
+  bump tier classification). Was position 3; stays.
+
+History preserved: the iter-6 final ordering and the iter-8 update do
+not change. This iteration appends a new ordering, it does not
+rewrite the previous ones. The full iter-8 list (positions 4-17)
+shifts down one slot in the implementer's queue, but no individual
+slice's `blocks:` / `after:` chain changes; only the lateral-fix /
+calibrate / classify-tracks set is preceded by the scope cut.
+
+### E. Followups to mark superseded when the cut-non-tour slice lands
+
+Walked `docs/FOLLOWUPS.md` for entries that reference Quick Race,
+Time Trial, Daily Challenge, or Practice modes. Iter-12 does NOT
+touch these entries; the implementor of `cut-non-fdcb3b2d` will
+append the supersession notes when the actual code change ships
+(append-only ledger discipline). Candidate F-NNN list:
+
+- **F-076** (Automate the release-fun playtest checklist): mentions
+  "full Quick Race" in its closing note. Likely needs a superseded-by
+  note pointing at `cut-non-fdcb3b2d` for the Quick Race specifically.
+- **F-070** (Wire pause leaderboard or ghost action to a target
+  surface): mentions routing to `/time-trial`. Needs a
+  superseded-by note when the Time Trial route is removed.
+- **F-051** (Replace live and ghost car placeholders with atlas
+  sprites): mentions "Time Trial ghost". Needs an append-only note
+  clarifying that Time Trial mode is removed; ghost replays may stay
+  as a Tour-mode feature or be removed depending on the implementor's
+  decision.
+- **F-038** (Wire `buildRaceResult` into the race-finish flow + push
+  to `/race/results`): mentions "Practice / Quick Race / Time Trial
+  reuse". Needs an append-only note that those modes are cut; only
+  Tour reuse stands.
+- **F-034** (Wire `awardCredits` into the race-finish flow): mentions
+  non-economy modes "(Practice / Time Trial)". Needs an append-only
+  note clarifying that the non-economy gate path is now exercised
+  only by hypothetical future modes; in v1.0 every mode is economy.
+- **F-023** (Time Trial UI wiring for the ghost recorder): the dot
+  is closed (`Status: done`) but the entry references Time Trial
+  surface. Append a note clarifying the surface is being removed in
+  `cut-non-fdcb3b2d`; the wiring work stays as institutional memory
+  but is functionally obsolete in v1.0.
+- **F-022** (Render the ghost car in `pseudoRoadCanvas.ts`): the dot
+  is closed but the entry references `/time-trial` redirect. Append
+  a note clarifying that the redirect is removed; ghost rendering
+  stays for any future Tour-mode ghost feature.
+- **F-021** (SaveGameSchema integration for ghost replays + v3
+  migration): closed; entry mentions a "5-minute Time Trial PB
+  ghost". Append a note noting the Time Trial surface is removed;
+  the v3 migration itself stays load-bearing for save backwards
+  compat.
+
+The implementor of `cut-non-fdcb3b2d` decides per-F-NNN whether the
+followup is fully obsolete (append "Resolved: N/A (dropped because
+non-Tour mode cut in v1.0)") or partially obsolete (append a "Notes
+(2026-05-06): Tour-only follow-up after `cut-non-fdcb3b2d`" line).
+Both shapes preserve the audit trail.
+
+### F. Files appended this iteration
+
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (this Iteration 12 section).
+- `docs/OPEN_QUESTIONS.md` (Resolution blocks appended to Q-013,
+  Q-014, Q-015, Q-016, Q-017, Q-018; Status flipped to `answered
+  (2026-05-06)` on each).
+- `docs/PROGRESS_LOG.md` (iter-12 entry prepended).
+- `.dots/VibeGear2-implement-cut-non-fdcb3b2d.md` (NEW dot).
+- `.dots/VibeGear2-implement-quick-race-78084a95.md` (superseded
+  Note block appended at top).
+
+No `src/` writes, no GDD edits this iteration (the new slice's GDD
+edit to §6 ships when the code change lands), no F-NNN appended to
+`docs/FOLLOWUPS.md` (the implementor of `cut-non-fdcb3b2d` appends
+the per-row supersession notes when the actual code change ships).
+Iter-12 is a Q-NNN resolution-recording + new-slice-filing pass.

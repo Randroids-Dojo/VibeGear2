@@ -6,6 +6,155 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): Q-013 to Q-018 resolved, World-Tour-only scope-cut slice filed
+
+**GDD sections touched:**
+[§6](gdd/06-game-modes.md) "Game modes" (named as the section the new
+scope-cut slice will edit when it lands; not edited this iteration),
+[§7](gdd/07-race-rules-and-structure.md) (Q-013 / Q-015 references),
+[§9](gdd/09-track-design.md) (Q-014 reference),
+[§10](gdd/10-driving-model-and-physics.md) (Q-016 reference),
+[§16](gdd/16-rendering-and-visual-design.md) (Q-017 reference),
+[§17](gdd/17-art-direction.md) (Q-017 reference),
+[§18](gdd/18-sound-and-music-design.md) (Q-018 reference). No spec
+edits this iteration; all six Q-NNN resolutions land in
+`docs/OPEN_QUESTIONS.md` and the new slice's GDD §6 edit ships when
+the implementor lands the code change.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-12 records the user's 2026-05-06 resolutions for
+Q-013 through Q-018 and files the new highest-priority slice that
+Q-015's REJECTED-ALL-OPTIONS answer creates: cut Quick Race, Time
+Trial, Daily Challenge, and Practice from v1.0 so the build ships
+exactly the World Tour championship loop (per the Top Gear 2
+reference). The Quick Race grid-density slice
+(`VibeGear2-implement-quick-race-78084a95`) is superseded by the new
+`VibeGear2-implement-cut-non-fdcb3b2d` slice; a "Note (2026-05-06)"
+block was appended at the top of its dot file per the
+append-only-but-don't-delete principle for `.dots/`. The new slice
+takes position 0 in the implementer queue; the previous top three
+(`fix-lateral`, `calibrate-roadside`, `classify-tracks`) shift down
+one. No `src/` writes this iteration.
+
+### Done
+
+- Read `docs/OPEN_QUESTIONS.md` end to end, the latest 11
+  PROGRESS_LOG entries, and the relevant tail of
+  `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (iters 8-11). Ran `git log
+  -12 --oneline && git status -s`; tree clean apart from the
+  unrelated `.claude/scheduled_tasks.lock`.
+- Appended a `**Resolution.**` block to each of Q-013, Q-014, Q-015,
+  Q-016, Q-017, Q-018 in `docs/OPEN_QUESTIONS.md` per the
+  ledger-append-only rule. Status flipped to `answered (2026-05-06)`
+  on each entry; original Question / Recommended-default / Blocking
+  text untouched.
+- For Q-013 / Q-014 / Q-016 / Q-017 / Q-018: the user adopted the
+  Researcher-recommended default verbatim. Each Resolution block
+  names the option, the date, and the dot ID(s) the resolution
+  unblocks. Implementor proceeds verbatim; future balancing passes
+  can re-tune values without touching the schema.
+- For Q-015: REJECTED ALL OPTIONS. Resolution block records the
+  user's literal answer ("Gut any feature not related to the world
+  tour mode (the whole idea is to match TopGear2)"), the supersession
+  of the Quick Race grid-density slice, the survival of the renderer
+  cull change inside the lift-opponent slice (Tour-only), and the
+  filing of the new scope-cut slice.
+- Filed `VibeGear2-implement-cut-non-fdcb3b2d` ("implement: cut
+  non-tour modes for World-Tour-only v1.0 scope") via `dot add`.
+  Priority 1, no `blocks:` / `after:` chain (independent). Description
+  walks the full surface area (routes, components, game modules,
+  e2e specs, tests, GDD §6 / §24, FOLLOWUPS, GDD_COVERAGE.json),
+  pins the GDD §6 "v1.0 scope" prefix + post-v1.0 deferral
+  subsection requirement, and lists the concrete acceptance gates
+  (typecheck / lint / test clean, no cut-mode routes in the build
+  manifest, NEW Playwright spec `world-tour-only-scope.spec.ts`,
+  GDD ledger updates, no Tour-mode regression).
+- Appended a "Note (2026-05-06)" block at the top of
+  `.dots/VibeGear2-implement-quick-race-78084a95.md` documenting
+  the supersession. The dot file stays in place; the implementor of
+  `cut-non-fdcb3b2d` soft-closes it with `dot off ... -r "superseded
+  by cut-non-fdcb3b2d (Q-015 resolution, 2026-05-06)"` once the
+  scope-cut PR lands.
+- Appended an "Iteration 12 - Q-013 to Q-018 resolutions and
+  World-Tour-only scope cut" section to
+  `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` covering the six Q-NNN
+  resolutions, the new dot ID, the supersession, the Top-3 update,
+  and the F-NNN candidates for supersession.
+- Walked `docs/FOLLOWUPS.md` for entries referencing Quick Race /
+  Time Trial / Daily Challenge / Practice. Identified F-076, F-070,
+  F-051, F-038, F-034 (open) and F-023, F-022, F-021 (closed but
+  referencing cut surfaces) as candidates for append-only
+  supersession notes when `cut-non-fdcb3b2d` lands. Iter-12 does
+  NOT touch those entries; the implementor appends the supersession
+  notes when the code change ships.
+
+### Verified
+
+- `npm run content-lint`: clean.
+- All six Q-NNN entries retain their original Question /
+  Recommended-default / Blocking sections; only the Status line was
+  edited and the Resolution block was appended (append-only ledger
+  discipline preserved).
+- `dot show VibeGear2-implement-cut-non-fdcb3b2d` shows the new dot
+  with status open, priority 1, no `blocks:` / `after:` chain (the
+  slice is independent and unblocks every other slice by simplifying
+  the surface).
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` row updates this iteration. Iter-12 is a
+research + Q-NNN resolution + new-dot pass; no `src/` writes, so no
+`implementationRefs` or `testRefs` change. The implementor of
+`cut-non-fdcb3b2d` will:
+- mark coverage rows touching cut modes as `out_of_scope_v1` with a
+  note pointing at the 2026-05-06 Q-015 resolution; and
+- append the new e2e spec `world-tour-only-scope.spec.ts` and any
+  edited surface refs to the §6 / §24 rows when the code change
+  ships.
+
+### Followups created
+
+None new this iteration. The new slice
+`VibeGear2-implement-cut-non-fdcb3b2d` is itself the
+"shrink-the-surface" follow-up to the Q-015 resolution; it is filed
+as a `.dots/` slice rather than an F-NNN because it is a concrete
+implementation slice with a verifiable acceptance gate, not a
+loose-thread followup.
+
+Followups to mark superseded when `cut-non-fdcb3b2d` lands (recorded
+here so the next implement-mode iteration finds the list without
+re-walking `docs/FOLLOWUPS.md`):
+
+- F-076 (release-fun playtest checklist; mentions "full Quick Race").
+- F-070 (pause leaderboard or ghost action; mentions
+  `/time-trial`).
+- F-051 (atlas sprites; mentions Time Trial ghost).
+- F-038 (`buildRaceResult` race-finish flow; mentions Practice /
+  Quick Race / Time Trial reuse).
+- F-034 (`awardCredits` race-finish flow; mentions Practice / Time
+  Trial as non-economy modes).
+- F-023 (Time Trial UI wiring for the ghost recorder; closed but
+  references the cut surface).
+- F-022 (ghost car render; closed but references `/time-trial`
+  redirect).
+- F-021 (SaveGameSchema v3 migration; closed but references "Time
+  Trial PB ghost").
+
+The implementor of `cut-non-fdcb3b2d` decides per-row whether to
+append "Resolved: N/A (dropped because non-Tour mode cut in v1.0)"
+or a "Notes (2026-05-06): Tour-only follow-up after
+`cut-non-fdcb3b2d`" line. Both shapes preserve the audit trail.
+
+### GDD edits
+
+None this iteration. The new scope-cut slice will edit §6
+("Game modes") to add a "v1.0 scope" prefix to the section header
+and a post-v1.0 deferral subsection at the top, and §24 ("Content
+plan") to remove or annotate "Daily Challenge" / "Time Trial"
+entries; those edits ship with the code change, not with this
+research pass.
+
+---
+
 ## 2026-05-06: research(topgear-fun): performance budget audit for filed slices
 
 **GDD sections touched:**

@@ -13,8 +13,9 @@ they are part of the design history.
 
 **GDD reference:** [§18](gdd/18-sound-and-music-design.md) "Vehicle and
 race SFX" (tire squeal, brake scrub), "Dynamic audio layers".
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-06
+**Answered in loop:** 2026-05-06
 
 **Question.** §18 lists `tire squeal` and `brake scrub` as required
 sounds and §18 "Dynamic audio layers" pins layered intensity, but does
@@ -53,6 +54,18 @@ window?
 default unblocks the slice; a future playtest pass can re-tune the
 intensity curve without re-architecting the audio path.
 
+**Resolution.** Adopted the recommended default verbatim on
+2026-05-06. Onset gate stays `|steer| >= 0.65 AND speed >= 18 m/s`;
+intensity scalar `((|steer| - 0.65) / 0.35) * speedNorm`; gain
+`lerp(0.40, 0.85, intensity)`; pitch `lerp(860, 1420, intensity)`.
+Brake-scrub mirrors with speed-only intensity, `BRAKE_SCRUB_SPEED_M_PER_S
+= 8` and `brake > 0`, `gain = lerp(0.35, 0.62, speedFactor)`, pitch
+`lerp(170, 260, speedFactor)`. Loop-deactivation 80 ms gain ramp matches
+the `engineRuntime` smoothing pattern. Unblocks
+`VibeGear2-implement-convert-tiresqueal-d2fd1407`. The implementor
+proceeds verbatim; a future balancing pass can re-tune the intensity
+curve without re-architecting the audio path.
+
 ---
 
 ## Q-017: Per-kind roadside prop physical heights and max-height clamp
@@ -60,8 +73,9 @@ intensity curve without re-architecting the audio path.
 **GDD reference:** [§16](gdd/16-rendering-and-visual-design.md) "Sprite
 scaling" / "Roadside objects", [§17](gdd/17-art-direction.md) "Roadside
 props".
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-05
+**Answered in loop:** 2026-05-06
 
 **Question.** §16 specifies that the player car renders at 16 to 22%
 of screen height in standard camera mode. It does not name physical
@@ -113,6 +127,20 @@ calibration slice) and for the optional follow-on
 The recommended default unblocks both. A future playtest pass can
 re-tune individual values without editing the schema.
 
+**Resolution.** Adopted the recommended default verbatim on
+2026-05-06. Per-kind heights: tree=10 m, palms_sparse=8 m,
+light_pole=9 m, sign_marker=3 m, marina_signs=3.5 m, heat_sign=3 m,
+fence_post=0.7 m, guardrail=0.7 m, rock_boulder=1.5 m, water_wall=1.0
+m, rock_spire=6 m. `ROADSIDE_MAX_HEIGHT_FRACTION` drops 0.22 -> 0.18
+so close-in props at most match the player car silhouette. Prop
+placement offset lifts from `strip.screenW * 1.32` to
+`strip.screenW * 1.7`. `heightRoadFactor` derives from
+`heightMeters / ROAD_WIDTH` per the table in the recommended
+default. Unblocks `VibeGear2-implement-calibrate-roadside-96e24f40`
+and `VibeGear2-implement-extend-roadside-e541c8a5`. The implementor
+proceeds verbatim; a future playtest pass can re-tune individual
+values without editing the schema.
+
 ---
 
 ## Q-016: Max lateral acceleration cap and understeer onset for the §10 racing-line slice
@@ -121,8 +149,9 @@ re-tune individual values without editing the schema.
 model" / "Traction and drifting", [§11](gdd/11-cars-and-stats.md) "Stat
 categories" (`Grip`, `Stability`), [§23](gdd/23-balancing-tables.md) "Core
 car balance sheet" (`gripDry`).
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-05
+**Answered in loop:** 2026-05-06
 
 **Question.** §10 names the desired feel ("enough authority to place the
 car, not enough to zig-zag unrealistically", "Mild lateral slip appears
@@ -185,6 +214,20 @@ they are dimensional and per-§10 / §23 respectively. Only the
 racing-line tension slice consumes Q-016 and proceeds under the
 recommended defaults.
 
+**Resolution.** Adopted the recommended defaults verbatim on
+2026-05-06. `MAX_LATERAL_ACCEL_M_PER_S2 = 12` (~1.2 g) for `gripDry =
+1.0`, scaling linearly with composite grip
+(`cap = MAX_LATERAL_ACCEL * baseGrip * (offRoad ? 0.5 : 1)`).
+Understeer onset fires on any tick where requested `|yawRate * v|`
+exceeds `cap`, with quadratic scrub `UNDERSTEER_SCRUB_K * (excess /
+cap)^2 * dt` and `UNDERSTEER_SCRUB_K = 6 m/s^2`. Banking response
+deferred to F-082 (per-segment `bank` field); F-086 already records
+the banked-corner cap-lift follow-up. Unblocks
+`VibeGear2-implement-racing-line-7b2cbd41`. The implementor proceeds
+verbatim under the recommended defaults; a future balancing pass can
+re-tune `MAX_LATERAL_ACCEL_M_PER_S2` and `UNDERSTEER_SCRUB_K` without
+touching the §10 contract.
+
 ---
 
 ## Q-015: Quick Race opponent count and pack-stretch limits
@@ -192,8 +235,9 @@ recommended defaults.
 **GDD reference:** [§7](gdd/07-race-rules-and-structure.md) "Starting
 grid", [§15](gdd/15-cpu-opponents-and-ai.md) "AI design goals",
 [§22](gdd/22-data-schemas.md) "Track JSON schema" (`spawn.gridSlots`).
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-05
+**Answered in loop:** 2026-05-06
 
 **Question.** §7 pins "Default field size: 12 racers in championship
 and quick race". Today's Quick Race entry path
@@ -244,6 +288,26 @@ defaults:
 draw-distance slice (`VibeGear2-implement-opponent-draw-...`)
 both proceed under the recommended defaults.
 
+**Resolution.** REJECTED on 2026-05-06. The user opted to cut Quick
+Race / Time Trial / Daily Challenge / Practice from the v1.0 scope.
+World Tour is the only race surface that ships. The user's literal
+answer: "Gut any feature not related to the world tour mode (the
+whole idea is to match TopGear2)." The Quick Race grid-density slice
+(`VibeGear2-implement-quick-race-78084a95`) is therefore superseded
+by a new scope-cut slice
+(`VibeGear2-implement-cut-non-fdcb3b2d`, "implement: cut non-tour
+modes for World-Tour-only v1.0 scope"). The renderer cull move
+(200 m -> 600 m with alpha fade) still applies but only to Tour
+mode; that work is preserved separately in
+`VibeGear2-implement-lift-opponent-8764ce5e`. Sub-question 1
+(honour `track.spawn.gridSlots` in Quick Race) is moot because Quick
+Race is being removed. Sub-question 2 (revisit §7 default field size)
+defers indefinitely; Tour mode keeps `spawn.gridSlots: 12`.
+Sub-question 3 (renderer cull at 600 m with alpha fade) survives
+intact under the Tour-only renderer path. Unblocks (by simplifying)
+every fun-factor slice that was previously paying integration cost
+across four modes.
+
 ---
 
 ## Q-014: §9 corner-grade frequency budget per track length
@@ -251,8 +315,9 @@ both proceed under the recommended defaults.
 **GDD reference:** [§9](gdd/09-track-design.md) "Road curvature",
 [§9](gdd/09-track-design.md) "Track anatomy",
 [§9](gdd/09-track-design.md) "Track length targets".
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-05
+**Answered in loop:** 2026-05-06
 
 **Question.** §9 names five corner grades (Sweep / Medium / Sharp /
 Hairpin / Compound) and the Track anatomy rule of "one signature
@@ -291,6 +356,22 @@ Tunnel budget:
 **Blocking?** No. The re-author slice can proceed under the
 recommended default.
 
+**Resolution.** Adopted the recommended budget verbatim on
+2026-05-06. Short tracks: 3 cornering events (1 Sharp OR 1 Hairpin,
+1 Compound, 1 mild crest). Medium tracks: 3 events (1 Sharp + 1
+Compound + 1 mild crest). Long tracks: 4 events (1 Hairpin + 1
+Compound + 1 aggressive crest + 1 mild crest). Endurance / Crown
+Circuit: 4 events (1 Hairpin + 1 Sharp + 1 Compound + 1 aggressive
+crest). Hairpin radius cap: `|curve| = 0.85`. Hairpin minimum
+spacing: 200 m of non-hairpin segments before the next
+`|curve| >= 0.30`. Tunnels: 1 each in Iron Borough, Glass Ridge,
+Neon Meridian; 0 elsewhere. Unblocks
+`VibeGear2-implement-re-author-47323741` (the iter-2 re-author slice)
+and any future authoring lint that needs concrete numbers. The
+implementor proceeds verbatim under the recommended budget; a future
+playtest pass can re-tune the per-length counts without re-architecting
+the §9 anatomy contract.
+
 ---
 
 ## Q-013: Per-track archetype mapping for the §7 lap targets
@@ -298,8 +379,9 @@ recommended default.
 **GDD reference:** [§7](gdd/07-race-rules-and-structure.md) "Number of
 laps", [§9](gdd/09-track-design.md) "Track length targets",
 [§24](gdd/24-content-plan.md) "Original tours and tracks".
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-05
+**Answered in loop:** 2026-05-06
 
 **Question.** §7 pins lap counts per track archetype (short-sprint
 4-5, standard 3, long-scenic 2, endurance 2-3) but does not say
@@ -341,6 +423,18 @@ the `docs/gdd/09-track-design.md` lap-time targets.
 recommended-default labelled assumption. If the dev later disagrees
 with a specific row, a one-line `archetype` edit in the affected
 JSON re-bumps that track's `laps` on the next CI run.
+
+**Resolution.** Adopted the Researcher mapping verbatim on
+2026-05-06: 4 short-sprint (Iron Borough), 16 standard (Velvet Coast,
+Ember Steppe, Breakwater Isles, Neon Meridian, plus Glass Ridge
+Whitepass and Frostrelay), 8 long-scenic (Glass Ridge Hollow Crest /
+Summit Echo plus all four Moss Frontier tracks plus the two
+remaining Glass Ridge tracks if applicable per the recommended
+default), 4 endurance (Crown Circuit). The classify-tracks slice
+(`VibeGear2-implement-classify-tracks-b41307c8`) ships under that
+mapping. The implementor proceeds verbatim under the recommended
+default; a future balancing pass can re-tune individual rows with a
+one-line `archetype` edit per track JSON without touching the schema.
 
 ---
 
