@@ -2,6 +2,26 @@
   "version": 1,
   "requirements": [
     {
+      "id": "GDD-27-USER-FEEDBACK-CHANNEL",
+      "gddSections": [
+        "docs/gdd/27-risks-and-mitigations.md",
+        "docs/gdd/21-technical-design-for-web-implementation.md"
+      ],
+      "requirement": "User-reported client crashes have a one-click in-app feedback path: a globally mounted FeedbackFab that POSTs the player's note, a downscaled canvas screenshot, and the recent error capture buffer to POST /api/feedback, which creates a GitHub issue tagged 'feedback' on the configured repo. The route never sends data without an explicit user click and returns 500 server-misconfigured when GITHUB_PAT is unset so the failure is visible.",
+      "coverage": ["implemented-code", "automated-test"],
+      "implementationRefs": [
+        "src/components/feedback/FeedbackFab.tsx",
+        "src/app/api/feedback/route.ts",
+        "src/app/layout.tsx",
+        ".env.development.example"
+      ],
+      "testRefs": [
+        "src/app/api/feedback/__tests__/route.test.ts",
+        "src/components/feedback/__tests__/FeedbackFab.test.tsx"
+      ],
+      "followupRefs": ["F-077", "F-078"]
+    },
+    {
       "id": "GDD-17-REGION-THEME-REGISTRY",
       "gddSections": [
         "docs/gdd/08-world-and-progression-design.md",

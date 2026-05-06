@@ -10,6 +10,30 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-078: Provision `GITHUB_PAT` for the Feedback FAB on Vercel
+**Created:** 2026-05-05
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The `feat/feedback-fab-github-issue` slice ships a
+`POST /api/feedback` route that creates GitHub issues using a
+fine-grained PAT in `process.env.GITHUB_PAT`. The route returns 500
+`server-misconfigured` when the env var is unset, which is the visible
+failure state on Production and Preview today. Provision a fine-grained
+PAT scoped to Issues read+write and Contents read+write on
+`Randroids-Dojo/VibeGear2`, add it as a Vercel project env var on
+Production and Preview, and verify a feedback submit reaches GitHub
+end-to-end before tagging the next release.
+
+## F-077: Playwright coverage for the Feedback FAB
+**Created:** 2026-05-05
+**Priority:** polish
+**Status:** open
+**Notes:** The slice ships unit tests for `POST /api/feedback` and a
+server-render smoke test for `FeedbackFab`. A future spec should drive
+the open-panel, type, submit flow in a real browser against a stubbed
+`/api/feedback` route and assert the success state, the Escape and
+click-outside dismissals, and the hidden-while-`?errors=1` rule.
+
 ## F-076: Automate the release-fun playtest checklist
 **Created:** 2026-05-02
 **Priority:** blocks-release

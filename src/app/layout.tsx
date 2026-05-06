@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { MenuMusicDirector } from "@/components/audio/MenuMusicDirector";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 import { UpdateBanner } from "@/components/update/UpdateBanner";
 
 import "./globals.css";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <MenuMusicDirector />
         <ErrorCaptureClient />
         <ErrorBoundary>{children}</ErrorBoundary>
+        <FeedbackFab />
       </body>
     </html>
   );

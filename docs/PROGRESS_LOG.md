@@ -6,6 +6,83 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: Slice: Feedback FAB that opens GitHub issues
+
+**GDD sections touched:** [§27](gdd/27-risks-and-mitigations.md) "User-reported
+client crashes", [§21](gdd/21-technical-design-for-web-implementation.md)
+"Build-time checksum versioning".
+**Branch / PR:** `feat/feedback-fab-github-issue`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `FeedbackFab` floating action button (`src/components/feedback/FeedbackFab.tsx`)
+  mounted globally in `src/app/layout.tsx`. Opens a panel with a textarea, a
+  Send button, and pills indicating that a screenshot and recent client
+  errors will be attached. Hides while the dev `?errors=1` panel is active so
+  the two bottom-right surfaces do not stack.
+- Added `POST /api/feedback` (`src/app/api/feedback/route.ts`) that consumes
+  the FAB payload, optionally uploads the canvas screenshot to
+  `.github/feedback-screenshots/` on the configured repo, and creates a
+  GitHub issue with the `feedback` label. Stable response envelope
+  (`{ ok, code, ... }`) mirroring the leaderboard route style.
+- Reuses the existing `errorCapture` ring buffer for the captured-errors
+  block so the same data the dev `?errors=1` panel exposes is included in
+  the issue body, no duplicate console-patch.
+- Documented the new env vars (`GITHUB_PAT`, optional `FEEDBACK_REPO`) in
+  `.env.development.example`.
+- Resolved Q-012 with option (b): a first-party feedback route gated by an
+  explicit user click; storage is GitHub Issues so no storage provider
+  decision is owed.
+
+### Verified
+- `npm run typecheck` green.
+- `npm run lint` green (`No ESLint warnings or errors`).
+- `npx vitest run src/app/api/feedback src/components/feedback` 9 passed.
+- `npm run test` 2791 passed (no regressions in 147 suites).
+- `npm run build` green; `/api/feedback` registers as a dynamic route.
+
+### Decisions and assumptions
+- Picked option (b) from Q-012 over option (a). The FAB makes the report
+  one click instead of "open hidden URL flag, copy JSON, file an issue
+  manually" while keeping privacy: no network request fires until the user
+  types and clicks. GitHub Issues is the persistence layer so no separate
+  provider decision is owed.
+- Stored the PAT in `GITHUB_PAT` (not `GITHUB_TOKEN`) to avoid colliding
+  with the GitHub Actions default token already injected into CI.
+- Default repo target is hardcoded to `Randroids-Dojo/VibeGear2`; an env
+  override (`FEEDBACK_REPO`) lets a fork retarget without code changes.
+- Screenshot is downscaled to 320px wide JPEG quality 0.5 so the issue
+  body stays well under the 65 536 character GitHub limit. Fallback path
+  inlines base64 if the upload fails.
+- Component tests use the project's static-markup pattern; full
+  open-panel + submit interaction is left to a future Playwright spec
+  because the existing suite has no `@testing-library/react`.
+
+### Coverage ledger
+- Added `GDD-27-USER-FEEDBACK-CHANNEL` covering the FAB, the route, and
+  the env contract.
+- Updated §27 "User-reported client crashes" mitigation row to describe
+  the new two-tier capture surface (existing `?errors=1` panel plus the
+  FeedbackFab + GitHub issue path).
+- Resolved Q-012 with option (b).
+- Uncovered adjacent requirements: `GDD-21-CI-DEPLOY-HEALTH` and
+  `GDD-21-VERCEL-DEPLOY` still lack automated tests; provisioning
+  `GITHUB_PAT` on Vercel is tracked by F-078 and the route is unreachable
+  in production until that lands.
+
+### Followups created
+- F-077: Add a Playwright spec that opens the Feedback FAB, types a
+  message, stubs the network call, and asserts the success state.
+- F-078: Provision `GITHUB_PAT` as a Vercel project env var (Production
+  and Preview) before the FAB ships to deployed users. Until then the
+  route returns 500 `server-misconfigured` and the FAB shows a visible
+  failure.
+
+### GDD edits
+- None. The slice is meta-tooling; it does not change game design.
+
+---
+
 ## 2026-05-02: Slice: Production procedural audio bank
 
 **GDD sections touched:** §18, §24, §25, and §26.

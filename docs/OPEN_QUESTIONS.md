@@ -14,8 +14,9 @@ they are part of the design history.
 **GDD reference:** [§27](gdd/27-risks-and-mitigations.md) "User-reported
 client crashes", [§21](gdd/21-technical-design-for-web-implementation.md)
 "Build-time checksum versioning".
-**Status:** open
+**Status:** answered (2026-05-05)
 **Asked in loop:** 2026-04-30
+**Answered in loop:** 2026-05-05
 
 **Question.** The opt-in client error capture slice ships an in-memory
 ring buffer and hidden `?errors=1` panel with no network requests by
@@ -37,8 +38,27 @@ manual bug reports actionable and carries build id, build version, stack
 prefix, count, and user agent. Defer any sink until the dev explicitly
 approves provider, storage, retention, and production env changes.
 
-**Blocking?** No. The no-network capture path can ship now. A sink is a
-future opt-in slice only after this question is answered.
+**Resolution.** Adopted option (b), framed around an in-app feedback
+flow rather than a silent error sink. The slice ships a `FeedbackFab`
+floating action button that opens a textarea panel and POSTs the
+player's note plus a small canvas screenshot, the current URL, viewport,
+user agent, ISO timestamp, and the recent entries from the existing
+`errorCapture` ring buffer to a first-party `POST /api/feedback` route.
+The route uploads the screenshot to `.github/feedback-screenshots/` on
+the configured repo (default `Randroids-Dojo/VibeGear2`) using a
+fine-grained PAT supplied through the new `GITHUB_PAT` env var, then
+opens a GitHub issue tagged with the `feedback` label. There is no
+storage provider decision because GitHub Issues is the storage. The
+route returns 500 with code `server-misconfigured` when the PAT is
+absent so a fork that has not provisioned the secret degrades to a
+visible failure rather than a silent drop. Option (c) stays rejected
+for the same telemetry / paid-service reasons named in the question.
+Re-evaluate triggers: if GitHub rate-limits issue creation in practice,
+or if a contributor wants a non-public crash channel, swap to (c) with
+explicit dev sign-off.
+
+**Blocking?** No. The no-network capture path is unchanged; the new
+route is gated by an explicit user click. Resolved.
 
 ---
 
