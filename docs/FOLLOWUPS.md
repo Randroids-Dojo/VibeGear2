@@ -44,8 +44,14 @@ the PR Preview, and confirmed an end-to-end submission landed at
 `Randroids-Dojo/VibeGear2#170` with the `feedback` label, inline
 screenshot, and context block. A second submission at
 `Randroids-Dojo/VibeGear2#172` exercised the captured-errors path and
-rendered both the deferred throw and the unhandled rejection. PAT will
-be rotated post-merge; rotation does not require code changes.
+rendered both the deferred throw and the unhandled rejection. After
+PR #169 squash-merged to `main`, the production deploy was smoke-tested
+with a direct curl to `https://vibe-gear2.vercel.app/api/feedback`
+which created `Randroids-Dojo/VibeGear2#173`, confirming the production
+env var is live; the same-origin abuse gate was verified by sending a
+mismatched `Origin` and an absent `Origin`, both returning the
+documented 403 `forbidden-origin` envelope. PAT will be rotated
+post-merge; rotation does not require code changes.
 
 ## F-077: Playwright coverage for the Feedback FAB
 **Created:** 2026-05-05
