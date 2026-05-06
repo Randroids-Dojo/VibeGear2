@@ -977,7 +977,7 @@ describe("drawRoad roadside sprites", () => {
     const draws = spy.calls.filter((c): c is DrawImageCall => c.type === "drawImage");
     expect(draws).toHaveLength(1);
     expect(draws[0]!.dw).toBeCloseTo(draws[0]!.dh * 0.58, 6);
-    expect(draws[0]!.dh).toBeCloseTo(VIEWPORT.height * 0.22, 6);
+    expect(draws[0]!.dh).toBeCloseTo(VIEWPORT.height * 0.18, 6);
     const fills = spy.calls.filter((c): c is FillCall => c.type === "fill");
     expect(fills.some((call) => call.fillStyle === "#245c2f")).toBe(false);
   });
@@ -985,10 +985,14 @@ describe("drawRoad roadside sprites", () => {
   it("boosts sign panel and glyph contrast when the assist is enabled", () => {
     const normal = makeCanvasSpy();
     const highContrast = makeCanvasSpy();
+    // screenW values picked so the sign stays on-canvas at the post-Q-017
+    // placement offset (strip.screenW * 1.7). The pre-fix offset of 1.32
+    // tolerated a wider strip; the new offset requires screenW <= ~235 on
+    // an 800-wide canvas to keep the prop visible.
     const strips: readonly Strip[] = [
       strip({
         screenY: 440,
-        screenW: 260,
+        screenW: 150,
         segment: {
           ...strip({}).segment,
           index: 0,
@@ -998,7 +1002,7 @@ describe("drawRoad roadside sprites", () => {
       }),
       strip({
         screenY: 300,
-        screenW: 110,
+        screenW: 80,
         segment: {
           ...strip({}).segment,
           index: 1,

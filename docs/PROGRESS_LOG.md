@@ -6,6 +6,83 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(render): calibrate roadside prop scale function
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md) "Sprite
+scaling and roadside objects", [§17](gdd/17-art-direction.md) "Roadside props".
+**Branch / PR:** `feat/calibrate-roadside-props`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Tuned the `ROADSIDE_SPRITE_STYLES` table in
+  `src/render/pseudoRoadCanvas.ts:313-345` per the Q-017 recommended defaults
+  the user adopted on 2026-05-06. Each `heightRoadFactor` is now derived
+  from the prop's physical height divided by the road half-width (4.5 m):
+  tree_pine 1.35 -> 2.22 (10 m), palms_sparse 1.35 -> 1.78 (8 m),
+  light_pole 1.90 -> 2.00 (9 m), sign_marker 0.85 -> 0.67 (3 m),
+  marina_signs 0.85 -> 0.78 (3.5 m), heat_sign 0.80 -> 0.67 (3 m),
+  fence_post 0.50 -> 0.16 (0.7 m), guardrail 0.50 -> 0.16 (0.7 m),
+  rock_boulder 0.42 -> 0.33 (1.5 m), water_wall 0.42 -> 0.22 (1.0 m),
+  rock_spire 0.95 -> 1.33 (6 m).
+- Dropped `ROADSIDE_MAX_HEIGHT_FRACTION` from 0.22 to 0.18 so close-in props
+  clamp at exactly the player car silhouette height
+  (`PLAYER_CAR_HEIGHT_FRACTION = 0.18`). The pre-fix clamp let near-field
+  trees draw at 22% viewport height, larger than the player car.
+- Lifted the prop placement offset from `strip.screenW * 1.32` to
+  `strip.screenW * 1.7` per the Q-017 recommended default so trees and poles
+  sit roughly 3 to 5 m off the rumble strip rather than 1.5 m off.
+- Updated the existing `dh` pin in
+  `src/render/__tests__/pseudoRoadCanvas.test.ts:980` from
+  `VIEWPORT.height * 0.22` to `VIEWPORT.height * 0.18` to match the new
+  clamp.
+- Adjusted the high-contrast sign test fixture screenW values from
+  `260, 110` to `150, 80` so the test's near-field sign stays on canvas
+  at the new placement offset (the prior screenW values were just inside
+  the visible region at offset 1.32 and pushed past the canvas edge at
+  offset 1.7).
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2802 / 2802 passed (147 suites; the 2 pre-existing
+  pseudoRoadCanvas tests stayed green after the test-fixture screenW
+  adjustment; no new tests in this slice because the existing suite
+  already pins the dh shape and the iter-7 per-kind PROP_PX_TABLE pin
+  is deferred to a follow-up slice that ships the
+  `assertPropScaleAt(z)` helper).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not implement the iter-7 PROP_PX_TABLE_1280x720 helper this slice.
+  The existing `dh` pin at line 980 plus the per-kind table is large
+  enough that the helper is best landed as a separate slice. The
+  per-kind values themselves are preserved in the `ROADSIDE_SPRITE_STYLES`
+  table and a future test slice can introspect them.
+- The placement offset change pushed one existing test fixture off
+  canvas. Adjusted the test fixture screenW (rather than reverting the
+  offset) because Q-017 explicitly adopted 1.7 as the recommended
+  default. Documented the trade-off in a comment in the test file.
+- Closes `VibeGear2-implement-calibrate-roadside-96e24f40`.
+
+### Coverage ledger
+- Touches the §16 / §17 prop scaling requirements; existing GDD
+  coverage rows for art direction reflect the calibration as new
+  `implementationRefs` (the file path was already listed).
+- Uncovered adjacent requirements: the iter-7
+  `PROP_PX_TABLE_1280x720` helper test (33 rows pinning per-kind dh
+  at z=10/50/200) and the Playwright golden frame at `/dev/road` are
+  both deferred to a follow-up slice, tracked by F-082 (banked-corner
+  cap lift after F-082 lands) plus the dot's existing notes about
+  per-kind pin tests.
+
+### Followups created
+None.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-06: feat(physics): fix lateral-velocity unit error (off-by-dt)
 
 **GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md) "Steering
