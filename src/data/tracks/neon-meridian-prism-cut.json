@@ -5,7 +5,7 @@
   "author": "core",
   "version": 1,
   "lengthMeters": 2020,
-  "laps": 1,
+  "laps": 3,
   "laneCount": 3,
   "weatherOptions": ["dusk", "night"],
   "difficulty": 5,

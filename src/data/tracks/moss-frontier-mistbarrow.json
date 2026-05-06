@@ -5,7 +5,7 @@
   "author": "core",
   "version": 1,
   "lengthMeters": 2320,
-  "laps": 1,
+  "laps": 2,
   "laneCount": 3,
   "weatherOptions": ["fog", "heavy_rain"],
   "difficulty": 5,

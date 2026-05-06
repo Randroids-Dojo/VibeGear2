@@ -55,7 +55,7 @@ describe("pre-race card", () => {
     expect(card.trackName).toBe("Harbor Run");
     expect(card.tourName).toBe("Velvet Coast");
     expect(card.weather).toBe("rain");
-    expect(card.laps).toBe(1);
+    expect(card.laps).toBe(3);
     expect(card.difficulty).toEqual({ value: 1, label: "Easy" });
     expect(card.recommendedTire).toBe("wet");
     expect(card.forecast.condition).toBe("Rain");

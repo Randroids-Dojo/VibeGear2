@@ -6,6 +6,73 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(data): bump production track laps to §7 archetype targets
+
+**GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md) "Number
+of laps" (build-log entry).
+**Branch / PR:** `feat/bump-production-laps`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Bumped `laps` from `1` to the §7 archetype target on every one of the
+  32 production track JSONs:
+  - 4 short-sprint -> `laps: 4` (Iron Borough)
+  - 18 standard -> `laps: 3` (Velvet Coast, Ember Steppe, Breakwater
+    Isles, Glass Ridge whitepass+frostrelay, Neon Meridian)
+  - 6 long-scenic -> `laps: 2` (Glass Ridge hollow-crest+summit-echo,
+    Moss Frontier)
+  - 4 endurance -> `laps: 2` (Crown Circuit)
+- Used the §7 lower bounds for the first ship (short-sprint=4 not 5,
+  endurance=2 not 3) so a balancing slice can push higher once playtest
+  data is in.
+- Test and `_benchmark` fixtures stay at `laps: 1` for fixture stability.
+- Updated 7 production-track lap assertions in
+  `src/data/__tests__/tracks-content.test.ts` from `expect(track.laps).toBe(1)`
+  to `expect(track.laps).toBeGreaterThanOrEqual(2)` so the test pins
+  multi-lap correctness without coupling to a specific archetype.
+- Updated `src/game/__tests__/preRaceCard.test.ts` Harbor Run laps
+  assertion from `1` to `3` (Velvet Coast is standard).
+- Appended a build-log entry to `docs/gdd/07-race-rules-and-structure.md`.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2806 / 2806 passed (147 suites).
+- `npm run content-lint` clean.
+- Distribution check: `grep -h '"laps":' src/data/tracks/*.json | sort | uniq -c`
+  reports 18 / 10 / 4 / 3 (3=18 standard, 2=10 long-scenic+endurance,
+  4=4 short-sprint, 1=3 test fixtures). Matches §7 / Q-013 exactly.
+
+### Decisions and assumptions
+- This is a pure data slice. Did not change physics, AI, rewards, or
+  HUD; the §15 fastest-lap bonus, drafting, rubber-banding, and damage
+  band gradients all become meaningful for the first time after this
+  lands but are filed as separate slices and not bundled here.
+- Cash bonus economics will shift because pickups respawn per lap; F-081
+  covers the balancing follow-up. Not blocking this slice.
+- F-080 (re-baseline playtest evidence) is now actionable but not
+  blocking; the 2-5 minute race windows it expects are now real.
+- Closes `VibeGear2-implement-bump-prod-076ae7e7`. Closes pain point #1
+  ("the race feels like a 30-50 s sprint") of the iter-1..iter-14 plan.
+
+### Coverage ledger
+- §7 lap counts now match the GDD target. Existing GDD coverage rows
+  for `GDD-07-RACE-LAPS` (or equivalent) reflect the bump as updated
+  `implementationRefs` once this PR merges.
+- Uncovered adjacent requirements: F-080 playtest re-baseline, F-081
+  per-lap pickup respawn economy retune, and the §15 racing dynamics
+  (drafting, fastest-lap bonus, rubber-banding) that become meaningful
+  at multi-lap pacing.
+
+### Followups created
+None. F-080 and F-081 already existed.
+
+### GDD edits
+- `docs/gdd/07-race-rules-and-structure.md`: appended a Build log entry
+  with the lap-bump details per the gdd-build-log discipline.
+
+---
+
 ## 2026-05-06: feat(data): classify production tracks by archetype
 
 **GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md) "Number
