@@ -10,6 +10,41 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-085: Late-race overtake decisions and racing-line overtake awareness
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Pain point #3 diagnosis (loop iter 3) confirmed all six
+§15 archetypes are wired in `src/game/aiArchetypes.ts` and reach the
+runtime through `tickAI` in `src/game/ai.ts`. The current overtake
+logic (`overtakeOffset` at `src/game/ai.ts:530-560`) only fires when
+the AI is within 28 m of the player and is faster. AI cars do NOT
+attempt to overtake other AI cars; passing inside the pack happens
+only when relative speeds happen to drift apart. §15 "Passing
+behavior" calls for inside-pass-under-braking and outside-pass-in-
+sweepers preferences with bully overrides. After the iter-3 grid
+density and visibility slices land, file a slice that extends
+overtake to AI-vs-AI threats so mid-pack movement is observable from
+the player's car. Out of scope for the iter-3 slices because each
+is tightly bounded; this is the natural follow-on.
+
+## F-084: AI rubber-band lead compression for visible mid-pack churn
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** §15 "Rubber-banding philosophy" allows "small pace
+bonuses to keep midfield relevant" and "mild lead compression in
+easy mode". The current recovery term in `tickAI` only fires when
+the AI trails the player and is capped at +5 % pace
+(`AI_TUNING.MAX_RECOVERY_PACE_BONUS = 0.05`). AI-vs-AI rubber band
+(so the field stays compressed enough that the player can SEE the
+leader at midpoint of a 3-lap race) is not implemented. After the
+grid-density and visibility slices ship, add an inter-AI mild
+compression term so the §15 mid-pack churn is observable.
+Recommended scalar: +/- 3 % pace per 100 m gap to nearest neighbour
+ahead, capped at +/- 5 % total. Easy / Normal only; Hard / Master
+keep the §15 "minimal / none" rubber-band philosophy.
+
 ## F-083: Renderer golden-image regression test for re-authored tracks
 **Created:** 2026-05-05
 **Priority:** nice-to-have

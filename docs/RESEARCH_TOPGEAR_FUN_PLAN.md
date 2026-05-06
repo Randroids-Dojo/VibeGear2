@@ -318,6 +318,151 @@ fix that changes the felt skill ceiling of every race; the iter-2
 re-author slice still ships first because it is purely content and
 runs in parallel with any physics work.
 
+## Iteration 3 - pain point #3 diagnosed
+
+### Diagnosis (numbers)
+
+Walked the spawn pipeline and the renderer cull. Three independent
+gaps make the field "feel missing or insufficient" today:
+
+#### Gap A. Quick Race ships a 2-car field
+
+`resolveRaceAIDrivers` at `src/app/race/page.tsx:672` returns
+`AI_DRIVERS.slice(0, 1)` when `tourContext === null`. Every entry
+into the race route that is not a championship-tour link
+(Quick Race menu, Time Trial without ghost, Practice mode) hits
+this branch. The track JSON declares `spawn.gridSlots: 12` on all
+32 production tracks; `spawnGrid` ignores `gridSlots` and just
+reads the supplied roster, so the field is **2 cars (player + 1
+AI)** in Quick Race, not 12. Tour mode reads
+`tour.aiDrivers` (11 entries per tour in
+`src/data/championships/world-tour-standard.json`) and ships the
+intended 12-car field.
+
+#### Gap B. Starting grid is stacked into 15 m of depth
+
+`spawnGrid` (`src/game/aiGrid.ts:31-58`) places AIs at
+`startZ = -row * rowSpacingMeters` with `row = floor(index / laneCount) + 1`
+and `DEFAULT_ROW_SPACING_METERS = 5`. With `laneCount = 3` (every
+production track) and 11 AIs the rows are 1, 2, 3, 4, so all 11
+cars land between `z = -5 m` and `z = -20 m` (a 15 m window
+behind the player). `raceSession.ts:781-787` then redundantly
+sets `z = -(5 + index * 5)` before being overridden by
+`entry.initial.z`, so the truth is 15 m of depth across 4 rows
+of 3 cars. Top Gear 2's reference grid stretches the pack across
+the full start straight (~80-120 m) so the player can see the
+entire field at the lights.
+
+#### Gap C. Renderer culls anything past 200 m
+
+`projectOpponentCar` at `src/app/race/page.tsx:702-778` returns
+`null` when `depthMeters > 200`. There is also a hard width floor
+(`AI_MIN_PROJECTED_WIDTH_DESKTOP = 20` px,
+`AI_MIN_PROJECTED_WIDTH_MOBILE = 12` px) that culls under-sized
+sprites. Once the iter-1 lap-bump lands and races run 2-5 minutes
+across multiple laps, the field will routinely stretch past 200 m;
+mid-pack the player will see only the rival immediately in front
+or behind, never the leaders or trailers. The §16 segment
+projector itself draws to 600 m+, so 200 m for opponent sprites
+is a renderer-imposed clamp, not a projector limit.
+
+#### AI archetype variety: already wired
+
+`src/game/aiArchetypes.ts` ships all six §15 archetypes
+(`nitro_burst`, `clean_line`, `aggressive`, `defender`,
+`wet_specialist`, `endurance`) with distinct behaviour rows
+(`targetSpeedScalar`, `curveBrakeScalar`, `racingLineScalar`,
+`mistakeScalar`, `recoveryScalar`, `launchPaceBonus`,
+`fadePacePenalty`, `lowVisibilityBrakeScalar`, `brilliantChance`,
+`brilliantPaceBonus`, `trafficLanePressure`). `tickAI` consumes
+each row and the readability cue ladder
+(`readabilityCueFor`) emits per-archetype telemetry tags. The
+20-driver content roster under `src/data/ai/` covers each
+archetype with at least 3 drivers (4 nitro_burst, 4 clean_line,
+3 aggressive, 3 defender, 3 wet_specialist, 3 endurance). So
+the archetype layer is engine-and-content complete; the gap is
+not personality, it is grid density and visibility.
+
+What is still partial in §15 (filed as F-084 / F-085 follow-ups):
+inter-AI overtake decisions (today only AI-vs-player overtake
+fires) and AI-vs-AI mild rubber-band lead compression. Both are
+deferred behind the iter-3 grid slices because mid-pack churn
+cannot read on screen until the grid renders past 200 m.
+
+### Top Gear 2 reference
+
+20 cars on the grid stretched across the start straight; the
+whole pack visible at race start; the player fights up from the
+back; near the end of a 2-minute race the player is mid-pack
+and can SEE both the leaders and the trailers. §7 explicitly
+chose 12 instead of 20 because of "browser readability and
+solo-dev AI scope". The iter-3 evidence says the bottleneck is
+not a render budget, it is the cull threshold and the start-line
+formation.
+
+### Slices filed this iteration
+
+Three implementation dots filed in dependency order:
+
+- `VibeGear2-implement-quick-race-78084a95` - Quick Race (and
+  Time Trial / Practice) honour `track.spawn.gridSlots` so the
+  non-tour entry path fields the same 12-car §7 grid that Tour
+  mode does. CONTENT-AND-WIRING slice. `after:` the iter-1
+  lap-bump (`VibeGear2-implement-bump-prod-076ae7e7`) so the
+  longer race window is the natural place to feel the larger
+  pack.
+- `VibeGear2-implement-stretch-the-be459bc4` - bump the grid
+  formation so 11 AIs stretch across ~80-120 m of start straight
+  instead of 15 m. ENGINE TUNING + DATA slice. `after:` the
+  Quick Race grid-density slice so the formation stretch is
+  visible in non-tour modes too.
+- `VibeGear2-implement-lift-opponent-8764ce5e` - move the
+  opponent draw cull from 200 m to 600 m with an alpha fade
+  between 400-600 m, plus a render test that catches a
+  re-clamp regression. RENDERER slice. `after:` the Quick Race
+  grid-density slice.
+
+### Open questions filed
+
+- Q-015: Quick Race opponent count and pack-stretch limits.
+  Recommended default unblocks all three iter-3 slices: Quick
+  Race honours `gridSlots`, default field size stays at 12 for
+  now, opponent draw distance moves to 600 m with alpha fade.
+
+### Followups filed
+
+- F-084: AI rubber-band lead compression for visible mid-pack
+  churn. Land after the iter-3 grid slices so the visible
+  effect is observable on screen.
+- F-085: Late-race overtake decisions and racing-line overtake
+  awareness for AI-vs-AI passing. Land after the iter-3 grid
+  slices so mid-pack movement is observable from the player's
+  car.
+
+### Top-3 update
+
+The top-3 ordering above evolves again. With the iter-3 evidence
+in, the working order through the next three iterations becomes:
+
+1. `VibeGear2-implement-classify-tracks-b41307c8` (iter-1, ready).
+2. `VibeGear2-implement-bump-prod-076ae7e7` (iter-1, blocked on 1).
+3. `VibeGear2-implement-quick-race-78084a95` (iter-3, blocked on 2).
+4. `VibeGear2-implement-stretch-the-be459bc4` (iter-3, blocked on 3).
+5. `VibeGear2-implement-lift-opponent-8764ce5e` (iter-3, blocked on 3).
+6. `VibeGear2-implement-re-author-47323741` (iter-2, blocked on 2).
+7. `VibeGear2-implement-lap-rollover-7fcb891e` (iter-1, parallel).
+8. `VibeGear2-implement-9-track-e22793ca` (iter-2, blocked on 6).
+
+The Quick Race grid-density slice jumps to position 3 because it
+is the highest-leverage single line change in the entire plan
+(replaces an `.slice(0, 1)` with `.slice(0, gridSlots - 1)`) and
+unlocks the visible value of every other §7 / §15 / §20 system
+that already ships. Pain point #4 (the lateral-velocity bug) is
+still expected to overtake this list once diagnosed, because it
+is a one-line physics fix that changes the felt skill ceiling of
+every race; the iter-3 grid slice still ships first because it is
+mode-wiring and runs in parallel with any physics work.
+
 ### How this plan changes per iteration
 
 Each future research iteration appends a new section ("Iteration 2 -

@@ -6,6 +6,137 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: research(topgear-fun): pain point #3 - opponent grid density and visibility
+
+**GDD sections touched (research only, no spec edits):** [§7](gdd/07-race-rules-and-structure.md)
+"Starting grid", [§15](gdd/15-cpu-opponents-and-ai.md) "AI design goals" / "CPU
+archetypes" / "Rubber-banding philosophy",
+[§20](gdd/20-hud-and-ui-ux.md) "HUD position",
+[§22](gdd/22-data-schemas.md) "Track JSON schema" (`spawn.gridSlots`),
+[§23](gdd/23-balancing-tables.md) "CPU difficulty modifiers".
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Research filed.
+
+### Done
+
+- Diagnosed three independent gaps that compose to "the grid is
+  missing or insufficient":
+  1. Quick Race fields 1 AI, not 11. `resolveRaceAIDrivers` at
+     `src/app/race/page.tsx:672` returns
+     `AI_DRIVERS.slice(0, 1)` when `tourContext === null`. So
+     every non-tour entry ships a 2-car field even though
+     `track.spawn.gridSlots = 12` is honoured by the schema and
+     by Tour mode.
+  2. The 11-AI tour grid stacks into 15 m of depth at the start
+     line. `spawnGrid` in `src/game/aiGrid.ts:31-58` lays cars at
+     `z = -row * 5` with `row = floor(index / laneCount) + 1`
+     and `laneCount = 3`, so 11 cars occupy z = -5..-20 m.
+     Top Gear 2's reference grid stretches across the entire
+     start straight (~80-120 m).
+  3. The renderer hard-culls opponents past 200 m
+     (`src/app/race/page.tsx:722`). Once the iter-1 lap-bump
+     ships, the field will routinely stretch past 200 m so the
+     player will not be able to see leaders or trailers from
+     mid-pack.
+- Confirmed §15 CPU archetypes are engine-complete. All six
+  archetypes (`nitro_burst`, `clean_line`, `aggressive`,
+  `defender`, `wet_specialist`, `endurance`) ship with distinct
+  behaviour rows in `src/game/aiArchetypes.ts` and route through
+  `tickAI` in `src/game/ai.ts:270-473`. The 20-driver content
+  roster under `src/data/ai/` covers every archetype with at
+  least 3 drivers. The §15 personality layer is therefore not
+  the bottleneck.
+- Confirmed §15 "Passing behavior" is partial. `overtakeOffset`
+  at `src/game/ai.ts:530-560` only fires AI-to-player; AI-to-AI
+  overtake is not implemented. Filed as F-085 (followup) because
+  it cannot read on screen until the iter-3 visibility slice
+  lands. AI-to-AI mild rubber band (§15 "Rubber-banding
+  philosophy") is also missing; filed as F-084.
+- Filed three implementation dots in dependency order:
+  - `VibeGear2-implement-quick-race-78084a95` - Quick Race
+    honours `track.spawn.gridSlots` so non-tour fields the §7
+    12-car grid. `after:` the iter-1 lap bump.
+  - `VibeGear2-implement-stretch-the-be459bc4` - bump grid
+    formation so the pack stretches across ~80-120 m of start
+    straight. `after:` the Quick Race slice.
+  - `VibeGear2-implement-lift-opponent-8764ce5e` - lift opponent
+    draw cull from 200 m to 600 m with alpha fade. `after:` the
+    Quick Race slice.
+- Filed Q-015 (Quick Race opponent count + pack-stretch limits +
+  cull distance) with recommended defaults so all three iter-3
+  slices are unblocked.
+- Filed F-084 (AI-to-AI rubber band) and F-085 (AI-to-AI
+  overtake decisions).
+- Updated `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` with a "Pain point
+  #3" section and re-ranked the Top-3 update so the Quick Race
+  grid-density slice lands at position 3 (highest leverage
+  single-line change in the entire plan).
+
+### Verified
+
+- Walked the spawn pipeline end-to-end:
+  `track.spawn.gridSlots = 12` (every production track JSON) ->
+  `spawnGrid` reads `gridSlots - 1` slots
+  (`src/game/aiGrid.ts:32`) -> `resolveRaceAIDrivers` returns
+  the actual roster (1 driver in Quick Race, 11 in Tour) ->
+  `raceSession.ts` map applies `entry.initial.{x,z}` from
+  `spawnGrid`.
+- Verified renderer cull threshold: `if (depthMeters > 200)
+  return null` at `src/app/race/page.tsx:722`. Verified width
+  floor: `AI_MIN_PROJECTED_WIDTH_DESKTOP = 20`,
+  `AI_MIN_PROJECTED_WIDTH_MOBILE = 12`
+  (`src/app/race/page.tsx:208-209`).
+- Confirmed every production track ships `laneCount: 3` (35
+  matches via `grep -h '"laneCount"' src/data/tracks/*.json |
+  sort | uniq -c`; the count is 35 because three tracks under
+  `_benchmark/` and the editor default also match the grep).
+- Confirmed every production track ships
+  `"spawn": { "gridSlots": 12 }` via the same one-shot grep.
+- Confirmed `world-tour-standard.json` ships 11 entries per
+  tour `aiDrivers` array (8 tours x 11 = 88 entries; 22
+  matches in the first 60 lines visible to spot-check).
+- `dot tree` and `dot ready` show the three new implement dots
+  wired with the correct `after:` chain
+  (`bump-prod -> quick-race -> stretch-the` and `bump-prod ->
+  quick-race -> lift-opponent`).
+- `npm run content-lint` was not run because this iteration is
+  research-only (no track JSON edits or src writes). The lint
+  will run inside the implement slices that consume this
+  research.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. The §7 "Default field
+size: 12" requirement reads `partial` because the engine and
+data both honour 12 in tour mode but Quick Race fields 2; the
+fix is the iter-3 Quick Race slice. The §15 "AI design goals"
+and "Rubber-banding philosophy" remain `partial` until F-084
+and F-085 ship.
+
+### Followups created
+
+- F-084: AI rubber-band lead compression for visible mid-pack
+  churn.
+- F-085: Late-race overtake decisions and racing-line overtake
+  awareness for AI-vs-AI passing.
+
+### Open questions created
+
+- Q-015: Quick Race opponent count and pack-stretch limits.
+  Recommended default lands a Quick-Race-honours-gridSlots
+  rule, keeps §7 default field size at 12, and moves the
+  opponent draw cull from 200 m to 600 m with an alpha fade
+  between 400-600 m so the iter-3 slices are unblocked.
+
+### GDD edits
+
+None. The §7 default field size, §15 archetype matrix, §15
+rubber-banding philosophy, §20 HUD position, and §22 / §23
+schemas are intact and unambiguous; the gap is execution
+against them, not spec text.
+
+---
+
 ## 2026-05-05: research(topgear-fun): pain point #2 - real turns and elevation
 
 **GDD sections touched (research only, no spec edits):** [§9](gdd/09-track-design.md)

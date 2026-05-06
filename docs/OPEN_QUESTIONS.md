@@ -9,6 +9,65 @@ they are part of the design history.
 
 ---
 
+## Q-015: Quick Race opponent count and pack-stretch limits
+
+**GDD reference:** [§7](gdd/07-race-rules-and-structure.md) "Starting
+grid", [§15](gdd/15-cpu-opponents-and-ai.md) "AI design goals",
+[§22](gdd/22-data-schemas.md) "Track JSON schema" (`spawn.gridSlots`).
+**Status:** open
+**Asked in loop:** 2026-05-05
+
+**Question.** §7 pins "Default field size: 12 racers in championship
+and quick race". Today's Quick Race entry path
+(`src/app/race/page.tsx:672`) ships `AI_DRIVERS.slice(0, 1)` so a
+non-tour race fields **2 cars total** (player + 1 AI), even though
+the track JSON declares `spawn.gridSlots: 12`. Two related sub
+questions are silent in the GDD:
+
+1. Should Quick Race honour `track.spawn.gridSlots` (so it ships an
+   11-AI pack the same as Tour mode), or stay at a smaller field
+   for a quicker setup?
+2. §7 names 12 as the default but Top Gear 2's reference grid is 20.
+   The spec calls 12 "intentionally smaller than the likely opponent
+   density remembered from the SNES game, because browser
+   readability and solo-dev AI scope matter more than strict
+   mimicry". Is that decision still load-bearing now that the
+   archetype roster ships 20 drivers and the engine renders 11
+   simultaneously without measurable cost?
+3. The renderer's `projectOpponentCar` cull at `depthMeters > 200`
+   (`src/app/race/page.tsx:722`) hides any car more than 200 m
+   ahead of the player. With multi-lap pacing landing in the
+   iter-1 lap-bump slice, packs will routinely stretch past 200 m.
+   Should the cull move, or should §15 pin a target visibility
+   window so the renderer slice has a number?
+
+**Recommended default.** Unblock the implementor with three concrete
+defaults:
+
+1. **Quick Race honours `track.spawn.gridSlots`.** Replace
+   `AI_DRIVERS.slice(0, 1)` with the same `gridSlots - 1`
+   shuffle the tour path uses, drawn deterministically from
+   `AI_DRIVERS` so the 20-driver roster covers the 11 needed
+   slots without per-mode roster authoring. This makes Quick Race
+   match §7 verbatim.
+2. **Keep §7 default field size at 12 for now.** Track JSON
+   already ships `spawn.gridSlots: 12` everywhere; revisiting the
+   density to 16 or 20 is a future Q after the renderer-visibility
+   slice lands so the change is data-only and reversible.
+3. **Move the `projectOpponentCar` depth cull to 600 m and add an
+   alpha fade between 400-600 m**, matching the §17 "asset
+   resolution" pyramid (`asset_max_distance` ~ 6 x ROAD_WIDTH ~ 27
+   m near + horizon). 600 m matches the §16 segment projector's
+   draw-distance ceiling and lets the player see leaders ~10 s
+   ahead at 60 m/s.
+
+**Blocking?** No. The grid-density slice
+(`VibeGear2-implement-quick-race-grid-...`) and the
+draw-distance slice (`VibeGear2-implement-opponent-draw-...`)
+both proceed under the recommended defaults.
+
+---
+
 ## Q-014: §9 corner-grade frequency budget per track length
 
 **GDD reference:** [§9](gdd/09-track-design.md) "Road curvature",
