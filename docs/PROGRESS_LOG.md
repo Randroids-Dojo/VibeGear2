@@ -6,6 +6,154 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): cut-non-tour slice pre-flight (F-NNN audit, GDD edit prep, risk register)
+
+**GDD sections touched:** none directly; this iteration only PLANS
+edits the `cut-non-fdcb3b2d` slice will make to
+[§04](gdd/04-player-experience-goals.md),
+[§06](gdd/06-game-modes.md),
+[§07](gdd/07-race-rules-and-structure.md),
+[§10](gdd/10-driving-model-and-physics.md),
+[§12](gdd/12-upgrade-and-economy-system.md),
+[§18](gdd/18-sound-and-music-design.md),
+[§22](gdd/22-data-schemas.md), and
+[§24](gdd/24-content-plan.md). No spec edits this iteration.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-13 verifies iter-12's eight-name F-NNN supersession
+candidate list against the actual `docs/FOLLOWUPS.md` text and
+corrects three misclassifications (F-076, F-051, F-021 are NOT
+superseded; their load-bearing claims survive the cut). Walks
+`docs/GDD_COVERAGE.json` end to end and pre-stages per-row edits for
+seven cut rows plus two amended rows. Sketches the literal markdown
+the implementor inserts at the top of `docs/gdd/06-game-modes.md`
+plus the cross-reference edits in §04, §07, §10, §12, §18, §22, §24.
+Walks `src/app/race/page.tsx`, `src/app/page.tsx`, `src/leaderboard/`,
+`src/game/timeTrial.ts`, and `src/game/modes/` to identify the
+day-1 integration risks; pins six concrete Tour-mode regression
+risks and a recommended six-commit ordering. Files Q-019 (coverage
+enum extension for out-of-scope rows) so the implementor stays
+unblocked; the cut slice cannot ship a clean `npm run content-lint`
+without one of the four resolution options.
+
+### Done
+
+- Read `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` iter-11 / iter-12 sections,
+  the latest 12 PROGRESS_LOG entries, the entire
+  `docs/OPEN_QUESTIONS.md`. Ran `git log -13 --oneline && git status -s`;
+  tree clean apart from the unrelated `.claude/scheduled_tasks.lock`.
+- Walked `docs/FOLLOWUPS.md` for each iter-12 candidate F-NNN. Read
+  the full entry text per F-NNN. Assigned a verdict:
+  SUPERSEDED (F-023 only), PARTIALLY SUPERSEDED (F-070, F-038,
+  F-034, F-022), NOT SUPERSEDED (F-076, F-051, F-021). Documented
+  the verdict table in the plan doc.
+- Swept `docs/FOLLOWUPS.md` for additional candidates iter-12 may
+  have missed (`grep -nEi "(quick race|time trial|/time-trial|daily
+  challeng|/daily|practice mode|/practice|ghost|leaderboard)"`).
+  Found F-032 (leaderboard panel), F-030 (Vercel KV obsolete), F-069
+  (Upstash production); none requires supersession because the
+  leaderboard backend stays load-bearing for Tour-mode results.
+  No new candidates to add to the supersession list.
+- Walked `docs/GDD_COVERAGE.json` end to end (2153 lines, version
+  1). Found seven cut-mode rows by id: `GDD-06-DAILY-CHALLENGE-SELECTION`,
+  `GDD-06-DAILY-CHALLENGE-RESULT-SHARE`,
+  `GDD-06-TIME-TRIAL-PB-RECORDS`,
+  `GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH`,
+  `GDD-06-TIME-TRIAL-DOWNLOADED-GHOST`, `GDD-06-QUICK-RACE-MODE`,
+  `GDD-06-PRACTICE-MODE`. Found two rows whose requirement text
+  should be amended (not cut): `GDD-04-FIRST-RACE-FUN-LOOP` (drops
+  the "Quick Race" framing), `GDD-20-PAUSE-GHOSTS-ACTION` (drops
+  the `/time-trial` route reference) plus `GDD-15-CAMPAIGN-AI-FIELD`
+  (drops the "time-trial" preservation clause). Documented the
+  per-row plan in the plan doc.
+- Read `scripts/content-lint.ts:589-594` to confirm the
+  `COVERAGE_KINDS` enum has no out-of-scope value. Filed Q-019
+  with four resolution options and a Recommended default (option
+  (a) extend the enum with `"out-of-scope-v1"`); prepended Q-019
+  to `docs/OPEN_QUESTIONS.md`.
+- Read `docs/gdd/06-game-modes.md` (30 lines) and sketched the
+  literal markdown the implementor inserts at the top: a
+  `**Status:** partial`, a `## v1.0 scope` block, a recentered
+  `## Championship (World Tour)` heading, a quarantined
+  `## Non-Tour modes deferred post-v1.0 per Q-015 (2026-05-06)`
+  block (preserves Quick race / Time trial / Practice / Daily
+  Challenge spec text as institutional memory), and a build-log
+  entry per the `.claude/rules/gdd-build-log.md` shape.
+- Swept all `docs/gdd/*.md` for cut-mode references
+  (`grep -nEi "(quick.race|time.trial|daily challeng|practice mode|/practice)"`).
+  Found references in §04 (line 16, 19), §07 (line 5), §10 (line
+  126), §12 (line 89), §18 (line 29), §22 (lines 421-427), §24
+  (lines 8-13, 34-42). Documented per-file edit sketches in the
+  plan doc.
+- Walked `src/app/race/page.tsx` end to end (the file iter-12
+  flagged as the `tourContext == null` integration hot-spot). Pinned
+  `resolveRaceAIDrivers` lines 670-677 (the prototype 1-AI
+  fallback), the `RaceMode` union at line 572, the
+  `mode === "quickRace" || mode === "practice"` ternary at line
+  1488, the `router.push("/time-trial")` pause Ghosts retarget at
+  line 1739, the practice panel JSX at lines 2475-2535, and the
+  `practiceSnapshot` state at line 1152. Documented the
+  Tour-mode regression risks per call-site in the plan doc.
+- Walked `src/app/page.tsx` (the title-screen menu) and named the
+  four cut menu items (`menu-time-trial`, `menu-quick-race`,
+  `menu-practice`, `menu-daily`). The simplified menu becomes
+  `Start Race` -> `World Tour` -> `Garage` -> `Options`, or (cleaner)
+  `World Tour` -> `Garage` -> `Options` if the `Start Race`
+  prototype-route entry is also dropped.
+- Walked `src/leaderboard/` (8 files). Confirmed the leaderboard
+  backend is consumed by `LeaderboardPanel.tsx` on the §20 race
+  results page, which is reached from Tour-mode race-finish (per
+  F-038 wiring). KEEP verdict: leaderboard module stays in v1.0.
+- Walked `src/game/modes/` (4 files: `dailyChallenge.ts`,
+  `quickRace.ts`, `timeTrialTargets.ts`, `unlockedTracks.ts`).
+  DELETE verdicts for the first three; `unlockedTracks.ts` is
+  KEEP-or-DELETE pending grep-by-implementor (the World Tour cursor
+  uses `championship.ts` not this helper). Pinned
+  `src/game/timeTrial.ts` as DELETE.
+- Identified six concrete Tour-mode regression risks the implementor
+  must mitigate (dangling state references, mis-tagged
+  `raceSession.mode`, broken e2e specs, dangling
+  `dailyChallenge` import, broken pause Ghosts action, and the
+  prototype `/race` smoke route). Pinned a recommended six-commit
+  ordering (docs first, src deletes second, race-page trim third,
+  title-page trim fourth, new e2e spec fifth, content-lint enum
+  bump LAST).
+
+### Verified
+
+- `npm run content-lint`: clean (pre-edit and post-edit).
+- The plan-doc edits, Q-019 prepend, and PROGRESS_LOG prepend are
+  all append-only / prepend-only; no past Q-NNN, F-NNN, or
+  PROGRESS_LOG entry was rewritten.
+- `dot tree` shows iter-12's `cut-non-fdcb3b2d` slice intact at
+  `○ implement: cut non-tour modes for World-Tour-only v1.0
+  scope`. No new dots filed this iteration; iter-13 is a research
+  pre-flight pass.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` row updates this iteration. Iter-13 is a
+research + pre-flight pass; the seven cut rows and the three amended
+rows stay untouched until the implementor of `cut-non-fdcb3b2d` ships
+the code change. The plan doc carries the per-row pre-staged edits
+for the implementor to copy-paste.
+
+### Followups created
+
+None new this iteration. The plan doc's §A verdict table corrects
+iter-12's eight-name list to match the actual append-only-ledger
+work the implementor will do (5 entries get appended notes; 3
+entries (F-076, F-051, F-021) need NO note because their
+load-bearing claims survive the cut).
+
+### GDD edits
+
+None this iteration. The slice's GDD edits to §06, §04, §07, §10,
+§12, §18, §22, §24 are pre-staged in the plan doc with literal
+markdown the implementor pastes into each section. They ship with
+the code change, not with this research pass.
+
+---
+
 ## 2026-05-06: research(topgear-fun): Q-013 to Q-018 resolved, World-Tour-only scope-cut slice filed
 
 **GDD sections touched:**

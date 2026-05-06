@@ -9,6 +9,81 @@ they are part of the design history.
 
 ---
 
+## Q-019: Coverage-ledger marker for v1.0 out-of-scope rows
+
+**GDD reference:** [§06](gdd/06-game-modes.md) "v1.0 scope" subsection
+(landing with `cut-non-fdcb3b2d`); `docs/GDD_COVERAGE.json` ledger
+schema; `scripts/content-lint.ts:589-594` `COVERAGE_KINDS` enum.
+**Status:** open
+**Asked in loop:** 2026-05-06
+
+**Question.** The cut-non-tour slice
+(`VibeGear2-implement-cut-non-fdcb3b2d`) needs to mark seven
+coverage-ledger rows as out-of-scope-for-v1.0 without deleting them
+(per the append-only ledger discipline). The current
+`COVERAGE_KINDS` enum in `scripts/content-lint.ts:589-594` is
+`["implemented-code", "automated-test", "open-followup", "open-question"]`.
+None of those values fits "row exists for institutional memory but no
+code or tests are owed in v1.0". The append-only ledger rule in
+`.claude/rules/ledger-append-only.md` literally says "Do not delete
+rows whose requirements got cut. Set `status: 'out_of_scope'` and
+add a note." The ledger schema has no `status` field today; the
+shape is `{ id, gddSections, requirement, coverage, implementationRefs,
+testRefs, followupRefs, questionRefs }`. How should the cut slice
+mark the seven rows so `npm run content-lint` stays clean and the
+audit trail is preserved?
+
+**Options.**
+
+- **(a) Extend the `COVERAGE_KINDS` enum with a new value
+  `"out-of-scope-v1"` (recommended).** A row marked
+  `coverage: ["out-of-scope-v1"]` is treated as documentation only;
+  no `implementationRefs` validation, no `testRefs` validation. The
+  enum extension is one line in `scripts/content-lint.ts`. The
+  `coverage` array can mix values (e.g.,
+  `["out-of-scope-v1", "open-followup"]` for a row that's cut but
+  has a tracking F-NNN). No schema-version bump because the field
+  is an open-ended string array; `version: 1` invariant survives.
+- **(b) Add a top-level `status` field to each row, with values
+  `"in-scope" | "out-of-scope-v1"`.** Closer to the ledger-append
+  rule's literal text. Requires a `version: 1` -> `version: 2`
+  migration in `parseCoverageEntry` and content-lint. More disruptive
+  for a small slice; the schema-version bump is a separate concern.
+- **(c) Move out-of-scope rows to a sibling `outOfScope` array
+  alongside `requirements` in `docs/GDD_COVERAGE.json`.** Cleanest
+  separation but requires a JSON schema change AND a
+  `parseCoverageEntry` change AND a `version` bump. Three changes
+  for one row-style.
+- **(d) Strip the `implementationRefs` / `testRefs` arrays on the
+  cut rows and add an out-of-scope note in `requirement` text.**
+  No schema change. Smallest content-lint touch (none). But the
+  row's `coverage` array still says
+  `["implemented-code", "automated-test"]` which is a lie; a future
+  reader cannot tell the row is cut without reading the full
+  requirement text.
+
+**Recommended default.** Option (a). One-line enum extension in
+`scripts/content-lint.ts:589-594`, the `coverage` value is
+self-documenting, the `version: 1` invariant survives, and a future
+reader can grep for `"out-of-scope-v1"` to find every cut row in
+one read. The seven rows the slice marks (per
+`docs/RESEARCH_TOPGEAR_FUN_PLAN.md` Iteration 13 §B):
+`GDD-06-DAILY-CHALLENGE-SELECTION`,
+`GDD-06-DAILY-CHALLENGE-RESULT-SHARE`,
+`GDD-06-TIME-TRIAL-PB-RECORDS`, `GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH`,
+`GDD-06-TIME-TRIAL-DOWNLOADED-GHOST`, `GDD-06-QUICK-RACE-MODE`,
+`GDD-06-PRACTICE-MODE`. Two additional rows (`GDD-04-FIRST-RACE-FUN-LOOP`,
+`GDD-20-PAUSE-GHOSTS-ACTION`) are AMENDED in place; they stay
+in-scope but their requirement text is rewritten to drop the
+cut-mode references.
+
+**Blocking?** Yes for the `cut-non-fdcb3b2d` slice. The slice
+cannot ship a clean `npm run content-lint` without one of (a) /
+(b) / (c) / (d). The recommended default unblocks the slice in
+the smallest change-surface possible.
+
+---
+
 ## Q-018: Tire-scrub onset threshold and continuous-loop intensity curve
 
 **GDD reference:** [§18](gdd/18-sound-and-music-design.md) "Vehicle and

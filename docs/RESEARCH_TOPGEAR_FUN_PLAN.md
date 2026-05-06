@@ -2562,3 +2562,402 @@ edit to §6 ships when the code change lands), no F-NNN appended to
 `docs/FOLLOWUPS.md` (the implementor of `cut-non-fdcb3b2d` appends
 the per-row supersession notes when the actual code change ships).
 Iter-12 is a Q-NNN resolution-recording + new-slice-filing pass.
+
+## Iteration 13 - cut-non-tour slice pre-flight
+
+Date: 2026-05-06.
+Owner: research loop.
+Mode: research only (no `src/` writes; only docs).
+
+Iter-12 filed `VibeGear2-implement-cut-non-fdcb3b2d` (the World-Tour-only
+scope cut) as slice #0 and listed candidate F-NNN supersessions plus the
+GDD §6 / §24 edit areas at a sketch level. Iter-13 verifies each F-NNN
+verdict against the actual `docs/FOLLOWUPS.md` text, pre-stages the GDD
+coverage-ledger edits the implementor will make (against the real
+`docs/GDD_COVERAGE.json` row IDs), pre-stages the GDD §6 / §07 / §12 /
+§18 / §24 markdown edits, walks the source surfaces and pins concrete
+integration risks, and files one new Q-NNN that the slice cannot ship
+without (`Q-019`: ledger enum extension for out-of-scope rows).
+
+### A. F-NNN supersession verdict table (verified)
+
+The iter-12 list named F-076, F-070, F-051, F-038, F-034, F-023, F-022,
+F-021. Iter-13 walked each entry in `docs/FOLLOWUPS.md` and assigned a
+verdict.
+
+| F-NNN | Status | Verdict | Reason |
+| --- | --- | --- | --- |
+| F-076 | done (closed) | NOT SUPERSEDED | The closing note mentions "full Quick Race" only as a step inside the gated playtest checklist. The release-fun playtest gate ITSELF is Tour-mode work; it just exercises one Quick Race slot today. After the cut, the implementor amends the playtest spec to drive a Tour race in the Quick Race slot (or removes that slot). The F-NNN itself is not superseded; the playtest checklist stays load-bearing for v1.0. Append a clarifying note when the spec changes. |
+| F-070 | done (closed) | PARTIALLY SUPERSEDED | The closing note routes the pause Ghosts action to `/time-trial`. After the cut, that route is removed. The pause action survives (the §20 pause menu still lists Ghosts), but its target surface needs a new home (in-race ghost panel, or hide). The implementor decides per the same call as `GDD-20-PAUSE-GHOSTS-ACTION` (see §B). Append "Notes (2026-05-06): /time-trial route removed; pause Ghosts action retargeted by `cut-non-fdcb3b2d`". |
+| F-051 | done (closed) | NOT SUPERSEDED | The "Time Trial ghost" mention is incidental; the entry's load-bearing claim is the §16 atlas-frames work for the live player car. Atlas frames stay v1.0. The ghost overlay rendering may be retargeted by the implementor (Tour-mode rival ghosts? cut entirely?), but the F-NNN itself ships its work in `feat/f-051-car-atlas-sprites` and the closure stands. Append a clarifying note only if the ghost overlay path is removed. |
+| F-038 | done (closed) | PARTIALLY SUPERSEDED | The "Practice / Quick Race / Time Trial reuse will land alongside" note in the closing block names cut modes as the next consumers. After the cut, those reuse paths are dropped and the natural-finish branch is the only consumer. Append "Notes (2026-05-06): Practice / Quick Race / Time Trial reuse dropped per `cut-non-fdcb3b2d`; Tour-mode finish path is the only consumer in v1.0". |
+| F-034 | done (closed) | PARTIALLY SUPERSEDED | The closing note says "non-economy modes (Practice / Time Trial) can ship a legitimate zero". After the cut, no shipping mode is non-economy; every race is a Tour race. The `creditsAwarded: 0` default-on-builder pattern stays load-bearing for DNF participation, but the "Practice / Time Trial can ship zero" rationale is moot. Append a clarifying note. |
+| F-023 | done (closed) | SUPERSEDED | The entire entry exists to wire Time Trial UI. After the cut, the recorder lifecycle module `src/game/timeTrial.ts` is deleted (or the helper is repurposed, see Q-019 below). Append "Resolved: N/A (dropped because Time Trial mode cut in v1.0 per `cut-non-fdcb3b2d`)". |
+| F-022 | done (closed) | PARTIALLY SUPERSEDED | The renderer-side `ghostCar` overlay prop on `pseudoRoadCanvas.drawRoad` is reusable infrastructure; the consumer (Time Trial route) is cut. The dot's "F-022a sub-slice" (`projectGhostCar` projection helper) and "F-022b sub-slice" (`createGhostDriver`) are pure helpers that stay valid in the codebase but have no consumer in v1.0. Append "Notes (2026-05-06): consumer route /time-trial cut by `cut-non-fdcb3b2d`; renderer prop and helpers stay as institutional infrastructure for any future Tour-mode rival-ghost feature". |
+| F-021 | done (closed) | NOT SUPERSEDED | The save-schema v3 migration is purely additive and load-bearing for backwards-compat; it has no Tour vs cut-mode coupling. The `ghosts` slot can stay seeded as `{}` in v1.0 (no writer if Time Trial is cut). Mention the "5-minute Time Trial PB ghost" example becomes hypothetical, but the migration itself stays. Append a clarifying note only if the implementor decides to remove the `ghosts` slot from `SaveGameSchema` (which would be an additional v3->v4 migration; not recommended). |
+
+Sweep of `docs/FOLLOWUPS.md` for additional candidates iter-12 may have
+missed (keywords: quick race, time trial, daily, practice, ghost,
+leaderboard):
+
+- **F-032** (Wire leaderboard client into race results surface, done):
+  PARTIALLY SUPERSEDED IN PRINCIPLE, NOT IN PRACTICE. The leaderboard
+  panel renders on the §20 race results page, which is reached from
+  Tour-mode race-finish too (per F-038's natural-finish wiring). The
+  `LEADERBOARD_BACKEND=upstash-redis` storage and the `submitLap` path
+  stay valid for Tour mode. No append needed. Listing here so the
+  implementor of `cut-non-fdcb3b2d` doesn't double-take.
+- **F-030** (Vercel KV provisioning, obsolete): already obsoleted by
+  Q-011 / F-069. No new note needed.
+- **F-069** (Upstash Redis production wiring, done): the leaderboard
+  backend stays load-bearing for Tour mode results. NOT SUPERSEDED.
+- **F-068** (Unique FX atlas sheets, open?): grep shows it does not
+  reference cut modes. NOT IN SCOPE for this slice.
+- **GDD-06-PAUSE-GHOSTS-ACTION** (coverage row): see B below; this row
+  references §06 Time Trial in its requirement text and routes to
+  `/time-trial` in `implementationRefs`. The slice retargets the pause
+  Ghosts action AND amends the row.
+
+Iter-12's eight-name list is complete for the IMPLEMENTOR's
+append-only-supersession pass. Iter-13 corrects three verdicts (F-076
+NOT, F-051 NOT, F-021 NOT) so the implementor doesn't append misleading
+notes to entries whose load-bearing claims survive the cut.
+
+### B. Pre-staged GDD coverage ledger edits (do NOT edit `docs/GDD_COVERAGE.json` this iteration)
+
+Walked `docs/GDD_COVERAGE.json` end to end (2153 lines, 1 invariant
+`"version": 1`). The current `coverage` enum in
+`scripts/content-lint.ts:589-594` is
+`["implemented-code", "automated-test", "open-followup", "open-question"]`
+with no `out_of_scope_v1` value. The implementor must extend the enum or
+pick a documented alternative; iter-13 files **Q-019** (see §E) to gate
+that decision. Until Q-019 resolves, the per-row plan below names
+"out-of-scope marker" abstractly; the implementor uses the resolved enum
+shape on the slice's PR.
+
+Per-row plan, by `id`:
+
+| GDD row id | Action | Note |
+| --- | --- | --- |
+| `GDD-06-DAILY-CHALLENGE-SELECTION` (line 252) | Mark out-of-scope-v1 | Cut entirely. `implementationRefs` (`src/game/modes/dailyChallenge.ts`, `src/app/daily/page.tsx`, `src/app/daily/DailyShareButton.tsx`) all delete; `e2e/daily-challenge.spec.ts` deletes. Append note: "Cut from v1.0 scope per Q-015 resolution (2026-05-06); World Tour is the only race surface that ships." |
+| `GDD-06-DAILY-CHALLENGE-RESULT-SHARE` (line 274) | Mark out-of-scope-v1 | Same as above. The §20 share string is Daily-Challenge-only. |
+| `GDD-06-TIME-TRIAL-PB-RECORDS` (line 296) | Mark out-of-scope-v1 | Cut. `implementationRefs` keep `src/persistence/save.ts` and `src/game/raceResult.ts` (those modules survive for Tour mode); the requirement is satisfied vacuously. Note: "Cut from v1.0 scope per Q-015 resolution; Tour mode does not record Time Trial PBs." |
+| `GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH` (line 316) | Mark out-of-scope-v1 | Cut. `src/game/modes/timeTrialTargets.ts` and `src/app/time-trial/page.tsx` delete; `e2e/time-trial.spec.ts` deletes. |
+| `GDD-06-TIME-TRIAL-DOWNLOADED-GHOST` (line 337) | Mark out-of-scope-v1 | Cut. `SaveGameSchema.downloadedGhosts` is left in place for save backward-compat (per F-021 verdict above), but no UI exercises it in v1.0. |
+| `GDD-06-QUICK-RACE-MODE` (line 361) | Mark out-of-scope-v1 | Cut. `src/game/modes/quickRace.ts` and `src/app/quick-race/page.tsx` delete; the `mode === "quickRace"` branch in `src/app/race/page.tsx` deletes. |
+| `GDD-04-FIRST-RACE-FUN-LOOP` (line 384) | AMEND requirement text | The current requirement reads "The default Quick Race path demonstrates the first-race loop...". Rewrite to "The default World Tour first-race path demonstrates the first-race loop with a visible rival, nitro use, authored pickup rewards, a natural finish, results feedback, and a clear garage next step." Update `implementationRefs` to drop `src/app/quick-race/page.tsx`; keep `src/app/race/page.tsx` and the bundled track. The §04 player-experience-goal that motivates the row stays. |
+| `GDD-06-PRACTICE-MODE` (line 410) | Mark out-of-scope-v1 | Cut. The practice panel UI in `src/app/race/page.tsx:2475-2535` deletes; the `mode === "practice"` branches in `resolveRaceMode`, `practiceSnapshot` state, and the conditional render delete; `e2e/practice-mode.spec.ts` deletes. |
+| `GDD-20-PAUSE-GHOSTS-ACTION` (line 859) | AMEND requirement and refs | Current requirement says "...routes to the Time Trial ghost surface." Rewrite to either (a) "...routes to a future Tour-mode ghost panel" with the row marked partial pending implementation, OR (b) drop the row entirely as out-of-scope-v1. Implementor picks. Drop `src/app/time-trial/page.tsx` from `implementationRefs`. |
+| `GDD-15-CAMPAIGN-AI-FIELD` (line 1094) | AMEND requirement text | Current requirement reads "...while preserving time-trial and prototype route behavior." Rewrite to "...while preserving the prototype `/race` route behavior." `implementationRefs` likely unchanged. |
+
+`gddSections` for §06-cut rows continues to point at
+`docs/gdd/06-game-modes.md`; the GDD §06 file gets a new "v1.0 scope"
+prefix and "post-v1.0 deferral" subsection (see §C below) so the
+back-reference still resolves to a real-and-present section.
+
+The `version: 1` invariant should NOT change unless Q-019 forces an
+enum migration; if it does, the bump to `version: 2` lands in the same
+PR as the schema edit and the new enum value.
+
+### C. Pre-staged GDD §06 edit (do NOT edit `docs/gdd/06-game-modes.md` this iteration)
+
+Current §06 file (30 lines) declares Championship + Quick race + Time
+trial + Practice + Community challenge + Stretch goals as peer headings.
+The cut-non-tour slice rewrites the section to centre on the World Tour
+and quarantine the cut modes under a clearly-labeled deferral block.
+
+Literal markdown the implementor inserts at the TOP of `docs/gdd/06-game-modes.md` (replacing the current heading and preface):
+
+```markdown
+# 6. Game modes
+
+**Status:** partial
+
+## v1.0 scope
+
+For v1.0, the build ships a single race surface: the **World Tour
+championship**. Quick Race, Time Trial, Practice, and Daily Challenge
+are deferred post-v1.0 per Q-015 (2026-05-06). The decision keeps the
+build aligned with the Top Gear 2 reference (which shipped a single
+championship loop) and shrinks the cross-mode integration cost on every
+remaining slice.
+
+## Championship (World Tour)
+
+The centerpiece mode. The player progresses through tours of four races
+each, managing cash, repairs, and upgrades between events. **This is
+the only race surface in v1.0.**
+
+## Non-Tour modes deferred post-v1.0 per Q-015 (2026-05-06)
+
+The following modes existed in earlier scope but are cut from v1.0.
+The spec text is preserved as institutional memory for any future
+post-v1.0 add-back.
+
+### Quick race (deferred)
+
+Pick any unlocked track, weather variant, and car/setup. No campaign
+economy. **Deferred post-v1.0.**
+
+### Time trial (deferred)
+
+Solo run on any unlocked track against personal best, developer
+benchmark, or downloaded ghost. **Deferred post-v1.0.**
+
+### Practice (deferred)
+
+A no-stakes test session with restart, checkpoint reset, visible grip
+telemetry, and instant weather swap. **Deferred post-v1.0.**
+
+### Community challenge / Daily Challenge (deferred)
+
+A rotating daily or weekly seeded challenge. **Deferred post-v1.0**;
+listed in §24 stretch content.
+
+## Stretch goals
+
+- Local split-screen on large desktop displays.
+- Ghost-versus mode.
+- Community track of the week.
+- Endurance cup.
+- Mirror tracks or reverse variants.
+
+### Build log
+
+- 2026-05-06: cut Quick Race, Time Trial, Practice, Daily Challenge from v1.0 scope per Q-015. World Tour is the only race surface that ships. Files: `src/app/quick-race/`, `src/app/time-trial/`, `src/app/daily/`, `src/app/race/page.tsx` (mode branches), `src/app/page.tsx` (menu), `src/game/modes/quickRace.ts`, `src/game/modes/dailyChallenge.ts`, `src/game/modes/timeTrialTargets.ts`, `src/game/timeTrial.ts`. PR #(TBD).
+```
+
+Other GDD files that name cut modes as v1.0 features (per the
+2026-05-06 sweep `grep -nEi "(quick.race|time.trial|daily challeng|practice mode)" docs/gdd/*.md`):
+
+- **`docs/gdd/04-player-experience-goals.md` line 16**: "Single quick
+  race | 3 to 5 minutes" row in the Session targets table. Edit:
+  rename to "Single World Tour race" or remove the row. Line 19
+  "Time trial / ghost chase | 2 to 15 minutes" row: remove (cut).
+- **`docs/gdd/07-race-rules-and-structure.md` line 5**: "Default field
+  size: 12 racers in championship and quick race." Edit: drop "and
+  quick race" so the line reads "Default field size: 12 racers in
+  championship." Line 9 "intentionally smaller than the likely
+  opponent density..." paragraph stays unchanged.
+- **`docs/gdd/10-driving-model-and-physics.md` line 126**: "practice,
+  time trials, and ghost replays deterministic" parenthetical. Edit:
+  rewrite to "the championship race surface deterministic" (the
+  determinism contract still holds for Tour mode).
+- **`docs/gdd/12-upgrade-and-economy-system.md` line 89**: "Practice
+  mode can preview track weather so bad setup choices feel fair, not
+  hidden." Edit: remove the bullet (the catch-up mechanism #4 is
+  vacuous after Practice is cut). Q-007's resolution stays in
+  `docs/OPEN_QUESTIONS.md` as institutional memory.
+- **`docs/gdd/18-sound-and-music-design.md` line 29**: "Time-trial
+  mix can be cleaner and less dense." Edit: remove (cut). The §18
+  music intensity layers stay load-bearing for Tour mode.
+- **`docs/gdd/22-data-schemas.md` lines 421-427**: `ghosts` and
+  `downloadedGhosts` slot documentation. Edit: prefix each
+  description with "(deferred post-v1.0; slot retained for save
+  backward-compat per F-021)" so the schema field stays load-bearing
+  for migration but the runtime semantics is documented as
+  vacuous-in-v1.0.
+- **`docs/gdd/24-content-plan.md` lines 8-13, 34-42**: MVP and Full
+  v1.0 mode lists. Edit: drop "quick race", "practice", "Time trial
+  without ghost share" from MVP content (line 8, 13); drop "quick
+  race, time trial, practice" from Full v1.0 (line 34); drop "Daily
+  challenge" from Full v1.0 stretch (line 42 stays, since it was
+  already in stretch). Update the §24 mode bullets to read
+  "Championship (World Tour)" only.
+
+The GDD §6 build log entry is the canonical record of the cut; the
+other GDD edits are downstream cross-references that the slice
+should land in the same PR for spec consistency.
+
+### D. Day-1 risk register (integration risks the implementor will hit)
+
+Walked the source surfaces named in iter-12's slice description and
+named the risks that can regress Tour mode if the slice is rushed.
+
+#### D.1 The `tourContext == null` branch in `src/app/race/page.tsx`
+
+`src/app/race/page.tsx:670-677` defines `resolveRaceAIDrivers(tourContext)`:
+
+```typescript
+function resolveRaceAIDrivers(
+  tourContext: TourRaceContext | null,
+): readonly AIDriver[] {
+  if (tourContext === null) return AI_DRIVERS.slice(0, 1);
+  // ... tour roster path
+  return tourRoster.length > 0 ? tourRoster : AI_DRIVERS.slice(0, 11);
+}
+```
+
+Today, when the user enters `/race` directly without a tour context,
+the function returns a single AI (`AI_DRIVERS.slice(0, 1)`) so a
+prototype `/race` smoke does not crash. After the cut, the safe
+behavior options are:
+
+- **Option (i):** Keep the `tourContext === null` branch as a
+  prototype-only fallback (returns 1 AI for backward-compat with
+  `e2e/test-track.spec.ts` and the `/race` smoke route). This is the
+  minimum-risk option.
+- **Option (ii):** Hard-redirect `/race?` (no tour context, no
+  `?mode=practice|quickRace|timeTrial`) to `/world` so every race in
+  v1.0 enters through a tour. Cleanest but breaks the prototype
+  smoke; mitigate by passing a synthetic `TourRaceContext` for the
+  smoke spec.
+
+Recommended: option (i) for the slice, option (ii) as a follow-up. The
+slice keeps the smoke route alive so the cut PR's regression surface
+is purely about removing routes, not about invariants.
+
+`src/app/race/page.tsx:1488` mode mapping:
+
+```typescript
+mode: mode === "quickRace" || mode === "practice" ? "race" : mode,
+```
+
+Becomes simply `mode: mode` after the `RaceMode` union narrows to
+`"race" | "timeTrial"`, then `"race"` only after the timeTrial cut.
+
+`src/app/race/page.tsx:1739` `router.push("/time-trial")` (the pause
+Ghosts action retarget): becomes either a `null` action or routes to
+a future Tour-ghost panel. See §B GDD-20-PAUSE-GHOSTS-ACTION above.
+
+#### D.2 The title-screen menu in `src/app/page.tsx`
+
+Current `MENU` const lists 8 items; 4 are cut (Time Trial, Quick Race,
+Practice, Daily Challenge). New menu: Start Race, World Tour, Garage,
+Options. The `e2e/title-screen.spec.ts` spec exercises every cut
+testId; the test must be amended to drop the 4 cut entries.
+
+The `Start Race` -> `/race` entry uses the prototype no-tour-context
+path (option (i) above). Recommended retarget: change "Start Race" to
+"World Tour" (collapse the two entries; the menu becomes World Tour,
+Garage, Options).
+
+#### D.3 The `src/leaderboard/` module
+
+`src/leaderboard/client.ts` (`submitLap`, `getTop`) is consumed by
+`src/components/results/LeaderboardPanel.tsx` on the §20 race results
+page. The race results page is reached from Tour-mode race-finish
+(F-038 wiring). **The leaderboard stays in v1.0 for Tour mode**; the
+storage backend (`store-upstash-redis.ts`, F-069) stays provisioned.
+DELETE risk: `null`. KEEP. No edits to `src/leaderboard/`.
+
+#### D.4 `src/game/timeTrial.ts`, `src/game/modes/quickRace.ts`, `src/game/modes/dailyChallenge.ts`, `src/game/modes/timeTrialTargets.ts`
+
+All four are mode-specific state machines / selection helpers. None is
+imported by the Tour-mode race path. Verdict per file:
+
+- `src/game/timeTrial.ts`: DELETE. The recorder lifecycle has no Tour
+  consumer.
+- `src/game/modes/quickRace.ts`: DELETE.
+- `src/game/modes/dailyChallenge.ts`: DELETE. (Note: `src/game/raceResult.ts`
+  imports `DailyChallengeSelection` per `src/app/race/page.tsx:118`;
+  that import deletes too.)
+- `src/game/modes/timeTrialTargets.ts`: DELETE.
+- `src/game/modes/unlockedTracks.ts`: KEEP if Tour-reachable; the file
+  enumerates unlocked tracks for any mode picker, but the World Tour
+  uses its own `championship.ts` cursor. Verify no Tour-mode caller
+  imports it; if none, DELETE. (Implementor pre-flight: `grep -rn
+  "from .*unlockedTracks" src` before delete.)
+
+Plus the matching `__tests__/` files.
+
+#### D.5 The practice panel inline JSX in `src/app/race/page.tsx`
+
+`src/app/race/page.tsx:2475-2535` renders the practice toolbar
+(restart, checkpoint reset, weather select, telemetry). DELETE the
+JSX, the `practicePanelStyle` / `practiceToolbarStyle` /
+`practiceSelectStyle` const definitions at lines 2616+, and the
+`practiceSnapshot` state at line 1152.
+
+#### D.6 What can break Tour mode if the slice is rushed
+
+- **Removing `practiceSnapshot` without removing the
+  `setPracticeSnapshot` callsites** breaks the `useEffect` at lines
+  1265-1272 with a dangling reference. Mitigate: delete state, deps,
+  and JSX in one commit; type-check.
+- **Removing the `mode === "race" || mode === "timeTrial" ? mode : ...`
+  ternary at line 1488 incorrectly** can mis-tag PB records. Mitigate:
+  unit-test `raceSession.mode` post-cut to confirm only `"race"` reaches
+  the session reducer.
+- **Removing the title-screen `Start Race` link without re-pointing
+  e2e specs** breaks `e2e/title-screen.spec.ts`. Mitigate: amend the
+  spec in the same PR.
+- **Removing `src/game/modes/dailyChallenge.ts` without removing the
+  import in `src/app/race/page.tsx:118`** breaks typecheck. Mitigate:
+  the import line deletes too.
+- **Removing `src/app/time-trial/page.tsx` without retargeting the
+  pause Ghosts action's `router.push("/time-trial")`** breaks the
+  pause overlay's Ghosts button. Mitigate: change the button to a
+  no-op or remove it from the pause menu in the same PR.
+
+#### D.7 Test specs that catch each break
+
+- `npm run typecheck`: catches dangling imports, dangling state
+  references, dangling type unions.
+- `npm run test`: unit-tests the `raceSession` reducer with the
+  narrowed `RaceMode` union; the `raceResult.test.ts` `creditsAwarded`
+  cases still cover DNF participation; `pauseActions.test.tsx` covers
+  the retargeted Ghosts action.
+- `npm run test:e2e`: the new `world-tour-only-scope.spec.ts` named in
+  the slice's acceptance gates plus the existing
+  `e2e/race-finish.spec.ts`, `e2e/world.spec.ts`, and
+  `e2e/garage.spec.ts` cover Tour entry, finish, and inter-race flow.
+- `npm run content-lint`: catches GDD coverage rows whose
+  `implementationRefs` point at deleted files.
+
+#### D.8 File-touch ordering (touched LAST to avoid mid-slice broken state)
+
+Recommended ordering:
+
+1. **First commit:** docs only. GDD §6 / §7 / §12 / §18 / §22 / §24
+   edits + GDD_COVERAGE.json row updates + FOLLOWUPS.md supersession
+   notes per the §A verdict table. Lint + typecheck still pass
+   because no `src/` change yet. This commit has zero source risk.
+2. **Second commit:** delete `src/app/quick-race/`, `src/app/daily/`,
+   `src/app/time-trial/`, `src/game/timeTrial.ts`, `src/game/modes/quickRace.ts`,
+   `src/game/modes/dailyChallenge.ts`, `src/game/modes/timeTrialTargets.ts`,
+   matching `__tests__/`, matching `e2e/` specs.
+3. **Third commit:** trim `src/app/race/page.tsx` (mode union, ternary,
+   practice panel, dailyChallenge import, pause Ghosts retarget).
+4. **Fourth commit:** trim `src/app/page.tsx` (menu items) + amend
+   `e2e/title-screen.spec.ts`.
+5. **Fifth commit:** add the new `e2e/world-tour-only-scope.spec.ts`
+   spec asserting (a) GET `/quick-race` returns 404, (b) GET
+   `/time-trial` returns 404, (c) GET `/daily` returns 404, (d) GET
+   `/race?mode=practice` redirects to `/race` (or 404 the practice
+   mode), (e) the title-screen menu has exactly 3 items.
+6. **Sixth commit:** extend `scripts/content-lint.ts` enum (per
+   Q-019) and bump `docs/GDD_COVERAGE.json` rows to the new
+   out-of-scope marker.
+
+LAST file to touch is `scripts/content-lint.ts` (commit 6) so the
+ledger update lands behind a green gate. The slice can land as a
+single PR with these six commits or, if the diff exceeds ~1500 LOC,
+split between commit 4 and commit 5 per iter-12's PR-size guard.
+
+### E. New question: Q-019 (filed)
+
+The cut slice cannot ship clean coverage-ledger rows without an
+out-of-scope marker that `npm run content-lint` accepts. The current
+`COVERAGE_KINDS` enum has no slot for "row exists for institutional
+memory but no code or tests are owed". Three options exist (extend
+enum, add `outOfScope: true` field, drop rows). The decision is small
+but non-obvious; iter-13 files **Q-019** with a Recommended default
+("extend enum with `out-of-scope-v1`") so the implementor stays
+unblocked.
+
+The Q-019 entry was prepended to `docs/OPEN_QUESTIONS.md` this
+iteration (the only ledger file iter-13 modifies beyond the plan doc
+and the progress log).
+
+### F. Files appended this iteration
+
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (this Iteration 13 section).
+- `docs/OPEN_QUESTIONS.md` (Q-019 prepended).
+- `docs/PROGRESS_LOG.md` (iter-13 entry prepended).
+
+No `src/` writes, no GDD section edits, no `docs/FOLLOWUPS.md` edits,
+no `docs/GDD_COVERAGE.json` edits this iteration. Everything is
+PLANNED for the implementor of `cut-non-fdcb3b2d` to copy-paste; the
+verdicts in §A correct three iter-12 misclassifications (F-076, F-051,
+F-021 are NOT superseded; their load-bearing claims survive the cut).
