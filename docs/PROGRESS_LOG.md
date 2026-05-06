@@ -6,6 +6,137 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): iter-8 verification and HUD readability diagnosis
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)
+"Recommended VFX set" (verification only),
+[§20](gdd/20-hud-and-ui-ux.md) "Race HUD layout" (diagnosis only).
+No spec edits this iteration.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-9 verification pass. Iters 1-5 closed all 5 user-named
+pain points; iter 6 validated the plan; iter 7 pre-flighted top-3 with
+copy-paste-ready Vitest math; iter 8 filed 4 secondary "feel"
+slices and surfaced the dormant-VFX claim. This iteration verifies
+the two load-bearing claims that downstream iterations depend on
+(iter-8's `VfxState` dead-code claim and iter-4's lateral-fix math)
+and surveys the HUD readability surface as the next "feel" candidate.
+
+### Done
+
+- Read `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` end to end (1539 lines pre-
+  edit) and the latest 8 PROGRESS_LOG entries (iters 1-8). Ran
+  `git log -9 --oneline && git status -s`; clean tree.
+- Item A (VfxState dead-code claim verification). Walked
+  `src/render/vfx.ts` line by line: confirmed `fireFlash` (lines
+  139-149), `fireShake` (lines 158-170), `tickVfx` (lines 227-247),
+  `drawVfx` (lines 261-289), and `INITIAL_VFX_STATE` (lines 84-87)
+  all exist and are exported. Confirmed `fireShake` calls
+  `prefersReducedMotion()` and short-circuits when the user has the
+  preference set. Confirmed `fireFlash` does NOT consult
+  reduced-motion (per docstring at lines 20-23 and per §19's
+  accessibility table that only gates parallax / shake / dust). Walked
+  `src/render/pseudoRoadCanvas.ts:51, 152, 397-414, 427`: confirmed
+  `drawRoad` accepts `options.vfx` and brackets the shake offset
+  around the strip loop only. Ran `rg -n "vfx" src/app/race/page.tsx
+  src/components/render/RoadCanvas.tsx`: zero matches. Ran
+  `rg -n "fireFlash|fireShake" src/`: zero production call sites
+  outside `src/render/vfx.ts` and `src/render/__tests__/vfx.test.ts`.
+  Verdict: iter-8 was correct. The VFX module ships as production
+  dead code in the literal sense; `VibeGear2-implement-fire-camera-
+  36ae8ff4` and its Implementation Notes stand verbatim.
+- Item B (lateral-fix math stress test). Re-derived the post-fix
+  `state.x` for all four iter-7 input rows from
+  `src/game/physics.ts:164-176, 401-418` and `STARTER_STATS`
+  (`topSpeed=61`, `gripDry=1.0`, `STEER_RATE_LOW_RAD_PER_S=2.3`,
+  `STEER_RATE_HIGH_RAD_PER_S=1.25`). All four numbers match the
+  iter-7 Vitest table at `.dots/VibeGear2-implement-fix-lateral-
+  b2503f6f.md:42-46` to 4-6 decimal places. Re-derived the top-speed
+  full-steer cross time: `lateralVelocity = 1.25 * 1.0 * 61 = 76.25
+  m per tick (pre-fix interpretation) = 1.27083 m/s (post-fix
+  interpretation)`; `4.5 / 1.27083 = 3.541 s`. Matches iter-4's
+  table row at line 538 (`3.5 s post-fix`) and the iter-7 `>= 2 s`
+  Vitest pin at `b2503f6f.md:85-92`. Found a discrepancy in the
+  iter-9 prompt's restatement of iter-4's prediction: the prompt
+  said "1.5 s to cross half the road", but iter-4's actual prediction
+  is **3.5 s post-fix**, with **1.5 s** being the TG2 reference target
+  the cornering-tuning slice (`62491aea`) is expected to land once
+  `STEER_RATE_HIGH_RAD_PER_S` is lifted from 1.25 to ~2.5. The iter-7
+  test pins to the correct 3.5 s post-fix value, not the misread 1.5
+  s. No corrections needed to the `fix-lateral` dot or to iter-4's
+  plan paragraphs.
+- Item C (HUD readability mid-corner). Walked
+  `src/render/uiRenderer.ts` end to end (512 lines) and
+  `src/app/race/page.tsx:2064` (the `drawHud` call site). Confirmed
+  HUD draws AFTER `drawRoad` returns, so the shake `ctx.translate /
+  ctx.restore` bracket inside `pseudoRoadCanvas.ts:402-414, 427`
+  applies to road / sprites / pickups but NOT to HUD. Walked the §20
+  "Race HUD layout" requirement list against `drawHud` widgets:
+  speed (lines 244-261), gear (263-273), position (189-198), lap
+  (183-187), lap timer (203-214), best lap (215-226), nitro meter
+  (275-277 + 292-326), damage and weather (delegated to
+  `drawStatusCluster` at 240), cash delta (227-237), minimap (drawn
+  separately by `hudMinimap.ts` after `drawHud`). All §20 widgets
+  wired. Contrast: every HUD text path goes through
+  `drawShadowedText` (lines 143-155), one-pixel offset shadow at
+  `rgba(0, 0, 0, 0.65)` plus white / light fill. On tunnel / night
+  frames the shadow blends into the background but the white text
+  remains legible. Verdict: HUD is well-architected for the iter-8
+  `fire-camera` slice; no `implement:` dot warranted. The one
+  residual gap (no automated assertion that HUD pixels are unaffected
+  by road shake) is small enough to roll into the existing
+  `fire-camera-36ae8ff4` slice's `e2e/vfx-impact-feedback.spec.ts`
+  rather than spawn a separate dot. Logged in the plan doc, not as a
+  separate F-NNN.
+- Plan doc (`docs/RESEARCH_TOPGEAR_FUN_PLAN.md`) appended a new
+  "Iteration 9 - validation and HUD feel" section covering items A,
+  B, and C with the verification numbers above.
+
+### Verified
+
+- `npm run content-lint` clean post-edit (research notes + plan doc
+  edits + ledger appends, no `src/` writes).
+- `grep -nP '[\x{2013}\x{2014}]' docs/RESEARCH_TOPGEAR_FUN_PLAN.md
+  docs/PROGRESS_LOG.md` returns zero matches: no em-dash or en-dash
+  in iter-9 content.
+- `dot tree` post-edits unchanged from iter-8: zero new dots filed.
+  The four truly-unblocked dots stay (`fix-lateral`,
+  `classify-tracks`, `lap-rollover`, `calibrate-roadside`) plus the
+  iter-8 `fire-camera-36ae8ff4` and `convert-tiresqueal-d2fd1407`.
+- Iter-7 Vitest table re-verified against source: all four input row
+  expectations and the `>= 2 s` cross-time pin remain exact.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. Iter-9 is verification-only.
+The §16 camera-behavior row stays `partial` until the iter-8
+`fire-camera` and iter-8 `speed-coupled` slices ship; the §20
+race-HUD row stays `partial` until the iter-1 `lap-rollover` slice
+ships its visible "LAP 2 / 3" pulse.
+
+### Followups created
+
+None new. The 9 currently-open F-NNNs (`F-077`, `F-079`, `F-080`,
+`F-081`, `F-082`, `F-083`, `F-084`, `F-085`, `F-086`) all stand as
+filed. None are obsolete given iter-9's findings.
+
+### Open questions created
+
+None new. Q-018 (filed iter 8) stands. The HUD shake-isolation gap
+surfaced in item C is small enough to ride inside the
+`fire-camera-36ae8ff4` slice's existing test plan rather than become
+its own Q-NNN.
+
+### GDD edits
+
+None. Iteration 9 is research-only.
+
+### Files appended this iteration
+
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (Iteration 9 section appended).
+- `docs/PROGRESS_LOG.md` (this entry).
+
+---
+
 ## 2026-05-06: research(topgear-fun): feel-of-a-racer secondary slices and F-NNN reconciliation
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)

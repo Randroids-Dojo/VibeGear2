@@ -1537,3 +1537,227 @@ diagnosis).
 
 None new. Existing F-077 / F-079-086 stand.
 
+## Iteration 9 - validation and HUD feel
+
+This iteration validates two load-bearing claims from prior iterations
+and surveys one more "feel" surface (HUD readability mid-corner). No
+slices were filed beyond what already exists; the verification work
+confirms the iter-8 slice and iter-7 test numbers stand as written.
+
+### A. VfxState dead-code claim verification (iter-8 confirmation)
+
+Iter-8 filed `VibeGear2-implement-fire-camera-36ae8ff4` on the claim
+that `src/render/vfx.ts` ships `fireFlash` / `fireShake` end to end
+with reduced-motion gating and `drawRoad` integration plumbed, but no
+production caller creates a `VfxState`, ticks it, fires it, or passes
+it to `drawRoad`.
+
+Verification, line by line:
+
+1. `rg -n "fireFlash|fireShake" src/` returns exactly two source files.
+   `src/render/vfx.ts` (definitions plus the docstring on lines 20 and
+   24) and `src/render/__tests__/vfx.test.ts` (the existing unit
+   suite). Zero production call sites outside the module itself.
+2. `src/render/vfx.ts:139-149` exports `fireFlash`. The docstring at
+   lines 20-23 states explicitly that flashes do NOT consult
+   reduced-motion (per §19's accessibility table, which only gates
+   parallax / camera shake / dust). `fireShake` at lines 158-170 calls
+   `prefersReducedMotion()` (cached match-media result) and returns
+   the input state unchanged when the user has the preference set.
+   Both functions accept a `VfxState` and return a new `VfxState`.
+3. `src/render/pseudoRoadCanvas.ts:51` imports `drawVfx` and `VfxState`.
+   The `DrawRoadOptions` interface declares `vfx?: VfxState` at line
+   152. The `drawRoad` body at line 397 reads `options.vfx` and, when
+   present, calls `drawVfx(ctx, options.vfx, viewport)`; the returned
+   shake offset is bracketed by `ctx.save() / ctx.translate(dx, dy) /
+   ctx.restore()` around the strip loop only (lines 402-414, 427).
+4. `rg -n "vfx" src/app/race/page.tsx src/components/render/RoadCanvas.tsx`
+   returns zero matches. The race-page render callback never creates a
+   `VfxState`, never calls `tickVfx`, never calls `fireFlash` /
+   `fireShake`, and never passes a `vfx:` field into `drawRoad`. The
+   only other production caller of `drawRoad` is the dev pages
+   (`src/app/dev/physics/page.tsx`, `src/app/dev/road/page.tsx`,
+   `src/app/dev/ai/page.tsx`); none of them pass `vfx:` either.
+
+Verdict: **iter-8 was correct.** The VFX module ships as production
+dead code in the literal sense: every entry point is exported, fully
+typed, and unit-tested, but no production code path invokes any of
+them. The `fire-camera-36ae8ff4` slice is the canonical fix and its
+Implementation Notes are accurate.
+
+No edits made to the dot file or to the plan doc beyond this iter-9
+verification entry. The iter-6 + iter-8 Top-3 / Top-N ordering stands
+unchanged.
+
+### B. Lateral-fix math stress test (iter-4 / iter-7 claim verification)
+
+The iter-9 prompt restated the iter-4 prediction as "with the fix
+`nextX = state.x + lateralVelocity * dt`, the player at top speed full
+steer takes about 1.5 s to cross half the road (4.5 m)." Stress-test:
+
+The actual iter-4 plan doc (this file, lines 526-541) does NOT predict
+1.5 s as the post-fix time. It predicts **3.54 s** at top speed full
+steer with the surgical fix and current §10 constants. The 1.5 s
+number is the TG2 reference target the cornering-tuning slice
+(`VibeGear2-implement-cornering-tuning-62491aea`) is expected to land
+once `STEER_RATE_HIGH_RAD_PER_S` is lifted from 1.25 toward 2.5.
+
+Re-derived from source (`src/game/physics.ts:164-176, 401-418`,
+`STARTER_STATS` from §23: `topSpeed = 61`, `gripDry = 1.0`):
+
+- `speedNorm = clamp(61 / 61, 0, 1) = 1.0`.
+- `steerRate = lerp(2.3, 1.25, 1.0) = 1.25 rad/s`.
+- `tractionScalar = clamp(1.0, 0, 2) * 1 * 1 = 1.0` (no damage, no
+  weather, on-road).
+- `yawDelta = -1 * 1.25 * (1/60) * 1.0 = -0.020833 rad/tick`.
+- `lateralVelocity = -0.020833 * 61 = -1.27083 m/s` (after the fix
+  the unit is m/s; pre-fix it is treated as m/tick).
+- Post-fix per-tick displacement = `lateralVelocity * dt = -1.27083 *
+  (1/60) = -0.021181 m/tick`.
+- Time to cross 4.5 m at 1.27083 m/s = `4.5 / 1.27083 = 3.541 s`.
+
+Result matches iter-4 row "61 m/s, steer 1.0, 3.5 s post-fix" (line
+538) and iter-7's `>= 2 s` lower-bound test pin at `physics-bug-fix
+b2503f6f.md:85-92`.
+
+The pre-flight Vitest assertions in
+`.dots/VibeGear2-implement-fix-lateral-b2503f6f.md:42-46` (the
+expected per-tick `state.x` values for the four named input rows) are
+exact fractions all the way through and were re-checked here:
+
+- `x=0, steer=-1, speed=60`: `speedNorm=60/61=0.98361`, `steerRate=
+  2.3+(1.25-2.3)*0.98361 = 1.26721`, `yawDelta=-1*1.26721*(1/60)=
+  -0.0211201`, `lateralVelocity=-0.0211201*60=-1.26721`, post-fix
+  `nextX=0+(-1.26721)*(1/60)=-0.021120`. Matches table row 1
+  (`-0.0211202`).
+- `x=0, steer=+1, speed=30`: `speedNorm=30/61=0.49180`, `steerRate=
+  2.3+(1.25-2.3)*0.49180 = 1.78361`, `yawDelta=+1*1.78361*(1/60)=
+  +0.029727`, `lateralVelocity=+0.029727*30=0.89180`, post-fix
+  `nextX=0+0.89180*(1/60)=0.014863`. Matches table row 2.
+- `x=0, steer=0, speed=60`: `yawDelta=0`, `lateralVelocity=0`,
+  `nextX=0`. Matches table row 3.
+- `x=0.5, steer=-1, speed=0`: `lateralVelocity=yawDelta*0=0`, post-fix
+  `nextX=0.5+0=0.5`. Matches table row 4.
+
+Verdict: **iter-4's prediction is internally correct (3.5 s post-fix,
+not 1.5 s).** The iter-9 prompt's restatement of "1.5 s" was a misread
+of iter-4's table; the iter-7 pre-flight Vitest cases pin to the
+correct numbers and the `>= 2 s` cross-time bound is loose-but-correct
+relative to the actual 3.5 s post-fix value. No changes to the
+`fix-lateral` dot or to iter-7's Vitest block are warranted.
+
+The cornering-tuning slice (`62491aea`) stays the right home for
+lifting `STEER_RATE_HIGH_RAD_PER_S` from 1.25 to ~2.5 so the post-fix
+top-speed cross time approaches the 1.5 s TG2 target without
+re-introducing the 60x integrator bug.
+
+### C. HUD readability mid-corner
+
+Walked the production HUD draw path end to end and cross-checked
+against §20 "UX wireframe descriptions / Race HUD layout".
+
+#### HUD ownership and layer order
+
+- HUD draws from `src/render/uiRenderer.ts` `drawHud(ctx, hud,
+  viewport)`.
+- The race page calls `drawHud` at `src/app/race/page.tsx:2064`,
+  AFTER `drawRoad` has returned. So HUD always paints over road,
+  sprites, dust, weather, tunnel adaptation, and the player car. ✓
+- The shake offset inside `drawRoad` is bracketed by `ctx.save() /
+  ctx.translate(dx, dy) / ctx.restore()` around just the strip loop
+  (`src/render/pseudoRoadCanvas.ts:402-414, 427`). Everything after
+  the `restore()` (AI cars, ghost, dust, weather, heat shimmer,
+  tunnel adaptation, player car, pickup feedback) draws in the
+  un-translated frame. Since `drawHud` runs after `drawRoad` returns,
+  HUD never inherits the shake translation. ✓
+
+When the iter-8 `fire-camera-36ae8ff4` slice ships, this layering will
+matter: the HUD must continue to draw outside the shake bracket so the
+LAP / SPEED text does not jitter when the player hits a wall. The
+fire-camera dot's Implementation Notes already say "fireFlash on
+impact / fireShake on impact" without coupling to HUD; the existing
+restore-before-HUD pattern is the right one and no change is needed.
+
+#### HUD elements §20 calls for
+
+§20 race-HUD requirements vs current implementation:
+
+- speed - `drawHud` lines 244-261: 36 px bold value bottom-right plus
+  12 px unit label. ✓
+- gear - lines 263-273, only when `state.gear !== undefined`. ✓
+- position - lines 189-198, 14 px `POS P / T` top-left. ✓
+- lap - lines 183-187, 16 px `LAP N / M` top-left. ✓
+- lap timer - lines 203-214, 14 px `TIME mm:ss.SSS` top-left. ✓
+- best lap - lines 215-226, 12 px `BEST mm:ss.SSS` top-left below
+  timer. ✓
+- nitro meter - lines 275-277 (delegates to `drawNitroMeter` at lines
+  292-326): 160 px wide bar bottom-center plus charge count label. ✓
+- damage - delegates to `drawStatusCluster` (called at line 240),
+  damage bar bottom-left in the §20 wireframe location. ✓
+- cash delta - lines 227-237. ✓
+- minimap or progress strip - drawn separately by `hudMinimap.ts`;
+  bottom-left, 120 x 120 box, painted from `src/app/race/page.tsx`
+  after `drawHud`. ✓
+- weather icon - delegates to `drawStatusCluster`. ✓
+- grip hint - present indirectly via the weather chip and the assist
+  badge. The §20 spec is not explicit about a "grip hint" surface;
+  no slice warranted today.
+- assistBadge - lines 282-284, top-right pill. ✓ (extra; not in §20.)
+
+All §20 race-HUD widgets are wired. No missing surface.
+
+#### Contrast and legibility
+
+- All HUD text uses `drawShadowedText` (`uiRenderer.ts:143-155`):
+  one-pixel offset shadow at `rgba(0, 0, 0, 0.65)` plus the white /
+  light text fill. This works on bright sky, grass, and asphalt
+  because the dark shadow contrasts the white text against any
+  reasonably bright background.
+- On dark backgrounds (tunnel adaptation pass at
+  `pseudoRoadCanvas.ts:457`, painted before `drawHud`), the dark
+  drop-shadow blends into the background but the white text fill
+  (`#ffffff`) remains legible against a dimmed road. The shadow
+  becomes redundant, not harmful.
+- The risk surface is the inverse: any future palette that swaps the
+  text fill to a dark color would make BOTH the text and its shadow
+  vanish on tunnel / night frames. Since the current `HudColors` ship
+  `text: "#ffffff"` and `textMuted: "#cfd6e4"` (lines 81-82), the
+  contrast story is sound today. A palette change is the right
+  trigger to revisit.
+- The status-cluster panel (`drawStatusCluster`) paints an opaque
+  fill at `rgba(7, 14, 28, 0.72)` underneath the damage bar and
+  weather chip, so those widgets are legible regardless of the
+  surface beneath them. ✓
+
+#### Mid-shake legibility
+
+When the iter-8 `fire-camera` slice lands and the screen shakes on
+impact, the HUD will NOT shake (verified above: HUD draws after the
+shake bracket is restored). The road / sprites / pickups will jitter
+under the player while the speed value, lap count, and damage bar
+stay rock-steady. This is the correct §16 "light camera shake on
+impact" reading: the WORLD shakes, not the dashboard.
+
+#### Verdict
+
+HUD is well-architected for the iter-8 fire-camera slice and matches
+the §20 wireframe. No `implement:` slice warranted. The one residual
+gap is automated coverage: there is no Playwright spec or unit test
+that asserts HUD pixels are unaffected by the road shake or that HUD
+text is non-zero pixel-contrast over a tunnel frame. That coverage is
+small enough to roll into the `fire-camera-36ae8ff4` slice's existing
+`e2e/vfx-impact-feedback.spec.ts` rather than spawn a separate slice
+(append: "and assert HUD region pixel hash matches the no-shake
+baseline frame within 1 px tolerance"). Logged here for the
+implementor to pick up; not a separate dot.
+
+### Files appended this iteration
+
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (this Iteration 9 section).
+- `docs/PROGRESS_LOG.md` (iter-9 entry prepended).
+
+No `src/` writes, no new dots, no Q-NNN, no F-NNN. Iter-9 is a pure
+verification + diagnosis pass that confirms the iter-8 dead-code
+claim and the iter-4 / iter-7 lateral-fix math.
+
+
