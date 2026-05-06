@@ -9,6 +9,52 @@ they are part of the design history.
 
 ---
 
+## Q-018: Tire-scrub onset threshold and continuous-loop intensity curve
+
+**GDD reference:** [§18](gdd/18-sound-and-music-design.md) "Vehicle and
+race SFX" (tire squeal, brake scrub), "Dynamic audio layers".
+**Status:** open
+**Asked in loop:** 2026-05-06
+
+**Question.** §18 lists `tire squeal` and `brake scrub` as required
+sounds and §18 "Dynamic audio layers" pins layered intensity, but does
+not specify the slip-angle / steer-magnitude / lateral-rate threshold
+at which tire scrub onset fires, nor the gain / pitch curve that
+modulates the scrub bed under sustained cornering load. Today
+`src/game/raceSession.ts:2014-2020` emits a single edge event when
+`|steer| >= TIRE_SQUEAL_STEER_THRESHOLD = 0.65` and
+`speed >= TIRE_SQUEAL_SPEED_M_PER_S = 18`, then the SFX layer plays one
+0.16 s tone and goes silent until the gate flips false-true again.
+A sustained hairpin produces a single chirp at the entry and silence
+for the rest of the corner. What is the correct onset threshold for a
+continuous loop, and what is the intensity curve over the cornering
+window?
+
+**Recommended default.**
+
+- Onset threshold: keep `TIRE_SQUEAL_STEER_THRESHOLD = 0.65` and
+  `TIRE_SQUEAL_SPEED_M_PER_S = 18` for the gate-on edge so the slice
+  is a non-breaking change to existing sfx-test pins.
+- Intensity scalar: `intensity = clamp((|steer| - 0.65) / 0.35, 0, 1) *
+  speedFactor`, where `speedFactor = clamp(speed / topSpeed, 0, 1)`.
+  At the just-onset point intensity is 0; at full steer at top speed
+  intensity is 1.
+- Gain curve: `gain = lerp(0.40, 0.85, intensity)`. Pitch:
+  `freqHz = lerp(860, 1420, intensity)`.
+- Brake-scrub mirrors the same shape with onset
+  `BRAKE_SCRUB_SPEED_M_PER_S = 8` and `brake > 0`, intensity
+  `= speedFactor` (no steer-magnitude term), `gain = lerp(0.35, 0.62,
+  intensity)`, pitch `= lerp(170, 260, intensity)`.
+- Loop deactivation ramps `gain` to 0 over 80 ms before the oscillator
+  stops. This matches the `engineRuntime` smoothing pattern.
+
+**Blocking?** Yes for the iter-8 audio cornering-cue slice
+`VibeGear2-implement-convert-tiresqueal-d2fd1407`. The recommended
+default unblocks the slice; a future playtest pass can re-tune the
+intensity curve without re-architecting the audio path.
+
+---
+
 ## Q-017: Per-kind roadside prop physical heights and max-height clamp
 
 **GDD reference:** [§16](gdd/16-rendering-and-visual-design.md) "Sprite

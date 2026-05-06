@@ -6,6 +6,155 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): feel-of-a-racer secondary slices and F-NNN reconciliation
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)
+"Camera behavior" / "Animation and effects",
+[§18](gdd/18-sound-and-music-design.md) "Vehicle and race SFX" /
+"Dynamic audio layers". No spec edits; research-only against existing
+build logs.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-8 secondary-slice pass. Iters 1-7 closed all 5
+user-named pain points end to end and pre-flighted the top-3 with
+copy-paste-ready Vitest math. This iteration looked for the next
+layer of "feels like a racer" gaps that fall outside pain points
+1-5: audio cornering cues, camera language under speed/brake,
+mid-race damage feedback, and speed-line / motion FX.
+
+### Done
+
+- Read the full plan doc and the latest 7 PROGRESS_LOG entries (iters
+  1-7). Ran `dot tree && dot ready`; confirmed the four truly-unblocked
+  dots (`fix-lateral`, `classify-tracks`, `lap-rollover`,
+  `calibrate-roadside`) match the iter-7 audit.
+- Pain area A (audio cornering cues). Read §18 end to end. Walked
+  `src/audio/sfx.ts`, `src/audio/raceMix.ts`, `src/audio/engineRuntime.ts`,
+  and `src/game/raceSession.ts:1977-2042`. Found that `tireSqueal`
+  and `brakeScrub` fire as ONE-SHOT 0.16 s tones on the false-to-true
+  gate transition only; a sustained hairpin produces a single chirp
+  at the entry then silence for the rest of the corner. §18 "Dynamic
+  audio layers" implies a continuous bed under cornering load. Filed
+  `VibeGear2-implement-convert-tiresqueal-d2fd1407` to convert both
+  events to gated continuous loops with intensity scalar. Filed Q-018
+  for the slip-angle / steer-magnitude onset and the gain curve, with
+  a recommended default that keeps the existing 0.65 steer threshold
+  and `lerp(0.40, 0.85, intensity)` gain.
+- Pain area B (camera language). Read §16 "Camera behavior" + "Animation
+  and effects" verbatim. Walked `src/render/vfx.ts`,
+  `src/render/pseudoRoadCanvas.ts`, `src/road/types.ts`, and
+  `src/app/race/page.tsx`. Found two distinct gaps: (1) `vfx.ts` ships
+  `fireFlash` and `fireShake` with deterministic per-tick offset
+  hashing AND reduced-motion gating, plumbed through `drawRoad
+  options.vfx`, but the race page never creates a `VfxState`, never
+  calls `fireFlash` / `fireShake`, never ticks the state, and never
+  passes `vfx:` to `drawRoad` (verified by grep `fireFlash|fireShake`
+  outside `vfx.ts` and `__tests__/`: zero call-sites). The entire
+  impact-shake + lap-flash module is dormant code. (2) `Camera =
+  { x, y, z, depth }` is updated only on `x` and `z` per tick; `y`
+  and `depth` are constants. There is no FOV widen at speed and no
+  camera dip under brake. Filed two slices:
+  `VibeGear2-implement-fire-camera-36ae8ff4` (wire the dormant VFX,
+  fire shake on impact and flash on lap/finish) and
+  `VibeGear2-implement-speed-coupled-3cc0838f` (FOV widen +
+  brake-coupled camera dip via a new pure `cameraSmoothing.ts`
+  module). The fire-camera slice carries no `after:` chain because
+  it is independent of pain points 1-5; the speed-coupled FOV slice
+  is `after: fix-lateral` so the FOV widen lands once the player can
+  actually hold top speed in a corner.
+- Pain area C (mid-race damage feedback). Walked
+  `src/render/uiRenderer.ts:361-383` (HUD damage bar). The continuous
+  damage-bar IS painted mid-race (color thresholds 35% / 70%), so
+  the iter-1 prompt's worry about "damage state changes mid-race not
+  reflected before the results screen" turns out to be false: the
+  bar paints continuously. The actual gap is per-impact intensity:
+  no camera shake, no screen flash, no car-sprite hit-flash. The
+  fire-camera slice (B above) closes 80% of this on its own; a
+  larger optional slice (90 ms color tint frame on the player car
+  sprite at impact, mirroring `brakeLight` / `nitroGlow` overlay
+  pattern) is logged for a future iter as out-of-scope today.
+- Pain area D (speed-line / motion FX). Walked
+  `src/render/pseudoRoadCanvas.ts` end to end and ran
+  `grep -rn "speedLine\|streak\|nitroBloom\|nitroTrail" src/`.
+  Confirmed: no radial speed-line module, no dotted-line streak
+  module, no nitro-trail particle module. Existing weather streaks
+  (rain only, downward, never radial), the off-road dust pool, and
+  the heat-shimmer overlay (`ember-steppe` only) are the only
+  motion FX above the road. F-058 added behind-car spray/snow
+  trails (closed) but not foreground motion lines. §16 "Strong
+  foreground speed cues" + §16 "Nitro bloom trail" both call for
+  it. Filed `VibeGear2-implement-radial-speed-02dc1556` mirroring
+  the `src/render/dust.ts` pure-PRNG pool pattern; emit threshold
+  speedNorm >= 0.7, peak 24/s + 18/s under nitro, deterministic
+  via seed-hashed jitter, reduced-motion gates emissions to 0.
+  `after: fix-lateral`.
+- Pain area E (F-NNN backlog). Walked the 9 currently-open
+  followups (`F-077`, `F-079`, `F-080`, `F-081`, `F-082`, `F-083`,
+  `F-084`, `F-085`, `F-086`). All are either named in the iter-2/3/4
+  plan paragraphs or orthogonal to the fun-factor plan (`F-077`,
+  `F-079` are FAB infrastructure). None are obsolete given the
+  iter-8 slices. `docs/FOLLOWUPS.md` not edited.
+- Plan doc (`docs/RESEARCH_TOPGEAR_FUN_PLAN.md`) appended a new
+  "Iteration 8 - feel-of-a-racer secondary slices" section covering
+  A through E with diagnoses, slices filed, and a Top-3 update that
+  slots `fire-camera-36ae8ff4` to position 4 (only iter-8 slice that
+  ships standalone). Iter-6 final ordering otherwise preserved.
+
+### Verified
+
+- `npm run content-lint` clean post-edit (research notes in dot files
+  + plan doc edits + ledger appends, no `src/` writes).
+- `grep -nP '[\x{2013}\x{2014}]'` against the four new dot files,
+  the plan doc, the new Q-018 entry, and this PROGRESS_LOG entry
+  returns zero matches: no em-dash or en-dash in any iter-8 content.
+- `dot tree` post-edits shows the four new iter-8 implement dots:
+  `fire-camera-36ae8ff4`, `convert-tiresqueal-d2fd1407`,
+  `speed-coupled-3cc0838f`, `radial-speed-02dc1556`.
+- The two iter-8 slices that depend on the lateral-fix
+  (`speed-coupled` and `radial-speed`) carry `blocks:` arrays naming
+  `VibeGear2-implement-fix-lateral-b2503f6f` per the iter-6 dot-CLI
+  fix.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. Iter-8 is research-only.
+The §16 camera-behavior row stays `partial` until the fire-camera
+and speed-coupled slices ship; the §18 dynamic-audio-layers row
+stays `partial` until the cornering loop slice ships.
+
+### Followups created
+
+None new. The 9 currently-open F-NNNs (`F-077`, `F-079`, `F-080`,
+`F-081`, `F-082`, `F-083`, `F-084`, `F-085`, `F-086`) all stand as
+filed. None are obsolete given the iter-8 slices.
+
+### Open questions created
+
+- Q-018: tire-scrub onset threshold and continuous-loop intensity
+  curve. Recommended default keeps the existing 0.65 steer threshold
+  for the gate-on edge (no breaking change to current sfx-test pins)
+  and pins `lerp(0.40, 0.85, intensity)` gain plus
+  `lerp(860, 1420, intensity)` pitch over the cornering window.
+  Unblocks `VibeGear2-implement-convert-tiresqueal-d2fd1407`.
+
+### GDD edits
+
+None. Iteration 8 is research-only.
+
+### Files appended this iteration
+
+- `.dots/VibeGear2-implement-fire-camera-36ae8ff4.md` (new dot).
+- `.dots/VibeGear2-implement-convert-tiresqueal-d2fd1407.md` (new
+  dot).
+- `.dots/VibeGear2-implement-speed-coupled-3cc0838f.md` (new dot;
+  `blocks: [fix-lateral]`).
+- `.dots/VibeGear2-implement-radial-speed-02dc1556.md` (new dot;
+  `blocks: [fix-lateral]`).
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (Iteration 8 section appended).
+- `docs/OPEN_QUESTIONS.md` (Q-018 prepended).
+- `docs/PROGRESS_LOG.md` (this entry).
+
+---
+
 ## 2026-05-06: research(topgear-fun): pre-flight top-3 slices for implement mode
 
 **GDD sections touched:** None (research-only, no spec edits).

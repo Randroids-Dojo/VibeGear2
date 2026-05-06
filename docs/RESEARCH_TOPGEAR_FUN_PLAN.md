@@ -1237,3 +1237,303 @@ Mapping each user phrase to the slice that closes it.
 
 Every user phrase has a named slice. The plan covers all five pain
 points end to end.
+
+## Iteration 8 - feel-of-a-racer secondary slices
+
+Iters 1-7 cover the five user-named pain points end to end. The
+underlying complaint "doesn't feel like a racer at all" is broader
+than those five. This iteration looks for the next layer of
+fun-factor slices that fall outside pain points 1-5 but land cheap
+relative to the felt impact: audio cornering cues, camera language
+under speed and brake, mid-race damage feedback, and speed-line FX.
+
+### A. Audio cornering cues
+
+#### Diagnosis
+
+`src/audio/sfx.ts` ships `playTireSqueal`, `playBrakeScrub`, and
+`playSurfaceHush` as ONE-SHOT tones (`durationSeconds 0.14 to 0.18`)
+on the `ProceduralSfxRuntime` sibling pattern. The race session at
+`src/game/raceSession.ts:1993-2042` (`buildPlayerSurfaceAudioEvents`)
+emits a `tireSqueal` event ONCE on the false-to-true gate transition
+(`!input.gates.tireSquealActive`), and the event is consumed at
+`src/app/race/page.tsx:323-324` by playing the same 0.16 s tone.
+
+So a sustained hairpin sequence reads in audio as:
+- t=0 (gate flips to true at `|steer| >= 0.65 && speed >= 18`):
+  one 0.16 s squeal tone.
+- t=0.2 to t=2.0 (player still mid-corner, gate still true):
+  silence.
+- t=2.0 (player straightens, gate flips to false): silence.
+- t=2.4 (player turns into the next bend, gate flips back to true):
+  one new 0.16 s squeal tone.
+
+The §18 "tire squeal" + §18 "Dynamic audio layers" lines explicitly
+imply a continuous bed under cornering load, not a single edge chirp.
+§18 reads: "Speed raises engine harmonic content. Nitro adds filtered
+high layer. Off-road adds rumble and debris band. Weather adds
+ambient pad or noise layer. Menu-to-race crossfades should be smooth."
+The dynamic-layers framing is incompatible with one-shot edge events;
+loops are the standard pattern.
+
+The engine runtime (`src/audio/engineRuntime.ts`) already ships a
+continuous-oscillator pattern with `setTargetAtTime`-based smoothing,
+so the loop pattern is in the codebase. The tire-squeal and
+brake-scrub paths just need to follow it.
+
+The §18 spec does NOT pin the slip-angle / steer-magnitude onset
+threshold or the intensity-vs-gain curve, so Q-018 was filed with a
+recommended default that keeps the existing 0.65 steer threshold for
+the gate-on edge (no breaking change to current sfx-test pins) and
+specifies a `lerp(0.40, 0.85, intensity)` gain curve over the
+cornering window.
+
+Engine pitch under load: `enginePitchHz` reads
+`speed / topSpeed` only, with no cornering-load term. Under braking
+the pitch falls naturally because `speed` falls. That is good enough
+for the §18 "Speed raises engine harmonic content" line; no slice
+filed.
+
+Tunnel reverb / ambience: `src/audio/tunnelBus.ts` exists and is
+wired through `src/render/tunnelRenderer.ts` for visual adaptation.
+That is in scope of pain-point #2 re-author work, not iter-8.
+
+#### Slice filed
+
+`VibeGear2-implement-convert-tiresqueal-d2fd1407` - convert the
+`tireSqueal` and `brakeScrub` events from one-shot edge tones to
+gated continuous loops with intensity = `clamp((|steer| - 0.65) /
+0.35, 0, 1) * speedFactor` (Q-018 default). Mirrors the
+`engineRuntime` smoothing pattern. The implementor adds three
+methods to `ProceduralSfxRuntime` (`startTireSquealLoop`,
+`updateTireSquealLoop`, `stopTireSquealLoop`) and the same trio for
+brake-scrub. Verify: `src/audio/__tests__/tireSquealLoop.test.ts`
+and `e2e/tire-squeal-loop.spec.ts`. Q-018 default unblocks.
+
+### B. Camera language under speed and brake
+
+#### Diagnosis
+
+`src/road/constants.ts:33-45` ships `FOV_DEGREES = 100` and
+`CAMERA_HEIGHT = 1.5` as constants. `src/road/types.ts:20-25` defines
+`Camera = { x, y, z, depth }` as a plain struct. The race page builds
+the camera at `src/app/race/page.tsx:1438-1440` with
+`y: CAMERA_HEIGHT, depth: CAMERA_DEPTH` and updates only `x` and `z`
+per tick. `cameraSmoothing` does not exist as a module; there is
+NO per-frame modulation tied to speed, brake, throttle, damage, or
+off-road on the camera struct. The camera is geometrically static.
+
+`src/render/vfx.ts` ships `fireFlash` and `fireShake` with
+deterministic per-tick offset hashing AND reduced-motion gating; the
+flash and shake stack is implemented end to end. But: a global
+`grep -rn "fireFlash\|fireShake" src/` outside of `vfx.ts` /
+`__tests__/vfx.test.ts` returns ZERO call-sites in the race page or
+session. `drawRoad(... { vfx: VfxState })` is plumbed through
+(`src/render/pseudoRoadCanvas.ts:152, 397`) but the race page never
+sets `vfx:` in the options object (verified at
+`src/app/race/page.tsx:1932-1982`). So the entire impact-shake +
+lap-flash module ships dead code in production.
+
+§16 "Camera behavior" says verbatim:
+- "Camera lowers slightly at high speed."
+- "Crest lines should reveal horizon dramatically."
+- "Collision shake and off-road rumble should be subtle and short."
+
+§16 "Animation and effects" lists "Light camera shake on impact" and
+"HUD flash on lap complete" verbatim under the recommended VFX set.
+Both behaviors are coded in `vfx.ts`. Both are dormant.
+
+#### Top Gear 2 reference
+
+A subtle FOV widen at top speed sells "this car is going fast" without
+a perspective skew that would re-tune projector goldens. A small
+camera dip under brake reads as weight transfer. A sharp shake on
+collision plus a yellow flash on lap rollover make every race feel
+event-rich rather than continuous. All three are unique
+"feels-like-a-racer" cues that fall outside the five named pain
+points.
+
+#### Slices filed
+
+- `VibeGear2-implement-fire-camera-36ae8ff4` - wire the dormant
+  `VfxState` into the race page. Own a `vfxRef`, fire `fireShake` on
+  every `RaceSessionImpactAudioEvent` with amplitude scaled by
+  hitKind, fire `fireFlash` on `lapComplete` (gold) and `raceFinish`
+  (gold), tick the state in the rAF, pass `vfx:` to `drawRoad`. Net
+  src diff: ~30 lines in `page.tsx` plus a small bridge module.
+  Verify: `src/app/race/__tests__/vfxBridge.test.ts` and
+  `e2e/vfx-impact-feedback.spec.ts`.
+- `VibeGear2-implement-speed-coupled-3cc0838f` - speed-coupled FOV
+  widen and brake-coupled camera dip. Per-frame compute
+  `cameraDepth = 1 / tan((FOV + fovDelta) / 2 * pi/180)` with
+  `fovDelta = lerp(0, 6 deg, speedNorm)` and
+  `cameraHeight = CAMERA_HEIGHT - brake * 0.18`, smoothed at 6 Hz
+  via a new `src/app/race/cameraSmoothing.ts` pure module. Crucially
+  no projector-internal change: `segmentProjector` reads
+  `camera.depth` and `camera.y` per call. `after:` the lateral-fix
+  slice so the FOV widen lands once the player can actually hold top
+  speed in a corner.
+
+### C. Damage feedback during the race
+
+#### Diagnosis
+
+The HUD damage bar already paints continuously
+(`src/render/uiRenderer.ts:361-383`, color thresholds 35% / 70% via
+`damageGood / damageWarn / damageBad`). So damage state IS visible
+mid-race; the gap is per-impact intensity. On a wall hit:
+- `RaceSessionImpactAudioEvent` fires (`raceSession.ts:1586`) and the
+  `playImpact` SFX plays (one-shot tone, 0.08 s for rub, 0.16 s for
+  hard impacts).
+- The HUD damage-bar color may flip as the new total crosses 35% /
+  70%, but it does NOT pulse, fade, or otherwise call attention.
+- No camera shake (gap B above).
+- No screen flash.
+- No car-sprite flash (`src/render/carSpriteCompositor.ts` has no
+  `hitFlash` field; verified by grep).
+
+So the player feels the speed loss and hears the chirp, but the
+visual reading of "I just hit something" is the new value of the
+damage bar a few px wider. That is too subtle for the §16 "subtle
+and short" target; today the impact reads as nothing happened
+visually.
+
+#### Slice filed
+
+`VibeGear2-implement-fire-camera-36ae8ff4` (named in section B
+above) is the smallest mid-race damage-feedback slice that does NOT
+re-architect damage. It fires both shake AND a brief white-tinted
+flash on every impact event, with intensity scaled by hitKind. That
+is the "smallest mid-race damage-feedback addition that makes
+collisions feel costly without re-architecting damage" the iter-8
+prompt asks for.
+
+A larger optional polish slice (NOT filed this iteration; logged for
+future iter): a 90 ms color-tint frame on the player car sprite at
+the moment of impact, mirroring the `brakeLight` / `nitroGlow` frame
+overlay pattern in `carSpriteCompositor.ts`. Out of scope today
+because the dormant-VFX wiring closes 80% of the gap on its own.
+
+### D. Speed-line / motion FX
+
+#### Diagnosis
+
+`src/render/pseudoRoadCanvas.ts` ships:
+- Rain streaks (`drawWeatherEffects` paints 92 streaks in
+  heavy-rain, downward-only, NEVER radial) per the test at
+  `pseudoRoadCanvas.test.ts:1497`.
+- Off-road dust pool (`src/render/dust.ts`, fires on grass surface
+  past `EMIT_SPEED_THRESHOLD_M_PER_S`).
+- Heat-shimmer (`tourId === "ember-steppe"` only, perspective wave).
+
+There is NO radial speed-line module, NO dotted-line streak module,
+and NO nitro-trail particle module. F-058 (closed) added weather-
+specific car spray/snow trails behind the car sprite, but did NOT
+add foreground motion lines. At 0.95 topSpeed on a clear-weather
+track the player gets ZERO foreground motion cues; the road
+itself moves but the rest of the frame is static.
+
+§16 "Strong foreground speed cues" + §16 "Animation and effects -
+Nitro bloom trail" both call for it. The bloom trail in particular
+is named verbatim and unimplemented.
+
+#### Slice filed
+
+`VibeGear2-implement-radial-speed-02dc1556` - radial speed-line
+streak module mirroring the `src/render/dust.ts` pure-PRNG pool
+pattern. Emit threshold `speedNorm >= 0.7`; emission rate ramps to
+24/s at top speed and lifts to 42/s under nitro (so nitro adds the
+named "bloom"). Stroke width 1-2 px, alpha 0.6 -> 0 over 220 ms,
+horizon-spawned, drift radially outward. Reduced-motion gates
+emissions to 0. Determinism via seed-hashed jitter (no
+`Math.random`). `after:` the lateral-fix slice so the FX only
+fires when the player can hold top speed without scraping a
+rumble.
+
+### E. F-NNN backlog reconciliation
+
+Walked the 9 currently-open followups (`F-077`, `F-079`, `F-080`,
+`F-081`, `F-082`, `F-083`, `F-084`, `F-085`, `F-086`).
+
+Verdict per F-NNN:
+
+- F-086 (banked-corner cap lift): orthogonal to iter-8, blocked on
+  F-082; named in iter-4 already. Leave as-is.
+- F-085 (AI-vs-AI overtake awareness): named in iter-3 plan as
+  land-after-iter-3. Leave as-is.
+- F-084 (AI rubber-band lead compression): named in iter-3 plan as
+  land-after-iter-3. Leave as-is.
+- F-083 (golden-image regression for re-author): named in iter-2
+  plan. Leave as-is.
+- F-082 (renderer banking schema): named in iter-2 plan. Leave
+  as-is.
+- F-081 (cash and repair economics for multi-lap): named in iter-1
+  follow-up surface. Leave as-is.
+- F-080 (re-baseline release-fun playtest to multi-lap): tightly
+  coupled to iter-1 lap-bump slice. Leave as-is; the lap-bump PR
+  must update the playtest suite as part of its own change.
+- F-079 (Feedback FAB rate limit move to Redis): orthogonal to the
+  fun-factor plan entirely. Leave as-is.
+- F-077 (Playwright coverage for FAB): orthogonal. Leave as-is.
+
+None are obsolete. None are duplicated by the iter-8 slices.
+`docs/FOLLOWUPS.md` not edited this iteration.
+
+### F. User-pain coverage map (iter-8 update)
+
+The user's underlying complaint "doesn't feel like a racer at all" =
+pain points 1-5 PLUS audio cornering cues, camera language under
+speed and brake, mid-race damage feedback, and speed-line FX. The
+five named pain points are diagnosed; iter-8 names four more
+secondary slices that close the residual feel-gap.
+
+### Top-3 update (iter 8)
+
+The iter-6 Top-3 ordering (`fix-lateral`, `calibrate-roadside`,
+`classify-tracks`) is unchanged. None of the iter-8 slices jump that
+queue: each iter-8 slice carries an `after:` chain on `fix-lateral`
+or is soft-gated behind it because the FOV widen and the speed-lines
+are only worth shipping after the lateral-fix lets the player hold
+top speed. The iter-8 slices slot into the queue as follows:
+
+1. `VibeGear2-implement-fix-lateral-b2503f6f` (iter-4, position 1).
+2. `VibeGear2-implement-calibrate-roadside-96e24f40` (iter-5, 2).
+3. `VibeGear2-implement-classify-tracks-b41307c8` (iter-1, 3).
+4. `VibeGear2-implement-fire-camera-36ae8ff4` (iter-8, NEW). Ready
+   today; no `after:` chain because the dormant VFX module is
+   independent of the lateral-fix. Closes the dormant-VFX gap and
+   delivers mid-race damage feedback as a side effect.
+5. `VibeGear2-implement-bump-prod-076ae7e7` (iter-1, blocked on 3).
+6. `VibeGear2-implement-quick-race-78084a95` (iter-3, blocked on 5).
+7. `VibeGear2-implement-stretch-the-be459bc4` (iter-3, blocked on 6).
+8. `VibeGear2-implement-lift-opponent-8764ce5e` (iter-3, blocked on 6).
+9. `VibeGear2-implement-re-author-47323741` (iter-2, blocked on 5).
+10. `VibeGear2-implement-cornering-tuning-62491aea` (iter-4, on 1).
+11. `VibeGear2-implement-speed-coupled-3cc0838f` (iter-8, on 1).
+12. `VibeGear2-implement-radial-speed-02dc1556` (iter-8, on 1).
+13. `VibeGear2-implement-convert-tiresqueal-d2fd1407` (iter-8,
+    parallel; no hard `after:` chain because the audio loop is
+    independent of physics, but reads as best when the lateral-fix
+    has landed so the cornering load is real).
+14. `VibeGear2-implement-lap-rollover-7fcb891e` (iter-1, parallel).
+15. `VibeGear2-implement-9-track-e22793ca` (iter-2, blocked on 9).
+16. `VibeGear2-implement-racing-line-7b2cbd41` (iter-4, on 10 / 9).
+17. `VibeGear2-implement-extend-roadside-e541c8a5` (iter-5, on 2).
+
+The iter-8 slice `VibeGear2-implement-fire-camera-36ae8ff4` jumps to
+position 4 because it is the only iter-8 slice that ships standalone
+(no `after:` chain, no Q-NNN gate, no content prerequisite) AND
+closes two named pain layers at once: "feels like a racer / collisions
+should feel costly" (camera shake on impact + flash on lap) and
+the dormant-VFX bug (an actual code-is-dead finding from the iter-8
+diagnosis).
+
+### Open questions
+
+- Q-018: tire-scrub onset threshold and continuous-loop intensity
+  curve. Recommended default unblocks the iter-8 audio loop slice.
+
+### Followups
+
+None new. Existing F-077 / F-079-086 stand.
+
