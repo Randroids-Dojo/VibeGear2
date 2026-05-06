@@ -6,6 +6,152 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): atmosphere surfaces (music intensity, weather grip)
+
+**GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md)
+"Lateral friction" (verification only),
+[§14](gdd/14-weather-and-environmental-systems.md) "Weather grip"
+(verification only),
+[§18](gdd/18-sound-and-music-design.md) "Race music intensity layers"
+(verification only),
+[§23](gdd/23-balancing-tables.md) "Weather modifiers" (verification
+only). No spec edits this iteration.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-10 verification pass on the two atmospheric surfaces
+the iter 1-9 plan had not touched: music intensity stems and weather
+grip feel. Both surfaces are fully wired and tested today. No new
+`implement:` dots filed; the iter-10 work is verification plus two
+recommended Q-NNN spec-extension notes (Q-024 rival-pressure music
+input, Q-025 last-15% final-lap gradient) that the user can promote
+to `docs/OPEN_QUESTIONS.md` if a §18 spec edit is desired.
+
+### Done
+
+- Read the plan doc end to end (1762 lines pre-edit) and the latest 9
+  PROGRESS_LOG entries (iters 1-9). Ran `git log -10 --oneline &&
+  git status -s`; clean tree apart from `.claude/scheduled_tasks.lock`
+  which is unrelated. `dot tree` shows iters 1-9 dots intact (5
+  ready-to-pick: `fix-lateral`, `classify-tracks`, `lap-rollover`,
+  `calibrate-roadside`, `fire-camera`; 1 in-progress upstream:
+  `feat-audio-replace`).
+- Item A (music intensity stem runtime). Walked
+  `docs/gdd/18-sound-and-music-design.md` end to end (71 lines).
+  Confirmed §18 calls for "2 to 3 intensity layers" (line 27), a
+  "weather stem option" per region theme (line 38), and "dynamic
+  layers based on race intensity" (line 15). Walked `src/audio/music.ts`:
+  `MUSIC_INTENSITY_STEMS` declared at lines 170-180 with `drive` and
+  `lead` layers per all 8 race cues; `musicIntensityStemsFor` at line
+  210; `raceMusicIntensity(input)` at lines 217-232 maps `speed`,
+  `nitroActive`, and `finalLap` onto `driveMix` / `leadMix` / volume /
+  rate; `MusicRuntime` at lines 234+ owns per-layer
+  `activeIntensityStems` / `fadingIntensityStems` channels with proper
+  base-cue alignment via `syncIntensityStemPlayback` (lines 559+) and
+  fade math via `effectiveIntensityStemGain` (lines 588+). Walked
+  `src/app/race/page.tsx`: imports `raceMusicIntensity` (line 180),
+  seeds at session start (lines 1495-1498), updates per render frame
+  (lines 1772-1782) from `session.player.car.speed`,
+  `session.player.nitro.activeRemainingSec > 0`, and
+  `session.race.lap >= session.race.totalLaps`, pushes to
+  `raceMusic.update(...)` every ~50 ms (lines 1797-1805). Confirmed
+  the eight cue files exist under `public/audio/music/` and the stems
+  directory exists. Confirmed `src/audio/music.test.ts` covers
+  `MUSIC_INTENSITY_STEMS`, `musicIntensityStemsFor`,
+  `raceMusicIntensity` (4 cases including final-lap escalation), and
+  the runtime channel layering / base-cue alignment / play-failure
+  cleanup. Confirmed `docs/GDD_COVERAGE.json:216-225`
+  (`GDD-18-MUSIC-INTENSITY-STEM-RUNTIME`) reads
+  `coverage: ["implemented-code", "automated-test"]`. Verdict: §18
+  intensity-stem runtime ships per spec today. The iter-10 prompt's
+  "rival within 30 m / last 15%" trigger is a §18 spec extension, not
+  a missing-runtime fix. Filed Q-024 / Q-025 as plan-doc notes only.
+- Item B (weather grip feel). Walked `docs/gdd/10-driving-model-and-
+  physics.md`, `docs/gdd/14-weather-and-environmental-systems.md`,
+  `docs/gdd/23-balancing-tables.md:115-128`. Walked
+  `src/game/weather.ts` end to end (467 lines): confirmed
+  `WEATHER_TIRE_MODIFIERS` (lines 140-148) matches §23 cell-for-cell;
+  `WEATHER_TIRE_MODIFIER_ALIASES` (163-175) maps the 9-value enum onto
+  the 5 §23 rows; `effectiveWeatherGrip` (261-274) and
+  `weatherGripScalar` (282-289) compose dry/wet base grip with the
+  modifier; `weatherGripScalarForState` (384-393) lerps across active
+  weather transitions. Walked `src/game/physics.ts`:
+  `step` accepts `options.weatherGripScalar` (line 280), clamps it to
+  `[0, 2]` (line 396), multiplies it into `baseGrip = gripDry *
+  damageGripScalar * weatherGripScalar` (line 397-398), uses the
+  resulting `tractionScalar` in `yawDelta = steerInput * steerRate *
+  dt * tractionScalar` (line 402). Walked `src/game/raceSession.ts`:
+  player path computes `playerWeatherGripScalar` at line 1094 and
+  forwards it to player `step` at line 1407; AI path computes
+  `aiWeatherGripScalar` at line 1487 per AI and forwards to AI `step`
+  at line 1501. Confirmed `src/game/__tests__/physics.test.ts:205-215`
+  pins "rain.x < clear.x" with `weatherGripScalar = 0.88` vs `1.08`,
+  and `src/game/__tests__/weather.test.ts` covers the §23 table, the
+  alias map, the visibility table, and the per-state lerp. Verdict:
+  weather grip is fully wired into both player and AI physics today.
+  The §23 cells produce 12% reduction on Rain, 18% on Snow, 20% on
+  Heavy rain (all on dry tires); the iter-10 prompt's "20-30% wet,
+  50% heavy rain" target is stronger than §23 specifies. The
+  perceptibility gap is masked today by the lateral-bug at
+  `physics.ts:418` (already owned by
+  `VibeGear2-implement-fix-lateral-b2503f6f`); after that slice
+  lands, the §23 wet-vs-dry difference manifests as a perceptible
+  steering authority drop on wet corners. No new physics slice
+  warranted.
+- Item C (`docs/GDD_COVERAGE.json` cross-check). Walked all 103
+  requirement rows. Found zero §10 / §14 / §16 / §18 / §20 rows that
+  read `["implemented-code"]` only; every relevant row already pairs
+  implementation with at least one test ref. The 8 `implemented-code`-
+  only rows are all §21 / §25 / §26 process / infra surfaces (deploy
+  health, release branch, contributing guide, etc.) that fall outside
+  the iter 1-9 slice path. Documented 11 forthcoming `implementationRefs`
+  / `testRefs` appends in the plan doc as pre-flight notes for
+  implement-mode (the implementor will append refs as each iter 1-9
+  slice lands; not iter-10's to file because the slices have not
+  shipped yet). Verdict: no §10 / §14 / §16 / §18 / §20 row is
+  genuinely uncovered today; no new `research:` dot warranted.
+- Plan doc (`docs/RESEARCH_TOPGEAR_FUN_PLAN.md`) appended a new
+  "Iteration 10 - atmosphere surfaces (music intensity, weather
+  grip)" section covering A, B, C with the source-line citations
+  above and the Q-024 / Q-025 spec-extension recommendations.
+
+### Verified
+
+- `npm run content-lint` clean post-edit (research notes plus plan
+  doc edit and ledger append, no `src/` writes).
+- `grep -nP '[\x{2013}\x{2014}]' docs/RESEARCH_TOPGEAR_FUN_PLAN.md
+  docs/PROGRESS_LOG.md` returns zero matches: no em-dash or en-dash
+  in iter-10 content.
+- `dot tree` post-edits unchanged from iter-9: zero new dots filed.
+  The 5 ready-to-pick dots stay (`fix-lateral`, `classify-tracks`,
+  `lap-rollover`, `calibrate-roadside`, `fire-camera`).
+- Confirmed both atmospheric surfaces have `coverage:
+  ["implemented-code", "automated-test"]` rows in
+  `docs/GDD_COVERAGE.json`: `GDD-18-MUSIC-INTENSITY-STEM-RUNTIME`
+  (lines 216-225) and the §10 / §14 / §23 weather-grip rows (full
+  coverage across `weather.test.ts`, `physics.test.ts`,
+  `raceSession.test.ts`).
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. Iter-10 is verification-
+only. The 11 forthcoming `implementationRefs` / `testRefs` appends
+identified in the plan doc (for the iter 1-9 slices once they ship)
+are implement-mode work, not iter-10 work.
+
+### Followups created
+
+None new. The 9 currently-open F-NNNs (`F-077`, `F-079`, `F-080`,
+`F-081`, `F-082`, `F-083`, `F-084`, `F-085`, `F-086`) all stand as
+filed. None are obsolete given iter-10's findings.
+
+### GDD edits
+
+None this iteration. The Q-024 and Q-025 recommendations live in the
+plan doc; promoting them to `docs/OPEN_QUESTIONS.md` (and editing §18
+to add rival-pressure / final-lap-gradient inputs) is user-direction
+work, not autonomous iter-10 work.
+
+---
+
 ## 2026-05-06: research(topgear-fun): iter-8 verification and HUD readability diagnosis
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)

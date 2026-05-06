@@ -1760,4 +1760,279 @@ No `src/` writes, no new dots, no Q-NNN, no F-NNN. Iter-9 is a pure
 verification + diagnosis pass that confirms the iter-8 dead-code
 claim and the iter-4 / iter-7 lateral-fix math.
 
+## Iteration 10 - atmosphere surfaces (music intensity, weather grip)
 
+This iteration walks the two atmospheric surfaces the iter 1-9 plan
+has not touched: music intensity stems and weather grip feel. Both
+are surfaces that historically contribute to Top Gear 2's "racer"
+feel. No new `implement:` dots are filed; both surfaces are already
+fully wired and tested today, so the iter-10 work is verification
+plus targeted spec-extension notes.
+
+### A. Music intensity stem runtime
+
+The §18 spec calls for "2 to 3 intensity layers" per race theme that
+crossfade with race pressure. The current production state:
+
+1. **Assets are authored.** `public/audio/music/stems/` ships
+   `<region>-drive.opus` and `<region>-lead.opus` for all eight race
+   themes (`velvet-coast`, `iron-borough`, `ember-steppe`,
+   `breakwater-isles`, `glass-ridge`, `neon-meridian`, `moss-frontier`,
+   `crown-circuit`). The §18 "weather stem option" is also authored
+   under `public/audio/weather/`.
+2. **Runtime exists.** `src/audio/music.ts:170-180` declares
+   `MUSIC_INTENSITY_STEMS` with two layers (`drive`, `lead`) per cue.
+   `MusicRuntime` (lines 234+) owns `activeIntensityStems` /
+   `fadingIntensityStems` channels per layer, fades them through
+   `effectiveIntensityStemGain` (lines 588+) and aligns new stems to
+   the active base cue's `currentTime` (lines 559+, see `aligns new
+   intensity stems to the active base cue time` test at
+   `src/audio/music.test.ts:325-356`).
+3. **Production caller wires it end-to-end.** `src/app/race/page.tsx`
+   imports `raceMusicIntensity` (line 180), seeds it at session start
+   (lines 1495-1498), updates it every render frame from
+   `session.player.car.speed`, `session.player.nitro.activeRemainingSec
+   > 0`, and `session.race.lap >= session.race.totalLaps` (lines
+   1772-1782), and pushes the result into `raceMusic.update(...)`
+   roughly every 50 ms (lines 1797-1805).
+4. **Tests pin the math.** `src/audio/music.test.ts` covers
+   `MUSIC_INTENSITY_STEMS` lookup (line 5), `musicIntensityStemsFor`
+   (line 8), the `raceMusicIntensity` function itself (lines 57-95),
+   the runtime's stem-channel layering (lines 288+), and the base-cue
+   alignment behavior (lines 325-356). The §18 ducking integration is
+   covered by the `GDD-18-RACE-MIX-EVENT-EMPHASIS` row.
+5. **Coverage ledger row.** `GDD-18-MUSIC-INTENSITY-STEM-RUNTIME` in
+   `docs/GDD_COVERAGE.json:216-225` reads
+   `coverage: ["implemented-code", "automated-test"]`. Status is
+   `done` for the §18 spec scope as written.
+
+The iter-10 prompt's suggested trigger ("crossfade to battle stem
+when a rival is within 30 m or in the last 15% of the final lap") is
+a **superset of §18**. §18 names "speed, nitro, and final-lap race
+pressure"; the production runtime maps each of those to `driveMix` /
+`leadMix` per `raceMusicIntensity` (`src/audio/music.ts:217-232`).
+There is no rival-distance input on `RaceMusicIntensityInput` (lines
+53-58), and the "final-lap" boolean is a binary (whole last lap is
+"final-lap") rather than a "last 15%" gradient.
+
+The atmospheric gap, if one were to file it, is not "the runtime is
+missing" but "the §18 intensity inputs are coarser than TG2's
+patrol-vs-battle stem map". Filing this as a slice would require:
+
+- Q-024 (NEW, recommended below): does §18 want a rival-pressure
+  input on `raceMusicIntensity`? If yes, recommended default is "max
+  pressure when a rival is within 30 m, fades linearly to zero by
+  120 m". Both numbers are author-pickable; the source of truth lives
+  in §18 once a row is added.
+- Q-025 (NEW, recommended below): does §18 want the final-lap signal
+  to gradient over the last 15% of the final lap rather than fire on
+  the whole last lap? Recommended default `lapProgress >= 0.85` on
+  `lap === totalLaps`.
+
+Both questions are §18 spec extensions, not bugs. Filing
+`implement:` dots before §18 pins the answer would be premature. The
+iter-10 verdict is **§18 intensity-stem runtime ships per spec
+today; any new trigger surface is a spec edit first, slice second.**
+
+The iter-1 lap-rollover slice (`VibeGear2-implement-lap-rollover-
+7fcb891e`) already lands a "LAP N / M" HUD pulse on lap rollover,
+which is the visual partner to the audio "lead" stem swelling on the
+final lap. After lap-bump (`VibeGear2-implement-bump-prod-076ae7e7`)
+ships, multi-lap races will have several "final-lap" enter events
+where `finalLap: true` flips and the lead-stem volume bumps. That
+chain is already correct.
+
+No iter-10 dot filed for surface A.
+
+### B. Weather grip feel
+
+The §10 spec consumes weather grip in the lateral-velocity friction
+term. The §23 "Weather modifiers" table pins five rows
+(Clear / Rain / Heavy rain / Snow / Fog) with additive
+`dryTireMod / wetTireMod` offsets. The production state:
+
+1. **§23 numbers are authored and frozen.** `src/game/weather.ts:140-148`
+   exports `WEATHER_TIRE_MODIFIERS` matching `docs/gdd/23-balancing-
+   tables.md:117-123` cell-for-cell: Clear `+0.08 / 0`, Rain
+   `-0.12 / +0.10`, Heavy rain `-0.20 / +0.16`, Snow `-0.18 / +0.14`,
+   Fog `0 / 0`. `WEATHER_TIRE_MODIFIER_ALIASES` (lines 163-175) maps
+   the full nine-value `WeatherOption` enum onto these five rows
+   (overcast / dusk / night map to Clear; light_rain to Rain).
+2. **Physics consumes the scalar.** `src/game/physics.ts:280` accepts
+   `weatherGripScalar?: number` on the per-tick options. Line 396
+   clamps it to `[0, 2]`. Line 397-399 multiplies it into `baseGrip =
+   gripDry * damageGripScalar * weatherGripScalar`, then
+   `tractionScalar = offRoad ? baseGrip * 0.5 : baseGrip`. Line 402
+   uses `tractionScalar` in `yawDelta = steerInput * steerRate * dt *
+   tractionScalar`, so reduced weather grip directly reduces yaw rate
+   and therefore lateral velocity.
+3. **Race session forwards it for player and AI.**
+   `src/game/raceSession.ts:1094` resolves
+   `playerWeatherGripScalar = weatherGripScalarForState(playerStats,
+   weatherState)`; line 1407 passes it to the player's `step` call.
+   Lines 1487-1502 do the same for every AI: each AI's stats and the
+   shared race-weather state produce a per-AI scalar that `step`
+   consumes through `options.weatherGripScalar`.
+4. **Tests pin "wet feels harder than dry".**
+   `src/game/__tests__/physics.test.ts:205-215` (the `step (weather
+   grip scalar)` block) asserts that, given identical inputs,
+   `weatherGripScalar = 0.88` (rain) produces strictly less lateral
+   displacement than `weatherGripScalar = 1.08` (clear with dry tire
+   bonus). `src/game/__tests__/weather.test.ts` covers the §23 table,
+   the alias map, the visibility table, and the per-state scalar
+   resolver (lines 226, 235-236, etc.).
+5. **Coverage ledger.** `GDD-18-WEATHER-MUSIC-STEMS`,
+   `GDD-14-WEATHER-RENDER-EFFECTS`, `GDD-14-OVERCAST-WEATHER-OPTION`,
+   `GDD-14-WEATHER-DEPTH-PARTICLES`,
+   `GDD-14-WEATHER-ACCESSIBILITY-SETTINGS`, and the implicit
+   `GDD-23-BALANCING` rows that lock the §23 table all read
+   `coverage: ["implemented-code", "automated-test"]`. Weather grip
+   is fully covered.
+
+The iter-10 prompt asks "is the reduction enough that the player
+feels it (e.g. 20-30% wet, 50% heavy_rain)". The actual §23 numbers
+on a `gripDry = 1.0` car are:
+
+- Rain: `(1.0 - 0.12) / 1.0 = 0.88` scalar -> 12% reduction.
+- Heavy rain: `(1.0 - 0.20) / 1.0 = 0.80` scalar -> 20% reduction.
+- Snow: `(1.0 - 0.18) / 1.0 = 0.82` scalar -> 18% reduction.
+- Fog: `1.0 / 1.0 = 1.00` scalar -> 0% reduction (visibility hazard
+  only per §14).
+
+The iter-10 prompt's "20-30% wet, 50% heavy_rain" is **stronger than
+§23 specifies**. §23 caps heavy_rain at 20% on dry tires; a 50%
+reduction would override the spec. So once again the gap is "the
+spec numbers are milder than the prompt's expected feel" rather than
+"the runtime is unwired". Re-tuning the §23 cells is a spec edit, not
+an implement slice.
+
+There is one real masking issue: the lateral-velocity unit bug at
+`src/game/physics.ts:418` (`nextX = state.x + lateralVelocity`,
+missing `* dt`) makes all lateral motion 60x larger than the §10
+intent. Under that bug, the wet-vs-dry 12-20% reduction is hidden
+inside the much larger spurious displacement. After
+`VibeGear2-implement-fix-lateral-b2503f6f` lands, the §23 weather
+modifiers will manifest as a perceptible wet-vs-dry difference
+because the lateral term is the only place `weatherGripScalar`
+participates in player x position, and once the lateral term is
+correctly dt-scaled, percent reductions of it become percent
+reductions of the player's actual side-to-side authority.
+
+The cornering-tuning slice (`VibeGear2-implement-cornering-tuning-
+62491aea`) already lifts `STEER_RATE_HIGH_RAD_PER_S` toward TG2 feel
+once the lateral fix is in. After both slices land, the §23 wet-grip
+reduction will read on a wet corner as "the car wants to keep
+sliding when I lift off", which is the §10 "fight the road" goal. No
+new physics slice warranted today; if §23 numbers turn out to be
+under-tuned post-fix, that is a balancing edit on
+`docs/gdd/23-balancing-tables.md:115-128` plus the matching
+`WEATHER_TIRE_MODIFIERS` table in `weather.ts`, both pinned by
+`weather.test.ts` lines 117-148.
+
+No iter-10 dot filed for surface B.
+
+### C. `docs/GDD_COVERAGE.json` cross-check
+
+Walked all 103 requirement rows. Findings:
+
+1. **No GDD-10 / 14 / 16 / 18 / 20 row reads `["implemented-code"]`
+   only.** Every row in those sections already pairs implementation
+   with at least one test ref. The eight `implemented-code`-only
+   rows are all process / infra (`GDD-21-CI-DEPLOY-HEALTH`,
+   `GDD-21-VERCEL-DEPLOY`, `GDD-25-V0-2-0-RELEASE-REFRESH`,
+   `GDD-25-STABLE-RELEASE-BRANCH`, `GDD-25-RELEASE-MEDIA-KIT`,
+   `GDD-25-BROWSER-COMPATIBILITY-MATRIX`, `GDD-26-CONTRIBUTING-GUIDE`,
+   `GDD-26-ISSUE-LABELS-STARTERS`); none are in the iter 1-9 slice
+   path.
+
+2. **Coverage ledger updates pending implement-mode (not iter-10's
+   to file, listed for the implementor):**
+
+   - `GDD-09-LAPS` (or whichever §7 lap-target row owns the lap
+     count): `VibeGear2-implement-bump-prod-076ae7e7` and
+     `VibeGear2-implement-classify-tracks-b41307c8` will append
+     `src/data/tracks/*.json` (lap edits) and the new archetype
+     field test fixtures.
+   - `GDD-09-PICKUP-RENDER-FEEDBACK` and any §9 anatomy-lint row:
+     `VibeGear2-implement-9-track-e22793ca` will add a
+     `src/data/__tests__/track-anatomy.test.ts` ref (or wherever the
+     §9 lint lives once filed) and the
+     `VibeGear2-implement-re-author-47323741` slice will append the
+     reshaped track JSON files.
+   - `GDD-09-FIRST-TOUR-AUTHORED-EVENTS` may need its tracks updated
+     once the re-author slice ships hairpins; if so, the testRefs
+     stay (e2e file remains correct).
+   - `GDD-10` lateral-friction row: the
+     `VibeGear2-implement-fix-lateral-b2503f6f` slice will not change
+     coverage refs but will flip status from "incorrect math" to
+     "correct math" once shipped; no row needs a refs edit, only the
+     iter-7 Vitest assertions to land in
+     `src/game/__tests__/physics.test.ts`.
+   - `GDD-10-CORNERING-RATE` (or the §10 steer-rate row): the
+     `VibeGear2-implement-cornering-tuning-62491aea` slice may add a
+     new test file or extend `physics.test.ts`; ledger appends a
+     test ref.
+   - `GDD-15` AI-grid / draw-distance rows: the
+     `VibeGear2-implement-quick-race-78084a95`,
+     `stretch-the-be459bc4`, and `lift-opponent-8764ce5e` slices
+     will append implementation refs in the AI / quick-race paths.
+   - `GDD-16-CAMERA-VFX` and `GDD-16-RENDERING-VFX`: the
+     `VibeGear2-implement-fire-camera-36ae8ff4` slice will append
+     `src/app/race/page.tsx` (the new `VfxState` lifecycle), and the
+     `e2e/vfx-impact-feedback.spec.ts` test ref.
+   - `GDD-16-SPEED-FEEL`: the
+     `VibeGear2-implement-speed-coupled-3cc0838f` and
+     `VibeGear2-implement-radial-speed-02dc1556` slices will append
+     `src/render/`-side implementation refs and unit / e2e test
+     refs.
+   - `GDD-18-PROCEDURAL-SFX-RUNTIME` (or the tire-loop row): the
+     `VibeGear2-implement-convert-tiresqueal-d2fd1407` slice
+     replaces the one-shot tire SFX with a gated continuous loop;
+     ledger gains a new SFX test ref.
+   - `GDD-20-HUD-LAP-FEEDBACK` (or whichever §20 row owns the lap
+     pulse): the `VibeGear2-implement-lap-rollover-7fcb891e` slice
+     will append `src/render/uiRenderer.ts` updates and a new
+     `e2e/race-lap-rollover.spec.ts` test ref.
+   - `GDD-17-PROP-SCALE` (or the §17 roadside row): the
+     `VibeGear2-implement-calibrate-roadside-96e24f40` slice and
+     the `VibeGear2-implement-extend-roadside-e541c8a5` slice will
+     append the prop-scale lint tests and the schema field unit
+     test.
+
+   None of the above require iter-10 ledger writes; they are
+   pre-flight notes for the implement-mode loop iteration that ships
+   each slice.
+
+3. **No genuinely-uncovered §10 / §14 / §16 / §18 / §20 row found
+   that the iter 1-9 plan does not already address.** Every relevant
+   surface either already has full coverage or is owned by an
+   already-filed dot. No new `research:` dot warranted.
+
+### D. Open questions
+
+- Q-024 (NEW, recommended): does §18 want a rival-pressure input on
+  `raceMusicIntensity`? Recommended default: max pressure when a
+  rival is within 30 m, fades linearly to zero by 120 m. Source of
+  truth: §18.
+- Q-025 (NEW, recommended): does §18 want the final-lap signal to
+  gradient over the last 15% of the final lap rather than fire on
+  the whole last lap? Recommended default `lapProgress >= 0.85` on
+  `lap === totalLaps`. Source of truth: §18.
+
+Both questions are §18 spec extensions; no dots filed.
+
+### E. Followups
+
+None new. Iter-10 finds both atmospheric surfaces fully wired today.
+
+### Files appended this iteration
+
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (this Iteration 10 section).
+- `docs/PROGRESS_LOG.md` (iter-10 entry prepended).
+
+No `src/` writes, no new dots, no F-NNN, no Q-NNN spawned in
+`docs/OPEN_QUESTIONS.md` (the Q-024 / Q-025 recommendations are
+plan-doc notes pending user direction). Iter-10 is a pure
+verification + diagnosis pass that confirms both atmospheric
+surfaces ship per §18 / §10 / §14 / §23 spec today and that the
+iter 1-9 slice plan is unaffected.
