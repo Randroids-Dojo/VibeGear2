@@ -8,7 +8,10 @@ test.describe("first quick race fun pass", () => {
   test("default quick race shows the core loop inside one race", async ({
     page,
   }) => {
-    test.setTimeout(120_000);
+    // Velvet Coast Harbor Run is now a 3-lap race (standard archetype).
+    // The full ArrowUp-to-finish-line run plus boot, countdown, and
+    // results routing comfortably fits in 5 minutes.
+    test.setTimeout(300_000);
 
     await page.goto("/quick-race");
     await expect(page.getByTestId("quick-race-page")).toBeVisible();
@@ -73,7 +76,9 @@ test.describe("first quick race fun pass", () => {
       )
       .toBeGreaterThanOrEqual(2);
 
-    await expect(page).toHaveURL(/\/race\/results/, { timeout: 90_000 });
+    // 3-lap Velvet Coast race takes 150-240 s on production tracks; the
+    // pre-fix single-lap pacing bug only needed ~90 s.
+    await expect(page).toHaveURL(/\/race\/results/, { timeout: 240_000 });
     await page.keyboard.up("ArrowUp");
 
     await expect(page.getByTestId("race-results")).toBeVisible();
