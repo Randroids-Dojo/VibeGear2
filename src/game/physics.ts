@@ -100,8 +100,13 @@ const IDENTITY_ASSIST_SCALARS: Readonly<AssistScalars> = Object.freeze({
  *     This preserves grass slowdown while allowing a stopped off-road
  *     car to launch under throttle instead of being clamped back to
  *     zero by same-frame drag.
+ *   - 4: Lateral integration now multiplies `lateralVelocity` by `dt`
+ *     so the term is m/s integrated over the tick rather than m/tick.
+ *     The pre-fix code crossed the half-road in roughly 60 ms at top
+ *     speed full steer (60x too fast at 60 Hz). v3 ghost replays are
+ *     invalidated because the lateral path differs.
  */
-export const PHYSICS_VERSION = 3;
+export const PHYSICS_VERSION = 4;
 
 /**
  * Off-road handling tunables from §10 "Suggested tunable constants".
@@ -415,7 +420,14 @@ export function step(
   // road. Identity (`0.0`) preserves the pre-§28 behaviour bit-for-bit
   // because the multiplier collapses to `1`.
   lateralVelocity = lateralVelocity * (1 - steeringAssistScale);
-  const nextX = state.x + lateralVelocity;
+  // Integrate lateral velocity over the tick. Without the dt multiply the
+  // term is m/tick which at 60 Hz is 60x m/s; that bug let the player cross
+  // the half-road in roughly 60 ms at top speed full steer. Multiplying by
+  // dt closes the unit error so steady-state lateral velocity matches §10
+  // at 1.27 m/s post-fix and crosses the 4.5 m half-road in about 3.5 s
+  // (further tuned to the Top Gear 2 reference of 1.5 s by the cornering
+  // tuning slice).
+  const nextX = state.x + lateralVelocity * dt;
 
   // Forward integration uses the post-update speed. Trapezoidal would be
   // more accurate but the §21 fixed-step loop runs at 60 Hz which keeps
