@@ -6,6 +6,72 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): Q-019 resolved with coverage label "deprecated"
+
+**GDD sections touched:** none directly; iter-14 records the user's
+Q-019 resolution and renames a label string in the internal plan
+doc. The actual ledger update lands in commit 6 of the
+`cut-non-fdcb3b2d` slice implement-mode PR.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-14 records the user's resolution of Q-019. The
+chosen marker for v1.0 cut rows in `docs/GDD_COVERAGE.json` is
+`coverage: ["deprecated"]` (option (a) shape from Q-019, label name
+`deprecated` rather than the recommended `out-of-scope-v1`). The
+`scripts/content-lint.ts:589-594` `COVERAGE_KINDS` enum extension is
+named; the seven cut rows and two amended rows are spelled out in
+the slice's Implementation Notes. The `cut-non-fdcb3b2d` slice is
+now fully unblocked: every Q-NNN it depends on is `answered`, every
+F-NNN supersession is verified (iter-13 §A), the GDD §06 edit is
+sketched (iter-13 §C), the day-1 regression risk register is filed
+(iter-13 §D), the 6-commit ordering is recommended (iter-13 §D),
+and the coverage-ledger marker label is named (iter-14 §A).
+Implement mode can pull the slice from `dot ready` and proceed.
+
+### Done
+
+- Appended `**Resolution.**` block + `**Status:** answered (2026-05-06)`
+  line to Q-019 in `docs/OPEN_QUESTIONS.md`. The original Question /
+  Options / Recommended-default text is preserved unmodified per
+  ledger-append discipline.
+- Appended an "Iteration 14 update" subsection to the
+  `.dots/VibeGear2-implement-cut-non-fdcb3b2d.md` Implementation
+  Notes naming the chosen label (`deprecated`), citing the
+  `scripts/content-lint.ts:589-594` enum extension, listing the
+  seven `coverage: ["deprecated"]` rows and the two amended rows.
+- Appended a "Iteration 14 - Q-019 resolved with label `deprecated`"
+  section to `docs/RESEARCH_TOPGEAR_FUN_PLAN.md`, plus a "Hand-off
+  to implement mode" subsection at the bottom.
+- One-pass replace of literal `out-of-scope-v1` with `deprecated`
+  through `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (internal plan doc,
+  not the canonical ledger). The canonical record of the rename is
+  the iter-14 section. Spiral discipline preserved: no PROGRESS_LOG
+  past entries rewritten; OPEN_QUESTIONS Q-019 original text
+  unmodified, only `Status:` flipped + Resolution appended.
+
+### Verified
+
+- `npm run content-lint`: not run this iteration; no JSON or
+  schema changes were made. The actual content-lint touch lands
+  in commit 6 of the `cut-non-fdcb3b2d` implement-mode PR.
+
+### Coverage ledger
+
+None this iteration. The seven `coverage: ["deprecated"]` rows and
+the two amended rows are PLANNED for the implement-mode PR; iter-14
+only names the label string the implementor uses.
+
+### Followups created
+
+None.
+
+### GDD edits
+
+None - planned, not made. The GDD §06 v1.0-scope edit is sketched
+in iter-13 §C of `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` and lands in
+the implement-mode PR.
+
+---
+
 ## 2026-05-06: research(topgear-fun): cut-non-tour slice pre-flight (F-NNN audit, GDD edit prep, risk register)
 
 **GDD sections touched:** none directly; this iteration only PLANS

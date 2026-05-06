@@ -2639,15 +2639,15 @@ Per-row plan, by `id`:
 
 | GDD row id | Action | Note |
 | --- | --- | --- |
-| `GDD-06-DAILY-CHALLENGE-SELECTION` (line 252) | Mark out-of-scope-v1 | Cut entirely. `implementationRefs` (`src/game/modes/dailyChallenge.ts`, `src/app/daily/page.tsx`, `src/app/daily/DailyShareButton.tsx`) all delete; `e2e/daily-challenge.spec.ts` deletes. Append note: "Cut from v1.0 scope per Q-015 resolution (2026-05-06); World Tour is the only race surface that ships." |
-| `GDD-06-DAILY-CHALLENGE-RESULT-SHARE` (line 274) | Mark out-of-scope-v1 | Same as above. The §20 share string is Daily-Challenge-only. |
-| `GDD-06-TIME-TRIAL-PB-RECORDS` (line 296) | Mark out-of-scope-v1 | Cut. `implementationRefs` keep `src/persistence/save.ts` and `src/game/raceResult.ts` (those modules survive for Tour mode); the requirement is satisfied vacuously. Note: "Cut from v1.0 scope per Q-015 resolution; Tour mode does not record Time Trial PBs." |
-| `GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH` (line 316) | Mark out-of-scope-v1 | Cut. `src/game/modes/timeTrialTargets.ts` and `src/app/time-trial/page.tsx` delete; `e2e/time-trial.spec.ts` deletes. |
-| `GDD-06-TIME-TRIAL-DOWNLOADED-GHOST` (line 337) | Mark out-of-scope-v1 | Cut. `SaveGameSchema.downloadedGhosts` is left in place for save backward-compat (per F-021 verdict above), but no UI exercises it in v1.0. |
-| `GDD-06-QUICK-RACE-MODE` (line 361) | Mark out-of-scope-v1 | Cut. `src/game/modes/quickRace.ts` and `src/app/quick-race/page.tsx` delete; the `mode === "quickRace"` branch in `src/app/race/page.tsx` deletes. |
+| `GDD-06-DAILY-CHALLENGE-SELECTION` (line 252) | Mark deprecated | Cut entirely. `implementationRefs` (`src/game/modes/dailyChallenge.ts`, `src/app/daily/page.tsx`, `src/app/daily/DailyShareButton.tsx`) all delete; `e2e/daily-challenge.spec.ts` deletes. Append note: "Cut from v1.0 scope per Q-015 resolution (2026-05-06); World Tour is the only race surface that ships." |
+| `GDD-06-DAILY-CHALLENGE-RESULT-SHARE` (line 274) | Mark deprecated | Same as above. The §20 share string is Daily-Challenge-only. |
+| `GDD-06-TIME-TRIAL-PB-RECORDS` (line 296) | Mark deprecated | Cut. `implementationRefs` keep `src/persistence/save.ts` and `src/game/raceResult.ts` (those modules survive for Tour mode); the requirement is satisfied vacuously. Note: "Cut from v1.0 scope per Q-015 resolution; Tour mode does not record Time Trial PBs." |
+| `GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH` (line 316) | Mark deprecated | Cut. `src/game/modes/timeTrialTargets.ts` and `src/app/time-trial/page.tsx` delete; `e2e/time-trial.spec.ts` deletes. |
+| `GDD-06-TIME-TRIAL-DOWNLOADED-GHOST` (line 337) | Mark deprecated | Cut. `SaveGameSchema.downloadedGhosts` is left in place for save backward-compat (per F-021 verdict above), but no UI exercises it in v1.0. |
+| `GDD-06-QUICK-RACE-MODE` (line 361) | Mark deprecated | Cut. `src/game/modes/quickRace.ts` and `src/app/quick-race/page.tsx` delete; the `mode === "quickRace"` branch in `src/app/race/page.tsx` deletes. |
 | `GDD-04-FIRST-RACE-FUN-LOOP` (line 384) | AMEND requirement text | The current requirement reads "The default Quick Race path demonstrates the first-race loop...". Rewrite to "The default World Tour first-race path demonstrates the first-race loop with a visible rival, nitro use, authored pickup rewards, a natural finish, results feedback, and a clear garage next step." Update `implementationRefs` to drop `src/app/quick-race/page.tsx`; keep `src/app/race/page.tsx` and the bundled track. The §04 player-experience-goal that motivates the row stays. |
-| `GDD-06-PRACTICE-MODE` (line 410) | Mark out-of-scope-v1 | Cut. The practice panel UI in `src/app/race/page.tsx:2475-2535` deletes; the `mode === "practice"` branches in `resolveRaceMode`, `practiceSnapshot` state, and the conditional render delete; `e2e/practice-mode.spec.ts` deletes. |
-| `GDD-20-PAUSE-GHOSTS-ACTION` (line 859) | AMEND requirement and refs | Current requirement says "...routes to the Time Trial ghost surface." Rewrite to either (a) "...routes to a future Tour-mode ghost panel" with the row marked partial pending implementation, OR (b) drop the row entirely as out-of-scope-v1. Implementor picks. Drop `src/app/time-trial/page.tsx` from `implementationRefs`. |
+| `GDD-06-PRACTICE-MODE` (line 410) | Mark deprecated | Cut. The practice panel UI in `src/app/race/page.tsx:2475-2535` deletes; the `mode === "practice"` branches in `resolveRaceMode`, `practiceSnapshot` state, and the conditional render delete; `e2e/practice-mode.spec.ts` deletes. |
+| `GDD-20-PAUSE-GHOSTS-ACTION` (line 859) | AMEND requirement and refs | Current requirement says "...routes to the Time Trial ghost surface." Rewrite to either (a) "...routes to a future Tour-mode ghost panel" with the row marked partial pending implementation, OR (b) drop the row entirely as deprecated. Implementor picks. Drop `src/app/time-trial/page.tsx` from `implementationRefs`. |
 | `GDD-15-CAMPAIGN-AI-FIELD` (line 1094) | AMEND requirement text | Current requirement reads "...while preserving time-trial and prototype route behavior." Rewrite to "...while preserving the prototype `/race` route behavior." `implementationRefs` likely unchanged. |
 
 `gddSections` for §06-cut rows continues to point at
@@ -2943,7 +2943,7 @@ out-of-scope marker that `npm run content-lint` accepts. The current
 memory but no code or tests are owed". Three options exist (extend
 enum, add `outOfScope: true` field, drop rows). The decision is small
 but non-obvious; iter-13 files **Q-019** with a Recommended default
-("extend enum with `out-of-scope-v1`") so the implementor stays
+("extend enum with `deprecated`") so the implementor stays
 unblocked.
 
 The Q-019 entry was prepended to `docs/OPEN_QUESTIONS.md` this
@@ -2961,3 +2961,87 @@ no `docs/GDD_COVERAGE.json` edits this iteration. Everything is
 PLANNED for the implementor of `cut-non-fdcb3b2d` to copy-paste; the
 verdicts in §A correct three iter-12 misclassifications (F-076, F-051,
 F-021 are NOT superseded; their load-bearing claims survive the cut).
+
+## Iteration 14 - Q-019 resolved with label `deprecated`
+
+The user resolved Q-019 (the coverage-ledger-marker question filed in
+iter-13). The chosen resolution adopts the structural shape of option
+(a) (extend the `COVERAGE_KINDS` enum at `scripts/content-lint.ts:589-594`)
+with one substitution: the label string is `deprecated` rather than
+`out-of-scope-v1`. The semantics are unchanged: a row marked
+`coverage: ["deprecated"]` is treated as documentation only by
+content-lint, with no `implementationRefs` / `testRefs` validation.
+"Deprecated" was chosen for being shorter and engineer-familiar. The
+meaning is "this requirement is removed from v1.0 scope and no longer
+expected to ship; it stays in the ledger for institutional memory".
+
+### A. Affected scope
+
+- Seven coverage-ledger rows get `coverage: ["deprecated"]`:
+  `GDD-06-DAILY-CHALLENGE-SELECTION`,
+  `GDD-06-DAILY-CHALLENGE-RESULT-SHARE`,
+  `GDD-06-TIME-TRIAL-PB-RECORDS`,
+  `GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH`,
+  `GDD-06-TIME-TRIAL-DOWNLOADED-GHOST`,
+  `GDD-06-QUICK-RACE-MODE`,
+  `GDD-06-PRACTICE-MODE`.
+- Two coverage-ledger rows stay in scope but get their `requirement`
+  text amended to drop cut-mode references: `GDD-04-FIRST-RACE-FUN-LOOP`
+  and `GDD-20-PAUSE-GHOSTS-ACTION`. Their `coverage` array is unchanged.
+- The `coverage` array can mix values; e.g., a cut row with a tracking
+  F-NNN can carry `["deprecated", "open-followup"]`.
+- Iter-13 §B (the per-row edit table above) remains the canonical
+  per-row edit text. This iter-14 section only changes the label
+  string from `out-of-scope-v1` to `deprecated` everywhere in the
+  plan doc; all other per-row edits (`requirement` amendments,
+  `implementationRefs` survivors, notes) stay as iter-13 specified.
+
+### B. The cut-non-fdcb3b2d slice is now fully unblocked
+
+Every Q-NNN the slice depended on is `answered`:
+
+- Q-013 through Q-018 resolved earlier in this loop.
+- Q-019 (this iteration): `coverage: ["deprecated"]` adopted.
+
+Every other gate iter-12 / iter-13 listed has cleared:
+
+- F-NNN supersession audited in iter-13 §A.
+- GDD §06 v1.0-scope edit sketched in iter-13 §C.
+- Day-1 regression risk register filed in iter-13 §D.
+- 6-commit ordering recommended in iter-13 §D.
+
+The implementor can pull `VibeGear2-implement-cut-non-fdcb3b2d` from
+`dot ready` and proceed with no further research blockers. The only
+delta from iter-13's instructions is the label string substitution
+documented above; commit 6 of the recommended ordering
+(`scripts/content-lint.ts` enum extension plus `docs/GDD_COVERAGE.json`
+row updates) lands the literal string `"deprecated"`, not
+`"out-of-scope-v1"`.
+
+### C. Files appended this iteration
+
+- `docs/OPEN_QUESTIONS.md` (Q-019 Resolution + Status flip to `answered`).
+- `.dots/VibeGear2-implement-cut-non-fdcb3b2d.md` (Implementation
+  Notes "Iteration 14 update" subsection appended).
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (this iter-14 section, plus
+  one-pass `out-of-scope-v1` -> `deprecated` rename across iter-13
+  §B and the iter-13 Q-019 entry-as-quoted text).
+- `docs/PROGRESS_LOG.md` (iter-14 entry prepended).
+
+No `src/` writes, no GDD section edits, no `docs/FOLLOWUPS.md` edits,
+no `docs/GDD_COVERAGE.json` edits this iteration. The actual
+ledger update lands in commit 6 of the cut-non-fdcb3b2d slice
+implement-mode PR.
+
+### D. Hand-off to implement mode
+
+All blocking research is complete. The implement-mode loop can pull
+`VibeGear2-implement-cut-non-fdcb3b2d` (Slice #0, World-Tour-only
+scope cut) from `dot ready` and proceed. Concrete unblocks: Q-013
+through Q-019 all `answered`; F-NNN supersession audited (iter-13
+§A); GDD §06 edit sketched (iter-13 §C); coverage-ledger marker is
+`deprecated` (iter-14 §A); 6-commit ordering recommended (iter-13
+§D); day-1 regression risk register filed (iter-13 §D). The next
+slice after #0 is `fix-lateral-b2503f6f` (the off-by-`dt` lateral
+fix at `src/game/physics.ts:418`) followed by
+`calibrate-roadside-96e24f40` and `classify-tracks-b41307c8`.

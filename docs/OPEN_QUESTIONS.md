@@ -14,8 +14,9 @@ they are part of the design history.
 **GDD reference:** [§06](gdd/06-game-modes.md) "v1.0 scope" subsection
 (landing with `cut-non-fdcb3b2d`); `docs/GDD_COVERAGE.json` ledger
 schema; `scripts/content-lint.ts:589-594` `COVERAGE_KINDS` enum.
-**Status:** open
+**Status:** answered (2026-05-06)
 **Asked in loop:** 2026-05-06
+**Answered in loop:** 2026-05-06
 
 **Question.** The cut-non-tour slice
 (`VibeGear2-implement-cut-non-fdcb3b2d`) needs to mark seven
@@ -81,6 +82,34 @@ cut-mode references.
 cannot ship a clean `npm run content-lint` without one of (a) /
 (b) / (c) / (d). The recommended default unblocks the slice in
 the smallest change-surface possible.
+
+**Resolution.** Option (a) (extend the `COVERAGE_KINDS` enum in
+`scripts/content-lint.ts:589-594`) is adopted as the structural
+shape. The user picked the label name `deprecated` instead of
+`out-of-scope-v1`. The semantics are unchanged: a row marked
+`coverage: ["deprecated"]` is treated as documentation only;
+`implementationRefs` and `testRefs` validation are skipped. The
+`coverage` array can mix values (e.g. `["deprecated", "open-followup"]`
+for a cut row that also has a tracking F-NNN). The cut-non-tour
+slice (`VibeGear2-implement-cut-non-fdcb3b2d`) extends the enum to
+`["implemented-code", "automated-test", "open-followup", "open-question", "deprecated"]`
+and marks the seven cut rows
+(`GDD-06-DAILY-CHALLENGE-SELECTION`,
+`GDD-06-DAILY-CHALLENGE-RESULT-SHARE`,
+`GDD-06-TIME-TRIAL-PB-RECORDS`,
+`GDD-06-TIME-TRIAL-BENCHMARK-LAUNCH`,
+`GDD-06-TIME-TRIAL-DOWNLOADED-GHOST`,
+`GDD-06-QUICK-RACE-MODE`,
+`GDD-06-PRACTICE-MODE`) with `coverage: ["deprecated"]`. The two
+amended rows (`GDD-04-FIRST-RACE-FUN-LOOP`,
+`GDD-20-PAUSE-GHOSTS-ACTION`) keep their existing `coverage`
+array; only their `requirement` text is rewritten to drop cut-mode
+references. The `version: 1` invariant survives because the
+`coverage` field is an open-ended string array. "Deprecated" was
+chosen over "out-of-scope-v1" for being shorter and engineer-familiar;
+the meaning is "this requirement is removed from v1.0 scope and no
+longer expected to ship; it stays in the ledger for institutional
+memory".
 
 ---
 
