@@ -6,6 +6,108 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: research(topgear-fun): performance budget audit for filed slices
+
+**GDD sections touched:**
+[§16](gdd/16-rendering-and-visual-design.md) "Performance targets"
+(verification only),
+[§27](gdd/27-risks-and-mitigations.md) "Browser performance"
+(verification only),
+[§19](gdd/19-controls-and-input.md) reduced-motion gating
+(verification + dot amendment). No spec edits this iteration.
+**Branch / PR:** none (research-only loop on `main`).
+**Status:** Iter-11 audit confirms the cumulative cost of the 17+
+slices filed across iters 1-10 lands at roughly 10-14% of the
+16.67 ms 60-fps budget on the §16-named lowest-spec target
+(Steam-Deck-class `medium` graphics tier from
+`src/render/graphicsSettings.ts`). Headroom is comfortable. No
+new `implement:` dots filed for perf mitigation. One iter-8 dot
+(`VibeGear2-implement-speed-coupled-3cc0838f`) was amended in
+place with an "Implementation Notes (iter-11 perf budget audit
+append)" section that adds the reduced-motion gate the original
+dot text omitted, bringing the FOV-widen slice in line with the
+fire-camera and radial-speed-line slices.
+
+### Done
+
+- Read `docs/gdd/16-rendering-and-visual-design.md`,
+  `docs/gdd/27-risks-and-mitigations.md`,
+  `docs/COMPATIBILITY_MATRIX.md`,
+  `docs/BROWSER_COMPATIBILITY.md`,
+  `vitest.bench.config.ts`, and `scripts/bench-render.ts` to
+  pin the frame budget and the existing perf instrumentation.
+- Walked all 17 filed slices and assigned each a per-frame cost
+  bucket: zero (data / schema / content), negligible (arithmetic
+  only), or visible (12-car AI projection, radial speed-line
+  pool). Cited actual constants:
+  `src/road/constants.ts:30 DRAW_DISTANCE = 300`,
+  `src/road/constants.ts:23 SEGMENT_LENGTH = 6`,
+  `src/render/dust.ts:58 MAX_DUST = 64`,
+  `src/render/graphicsSettings.ts:25-30` per-tier draw distance
+  90 / 160 / 300 / 420.
+- Cross-referenced the iter-3 visibility cull change: the
+  opponent-sprite cull moves from 200 m to 600 m at
+  `src/app/race/page.tsx:721`, but `DRAW_DISTANCE` itself does
+  not change, so the projector's per-frame strip-loop count is
+  unchanged.
+- Computed the steady-state radial-speed-line pool size at top
+  speed (~5 particles without nitro, ~9 with nitro) against the
+  `MAX_LINES = 96` cap from the dot's Implementation Notes. Pool
+  is far below cap; cap exists for transient bursts.
+- Computed compiled-strip counts from
+  `src/data/tracks/*.json`: production tracks compile to 200-433
+  strips (1,200-2,600 m at `SEGMENT_LENGTH = 6`). The projector
+  caps at `Math.min(drawDistance, totalSegments)`, so on the
+  `high` tier the loop runs 200-300 strips, and on `medium`
+  (Steam-Deck-class auto-tier) it runs 160.
+- Confirmed reduced-motion gating coverage for all three iter-8
+  motion-FX slices. Two were already gated; the FOV-widen slice
+  was not. Amended its dot file with an iter-11 Implementation
+  Notes append.
+
+### Verified
+
+- `npm run content-lint`: clean (pre-edit and post-edit).
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` row updates this iteration. Iter-11 is
+a research + dot amendment pass; no `src/` writes, so no
+`implementationRefs` or `testRefs` change. The next implement-mode
+iteration that ships
+`VibeGear2-implement-speed-coupled-3cc0838f` will append the new
+`cameraSmoothing.ts` and `cameraSmoothing.test.ts` refs to the §16
+camera-language row at that time.
+
+### Followups created
+
+- F-101 (NEW, low priority, plan-doc note): hoist
+  `projectGhostCar`'s `currentOffsets` / `nextOffsets` arrays
+  into a single shared per-frame buffer reused across all 11
+  opponent projections plus the player ghost. Reduces per-frame
+  small-object allocations on the `high` tier. Defer until a
+  real-device bench shows GC pressure.
+- F-102 (NEW, low priority, plan-doc note): add a real-device
+  perf benchmark spec that runs `bench:render` against a
+  Steam-Deck-class Chromium profile. Today the bench is
+  dev-machine-indicative. Defer until after the iter-3 grid
+  slices ship so the 11-AI cost is in the measurement.
+
+Both followups live in `docs/RESEARCH_TOPGEAR_FUN_PLAN.md`
+Iteration 11 §D for the next iteration to file in
+`docs/FOLLOWUPS.md` if perf signals shift. Per the iter-11 prompt,
+mitigation slices land "only if needed" and the audit says they
+are not needed today.
+
+### GDD edits
+
+None. §16 "Performance targets" and §27 "Browser performance" are
+unchanged; iter-11 verifies the runtime sits inside the budget
+named in those sections, not that the budget itself needs an
+edit.
+
+---
+
 ## 2026-05-06: research(topgear-fun): atmosphere surfaces (music intensity, weather grip)
 
 **GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md)

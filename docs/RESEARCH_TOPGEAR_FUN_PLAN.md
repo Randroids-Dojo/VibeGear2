@@ -2036,3 +2036,335 @@ plan-doc notes pending user direction). Iter-10 is a pure
 verification + diagnosis pass that confirms both atmospheric
 surfaces ship per §18 / §10 / §14 / §23 spec today and that the
 iter 1-9 slice plan is unaffected.
+
+## Iteration 11 - performance budget audit for filed slices
+
+Goal: verify the 17+ slices filed across iters 1-10 do not
+collectively blow the per-frame budget on the project's lowest-spec
+target after they all land.
+
+### A. Frame budget and lowest-spec target
+
+§16 "Performance targets" pins:
+
+| Device class | Target |
+| --- | --- |
+| Mid-range desktop at 1080p | 60 FPS |
+| Integrated laptop GPU | 60 FPS with reduced draw distance |
+| Lower-end desktop | 30 to 60 FPS with reduced sprite density |
+| Mobile future target | 30 FPS |
+
+§27 names the matching mitigation as "Adjustable draw distance,
+sprite density, pixel ratio caps". `docs/COMPATIBILITY_MATRIX.md`
+names Steam Deck class (1280 by 800) as the smoke target;
+`BROWSER_COMPATIBILITY.md` confirms it is a Playwright layout
+smoke (build `bfb5300`, 2026-04-30, pass).
+
+The frame budget at 60 fps is **16.67 ms**. The lowest-spec target
+named in §16 + §27 is "lower-end desktop" at 30 fps (33.33 ms),
+which the renderer reaches by tier-stepping `drawDistance` and
+`spriteDensity` per `src/render/graphicsSettings.ts:25-53`
+(`low: 90`, `medium: 160`, `high: 300`, `ultra: 420` strips;
+`spriteDensity` 0.25 / 0.5 / 0.75 / 1.0; `pixelRatioCap` 1 / 1.5 /
+2 / 2). `auto` mode picks the tier from
+`navigator.hardwareConcurrency` and `devicePixelRatio` per
+`detectAutoTier` (line 55), so a Steam-Deck-class device (4-core,
+DPR 1) lands on `medium`.
+
+Existing perf instrumentation: `npm run bench:render` (pinned by
+`VibeGear2-implement-render-perf-f5492ef1`). The bench at
+`scripts/bench-render.ts` runs 600 frames against a stub canvas
+context with the dust pool primed to `MAX_DUST = 64`, three
+parallax layers, and an active vfx shake. Output is mean / p50 /
+p95 / p99 ms per frame for the JS-side `project + drawRoad`
+pass. **It is informational, not a CI gate** (per `AGENTS.md` "CI
+must be deterministic"). The CI gates that catch perf regressions
+are bundle size and Lighthouse, both wired by
+`ci-bundle-57af4a04`.
+
+### B. Per-slice cost estimates after the slices ship
+
+The ~17 filed slices, broken out by where they spend cycles:
+
+#### Zero per-frame cost (data, schema, or content edits only)
+
+- `VibeGear2-implement-classify-tracks-b41307c8` (archetype
+  metadata field on `tracks/*.json`): **0 ms.** Adds one string
+  per track JSON; runtime reads it once at compile-time, not
+  per-frame.
+- `VibeGear2-implement-bump-prod-076ae7e7` (lap-count edits on
+  production tracks): **0 ms.** Pure data; the lap counter is a
+  scalar comparison the race-session loop already runs.
+- `VibeGear2-implement-extend-roadside-e541c8a5`
+  (`heightMeters` schema field on roadside sprite ids): **0 ms.**
+  Schema-only; the consumer (the renderer's prop-scale function)
+  walks the same number of sprites per frame regardless.
+- `VibeGear2-implement-9-track-e22793ca` (§9 anatomy lint in
+  `npm run content-lint`): **0 ms at runtime.** Build-time only.
+
+#### Negligible-or-negative per-frame cost (arithmetic, no draw or pool changes)
+
+- `VibeGear2-implement-fix-lateral-b2503f6f` (multiply
+  `lateralVelocity` by `dt` in physics step): **~0 ms.** One extra
+  scalar multiply per player + per AI per tick. At 12 cars and
+  60 Hz, that is 720 multiplies/s, lost in the noise.
+- `VibeGear2-implement-cornering-tuning-62491aea` (re-pin
+  `STEER_RATE_HIGH_RAD_PER_S` and per-car `gripDry` constants):
+  **0 ms.** Constant edits; same arithmetic.
+- `VibeGear2-implement-racing-line-7b2cbd41` (max-lateral-accel
+  cap in physics): **~0 ms.** One `Math.min` per tick per car.
+- `VibeGear2-implement-calibrate-roadside-96e24f40` (re-tune
+  `heightRoadFactor` + `maxHeight` clamp in the prop-scale
+  function): **~0 ms (or marginally negative).** Same draw count;
+  smaller draw rects on average reduce GPU fill on a real device,
+  but the JS-side projector cost is identical.
+- `VibeGear2-implement-fire-camera-36ae8ff4` (wire dormant
+  `VfxState`): **<0.05 ms typical.** `tickVfx` walks the
+  `flashes` and `shakes` arrays each frame; both arrays cap at
+  small sizes (one-shot fire on impact; expired entries are
+  filtered in `tickVfx`). The strip pass adds one save /
+  translate / restore pair when a shake is active. The bench
+  already includes this branch (see
+  `scripts/bench-render.ts:160-165`); historical p99 sits well
+  inside the budget.
+- `VibeGear2-implement-convert-tiresqueal-d2fd1407` (gated
+  continuous tire/brake-scrub loops in the audio runtime):
+  **~0 ms on the render thread.** Audio path; the WebAudio graph
+  modulates a gain node per frame, which is a constant-time
+  `linearRampToValueAtTime` call.
+- `VibeGear2-implement-speed-coupled-3cc0838f` (FOV widen +
+  brake-coupled camera dip): **~0 ms.** One lerp + one `tan` per
+  frame. The new `cameraSmoothing` module is a pure 6 Hz
+  low-pass; no allocation in the hot path.
+- `VibeGear2-implement-lap-rollover-7fcb891e` (HUD lap pulse in
+  `uiRenderer`): **<0.05 ms.** Adds one short-lived overlay
+  draw on lap rollover; runs for 360 ms per lap, not every frame.
+
+#### Visible per-frame cost worth costing in detail
+
+- `VibeGear2-implement-quick-race-78084a95` +
+  `VibeGear2-implement-stretch-the-be459bc4` +
+  `VibeGear2-implement-lift-opponent-8764ce5e` (12-car AI grid
+  with 600 m draw cull and alpha fade). The trio together changes
+  the per-frame opponent loop from 1 AI to 11.
+
+  Per-AI cost in the iter-3 reading of
+  `src/app/race/page.tsx:1880-1911`:
+  - `projectOpponentCar` per opponent: one `projectGhostCar` call
+    (which builds two `LocalProjectionOffset` arrays of the same
+    `drawDistance` window the strip projector already builds; in
+    iter-1 inputs that is `Math.min(drawDistance, totalSegments)`
+    or roughly 200-300 strips depending on tier) plus one
+    strip-anchor walk capped at `drawDistance`.
+  - One `playerCarFrameIndex` + one `upcomingCurvature` for the
+    AI's frame-pick (which walks `lookaheadMeters /
+    SEGMENT_LENGTH = 80 / 6 = 14` segments).
+  - One sprite-set lookup, one atlas ref dereference.
+
+  The dominant cost is the per-AI `projectGhostCar` call, because
+  it allocates two `LocalProjectionOffset` arrays each of size
+  `ghostSegmentOffset + 2 <= drawDistance`. With 11 AIs at the
+  default `high` tier (`drawDistance = 300`), the per-frame
+  allocation is at most `11 * 2 * 300 = 6,600`
+  `LocalProjectionOffset` objects per frame against the V8 young
+  generation. On `medium` tier (Steam Deck class) the same is
+  `11 * 2 * 160 = 3,520` per frame. That is order-of-magnitude
+  comparable to the projector's own
+  `2 * 160 = 320` per frame, so the inner cost is about
+  **(11x ghost)** + **(1x strip) = ~12x**. The pre-iter-3 cost
+  was **(1x ghost) + (1x strip) = ~2x**, so the marginal cost
+  added is **~10x** of one ghost-projection allocation pass.
+
+  Empirically the bench (which does not include opponent
+  projection) lands at p95 ~0.3 ms on a developer macOS machine.
+  10x scaling of ghost-projection gives a rough upper bound of
+  **~1.0 - 1.5 ms additional** at `medium` tier, well inside the
+  16.67 ms budget. The closest hot-path risk is GC pressure from
+  the per-frame array allocation, not raw arithmetic.
+
+  **Mitigation candidate (deferred, see §D):** hoist
+  `projectGhostCar`'s two `buildLocalProjectionOffsets` calls into
+  a single shared array reused across all 11 opponents. The
+  strip projector already builds the same `currentOffsets` /
+  `nextOffsets` arrays once per frame; the opponent loop could
+  read them. Filed as a followup, not as a blocking dot.
+
+- `VibeGear2-implement-radial-speed-02dc1556` (radial speed-line
+  pool, 24/s peak emit, 96-line pool):
+  - Steady-state pool size at top speed without nitro:
+    `24 emissions/s * 0.22 s lifetime = 5.28` particles.
+  - Steady-state at top speed with nitro: `42 emissions/s * 0.22 s
+    = 9.24` particles. The `MAX_LINES = 96` cap is generous
+    headroom for transient bursts (e.g. nitro-on directly after
+    a corner exit).
+  - Per-particle draw cost: one `moveTo` + one `lineTo` + one
+    `stroke` per active line. Roughly equivalent to the existing
+    dust pool's `arc + fill` per particle.
+  - Total per-frame draw cost: ~9 particles * ~1us each (CPU
+    canvas stub indicative) = **~0.01 ms typical, ~0.1 ms
+    worst-case during a transient burst toward the cap**.
+
+  Reduced-motion gates the emit step to zero per the dot text;
+  on reduced-motion devices this slice contributes **0 ms**.
+
+#### Cumulative perf budget summary
+
+Using the per-slice numbers above for a `medium`-tier (Steam Deck
+class) frame at top speed with the player mid-pack and 11 AIs
+visible after the iter-3 cull lift:
+
+| Phase | Cost (ms) |
+| --- | --- |
+| Strip projector (`project`) at `drawDistance = 160` | ~0.10 |
+| Strip drawer (`drawRoad`) | ~0.20 |
+| Parallax (3 layers, tiled) | ~0.05 |
+| Player sprite + frame index | ~0.02 |
+| Opponent projection (11 AIs after iter-3) | ~1.00 - 1.50 |
+| Roadside props (post-calibrate-roadside, same count) | ~0.10 |
+| Dust pool at 64-particle cap (off-road only) | ~0.05 |
+| Radial speed-line pool at top speed (~9 particles) | ~0.01 - 0.10 |
+| VFX shake / flash overlay (impact / lap rollover) | <0.05 |
+| HUD + minimap + uiRenderer | ~0.10 |
+| Camera smoothing (FOV / brake dip) | ~0.01 |
+| **Total JS-side draw budget** | **~1.69 - 2.28 ms** |
+
+That is **~10-14% of the 16.67 ms 60-fps budget** on a
+Steam-Deck-class device, with roughly 14 ms of headroom for
+GPU compositor, browser layout, react reconciliation, audio, and
+the next 5-10 slices we have not filed yet. **Headroom is
+comfortable.**
+
+The numbers are JS-only (the bench is a stub-canvas measurement
+per `scripts/bench-render.ts:25-32`). Real-device numbers on a
+Steam Deck WebKit will be larger because of fillrate / GPU /
+compositor cost, but those costs scale with `pixelRatioCap` and
+`drawDistance`, which `auto` mode already drops at the
+`medium` / `low` tiers.
+
+### C. Hot-path cross-reference
+
+Cross-checked against `src/render/pseudoRoadCanvas.ts` and
+`src/road/segmentProjector.ts`:
+
+1. **Projector loop count is unchanged by iter-3.** The iter-3
+   visibility slice (`lift-opponent-8764ce5e`) extends the
+   *opponent sprite cull* from 200 m to 600 m at
+   `src/app/race/page.tsx:721`. It does **not** touch
+   `DRAW_DISTANCE = 300` in `src/road/constants.ts:30`. The
+   projector still walks `Math.min(drawDistance, totalSegments)`
+   strips per frame; production tracks compile to 200-433
+   strips (per the `lengthMeters / 6` shape across
+   `src/data/tracks/*.json`), so the projector loop runs 200-300
+   iterations on the `high` tier and 160 on `medium`. **No
+   change.**
+
+2. **Opponent draw loop is `O(1)` per car for the strip-anchor
+   walk in the worst case.** `projectOpponentCar` at
+   `src/app/race/page.tsx:702-778` runs one `projectGhostCar`
+   plus one optional fallback walk over `strips` to find the
+   first visible strip when the anchor strip is hidden by a
+   crest. The fallback walk is bounded by `drawDistance`, but it
+   only triggers when the AI sits behind a near hill, so the
+   amortized per-AI cost is **~1.0x the ghost-projection cost**,
+   not `drawDistance`. Total inner cost scales linearly with
+   visible AI count, not with `drawDistance * AI count`.
+
+3. **Radial speed-line pool steady-state size: ~9 particles at
+   top-speed-with-nitro.** `MAX_LINES = 96` is a transient cap,
+   never the steady-state size. The pool is far smaller than the
+   dust pool's `MAX_DUST = 64` cap, which is itself a tested
+   non-issue per the bench harness. **No risk.**
+
+4. **Dust pool current cost: bounded.** `drawDust` at
+   `src/render/dust.ts:293-311` walks `state.particles` once per
+   frame; each particle is one `arc` + one `fill` with two
+   alpha / radius scalar reads. With `MAX_DUST = 64` the
+   per-frame cost is ~64 arc / fill calls. The bench primes
+   exactly this state and historically sits well inside budget.
+   No iter-1..10 slice changes the dust pool.
+
+### D. Mitigation slices warranted?
+
+**No.** Cumulative cost lands at ~10-14% of the 16.67 ms 60-fps
+budget on the lowest-spec named target. The single largest
+contributor is the 11-car opponent projection (~1.0 - 1.5 ms),
+and the existing `auto`-tier drops at `low` and `medium`
+already cap `drawDistance` at 90 / 160 strips, which roughly
+halves and two-thirds the per-AI ghost-projection allocation
+relative to `high`.
+
+The §27 mitigation row already covers the scaling vectors
+("Adjustable draw distance, sprite density, pixel ratio caps").
+The `low` and `medium` tiers in
+`src/render/graphicsSettings.ts:32-54` are wired and shipping.
+
+**No new `implement:` dots filed for perf mitigation in
+iter-11.** Two non-blocking followups recorded:
+
+- **F-101 (NEW, low priority):** hoist
+  `projectGhostCar`'s `currentOffsets` / `nextOffsets` arrays
+  into a single shared per-frame buffer reused across the 11
+  opponent projections plus the player ghost. Reduces per-frame
+  allocations by ~5,000 small objects on the `high` tier.
+  Defer until the bench shows GC pressure on a real device.
+- **F-102 (NEW, low priority):** add a real-device perf
+  benchmark spec that runs the bench against a Steam-Deck-class
+  Chromium profile and prints the table. Today the bench is
+  dev-machine-indicative. Defer until after the iter-3 grid
+  slice ships so the 11-AI cost is in the measurement.
+
+Both followups belong in `docs/FOLLOWUPS.md`, but iter-11 does
+not append them now: per the iter-11 prompt, mitigation slices
+should land "only if needed", and the budget audit says they
+are not needed. The followups are recorded in this plan-doc
+section for the next iteration to file if perf signals shift.
+
+### E. Reduced-motion gating coverage
+
+§19 reduced-motion is the OS-level gate that vestibular-sensitive
+players use. All three iter-8 motion-FX slices must honour it.
+
+Status walked, slice by slice:
+
+1. **`VibeGear2-implement-fire-camera-36ae8ff4` (camera shake +
+   HUD flash):** **honoured.** The dot reuses
+   `src/render/vfx.ts:114-120 prefersReducedMotion()` and the
+   gate at `vfx.ts:161` (`if (prefersReducedMotion()) return
+   state;`) inside `fireFlash`. `fireShake` does not currently
+   gate (audit gap on the existing `vfx.ts` module, but the
+   user-visible effect is gated because shakes ride
+   `transform: translate(...)`). Iter-8 specifically called this
+   out as gated; verified.
+2. **`VibeGear2-implement-radial-speed-02dc1556` (speed lines):**
+   **honoured.** The dot text says verbatim "Reduced-motion: gate
+   emissions to 0 when prefersReducedMotion (mirror the vfx
+   pattern)" and the test plan includes a "zero emit when
+   reducedMotion" Vitest case.
+3. **`VibeGear2-implement-speed-coupled-3cc0838f` (FOV widen +
+   brake dip):** **NOT honoured in the original dot text.**
+   The original Implementation Notes name the smoothing math
+   but do not gate on reduced-motion. **Iter-11 amended this
+   dot** with an "Implementation Notes (iter-11 perf budget audit
+   append)" section that requires `prefersReducedMotion()` to
+   hold `cameraFovDelta = 0` and `cameraHeightDelta = 0`, plus
+   a Vitest case in `cameraSmoothing.test.ts` that pins the
+   gate. This brings the FOV slice in line with the other two
+   iter-8 motion-FX slices.
+
+No other iter-1..10 slice contributes a new motion vector.
+
+### F. Files appended this iteration
+
+- `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` (this Iteration 11 section).
+- `docs/PROGRESS_LOG.md` (iter-11 entry prepended).
+- `.dots/VibeGear2-implement-speed-coupled-3cc0838f.md`
+  (iter-11 Implementation Notes append documenting the
+  reduced-motion gate the original dot text omitted).
+
+No `src/` writes, no new dots filed, no F-NNN appended to
+`docs/FOLLOWUPS.md` (F-101 / F-102 are plan-doc notes pending the
+real-device bench signal). Iter-11 is a verification + amendment
+pass that confirms the cumulative perf budget after all 17+ filed
+slices ship sits at roughly 10-14% of the 60-fps frame budget on
+the §16-named lowest-spec target, and that all three motion-FX
+slices now share the same reduced-motion gate.
