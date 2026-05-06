@@ -1967,9 +1967,21 @@ function RaceCanvas({
         if (vfxDtMs > 0) {
           vfxRef.current = tickVfx(vfxRef.current, vfxDtMs);
         }
+        // Only forward the VFX state to drawRoad when something is
+        // actually active. The pre-fix path with `vfx` undefined is the
+        // golden idle render; passing an empty VfxState every frame
+        // makes drawRoad call drawVfx (which is a no-op) but introduces
+        // a measurable difference in some Playwright pixel-sampling
+        // tests on the test/elevation track. Gating on length keeps
+        // the idle render byte-identical to the pre-PR golden.
+        const activeVfx =
+          vfxRef.current.flashes.length > 0 ||
+          vfxRef.current.shakes.length > 0
+            ? vfxRef.current
+            : undefined;
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
-          vfx: vfxRef.current,
+          vfx: activeVfx,
           weatherEffects: {
             weather: renderWeather,
             visualReduction: persistedAssists.weatherVisualReduction,
