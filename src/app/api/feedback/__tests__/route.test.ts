@@ -10,10 +10,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { POST } from "../route";
+import { POST, __resetRateLimitForTests } from "../route";
 
 const TOKEN = "ghp_test_token";
 const REPO = "Randroids-Dojo/VibeGear2-Test";
+const HOST = "test.local";
+const ORIGIN = `http://${HOST}`;
 
 let savedToken: string | undefined;
 let savedRepo: string | undefined;
@@ -25,6 +27,7 @@ beforeEach(() => {
   process.env.GITHUB_PAT = TOKEN;
   process.env.FEEDBACK_REPO = REPO;
   originalFetch = globalThis.fetch;
+  __resetRateLimitForTests();
 });
 
 afterEach(() => {
@@ -33,12 +36,27 @@ afterEach(() => {
   if (savedRepo === undefined) delete process.env.FEEDBACK_REPO;
   else process.env.FEEDBACK_REPO = savedRepo;
   globalThis.fetch = originalFetch;
+  __resetRateLimitForTests();
 });
 
-function makeRequest(body: unknown): Request {
-  return new Request("http://test.local/api/feedback", {
+interface RequestOpts {
+  origin?: string | null;
+  referer?: string | null;
+  host?: string | null;
+  ip?: string;
+}
+
+function makeRequest(body: unknown, opts: RequestOpts = {}): Request {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  if (opts.host !== null) headers.set("host", opts.host ?? HOST);
+  if (opts.origin !== null) headers.set("origin", opts.origin ?? ORIGIN);
+  if (opts.referer !== undefined && opts.referer !== null) {
+    headers.set("referer", opts.referer);
+  }
+  headers.set("x-forwarded-for", opts.ip ?? "203.0.113.7");
+  return new Request(`${ORIGIN}/api/feedback`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
@@ -225,5 +243,124 @@ describe("POST /api/feedback", () => {
     expect(sent.body).toContain("boom");
     expect(sent.body).toContain("x2");
     expect(sent.body).toContain("at Foo (foo.ts:1:1)");
+  });
+
+  it("returns 403 when no Origin or Referer header is present", async () => {
+    const res = await POST(
+      makeRequest(
+        { title: "t", body: "b" },
+        { origin: null, referer: null },
+      ),
+    );
+    expect(res.status).toBe(403);
+    const json = (await res.json()) as { ok: false; code: string };
+    expect(json.code).toBe("forbidden-origin");
+  });
+
+  it("returns 403 when Origin is from a different host", async () => {
+    const res = await POST(
+      makeRequest({ title: "t", body: "b" }, { origin: "https://attacker.example" }),
+    );
+    expect(res.status).toBe(403);
+    const json = (await res.json()) as { ok: false; code: string };
+    expect(json.code).toBe("forbidden-origin");
+  });
+
+  it("falls back to Referer when Origin is absent and host matches", async () => {
+    globalThis.fetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({ number: 1, html_url: `https://github.com/${REPO}/issues/1` }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      ),
+    ) as typeof globalThis.fetch;
+    const res = await POST(
+      makeRequest(
+        { title: "t", body: "b" },
+        { origin: null, referer: `${ORIGIN}/race` },
+      ),
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it("returns 429 once an IP exceeds the rate limit", async () => {
+    globalThis.fetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({ number: 1, html_url: `https://github.com/${REPO}/issues/1` }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      ),
+    ) as typeof globalThis.fetch;
+    const ip = "198.51.100.42";
+    for (let i = 0; i < 5; i += 1) {
+      const ok = await POST(makeRequest({ title: "t", body: "b" }, { ip }));
+      expect(ok.status).toBe(201);
+    }
+    const blocked = await POST(makeRequest({ title: "t", body: "b" }, { ip }));
+    expect(blocked.status).toBe(429);
+    const json = (await blocked.json()) as { ok: false; code: string };
+    expect(json.code).toBe("rate-limited");
+  });
+
+  it("returns 502 with status 0 when the GitHub fetch throws", async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new Error("network down");
+    }) as typeof globalThis.fetch;
+    const res = await POST(makeRequest({ title: "t", body: "b" }));
+    expect(res.status).toBe(502);
+    const json = (await res.json()) as { ok: false; code: string; status?: number };
+    expect(json.code).toBe("github-api-error");
+    expect(json.status).toBe(0);
+  });
+
+  it("truncates a very long user message when it pushes the body past the GitHub limit", async () => {
+    let issueBodyCaptured = "";
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      issueBodyCaptured = (init?.body ?? "") as string;
+      return new Response(
+        JSON.stringify({ number: 1, html_url: `https://github.com/${REPO}/issues/1` }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof globalThis.fetch;
+
+    const huge = "a".repeat(70_000);
+    const res = await POST(
+      makeRequest({ title: "long", body: huge }),
+    );
+    expect(res.status).toBe(201);
+    const sent = JSON.parse(issueBodyCaptured) as { body: string };
+    expect(sent.body.length).toBeLessThanOrEqual(65_536);
+    expect(sent.body).toContain("(message truncated by server)");
+  });
+
+  it("drops the captured-errors block before truncating the message when both are oversize", async () => {
+    let issueBodyCaptured = "";
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      issueBodyCaptured = (init?.body ?? "") as string;
+      return new Response(
+        JSON.stringify({ number: 1, html_url: `https://github.com/${REPO}/issues/1` }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof globalThis.fetch;
+
+    const bigMessage = "m".repeat(40_000);
+    const bigError = {
+      id: "err-x",
+      message: "x".repeat(50_000),
+      stackPrefix: "at Foo",
+      timestamp: 1,
+      count: 1,
+      buildId: "abc",
+      buildVersion: "0.2.0",
+    };
+    const res = await POST(
+      makeRequest({
+        title: "both big",
+        body: bigMessage,
+        context: { capturedErrors: [bigError] },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const sent = JSON.parse(issueBodyCaptured) as { body: string };
+    expect(sent.body.length).toBeLessThanOrEqual(65_536);
+    expect(sent.body).toContain("Captured errors omitted");
   });
 });

@@ -3,14 +3,16 @@
  *
  * The component depends on `document.body` for its portal target and
  * uses `useEffect` to flip the `mounted` flag, so a server-side render
- * via `renderToStaticMarkup` returns `null`. We verify that contract,
- * then test the title-deriver in isolation by importing the module
- * and exercising the closed-form helper through the component's
- * exported surface.
+ * via `renderToStaticMarkup` returns the empty server shell. We pin
+ * that contract here.
  *
- * Full client-side interaction (open panel, fill textarea, submit) is
- * covered by the Playwright suite where a real DOM and fetch stub are
- * available.
+ * Full client-side interaction (open panel, fill textarea, submit,
+ * click-outside dismiss, Escape dismiss) is intentionally out of scope
+ * for this unit suite and is tracked by F-077 as a future Playwright
+ * spec. The repo has no `@testing-library/react` dependency yet, so
+ * exercising the rendered DOM here would mean adding one for a single
+ * file. Until F-077 lands, the route-handler suite plus the in-browser
+ * smoke against a Preview deploy guard the contract.
  */
 
 import { createElement } from "react";

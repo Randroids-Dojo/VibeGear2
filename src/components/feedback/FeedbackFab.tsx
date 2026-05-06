@@ -13,8 +13,9 @@
  *     `?errors=1` panel).
  *   - URL path, viewport, user agent, and ISO timestamp.
  *
- * The FAB hides while the dev `?errors=1` panel is open so the two
- * bottom-right surfaces do not stack.
+ * The FAB and the hidden dev `?errors=1` panel can coexist: both render
+ * at bottom-right but the FAB sits at the corner and the dev panel
+ * stacks above it without overlap that obstructs either control.
  */
 
 import {
@@ -59,24 +60,19 @@ function captureScreenshot(): string | null {
   }
 }
 
-function isErrorsPanelActive(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("errors") === "1";
-}
+const MAX_MESSAGE_LENGTH = 4000;
 
 export function FeedbackFab(): ReactElement | null {
   const [view, setView] = useState<View>("closed");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const fabRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMounted(true);
-    setHidden(isErrorsPanelActive());
   }, []);
 
   useEffect(() => {
@@ -106,8 +102,6 @@ export function FeedbackFab(): ReactElement | null {
       document.removeEventListener("keydown", onKey);
     };
   }, [view]);
-
-  if (hidden) return null;
 
   function toggle(): void {
     setView((v) => (v === "closed" ? "open" : "closed"));
@@ -213,6 +207,7 @@ export function FeedbackFab(): ReactElement | null {
                 placeholder="What's on your mind?"
                 rows={4}
                 required
+                maxLength={MAX_MESSAGE_LENGTH}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 style={textareaStyle}

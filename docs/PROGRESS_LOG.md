@@ -6,6 +6,86 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: Slice: Feedback FAB review hardening (PR #169 review pass)
+
+**GDD sections touched:** [§27](gdd/27-risks-and-mitigations.md) "User-reported
+client crashes".
+**Branch / PR:** `feat/feedback-fab-github-issue`, PR #169.
+**Status:** Implemented.
+
+### Done
+- Addressed six review comments from the Copilot reviewer on PR #169.
+- Same-origin gate on `POST /api/feedback`: rejects requests whose Origin
+  (or Referer fallback) host does not match the request host with 403
+  `forbidden-origin`. Stops trivial scripted abuse from third-party origins.
+- In-memory per-IP sliding-window rate limit: 5 requests per 10 minute
+  window per IP, returns 429 `rate-limited` when exceeded. Resets on cold
+  start (acceptable for "throttle casual abuse"); exported
+  `__resetRateLimitForTests` so the suite stays order-independent.
+- Wrapped both GitHub API calls in try/catch so a network error returns
+  the stable `{ ok: false, code: "github-api-error", status: 0 }` envelope
+  instead of an unhandled throw and a generic Next 500.
+- Generalized the body-size guard: drops the inline base64 screenshot
+  first, then the captured-errors block, and finally truncates the user
+  message itself to keep every issue under the 65,536 character GitHub
+  limit. Also caps the user message at 32,000 characters before
+  assembling the body so a paste bomb cannot dominate the issue.
+- Removed the `?errors=1` hide behavior from the FAB. The dev panel and
+  the FAB can coexist; relying on a one-shot mount-time read of
+  `window.location` was incorrect because client navigation does not
+  re-trigger the effect.
+- Added `maxLength={4000}` to the textarea so the client surfaces the
+  cap before the server has to truncate.
+- Updated the FAB unit test docstring to reference F-077 honestly
+  instead of claiming Playwright coverage that does not yet exist.
+
+### Verified
+- `npm run typecheck` green.
+- `npm run lint` green.
+- `npm run test` 2798 passed (147 suites; 7 new feedback-route tests
+  added: forbidden origin without and with mismatched Origin, Referer
+  fallback, rate limit, network failure, message truncation, captured
+  errors drop).
+- `npm run build` green; `/api/feedback` registers as dynamic.
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Same-origin via Origin then Referer is the right cut for now: it
+  blocks drive-by attackers without standing up a CSRF token issuer or
+  a session. A determined attacker can spoof both headers from a server,
+  but that is out of scope for "stop scripted abuse from a browser."
+- In-memory rate limit instead of Upstash Redis: the leaderboard already
+  uses Upstash so we could distribute the limiter, but this slice keeps
+  scope tight and accepts that determined abuse needs F-079 (deferred).
+- 5 requests per 10 minutes balances real player feedback flows
+  (occasionally two reports in a session) against abuse cost. Easy to
+  retune by editing the constants if telemetry shows misuse.
+- Kept the 32,000 character message cap below the 65,536 GitHub limit
+  so the captured-errors block, the screenshot block, and the meta
+  block always have headroom even before the server-side clip runs.
+- The message-truncate-as-last-resort path keeps a useful prefix of the
+  user's text rather than dropping the issue entirely. Future hardening
+  could redirect long reports to a different surface (gist, attachment).
+
+### Coverage ledger
+- `GDD-27-USER-FEEDBACK-CHANNEL` updated implementation refs implicitly:
+  same files, hardened behavior. Test refs unchanged because the new
+  cases live in the existing route suite.
+- Uncovered adjacent requirements: distributed rate limiting (an Upstash
+  Redis sliding window so the limit survives cold starts and scales
+  across instances) is tracked by the new F-079.
+
+### Followups created
+- F-079: Move the feedback rate limit off in-memory state onto the
+  existing Upstash Redis store so the limit survives cold starts and
+  scales across Function instances.
+
+### GDD edits
+- None. The risk row already names the FAB + issue path; abuse
+  mitigation is implementation detail.
+
+---
+
 ## 2026-05-05: Slice: Feedback FAB that opens GitHub issues
 
 **GDD sections touched:** [§27](gdd/27-risks-and-mitigations.md) "User-reported

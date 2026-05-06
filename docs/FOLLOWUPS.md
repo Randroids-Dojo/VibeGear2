@@ -10,10 +10,22 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-079: Move the Feedback FAB rate limit off in-memory state
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** PR #169 ships an in-memory sliding-window rate limit (5 req per
+10 min per IP) on `POST /api/feedback`. It throttles casual abuse but
+resets on cold start and does not coordinate across Vercel Function
+instances. Move the bucket onto the existing Upstash Redis store the
+leaderboard already uses so the limit survives cold starts and scales
+horizontally. Reuses the same env vars; should be a small slice that
+swaps the `Map<string, number[]>` for a Redis sliding-window primitive.
+
 ## F-078: Provision `GITHUB_PAT` for the Feedback FAB on Vercel
 **Created:** 2026-05-05
 **Priority:** blocks-release
-**Status:** open
+**Status:** done (2026-05-05)
 **Notes:** The `feat/feedback-fab-github-issue` slice ships a
 `POST /api/feedback` route that creates GitHub issues using a
 fine-grained PAT in `process.env.GITHUB_PAT`. The route returns 500
@@ -23,6 +35,17 @@ PAT scoped to Issues read+write and Contents read+write on
 `Randroids-Dojo/VibeGear2`, add it as a Vercel project env var on
 Production and Preview, and verify a feedback submit reaches GitHub
 end-to-end before tagging the next release.
+
+Closed in the PR #169 verification window. Provisioned a fine-grained
+PAT (`GITHUB_PAT_VIBEGEAR`) scoped to `Randroids-Dojo/VibeGear2` with
+Issues read+write and Contents read+write, added it as `GITHUB_PAT` to
+the Vercel project on Production, Preview, and Development, redeployed
+the PR Preview, and confirmed an end-to-end submission landed at
+`Randroids-Dojo/VibeGear2#170` with the `feedback` label, inline
+screenshot, and context block. A second submission at
+`Randroids-Dojo/VibeGear2#172` exercised the captured-errors path and
+rendered both the deferred throw and the unhandled rejection. PAT will
+be rotated post-merge; rotation does not require code changes.
 
 ## F-077: Playwright coverage for the Feedback FAB
 **Created:** 2026-05-05
