@@ -9,6 +9,57 @@ they are part of the design history.
 
 ---
 
+## Q-013: Per-track archetype mapping for the §7 lap targets
+
+**GDD reference:** [§7](gdd/07-race-rules-and-structure.md) "Number of
+laps", [§9](gdd/09-track-design.md) "Track length targets",
+[§24](gdd/24-content-plan.md) "Original tours and tracks".
+**Status:** open
+**Asked in loop:** 2026-05-05
+
+**Question.** §7 pins lap counts per track archetype (short-sprint
+4-5, standard 3, long-scenic 2, endurance 2-3) but does not say
+which of the 32 production tracks belongs to which archetype. The
+implementation slice
+`VibeGear2-implement-classify-tracks-b41307c8` needs an explicit
+mapping per track JSON to bump `laps` mechanically.
+
+**Recommended default.** Apply a uniform mapping derived from the §8
+tour role and the track length so the implementor can proceed without
+waiting for hand-curation:
+
+- Velvet Coast (onboarding tour): all four tracks `standard` -> 3 laps.
+  Includes Harbor Run (1500 m), Sunpier Loop (1536 m), Cliffline Arc
+  (1560 m), Lighthouse Fall (1584 m).
+- Iron Borough (traffic-pressure tour): all four `short-sprint` -> 4
+  laps. Tracks are 1608-1668 m (the shortest of the production set),
+  fitting the §7 short-sprint shape.
+- Ember Steppe (speed/lane discipline): all four `standard` -> 3 laps.
+  Tracks are 1740-1920 m.
+- Breakwater Isles (wet grip): all four `standard` -> 3 laps. Tracks
+  are 1880-2120 m.
+- Glass Ridge (alpine, braking and setup): mix - Whitepass and
+  Frostrelay `standard` -> 3 laps; Hollow Crest and Summit Echo
+  `long-scenic` -> 2 laps because they ship the dramatic tunnel /
+  crest beats §9 "long-scenic" calls for.
+- Neon Meridian (visibility tour): all four `standard` -> 3 laps.
+- Moss Frontier (technical mid-late): all four `long-scenic` -> 2 laps
+  because they are 1980-2320 m and §8 calls them "technical mid-late".
+- Crown Circuit (endgame): all four `endurance` -> 2 laps. Tracks are
+  2240-2600 m and §8 calls this the "endgame mastery" finale.
+
+This default ships 4 short-sprint, 16 standard, 8 long-scenic, and 4
+endurance tracks, which roughly matches §7's implicit pacing curve
+across the eight tours and produces race windows of 2-5 minutes per
+the `docs/gdd/09-track-design.md` lap-time targets.
+
+**Blocking?** No. The implementation slice can proceed under the
+recommended-default labelled assumption. If the dev later disagrees
+with a specific row, a one-line `archetype` edit in the affected
+JSON re-bumps that track's `laps` on the next CI run.
+
+---
+
 ## Q-012: Self-hosted error sink for opt-in client reports
 
 **GDD reference:** [§27](gdd/27-risks-and-mitigations.md) "User-reported

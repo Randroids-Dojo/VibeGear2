@@ -10,6 +10,35 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-081: Re-tune cash and repair-cap economics for multi-lap races
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** `VibeGear2-implement-bump-prod-076ae7e7` bumps every
+production track from `laps: 1` to the §7 archetype targets. Cash
+pickups respawn per lap (per §9 "Pickups respawn each lap"), and the
+§7 fastest-lap bonus and §15 rubber-banding both fire only across
+multiple laps, so race-cash earned per session will jump. The §12
+catch-up table (tour stipend, repair cap, easy-mode bonus) was tuned
+against single-lap races. Once the lap bump is live, run a balancing
+pass on the `gdd/23-balancing-tables.md` numbers to keep upgrade
+cadence intact: §12 Q-004 stipend threshold, Q-005 repair cap fraction,
+Q-006 easy-mode bonus rate, and the per-pickup cash values may all
+need a haircut.
+
+## F-080: Re-baseline release-fun playtest evidence to multi-lap race windows
+**Created:** 2026-05-05
+**Priority:** blocks-release
+**Status:** open
+**Notes:** The existing release-fun Playwright suite from F-076 expects
+each production race to finish inside roughly 60 s because every track
+ships `laps: 1` today. Once the lap bump from
+`VibeGear2-implement-bump-prod-076ae7e7` lands, race windows move to
+2-5 minutes. Update the suite's per-race timeouts, the "first 90
+seconds" segment (now mid-race, not "race almost over"), the lap-progress
+assertions, and the production smoke runner. Without this, the lap-bump
+PR red-lines the release-fun gate and stalls release.
+
 ## F-079: Move the Feedback FAB rate limit off in-memory state
 **Created:** 2026-05-05
 **Priority:** nice-to-have

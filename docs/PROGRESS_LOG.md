@@ -6,6 +6,100 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: research(topgear-fun): pain point #1 - race length and lap structure
+
+**GDD sections touched (research only, no spec edits):** [§7](gdd/07-race-rules-and-structure.md)
+"Number of laps", [§9](gdd/09-track-design.md) "Track length targets",
+[§5](gdd/05-core-gameplay-loop.md) "Race preparation", [§8](gdd/08-world-and-progression-design.md)
+"Original tours".
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Research filed.
+
+### Done
+
+- Read GDD §5, §7, §8, §9, §10, §15, §16 against the live source
+  (`src/data/tracks/*.json`, `src/game/raceState.ts`,
+  `src/game/raceSession.ts`, `src/game/physics.ts`,
+  `src/road/segmentProjector.ts`).
+- Diagnosed pain point #1: every one of the 32 production track JSONs
+  ships with `"laps": 1` and lengths 1500-2600 m, which puts the
+  competitive race window at roughly 30-50 s of driving plus the §7
+  3 s countdown. §7 wants 4-5 / 3 / 2 / 2-3 laps across the four
+  archetypes; §9 wants 50-150 s competitive laps. The 30-50 s sprint
+  the user named as pain point #1 is therefore caused entirely by data,
+  not engine: the multi-lap path is wired through
+  `raceState.totalLaps`, lap rollover at `raceSession.ts:1703`,
+  results, and §7 fastest-lap bonus.
+- Filed three implementation dots in dependency order:
+  - `VibeGear2-implement-classify-tracks-b41307c8` - add `archetype`
+    enum to `Track` schema and label every production track.
+  - `VibeGear2-implement-bump-prod-076ae7e7` - bump `laps` per
+    archetype across all 32 production track JSONs.
+  - `VibeGear2-implement-lap-rollover-7fcb891e` - HUD "LAP n / N"
+    pulse and SFX cue on lap rollover.
+- Filed Q-013 in `docs/OPEN_QUESTIONS.md` with a recommended default
+  per-track archetype mapping so the implementor is not blocked.
+- Filed F-080 (re-baseline playtest evidence to multi-lap windows)
+  and F-081 (re-tune economy for per-lap pickup respawn) in
+  `docs/FOLLOWUPS.md`.
+- Wrote `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` pinning the top-3 slices
+  to start with for the Top-Gear-feel push.
+
+### Verified
+
+- `dot tree`, `dot ready`, `dot find "research:"` returned the expected
+  shape; the prior Top-Gear research dot
+  (`VibeGear2-research-top-gear-82d24d94`) is correctly archived.
+- All 32 production tracks confirmed `laps: 1` via a one-shot grep
+  (`for f in src/data/tracks/*.json; do grep -H '"laps":' "$f"; done`).
+- Confirmed the lap rollover handler at `src/game/raceSession.ts:1703`
+  flips `phase` to `"finished"` when `nextLap > totalLaps`, so the
+  data slice cannot regress single-lap support.
+- Confirmed `Track.laps` flows through `raceState.totalLaps` and
+  `RaceSessionConfig.totalLaps` so the bump is data-only.
+
+### Decisions and assumptions
+
+- The lap-bump slice picks the low end of each §7 range (4 / 3 / 2 / 2)
+  rather than the top end, so the first ship is conservative and a
+  later balancing slice can push to 5 / 3 / 2 / 3 once playtest
+  evidence is in.
+- The archetype mapping in Q-013's recommended default is derived from
+  §8 tour role plus track length; it is labelled as a working assumption
+  so the implementor can proceed without waiting for dev sign-off.
+- Pain points #2-#5 are deferred to future research iterations.
+  Iteration 1 explicitly takes pain point #1 only per the user
+  directive ("start with #1 if no diagnosis exists yet").
+
+### Coverage ledger
+
+- `GDD-07-LAP-STRUCTURE` and `GDD-09-LAP-TIME-TARGETS` are still
+  `partial` because the production data does not yet realise the spec.
+  The lap-bump implementation dot is the slice that closes the gap.
+- No `docs/GDD_COVERAGE.json` row needs editing in this research loop;
+  status moves once the implementation dot ships.
+- Uncovered adjacent requirements: Top-Gear pain points #2 (real
+  corners), #3 (full opponent grid), #4 (turn physics), #5 (roadside
+  prop scale) are surveyed in the plan doc but await their own
+  diagnosis iterations.
+
+### Followups created
+
+- F-080: Re-baseline release-fun playtest evidence to multi-lap race
+  windows.
+- F-081: Re-tune cash and repair-cap economics for multi-lap races.
+
+### Open questions created
+
+- Q-013: Per-track archetype mapping for the §7 lap targets.
+  Recommended default: Velvet Coast / Ember Steppe / Breakwater Isles
+  / Neon Meridian as `standard` (3 laps); Iron Borough as
+  `short-sprint` (4 laps); Glass Ridge mixed `standard` / `long-scenic`;
+  Moss Frontier as `long-scenic` (2 laps); Crown Circuit as
+  `endurance` (2 laps).
+
+---
+
 ## 2026-05-05: Slice: Feedback FAB review hardening (PR #169 review pass)
 
 **GDD sections touched:** [§27](gdd/27-risks-and-mitigations.md) "User-reported
