@@ -29,6 +29,7 @@ function track(overrides: Partial<Track> = {}): Track {
     laneCount: 3,
     weatherOptions: ["clear"],
     difficulty: 1,
+    archetype: "standard",
     segments: [
       seg({ len: 60 }),
       seg({ len: 60 }),

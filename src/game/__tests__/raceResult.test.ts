@@ -63,6 +63,7 @@ function makeTrack(): Track {
     laneCount: 2,
     weatherOptions: ["clear"],
     difficulty: 1,
+    archetype: "standard",
     segments: [
       {
         len: 1000,

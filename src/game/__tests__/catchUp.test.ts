@@ -270,6 +270,7 @@ describe("practiceWeatherPreview", () => {
       laneCount: 2,
       weatherOptions,
       difficulty: 1,
+      archetype: "standard",
       segments: [
         {
           len: 100,

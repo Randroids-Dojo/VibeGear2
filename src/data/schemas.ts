@@ -180,6 +180,24 @@ export const MinimapPointAuthoredSchema = z.object({
 });
 export type MinimapPointAuthored = z.infer<typeof MinimapPointAuthoredSchema>;
 
+/**
+ * §7 "Number of laps" archetypes. Each production track declares one of
+ * these so the lap-bump slice can map archetype to lap count without
+ * hand-authoring per file. Q-013 (resolved 2026-05-06) pinned the
+ * per-track mapping; Iteration 13 in `docs/RESEARCH_TOPGEAR_FUN_PLAN.md`
+ * carries the canonical 4/16/8/4 distribution.
+ *
+ * The field defaults to `standard` so mod-loaded tracks and the existing
+ * `_benchmark` and `test-*` fixtures parse without modification.
+ */
+export const TrackArchetypeSchema = z.enum([
+  "short-sprint",
+  "standard",
+  "long-scenic",
+  "endurance",
+]);
+export type TrackArchetype = z.infer<typeof TrackArchetypeSchema>;
+
 export const TrackSchema = z.object({
   id: slug,
   name: z.string().min(1),
@@ -191,6 +209,7 @@ export const TrackSchema = z.object({
   laneCount: positiveInt,
   weatherOptions: z.array(WeatherOptionSchema).min(1),
   difficulty: z.number().int().min(1).max(5),
+  archetype: TrackArchetypeSchema.default("standard"),
   segments: z.array(TrackSegmentSchema).min(1),
   checkpoints: z.array(TrackCheckpointSchema),
   spawn: TrackSpawnSchema,

@@ -9,6 +9,7 @@
   "laneCount": 3,
   "weatherOptions": ["rain", "fog"],
   "difficulty": 5,
+  "archetype": "endurance",
   "segments": [
     { "len": 320, "curve": 0, "grade": 0.01, "roadsideLeft": "guardrail", "roadsideRight": "guardrail", "hazards": [] },
     { "len": 300, "curve": -0.12, "grade": 0.03, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["puddle"] },

@@ -9,6 +9,7 @@
   "laneCount": 3,
   "weatherOptions": ["clear", "fog"],
   "difficulty": 2,
+  "archetype": "standard",
   "segments": [
     { "len": 240, "curve": 0, "grade": 0.01, "roadsideLeft": "rock_boulder", "roadsideRight": "sign_marker", "hazards": [] },
     {

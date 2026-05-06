@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(data): classify production tracks by archetype
+
+**GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md) "Number
+of laps", [§9](gdd/09-track-design.md) "Track length targets" (build-log
+entry), [§22](gdd/22-data-schemas.md) "Track JSON schema".
+**Branch / PR:** `feat/classify-tracks-archetype`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added `archetype` enum field to `TrackSchema` in `src/data/schemas.ts`
+  with the four §7 buckets: `short-sprint` / `standard` / `long-scenic` /
+  `endurance`. The field defaults to `standard` so mod-loaded tracks and
+  the existing `_benchmark` and `test-*` fixtures parse without
+  modification (Q-013 hard requirement: backwards compat for community
+  authoring).
+- Added `"archetype": "<value>"` to all 32 production track JSONs under
+  `src/data/tracks/*.json` per the Q-013 per-track mapping. Velvet Coast
+  (4 standard onboarding), Iron Borough (4 short-sprint), Ember Steppe
+  (4 standard), Breakwater Isles (4 standard), Glass Ridge (2 standard +
+  2 long-scenic), Neon Meridian (4 standard), Moss Frontier (4
+  long-scenic), Crown Circuit (4 endurance).
+- Added 4 new validation tests to `src/data/__tests__/tracks-content.test.ts`:
+  every production track declares one of the four allowed archetypes;
+  the distribution matches the Q-013 per-track table; the schema
+  defaults to `standard` when omitted; unknown archetype values are
+  rejected.
+- Updated 3 existing test fixtures and 1 production fixture to supply
+  the new `archetype` field (now part of the inferred Track output type).
+  Files: `src/game/__tests__/raceResult.test.ts`,
+  `src/game/modes/__tests__/quickRace.test.ts`,
+  `src/road/__tests__/trackCompiler.test.ts`,
+  `src/components/track-editor/defaultTrack.ts`,
+  `src/game/__tests__/catchUp.test.ts`.
+- Appended a build-log entry to `docs/gdd/09-track-design.md`.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2806 / 2806 passed (147 suites; 4 new tests under
+  Track archetype field describe block).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- **Q-013 math error.** The Q-013 recommended-default text claimed a
+  4 / 16 / 8 / 4 distribution, but the same Q's per-track table sums to
+  4 / 18 / 6 / 4. Glass Ridge (2 standard + 2 long-scenic) and Neon
+  Meridian (4 standard) push standard up to 18, dropping long-scenic
+  to 6. The per-track mapping is canonical because it carries the §8
+  tour-role rationale; the test pins the actual 4 / 18 / 6 / 4
+  distribution with a comment naming the Q-013 totals as a math error.
+- Did not bump `laps` in this slice. That is the next slice
+  (`VibeGear2-implement-bump-prod-076ae7e7`), which reads the new
+  `archetype` field and sets `laps` per the §7 default.
+- Closes `VibeGear2-implement-classify-tracks-b41307c8`.
+
+### Coverage ledger
+- Touches the §22 track schema; existing GDD coverage rows for
+  `GDD-22-TRACK-JSON` reflect the new field as updated
+  `implementationRefs` and `testRefs` once this PR merges.
+- Uncovered adjacent requirements: the lap-bump slice
+  (`VibeGear2-implement-bump-prod-076ae7e7`) is now unblocked and is
+  the immediate next step in the implement-mode loop.
+
+### Followups created
+None.
+
+### GDD edits
+- `docs/gdd/09-track-design.md`: appended a Build log section with the
+  archetype-field entry per the gdd-build-log discipline.
+
+---
+
 ## 2026-05-06: feat(render): calibrate roadside prop scale function
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md) "Sprite
