@@ -1009,3 +1009,231 @@ After these two slices, all five pain points (1 laps, 2 turns, 3
 grid, 4 lateral fix, 5 props) have a ready or near-ready slice in
 the chart. The remaining work is the iter-1 / iter-2 / iter-3 chain
 to flesh the world out around the now-correct physics and props.
+
+## Iteration 6 - plan validation and hand-off readiness
+
+### Cross-iteration consistency check
+
+Walked iters 1-5 end to end against the dot graph and the open-question
+defaults. Findings:
+
+#### Inconsistency #1 (corrected this iteration). Frontmatter dependency edges silently dropped on four dots.
+
+The repo-wide dot CLI honours `blocks:` only (not `after:`) per the
+2026-04-26 audit `VibeGear2-research-audit-and-d5dbe8d7`. Iters 1 and 3
+filed four dots whose dependency edges did not survive the parser:
+
+- `VibeGear2-implement-bump-prod-076ae7e7` carried `after:
+  VibeGear2-implement-classify-tracks-b41307c8` in front-matter. `dot
+  ready` was treating it as ready before the iter-1 classify slice
+  shipped.
+- `VibeGear2-implement-quick-race-78084a95` named "After: bump-prod" in
+  body text only; no `blocks:` entry.
+- `VibeGear2-implement-stretch-the-be459bc4` named "After: quick-race"
+  in body text only.
+- `VibeGear2-implement-lift-opponent-8764ce5e` named "After: quick-race"
+  in body text only.
+
+Iter 6 fix: converted the bump-prod front-matter to `blocks:` and added
+`blocks:` arrays to the three iter-3 dots. After the fix `dot ready`
+returns exactly four truly-unblocked dots: `fix-lateral`,
+`classify-tracks`, `lap-rollover`, `calibrate-roadside`. Every other
+implement dot is correctly gated behind its predecessor.
+
+#### Inconsistency #2 (cosmetic, not corrected). Iter-3 plan paragraph and the dot file disagree on which AI-grid file the slice touches.
+
+The iter-3 plan paragraph (above) says the renderer cull is at
+`src/app/race/page.tsx:702-778`, and the iter-3 dot file says the same.
+Both are correct. No fix needed; flagging only because the surrounding
+prose elsewhere refers to "the renderer" as if it lived under
+`src/render/`. The implementor should expect the cull math to live in
+the `/race` page module, not in `pseudoRoadCanvas.ts`.
+
+#### Q-013 to Q-017 cross-check.
+
+- Q-013 (per-track archetype mapping): 4 short-sprint, 16 standard, 8
+  long-scenic, 4 endurance. Numbers reconcile with the §7 default lap
+  curve; no conflict with Q-014.
+- Q-014 (corner-grade frequency budget): every track gets at least 1
+  Sharp or Hairpin per §9 anatomy. Reconciles with iter-2's pain-point
+  framing ("every track gets a real turn").
+- Q-015 (Quick Race opponent count): 12 cars total = 11 AIs. The
+  600 m draw-distance default + 400-600 m alpha fade reconciles with
+  Q-016 (the racing-line cap is unrelated, no conflict).
+- Q-016 (max lateral acceleration): `MAX_LATERAL_ACCEL_M_PER_S2 = 12`
+  for `gripDry = 1.0`. The post-fix top-speed crossing time of 3.5 s
+  named in iter 4 is computed without the cap; once Q-016 lands the
+  number lifts toward 1.5 s (the TG2 reference). Iter-4 named this
+  explicitly; no conflict.
+- Q-017 (prop physical heights): `heightMeters / ROAD_WIDTH = factor`
+  reconciles with the iter-5 corrected interpretation of `screenW` as
+  half-width. The `0.18` max-height clamp matches the player car's
+  `PLAYER_CAR_HEIGHT_FRACTION`. No conflict.
+
+All five Q-NNN entries are mutually consistent and ship with
+recommended defaults that unblock the implement loop.
+
+### Dot quality audit (per the iter-6 rubric)
+
+Walked all 13 open `implement:` dots filed by iters 1-5. Spec-quality
+verdict per dot:
+
+- `VibeGear2-implement-fix-lateral-b2503f6f`: rubric-clean. Compact
+  paragraph format but names the line number, the formula change, two
+  unit tests by phrase, and a Playwright spec by file path. PASSES.
+- `VibeGear2-implement-calibrate-roadside-96e24f40`: rubric-clean.
+  Names every per-kind value, the clamp number, the unit test name
+  (`assertPropScaleAt(z)`), and a Playwright golden frame target.
+  PASSES.
+- `VibeGear2-implement-classify-tracks-b41307c8`: full structured dot
+  with Description / Context / Affected / Implementation / Verify
+  sections. Names the schema test path. PASSES.
+- `VibeGear2-implement-bump-prod-076ae7e7`: full structured dot.
+  Front-matter `after:` was dead; converted to `blocks:` this
+  iteration. PASSES post-fix.
+- `VibeGear2-implement-lap-rollover-7fcb891e`: full structured dot.
+  Names the moment classifier test, the renderer file, and an e2e
+  assertion. PASSES.
+- `VibeGear2-implement-re-author-47323741`: full structured dot. Names
+  per-region targets, authoring guardrails, and content-lint as the
+  verify gate. PASSES (no Playwright spec because the slice is content
+  only and the golden-image test is filed under F-083 explicitly).
+- `VibeGear2-implement-9-track-e22793ca`: full structured dot. Names
+  the failing-fixture pattern as the verify gate. PASSES.
+- `VibeGear2-implement-quick-race-78084a95`: compact paragraph; was
+  missing an explicit Playwright spec name. Fixed this iteration: now
+  names `tests-e2e/quick-race-grid-density.spec.ts` and a unit test
+  phrase (`resolveRaceAIDrivers honours gridSlots in non-tour mode`).
+  PASSES post-fix.
+- `VibeGear2-implement-stretch-the-be459bc4`: compact paragraph; was
+  missing an explicit Playwright spec name. Fixed this iteration: now
+  names `tests-e2e/quick-race-grid-stretch.spec.ts` and a unit test
+  phrase. PASSES post-fix.
+- `VibeGear2-implement-lift-opponent-8764ce5e`: compact paragraph but
+  already named `e2e/projection-readability.spec.ts`. PASSES.
+- `VibeGear2-implement-cornering-tuning-62491aea`: compact paragraph
+  but names two unit tests by phrase and a Playwright spec by path.
+  PASSES.
+- `VibeGear2-implement-racing-line-7b2cbd41`: compact paragraph but
+  names two unit tests by phrase and a Playwright spec by path. PASSES.
+- `VibeGear2-implement-extend-roadside-e541c8a5`: compact paragraph;
+  was missing the Q-017 number anchor and the unit test phrase. Fixed
+  this iteration: now quotes Q-017 defaults verbatim and names the
+  unit test by phrase. PASSES post-fix.
+
+All 13 implement dots clear the iter-6 rubric after the fixes above.
+
+### Top-3 final ordering with rationale
+
+The implement-mode loop should land the following three slices first.
+Each row is what the implementor needs in their own context to start
+work without re-reading this plan.
+
+#### Slice #1 - `VibeGear2-implement-fix-lateral-b2503f6f`
+
+- Files: `src/game/physics.ts:418` (one-line change), `src/game/physics.ts:103`
+  area (PHYSICS_VERSION 3 -> 4 bump), `src/game/__tests__/physics.test.ts`,
+  `tests-e2e/race-feel-lateral-pace.spec.ts` (new).
+- Verify: `npx vitest run src/game/__tests__/physics.test.ts` plus
+  the new Playwright spec. Two new unit tests: `at top speed full
+  steer crosses 4.5m road in >= 2s` and `lateral displacement scales
+  linearly with dt`.
+- Q-NNN gate: none. Q-016 is for the racing-line slice that comes
+  later.
+- Estimated `src/` LOC delta: +1 src line (the `* dt`), +5 lines for
+  PHYSICS_VERSION bump and any defensive comments, +30 lines for the
+  two new pinning unit tests.
+- Fun-factor return per LOC: highest in the entire plan. One-line src
+  diff that changes the felt skill ceiling of every race for the rest
+  of the project's life.
+
+#### Slice #2 - `VibeGear2-implement-calibrate-roadside-96e24f40`
+
+- Files: `src/render/pseudoRoadCanvas.ts:96` (clamp 0.22 -> 0.18),
+  `pseudoRoadCanvas.ts:304-316` (`ROADSIDE_SPRITE_STYLES` table per
+  Q-017 defaults), `pseudoRoadCanvas.ts:781` (offset 1.32 -> 1.7),
+  `src/render/__tests__/pseudoRoadCanvas.test.ts:980` (update the
+  `dh ~= 0.22` pin to `0.18`, add `assertPropScaleAt(z)`),
+  `tests-e2e/dev-road-prop-scale.spec.ts` (new golden-frame).
+- Verify: `npx vitest run src/render/__tests__/pseudoRoadCanvas.test.ts`,
+  the new golden-frame Playwright spec, `npm run content-lint`.
+- Q-NNN gate: Q-017 (recommended default unblocks).
+- Estimated `src/` LOC delta: ~15 lines edited in
+  `pseudoRoadCanvas.ts` (table values + clamp + offset), ~40 lines
+  added to the test file, ~80 lines for the new golden-frame spec.
+- Fun-factor return per LOC: closes pain point #5 in a single PR.
+  Renderer-only, ships in parallel with slice #1.
+
+#### Slice #3 - `VibeGear2-implement-classify-tracks-b41307c8`
+
+- Files: `src/data/schemas.ts` (add `archetype` enum to
+  `TrackSchema`), `src/data/tracks/*.json` (32 files; add the
+  `"archetype": "<bucket>"` field per Q-013), `src/data/__tests__/schemas.test.ts`
+  (extend the schema test), `docs/gdd/09-track-design.md` build log.
+- Verify: `npm run typecheck`, `npm run test`, `npm run content-lint`,
+  `npm run lint`. Schema test names added in the dot.
+- Q-NNN gate: Q-013 (recommended default unblocks).
+- Estimated `src/` LOC delta: ~6 lines in `schemas.ts`, 32 single-line
+  JSON inserts, ~25 lines in the schema test.
+- Fun-factor return per LOC: foundation slice for the iter-1 lap bump.
+  No felt change in isolation, but unlocks pain point #1's closer
+  (`bump-prod-076ae7e7`).
+
+### Hand-off readiness check
+
+For the implement loop to start with slice #1 today:
+
+- `fix-lateral-b2503f6f` names a unit test by phrase
+  (`at top speed full steer crosses 4.5m road in >= 2s`). PASSES.
+- The §10 numbers the implementor needs are quoted in iter-4 above
+  (`steerRateLow 2.3`, `steerRateHigh 1.25`, `gripDry 1.0` baseline,
+  `topSpeed 61` for Sparrow GT). PASSES.
+- Q-NNN gates: none for slice #1; Q-013 / Q-015 / Q-017 each ship
+  recommended defaults that the dot files quote. The implementor does
+  NOT need a separate dev signoff to unblock the slice. PASSES.
+
+No new `research:` dots needed for slice #1. The implementor can
+start.
+
+### User-pain coverage
+
+Mapping each user phrase to the slice that closes it.
+
+- "Just a series of menus" - the menus do not need cutting. The race
+  itself needs lengthening. Closed by
+  `VibeGear2-implement-bump-prod-076ae7e7` (production tracks bump
+  from 1 lap to the §7 archetype target, race window grows from
+  30-50 s to 2-5 minutes). The classify slice
+  (`classify-tracks-b41307c8`) is its prerequisite. The lap-rollover
+  HUD (`lap-rollover-7fcb891e`) makes the multi-lap pacing visible.
+- "Lacking any turns" - every production track misses §9 Sharp /
+  Hairpin / Compound. Closed by
+  `VibeGear2-implement-re-author-47323741` (every track gets at least
+  one Sharp or Hairpin per the per-region tier targets named in the
+  dot file). The §9 anatomy lint
+  (`9-track-e22793ca`) protects the result from regressing.
+- "No other cars to actually race against in a challenging way" - two
+  independent gaps. Closed by
+  `VibeGear2-implement-quick-race-78084a95` (Quick Race fields the
+  full §7 12-car grid instead of 2 cars) and
+  `VibeGear2-implement-lift-opponent-8764ce5e` (renderer draws
+  opponents to 600 m so leaders and trailers are visible mid-pack).
+  `stretch-the-be459bc4` makes the grid visible at the lights, and
+  the AI-vs-AI overtake follow-ups (F-084 / F-085) close the
+  "challenging" half once the visible grid lands.
+- "Way too fast moving across the road" - the lateral-velocity unit
+  error. Closed by `VibeGear2-implement-fix-lateral-b2503f6f`. The
+  cornering-tuning slice (`cornering-tuning-62491aea`) re-pins the
+  §10 steer-rate constants so the post-fix feel matches the §10
+  feel goals; the racing-line tension slice
+  (`racing-line-7b2cbd41`) adds the missing g-load cap so hairpins
+  must be braked into.
+- "Objects ... all proportioned wrong" - per-kind heightRoadFactor
+  outliers plus a maxHeight clamp that exceeds the player car
+  silhouette. Closed by
+  `VibeGear2-implement-calibrate-roadside-96e24f40` (rewrite the
+  per-kind table to physical heights, drop the clamp from 0.22 to
+  0.18, lift the offset from 1.32 to 1.7).
+
+Every user phrase has a named slice. The plan covers all five pain
+points end to end.

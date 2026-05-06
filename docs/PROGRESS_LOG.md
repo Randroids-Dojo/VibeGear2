@@ -6,6 +6,105 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: research(topgear-fun): plan validation and hand-off readiness
+
+**GDD sections touched:** None (research-only, no spec edits).
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Iter-6 plan validation pass. Five pain points already
+diagnosed by iters 1-5; this iteration checked cross-iter consistency,
+audited dot quality, fixed dependency-edge inconsistencies, and pinned
+the Top-3 final ordering.
+
+### Done
+
+- Walked iters 1-5 of `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` end to end
+  and the 13 open `implement:` dots filed by those iters.
+- Found one cross-iter inconsistency. Iter 1 filed
+  `VibeGear2-implement-bump-prod-076ae7e7` with `after:
+  VibeGear2-implement-classify-tracks-b41307c8` in front-matter, and
+  iter 3 filed three dots (`quick-race-78084a95`,
+  `stretch-the-be459bc4`, `lift-opponent-8764ce5e`) that named "After:"
+  in body text only. The repo dot CLI honours `blocks:` not `after:`
+  per the 2026-04-26 audit
+  (`.dots/archive/VibeGear2-research-audit-and-d5dbe8d7.md`), so all
+  four dependency edges were silently dropped and `dot ready`
+  incorrectly listed each as ready.
+- Fixed all four. `bump-prod`'s front-matter `after:` converted to
+  `blocks:`. `quick-race`, `stretch-the`, `lift-opponent` each got a
+  `blocks:` entry per their plan-paragraph dependency. After the fix
+  `dot ready` returns exactly four truly-unblocked dots: `fix-lateral`,
+  `classify-tracks`, `lap-rollover`, `calibrate-roadside`. Every other
+  implement dot is correctly gated.
+- Audited all 13 implement dots against the iter-6 quality rubric
+  (description, context, affected files, implementation notes, verify
+  with at least one unit test name AND one Playwright spec name where
+  user-visible). Three dots (`quick-race-78084a95`, `stretch-the-be459bc4`,
+  `extend-roadside-e541c8a5`) were missing an explicit Playwright spec
+  name or unit-test phrase. Edited each dot file to add the missing
+  piece without rewriting the existing prose. All 13 implement dots
+  now clear the rubric.
+- Cross-checked Q-013 to Q-017 for internal consistency. The
+  per-track archetype mapping (Q-013), the corner-grade frequency
+  budget (Q-014), the Quick Race opponent count and pack-stretch
+  defaults (Q-015), the lateral-acceleration cap (Q-016), and the
+  per-kind prop physical heights (Q-017) are mutually consistent and
+  each ships with a recommended default that unblocks its dependent
+  slice.
+- Wrote the "Iteration 6 - plan validation and hand-off readiness"
+  section at the bottom of `docs/RESEARCH_TOPGEAR_FUN_PLAN.md`. The
+  section includes:
+  - The cross-iter inconsistency report (item 1 above).
+  - The dot quality audit verdict per dot.
+  - A "Top-3 final ordering" subsection naming slice #1
+    (`fix-lateral`), slice #2 (`calibrate-roadside`), slice #3
+    (`classify-tracks`) with files, verify steps, Q-NNN gates,
+    estimated `src/` LOC delta, and the fun-factor-per-LOC rationale.
+  - A "Hand-off readiness check" confirming slice #1 has every piece
+    of context the implementor needs (named unit test phrase, §10
+    numbers quoted in iter 4, no Q-NNN gate).
+  - A "User-pain coverage" subsection mapping each of the five
+    user-named pain phrases ("series of menus", "lacking any turns",
+    "no other cars", "way too fast", "objects proportioned wrong") to
+    the named slice that closes it.
+- Preserved all iter 1-5 sections verbatim per the append-only ledger
+  rule. No prior PROGRESS_LOG entry was modified.
+
+### Verified
+
+- `dot ready` post-fix returns exactly the four expected unblocked
+  dots: `fix-lateral-b2503f6f`, `classify-tracks-b41307c8`,
+  `lap-rollover-7fcb891e`, `calibrate-roadside-96e24f40`. Verified by
+  running `dot ready 2>&1 | grep implement-`.
+- `dot tree` post-fix shows all 13 implement dots, with the dependent
+  ones correctly gated.
+- `npm run content-lint` was not run because this iteration is
+  research-only (no `src/` writes and no track JSON edits). The
+  implement loop runs the lint inside slice #1 / #2 / #3 PRs.
+- No em-dash (U+2014) or en-dash (U+2013) in the appended plan doc
+  content (verified with `grep -n -P '[\x{2013}\x{2014}]'`).
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. The five pain-point GDD
+rows (§7 lap structure, §9 corner grades, §15 grid density, §10
+lateral integration, §16 prop scaling) all remain `partial` until
+the implement loop ships slices #1, #2, #3 and their followers.
+
+### Followups created
+
+None. F-080 to F-086 from iters 1-5 stand as filed.
+
+### Open questions created
+
+None. Q-013 to Q-017 from iters 1-5 each ship a recommended default
+that unblocks the dependent slice.
+
+### GDD edits
+
+None. Iteration 6 is research-only.
+
+---
+
 ## 2026-05-05: research(topgear-fun): pain point #5 - roadside prop scale calibration
 
 **GDD sections touched (research only, no spec edits):**
