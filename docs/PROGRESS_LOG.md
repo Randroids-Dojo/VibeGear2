@@ -6,6 +6,82 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(physics): fix lateral-velocity unit error (off-by-dt)
+
+**GDD sections touched:** [§10](gdd/10-driving-model-and-physics.md) "Steering
+model", [§21](gdd/21-technical-design-for-web-implementation.md) "Determinism
+and ghost replays" (PHYSICS_VERSION).
+**Branch / PR:** `feat/fix-lateral-physics`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Applied the surgical one-line fix at `src/game/physics.ts:418` per the
+  iter-7 pre-flight: `nextX = state.x + lateralVelocity * dt` (was
+  `+ lateralVelocity` without the `* dt`). Pre-fix the lateral term was
+  m/tick, integrating 60 times too fast at 60 Hz; post-fix it integrates
+  as m/s.
+- Bumped `PHYSICS_VERSION` 3 -> 4 with a build-log note. v3 ghost replays
+  are invalidated because the lateral path now differs.
+- Added 5 new Vitest cases to `src/game/__tests__/physics.test.ts` per the
+  iter-7 pre-flighted block: per-tick numerical pin at speed 60 m/s
+  (-0.02112), per-tick pin at speed 30 m/s (+0.014863), zero-speed
+  no-motion pin, half-road traversal time `>= 2 s` at top-speed full
+  steer, and dt scaling pin (post-fix integration is dt^2 per tick so
+  total displacement scales as dt for fixed elapsed time; iter-7's
+  original assertion shape was incorrect and was replaced with the
+  correctly shaped pin).
+- Regenerated the `physics-feel.bench.test.ts` baselines per the
+  benchmark suite's documented `UPDATE_BENCHMARK=1` workflow. Only the
+  sweeping-curve baseline moved: frame-240 `x` dropped from 0.056794 to
+  0.000947 (the expected 60x reduction). straight-accel and
+  brake-and-recover are unchanged (they do not steer).
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2802 / 2802 passed (147 suites; 4 new tests in the
+  steering describe block; 1 baseline JSON regenerated).
+- `npm run content-lint` clean.
+- Iter-7 regression-risk audit confirmed: zero existing assertions break.
+  All sign-only and relative-ratio assertions pass unchanged because the
+  fix scales every lateral term by the same `* dt` factor.
+
+### Decisions and assumptions
+- Iter-7's pre-flighted "lateral displacement scales linearly with dt"
+  test had its assertion shape backwards. Per-tick displacement actually
+  scales as dt^2 because `yawDelta` already has `dt` embedded, so
+  `lateralVelocity * dt = yawDelta * speed * dt` is dt^2 in the
+  per-tick integrator. For fixed elapsed time, total displacement
+  therefore scales as dt (halving dt halves the total). The test now
+  pins the correct shape `fine.x ≈ coarse.x / 2`.
+- Did not adjust the steer-rate constants. The cornering-tuning slice
+  (`VibeGear2-implement-cornering-tuning-62491aea`) lifts those toward
+  the Top Gear 2 reference of 1.5 s half-road traversal at top speed.
+  The `>= 2 s` pin in this slice is a regression bound, not a feel
+  target; the surgical fix lands without coupling to the tuning
+  constants.
+- Closes `VibeGear2-implement-fix-lateral-b2503f6f`.
+
+### Coverage ledger
+- Updates `GDD-10-LATERAL-INTEGRATION` (or whichever §10 row covers the
+  steering math) with the fix as new `implementationRefs` and the new
+  Vitest pins as `testRefs`. The implementor will append refs in the
+  PR diff if the row exists; if not, no new row is needed because the
+  fix is a correction to existing covered behavior.
+- Uncovered adjacent requirements: the cornering-tuning slice and the
+  racing-line tension slice (Q-016) still need to land for the §10
+  feel target to be hit; both are filed as separate dots and gated on
+  this slice landing first.
+
+### Followups created
+None. The slice is surgical and fully captured by the existing dots
+queue.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-06: research(topgear-fun): Q-019 resolved with coverage label "deprecated"
 
 **GDD sections touched:** none directly; iter-14 records the user's

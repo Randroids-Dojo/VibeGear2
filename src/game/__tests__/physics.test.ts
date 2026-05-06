@@ -200,6 +200,58 @@ describe("step (steering)", () => {
     const full = step(start, withInput({ steer: 1.0 }), STARTER_STATS, ROAD, DT);
     expect(half.x).toBeCloseTo(full.x * 0.5, 6);
   });
+
+  // PHYSICS_VERSION 4 fix pin: post-fix lateralVelocity is m/s, integrated
+  // over dt. Pre-fix the term was m/tick which at 60 Hz was 60x too fast.
+  it("steer = -1 at speed 60 m/s nudges x by -1.267 m/s * dt (post-fix)", () => {
+    const start = freshState({ speed: 60 });
+    const s = step(start, withInput({ steer: -1 }), STARTER_STATS, ROAD, DT);
+    // Tolerance allows future trapezoidal upgrades; 1e-3 m is sub-pixel
+    // at our projection scale.
+    expect(s.x).toBeCloseTo(-0.02112, 4);
+  });
+
+  it("steer = +1 at speed 30 m/s nudges x by 0.892 m/s * dt (post-fix)", () => {
+    const start = freshState({ speed: 30 });
+    const s = step(start, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    expect(s.x).toBeCloseTo(0.014863, 4);
+  });
+
+  // Top-speed full steer must take >= 2s to cross the half-road. Pre-fix
+  // value was ~0.06 s (60x over-shoot). Post-fix with current §10 constants
+  // is ~3.5 s; the cornering tuning slice will lift steerRateHigh later to
+  // bring this toward the §10 / Top Gear 2 target of ~1.5 s, but the bound
+  // here is a regression pin, not a feel pin.
+  it("at top speed full steer crosses half-road in >= 2s", () => {
+    let s = freshState({ speed: STARTER_STATS.topSpeed });
+    const TICKS = 60 * 2;
+    for (let i = 0; i < TICKS; i += 1) {
+      s = step(s, withInput({ steer: 1 }), STARTER_STATS, ROAD, DT);
+    }
+    // Half-road default in DEFAULT_TRACK_CONTEXT is 4.5 m; assert the
+    // player is still inside it after 2 s of full steer.
+    expect(s.x).toBeLessThan(4.5);
+  });
+
+  // Per-tick displacement scales as dt^2 because `yawDelta` is `steerRate
+  // * dt` and `nextX` adds `yawDelta * speed * dt`. For a fixed elapsed
+  // time, total displacement therefore scales as `dt`. Halving dt should
+  // halve the total displacement, not preserve it. Pinning the actual
+  // shape so a future trapezoidal or yaw-rate refactor is a deliberate
+  // change rather than a silent regression.
+  it("lateral displacement scales as dt for fixed elapsed time (dt^2 per tick)", () => {
+    let coarse = freshState({ speed: 40 });
+    let fine = freshState({ speed: 40 });
+    for (let i = 0; i < 30; i += 1) {
+      coarse = step(coarse, withInput({ steer: 1 }), STARTER_STATS, ROAD, 1 / 60);
+    }
+    for (let i = 0; i < 60; i += 1) {
+      fine = step(fine, withInput({ steer: 1 }), STARTER_STATS, ROAD, 1 / 120);
+    }
+    // Same elapsed time (0.5 s) at different dt. Halving dt halves the
+    // displacement under the current dt^2 per-tick integration.
+    expect(fine.x).toBeCloseTo(coarse.x / 2, 2);
+  });
 });
 
 describe("step (weather grip scalar)", () => {
