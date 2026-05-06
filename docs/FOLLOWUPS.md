@@ -10,6 +10,49 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-083: Renderer golden-image regression test for re-authored tracks
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** `VibeGear2-implement-re-author-47323741` re-shapes 32
+production track JSONs to exercise §9 corner grades (Sharp / Hairpin
+/ Compound) and §9 elevation grades (mild crest / aggressive crest /
+dip). The segment projector has unit tests but no end-to-end golden
+image of a finished frame. Add a Playwright golden-image test that
+loads `/dev/road` for one track per region tier, captures a single
+frame at a fixed `cameraZ` per track, and compares to a committed
+PNG. This catches regressions where a future renderer slice (e.g.
+the camber/banking work in F-082) silently shifts the projection.
+Use the existing Playwright infrastructure under `tests-e2e/`. Land
+after the re-author slice so the goldens are captured against the
+final geometry.
+
+## F-082: Renderer support for road camber and banked corners
+**Created:** 2026-05-05
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The track schema (`src/data/schemas.ts:145-156`) and
+compiled segment shape (`src/road/types.ts:60-72`) ship `curve` and
+`grade` but no `bank` or `camber` field. The §9 spec does not name
+banking explicitly, but Top Gear 2 and the broader pseudo-3D arcade
+genre lean on banked corners for fast-corner readability (the road
+visibly tilts into the turn at speed). Adding a per-segment `bank`
+field requires:
+
+1. Schema: extend `TrackSegmentSchema` with optional `bank` in
+   `[-0.3, 0.3]`.
+2. Compiler: thread the value through `CompiledSegment` like
+   `grade`.
+3. Projector: rotate the strip's left and right edges around its
+   center by `bank * scale` so the screen-space road surface tilts.
+4. Strip drawer: paint the rumble and grass in the rotated frame.
+5. Authoring lint: budget at most one banked corner per track until
+   playtest evidence supports more.
+
+Keep this slice OFF the iter-2 re-author content slice. Landing
+content first means the re-author slice ships immediately; banking
+is a renderer slice with its own test surface.
+
 ## F-081: Re-tune cash and repair-cap economics for multi-lap races
 **Created:** 2026-05-05
 **Priority:** nice-to-have

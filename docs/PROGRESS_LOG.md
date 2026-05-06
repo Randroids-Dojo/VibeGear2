@@ -6,6 +6,88 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-05: research(topgear-fun): pain point #2 - real turns and elevation
+
+**GDD sections touched (research only, no spec edits):** [§9](gdd/09-track-design.md)
+"Road curvature", [§9](gdd/09-track-design.md) "Elevation and hills",
+[§9](gdd/09-track-design.md) "Track anatomy",
+[§22](gdd/22-data-schemas.md) "Track JSON schema",
+[§24](gdd/24-content-plan.md) "Suggested region and track list",
+[§3](gdd/03-top-gear-2-research-summary.md) reference cornering.
+**Branch / PR:** none yet (research-only loop on `main`).
+**Status:** Research filed.
+
+### Done
+
+- Sampled all 32 production tracks (215 authored segments) under
+  `src/data/tracks/*.json`. |curve| max is 0.220 vs schema cap 1.0;
+  |grade| max is 0.080 vs schema cap 0.3. Across 215 segments: 0
+  Sharp (|c| 0.30-0.50), 0 Hairpin (|c| >= 0.50), 0 aggressive
+  crests (|g| >= 0.10), 4 tunnel tracks of 32. Velvet Coast
+  onboarding has 0 tunnels.
+- Confirmed engine is ready for the §9 vocabulary the data does
+  not exercise: schema accepts |curve| <= 1 and |grade| <= 0.3
+  (`src/data/schemas.ts:145-156`); compiler scales correctly
+  (`src/road/trackCompiler.ts:156-157`); projector accumulates dx
+  and dy with a local-window blend that handles aggressive grade
+  reversals (`src/road/segmentProjector.ts:114-150`); tunnel
+  renderer is wired and called per-strip
+  (`src/render/pseudoRoadCanvas.ts:457`).
+- Identified the only feature the engine truly misses:
+  per-segment banking. Schema has no `bank` field. Filed as F-082
+  off the critical path because the content reshape closes most of
+  pain point #2 on its own.
+- Filed two implementation dots:
+  - `VibeGear2-implement-re-author-47323741` - content slice that
+    re-authors all 32 production tracks to exercise §9 corner
+    grades (Sharp / Hairpin / Compound) and §9 elevation grades
+    per region tier. `after:` the iter-1 lap bump.
+  - `VibeGear2-implement-9-track-e22793ca` - §9 track-anatomy
+    lint in `scripts/content-lint.ts` so re-authored geometry
+    cannot regress silently. `after:` the re-author slice.
+- Filed Q-014 (per-length corner-grade frequency budget) with
+  recommended defaults so the re-author slice is unblocked.
+- Filed F-082 (renderer banking support) and F-083 (renderer
+  golden-image regression test).
+- Updated `docs/RESEARCH_TOPGEAR_FUN_PLAN.md` with a "Pain point
+  #2" section and a "Top-3 update" block; preserved the original
+  iter-1 top-3 ordering as audit trail.
+
+### Verified
+
+- `dot tree` and `dot ready` show the new implement dots wired
+  with the correct `after:` chain
+  (`bump-prod -> re-author -> 9-track`).
+- The 32-track sample script confirmed numbers above directly
+  from the JSON; schema caps confirmed by reading
+  `src/data/schemas.ts:147-148`.
+- `npm run content-lint` was not run because this iteration is
+  research-only (no track JSON edits). The lint will run inside
+  the implement slices that consume this research.
+- `tunnelRenderer` is reachable from production
+  `pseudoRoadCanvas.drawRoad` per
+  `src/render/pseudoRoadCanvas.ts:457`; tunnel data exercises an
+  already-wired pipeline.
+
+### Coverage ledger
+
+No `docs/GDD_COVERAGE.json` rows updated. The §9 anatomy
+requirements remain `partial` until the re-author + lint slices
+ship.
+
+### Followups created
+
+- F-082: renderer support for road camber and banked corners.
+- F-083: renderer golden-image regression test for the re-authored
+  tracks.
+
+### GDD edits
+
+None. The GDD §9 anatomy and corner vocabulary are intact and
+unambiguous; the gap is execution against them, not spec text.
+
+---
+
 ## 2026-05-05: research(topgear-fun): pain point #1 - race length and lap structure
 
 **GDD sections touched (research only, no spec edits):** [§7](gdd/07-race-rules-and-structure.md)

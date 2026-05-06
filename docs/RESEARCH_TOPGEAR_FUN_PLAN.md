@@ -195,6 +195,129 @@ is a single-line bug fix that changes the felt skill ceiling of every
 race; expect it to overtake slices 1-3 in the next plan revision once
 diagnosed.
 
+## Iteration 2 - pain point #2 diagnosed
+
+### Diagnosis (numbers)
+
+Sampled all 32 production track JSONs under `src/data/tracks/*.json`
+(215 authored segments total):
+
+- `|curve|` max across the entire production set is **0.220**.
+  Schema cap is 1.0 (`src/data/schemas.ts:147`). The renderer and
+  compiler accept the full range; data uses 22% of it.
+- `|grade|` max is **0.080**. Schema cap is 0.3
+  (`src/data/schemas.ts:148`). Data uses 27% of it.
+- §9 corner grade buckets across 215 authored segments:
+  - straight (|c| < 0.05): **71**
+  - Sweep (0.05-0.15): **87**
+  - Medium (0.15-0.30): **57**
+  - Sharp (0.30-0.50): **0**
+  - Hairpin (>= 0.50): **0**
+- §9 elevation buckets:
+  - flat (|g| < 0.02): **85**
+  - mild crest (0.02-0.05): **110**
+  - moderate (0.05-0.10): **20**
+  - aggressive (>= 0.10): **0**
+- Tunnel coverage: **4 of 32** tracks ship at least one tunnel
+  segment (Hollow Crest, Rivet Tunnel, Afterglow Run, Prism Cut).
+  **7 tunnel segments** total. Velvet Coast (onboarding) has 0.
+
+### Schema vocabulary the engine accepts
+
+- `TrackSegmentSchema` (`src/data/schemas.ts:145-156`):
+  `curve` in [-1, 1], `grade` in [-0.3, 0.3], optional `inTunnel`
+  bool, optional `tunnelMaterial` slug. No `bank`, no `camber`.
+- `compileTrack` (`src/road/trackCompiler.ts:130-312`) divides
+  authored `curve` by `CURVATURE_SCALE = 100` and multiplies
+  `grade` by `SEGMENT_LENGTH = 6` so the projector can sum dx and
+  dy directly.
+- `segmentProjector.project`
+  (`src/road/segmentProjector.ts:92-203`) walks a 300-segment
+  window forward, accumulates dx and dy in a bounded local hill
+  window, and applies a maxY cull for crest occlusion. The
+  projector handles the full schema range cleanly.
+- `tunnelRenderer.drawTunnelAdaptation`
+  (`src/render/tunnelRenderer.ts`, called from
+  `src/render/pseudoRoadCanvas.ts:457`) paints the dark adaptation
+  gradient on `inTunnel` strips. Renderer is wired; data does not
+  exercise it.
+
+### Engine-vs-data verdict
+
+- Sharp and Hairpin corners (|curve| 0.30-0.85): **engine ready,
+  data missing.** Schema, compiler, and projector all accept the
+  range; the projector has a packed-hairpin authoring warning at
+  |curve| > 0.6 with combined len < 80 m. No production track
+  ships a single Sharp corner.
+- S-curves (Compound runs of two adjacent grades): **engine
+  ready, data missing.** Production data tends to space curves
+  across 200 m+ straights between them, killing the §9 "linked
+  grades" anatomy.
+- Aggressive crests (|grade| >= 0.10): **engine ready, data
+  missing.** The projector's local-window blend handles strong
+  grade reversals without horizon pops.
+- Tunnels: **engine ready, data sparse.** 4/32 tracks; Velvet
+  Coast (the onboarding tour) has zero.
+- Banked corners: **engine and schema both miss.** Filed as
+  F-082; not on the iter-2 critical path because content reshape
+  alone closes most of pain point #2.
+
+### Top Gear 2 reference cornering archetypes
+
+§3 already pins the broad TG2 lessons. For pain point #2
+specifically the relevant archetypes are: long sweeping bends on
+desert and coastal stages (maps to §9 Sweep, already in the data),
+tight urban hairpins on European tracks (maps to §9 Hairpin, NOT
+in the data), banked tunnel exits on the Switzerland/Germany
+stages (maps to §9 Hairpin + tunnel; data ships neither), and
+crest-then-corner reveals on Scandinavia/India (maps to §9
+aggressive crest into Medium, NOT in the data). The schema we
+already have covers four of those five archetypes verbatim. Only
+banking sits outside it.
+
+### Slices filed this iteration
+
+- `VibeGear2-implement-re-author-47323741` - re-author the 32
+  production track JSONs to exercise the full §9 corner-grade and
+  elevation vocabulary per region tier. CONTENT-ONLY slice.
+  `after:` the iter-1 lap-bump
+  (`VibeGear2-implement-bump-prod-076ae7e7`) so the geometry and
+  pacing slices ship in the right order.
+- `VibeGear2-implement-9-track-e22793ca` - add a §9 track-anatomy
+  lint to the content-lint pipeline so the re-authored geometry
+  cannot regress silently. `after:` the re-author slice.
+
+### Open questions filed
+
+- Q-014: §9 corner-grade frequency budget per track length.
+  Recommended default lands a per-length budget so the re-author
+  slice is unblocked.
+
+### Followups filed
+
+- F-082: renderer support for road camber and banked corners
+  (engine extension, deferred behind the content slice).
+- F-083: renderer golden-image regression test for the re-authored
+  tracks (lands after the re-author slice).
+
+### Top-3 update
+
+The original "Top 3 slices" block above is preserved. With the
+iter-2 evidence in, the working order through the next two
+iterations becomes:
+
+1. `VibeGear2-implement-classify-tracks-b41307c8` (iter-1, ready).
+2. `VibeGear2-implement-bump-prod-076ae7e7` (iter-1, blocked on 1).
+3. `VibeGear2-implement-re-author-47323741` (iter-2, blocked on 2).
+4. `VibeGear2-implement-lap-rollover-7fcb891e` (iter-1, parallel).
+5. `VibeGear2-implement-9-track-e22793ca` (iter-2, blocked on 3).
+
+Pain point #4 (the lateral-velocity bug) is still expected to
+overtake this list once diagnosed because it is a one-line physics
+fix that changes the felt skill ceiling of every race; the iter-2
+re-author slice still ships first because it is purely content and
+runs in parallel with any physics work.
+
 ### How this plan changes per iteration
 
 Each future research iteration appends a new section ("Iteration 2 -

@@ -9,6 +9,53 @@ they are part of the design history.
 
 ---
 
+## Q-014: §9 corner-grade frequency budget per track length
+
+**GDD reference:** [§9](gdd/09-track-design.md) "Road curvature",
+[§9](gdd/09-track-design.md) "Track anatomy",
+[§9](gdd/09-track-design.md) "Track length targets".
+**Status:** open
+**Asked in loop:** 2026-05-05
+
+**Question.** §9 names five corner grades (Sweep / Medium / Sharp /
+Hairpin / Compound) and the Track anatomy rule of "one signature
+feature, one recovery zone, one high-speed gamble, one late-race
+tension section". It does not pin a frequency budget: how many
+Sharp / Hairpin / Compound corners should a Short / Medium / Long
+track ship before the pacing breaks?
+
+**Recommended default.** Apply a uniform per-length budget so the
+re-author slice (`VibeGear2-implement-re-author-47323741`) can
+proceed without waiting for hand-curation:
+
+- Short tracks (len 1500-1700 m): 1 Sharp OR 1 Hairpin (not both),
+  1 Compound, 1 mild crest. Total cornering events budget: 3.
+- Medium tracks (len 1700-2100 m): 1 Sharp + 1 Compound + 1 mild
+  crest. Total: 3.
+- Long tracks (len 2100-2600 m): 1 Hairpin + 1 Compound + 1
+  aggressive crest + 1 mild crest. Total: 4.
+- Endurance / Crown Circuit only: 1 Hairpin + 1 Sharp + 1 Compound
+  + 1 aggressive crest. Total: 4 corner events.
+
+Hairpin radius cap: |curve| 0.85. Hairpin minimum spacing: 200 m of
+non-hairpin segments before the next |curve| >= 0.30. This keeps
+the existing track-compiler "packed hairpin run" warning (combined
+< 80 m at |curve| > 0.6) from firing.
+
+Tunnel budget:
+
+- 0 tunnels for Velvet Coast (onboarding).
+- 1 tunnel segment per Iron Borough, Glass Ridge, Neon Meridian
+  track (the three regions whose region theme already lists
+  multiple `tunnelMaterials`).
+- 0 tunnels elsewhere unless the §9 anatomy specifically calls for
+  one (e.g., a signature feature corner inside a tunnel).
+
+**Blocking?** No. The re-author slice can proceed under the
+recommended default.
+
+---
+
 ## Q-013: Per-track archetype mapping for the §7 lap targets
 
 **GDD reference:** [§7](gdd/07-race-rules-and-structure.md) "Number of
