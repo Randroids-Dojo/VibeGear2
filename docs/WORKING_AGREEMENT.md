@@ -55,10 +55,12 @@ build*; this agreement wins for *how to operate*.
 - Do not open a PR until CI would plausibly pass locally (type-check, lint,
   tests).
 - Before merging, inspect unresolved PR review comments, including inline
-  and threaded review comments plus automated Copilot feedback. Address
-  actionable comments with a follow-up commit. Respond to each actionable
-  thread with what changed or why no code change is appropriate, then
-  re-check for new comments before merge.
+  and threaded review comments plus automated CodeRabbit feedback (this
+  project switched from Copilot review to CodeRabbit on 2026-05-06 after
+  the Copilot monthly review quota was exhausted). Address actionable
+  comments with a follow-up commit. Respond to each actionable thread
+  with what changed or why no code change is appropriate, then re-check
+  for new comments before merge.
 - Wait for CI to go green before merging. If CI fails, fix the cause; do not
   retry the same red push hoping for a flake.
 - Squash-merge into `main` unless the slice deliberately benefits from
