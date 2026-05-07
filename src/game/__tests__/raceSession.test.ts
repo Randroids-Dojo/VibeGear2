@@ -1129,8 +1129,19 @@ describe("stepRaceSession (surface audio)", () => {
       config,
       DT,
     );
+    // First active tick: edge event (for ducking) + loop state event
+    // (for the §18 sustained audio bed). Subsequent ticks emit only
+    // the loop event (no edge); deactivation tick emits a final
+    // active=false loop event.
     expect(session.audioEvents).toEqual([
       { kind: "brakeScrub", carId: "player", speedFactor: expect.any(Number) },
+      {
+        kind: "brakeScrubLoop",
+        carId: "player",
+        active: true,
+        intensity: expect.any(Number),
+        speedFactor: expect.any(Number),
+      },
     ]);
 
     session = stepRaceSession(
@@ -1139,7 +1150,15 @@ describe("stepRaceSession (surface audio)", () => {
       config,
       DT,
     );
-    expect(session.audioEvents).toEqual([]);
+    expect(session.audioEvents).toEqual([
+      {
+        kind: "brakeScrubLoop",
+        carId: "player",
+        active: true,
+        intensity: expect.any(Number),
+        speedFactor: expect.any(Number),
+      },
+    ]);
 
     session = stepRaceSession(session, NEUTRAL_INPUT, config, DT);
     session = {
@@ -1177,6 +1196,13 @@ describe("stepRaceSession (surface audio)", () => {
     );
     expect(session.audioEvents).toEqual([
       { kind: "tireSqueal", carId: "player", speedFactor: expect.any(Number) },
+      {
+        kind: "tireSquealLoop",
+        carId: "player",
+        active: true,
+        intensity: expect.any(Number),
+        speedFactor: expect.any(Number),
+      },
     ]);
     session = stepRaceSession(
       session,
@@ -1184,7 +1210,15 @@ describe("stepRaceSession (surface audio)", () => {
       config,
       DT,
     );
-    expect(session.audioEvents).toEqual([]);
+    expect(session.audioEvents).toEqual([
+      {
+        kind: "tireSquealLoop",
+        carId: "player",
+        active: true,
+        intensity: expect.any(Number),
+        speedFactor: expect.any(Number),
+      },
+    ]);
   });
 
   it("emits wet and snow surface hush once per weather surface", () => {

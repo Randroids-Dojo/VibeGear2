@@ -334,6 +334,28 @@ function playRaceSfxEvents(
       runtime.playBrakeScrub({ speedFactor: event.speedFactor, audio });
     } else if (event.kind === "tireSqueal") {
       runtime.playTireSqueal({ speedFactor: event.speedFactor, audio });
+    } else if (event.kind === "tireSquealLoop") {
+      // §18 sustained tire-squeal loop. The loop runtime starts on the
+      // first active=true update and ramps out + stops on active=false.
+      if (event.active) {
+        runtime.updateTireSquealLoop({
+          intensity: event.intensity,
+          speedFactor: event.speedFactor,
+          audio,
+        });
+      } else {
+        runtime.stopTireSquealLoop();
+      }
+    } else if (event.kind === "brakeScrubLoop") {
+      if (event.active) {
+        runtime.updateBrakeScrubLoop({
+          intensity: event.intensity,
+          speedFactor: event.speedFactor,
+          audio,
+        });
+      } else {
+        runtime.stopBrakeScrubLoop();
+      }
     } else if (event.kind === "surfaceHush") {
       runtime.playSurfaceHush({
         surface: event.surface,

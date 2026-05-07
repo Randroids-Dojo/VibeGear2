@@ -270,6 +270,34 @@ export interface RaceSessionTireSquealAudioEvent {
   readonly speedFactor: number;
 }
 
+/**
+ * Per-tick state event for the §18 sustained tire-squeal loop. Emitted
+ * every tick the gate is active (so the loop runtime can update gain
+ * and pitch as steer / speed change), plus one final `active: false`
+ * event the tick the gate transitions back to inactive (so the loop
+ * runtime can ramp out and stop). The original
+ * `RaceSessionTireSquealAudioEvent` above stays as a one-shot edge
+ * cue for music ducking; the loop event below drives the continuous
+ * audio bed.
+ */
+export interface RaceSessionTireSquealLoopAudioEvent {
+  readonly kind: "tireSquealLoop";
+  readonly carId: string;
+  readonly active: boolean;
+  /** Lerp from 0 at the steer threshold to 1 at |steer| = 1. */
+  readonly intensity: number;
+  readonly speedFactor: number;
+}
+
+export interface RaceSessionBrakeScrubLoopAudioEvent {
+  readonly kind: "brakeScrubLoop";
+  readonly carId: string;
+  readonly active: boolean;
+  /** Lerp from 0 at brake = 0 to 1 at brake = 1. */
+  readonly intensity: number;
+  readonly speedFactor: number;
+}
+
 export type RaceSessionSurfaceHushKind = "wet" | "snow";
 
 export interface RaceSessionSurfaceHushAudioEvent {
@@ -299,6 +327,8 @@ export type RaceSessionAudioEvent =
   | RaceSessionDamageWarningAudioEvent
   | RaceSessionBrakeScrubAudioEvent
   | RaceSessionTireSquealAudioEvent
+  | RaceSessionTireSquealLoopAudioEvent
+  | RaceSessionBrakeScrubLoopAudioEvent
   | RaceSessionSurfaceHushAudioEvent
   | RaceSessionPickupCollectedAudioEvent;
 
@@ -2018,6 +2048,45 @@ function buildPlayerSurfaceAudioEvents(input: {
       speedFactor,
     });
   }
+
+  // §18 sustained loops: emit per-tick state events so the loop
+  // runtime can ramp gain and pitch with steer / brake load. Emit
+  // every tick the gate is active (so the runtime can update its
+  // params), plus one final `active: false` event the tick the
+  // gate transitions back to inactive (so the runtime can ramp out
+  // and stop). Suppress when both prev and current are inactive so
+  // the event stream stays empty during normal driving.
+  if (tireSquealNow || input.gates.tireSquealActive) {
+    const tireSquealIntensity = tireSquealNow
+      ? clamp01(
+          (Math.max(
+            Math.abs(input.input.steer),
+            input.input.handbrake ? 1 : 0,
+          ) -
+            TIRE_SQUEAL_STEER_THRESHOLD) /
+            (1 - TIRE_SQUEAL_STEER_THRESHOLD),
+        )
+      : 0;
+    events.push({
+      kind: "tireSquealLoop",
+      carId: PLAYER_CAR_ID,
+      active: tireSquealNow,
+      intensity: tireSquealIntensity,
+      speedFactor,
+    });
+  }
+  if (brakeScrubNow || input.gates.brakeScrubActive) {
+    const brakeScrubIntensity = brakeScrubNow
+      ? clamp01(input.input.brake)
+      : 0;
+    events.push({
+      kind: "brakeScrubLoop",
+      carId: PLAYER_CAR_ID,
+      active: brakeScrubNow,
+      intensity: brakeScrubIntensity,
+      speedFactor,
+    });
+  }
   if (
     surfaceHushNow &&
     hushKind !== null &&
@@ -2039,6 +2108,13 @@ function buildPlayerSurfaceAudioEvents(input: {
     },
     events,
   };
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
 }
 
 function speedFactorForAudio(speed: number, topSpeed: number): number {
