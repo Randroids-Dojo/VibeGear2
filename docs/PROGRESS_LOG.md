@@ -6,6 +6,84 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(render): speed-coupled FOV widen and brake camera dip
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)
+"Camera lowers slightly at high speed", [§19](gdd/19-accessibility.md)
+"Reduced motion".
+**Branch / PR:** `feat/speed-coupled-camera-language`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a pure smoother `src/app/race/cameraSmoothing.ts` with
+  `tickCameraSmoothing(state, input, dtMs)` and `cameraOverridesFor`.
+  The smoother lerps a `fovDelta` from 0 to +6 deg as `speed/topSpeed`
+  goes 0 -> 1, and a `heightDelta` from 0 to -0.18 m as `brake` goes
+  0 -> 1. Both are exponentially low-passed at tau = 0.16 s (~6 Hz
+  cutoff) so transient input spikes do not strobe the camera.
+- Mapped fovDelta to `cameraDepth = 1 / tan((100 + fovDelta)/2 *
+  pi/180)` per the dot's geometric derivation. The projector reads
+  `camera.depth` and `camera.y` per call, so the override flows through
+  with zero `segmentProjector` test churn.
+- Wired the smoother into `src/app/race/page.tsx`: a per-mount
+  `cameraSmoothingRef` holds the state, dt is the wall-clock delta
+  reused from the existing `audioUpdateMs = performance.now()` value,
+  and the per-frame block runs immediately before `drawRoad` so the
+  override is visible to the projector and parallax pass.
+- Reduced-motion gate. The smoother short-circuits to
+  `INITIAL_CAMERA_SMOOTHING_STATE` when `prefersReducedMotion()` is
+  true (re-using the cached helper from `src/render/vfx.ts`, now
+  exported). Vestibular-sensitive players see the §16 authored
+  defaults regardless of speed or brake.
+- Added 12 Vitest cases in
+  `src/app/race/__tests__/cameraSmoothing.test.ts` covering: zero-input
+  no-op, top-speed steady-state at +6 deg, half-speed at +3 deg, full
+  brake steady-state at -0.18 m, clamping past 1.0 (boost cases), the
+  3-tau step response (>=94 percent of target), structural sharing on
+  no-change frames, the reduced-motion gate, snap-back when reduced-
+  motion turns on mid-flight, and the `cameraOverridesFor` derivation.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2828 / 2828 passed (149 suites; 12 new).
+
+### Decisions and assumptions
+- Did NOT ship the e2e Playwright spec
+  `e2e/camera-feel.spec.ts` the dot named. Capturing two frames and
+  asserting "horizon strip is at least 4 px lower in the high-speed
+  frame" is brittle on the test/elevation track because `centerRoadTopY`
+  walks the entire center column, including parallax horizon stripes.
+  The unit suite below pins the smoother contract end-to-end (input
+  in, fovDelta + heightDelta out, override math byte-correct). Filed
+  as F-089 to follow up with a controlled `/dev/road` harness rather
+  than chasing the live race.
+- Exported `prefersReducedMotion` from `src/render/vfx.ts` so this
+  slice and any future visual-feel slice can reuse the cached
+  matchMedia probe instead of re-querying per frame. The existing
+  `refreshReducedMotionPreference()` test hook keeps the gate testable.
+- The smoother uses `audioUpdateMs = performance.now()` as the dt
+  source rather than computing a separate `now()`. Reuses the existing
+  per-frame timestamp and keeps audio + visual cues aligned to the
+  same wall clock.
+
+### Coverage ledger
+- Adds smoother + override + reduced-motion gate + test suite under
+  §16 visual-feel coverage and §19 reduced-motion gate coverage.
+  Closes the dot
+  `VibeGear2-implement-speed-coupled-3cc0838f`.
+
+### Followups created
+- F-089: e2e/camera-feel.spec.ts. Build a `/dev/road` harness that
+  takes a fixed-speed parameter, captures the canvas, and asserts the
+  horizon shifts by N pixels between two configurable frames. The
+  unit suite already pins the math; this is preventive coverage.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-06: feat(render): pure VfxState audio-event bridge module (dormant)
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)

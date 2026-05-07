@@ -111,7 +111,7 @@ let cachedReducedMotion: boolean | null = null;
  * Resolve `prefers-reduced-motion: reduce` once and cache the result.
  * SSR safe: returns `false` when `window.matchMedia` is unavailable.
  */
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   if (cachedReducedMotion !== null) return cachedReducedMotion;
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     cachedReducedMotion = false;

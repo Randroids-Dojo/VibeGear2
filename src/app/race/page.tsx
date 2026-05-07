@@ -119,6 +119,7 @@ import type { DailyChallengeSelection } from "@/game/modes/dailyChallenge";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
+  FOV_DEGREES,
   SEGMENT_LENGTH,
   fitToBox,
   project,
@@ -137,6 +138,12 @@ import {
   drawRoad,
   type DrawRoadOptions,
 } from "@/render/pseudoRoadCanvas";
+import {
+  cameraOverridesFor,
+  INITIAL_CAMERA_SMOOTHING_STATE,
+  tickCameraSmoothing,
+  type CameraSmoothingState,
+} from "@/app/race/cameraSmoothing";
 import { projectPickupSprites } from "@/render/pickupSprites";
 import { playerCarFrameIndex } from "@/render/carFrame";
 import type { CarSpriteSet } from "@/render/carSpriteCompositor";
@@ -1123,6 +1130,14 @@ function RaceCanvas({
   const raceMomentTimeoutRef = useRef<number | null>(null);
   const finishRouteTimeoutRef = useRef<number | null>(null);
   const pickupFeedbackRef = useRef<PickupFeedbackSnapshot | null>(null);
+  // §16 camera language: speed-coupled FOV widen + brake-coupled height
+  // dip. The smoother is pure; this ref owns the state across rAF frames.
+  // `INITIAL_CAMERA_SMOOTHING_STATE` is the §16 authored default, so the
+  // first frame is byte-identical to the pre-slice render.
+  const cameraSmoothingRef = useRef<CameraSmoothingState>(
+    INITIAL_CAMERA_SMOOTHING_STATE,
+  );
+  const lastCameraSmoothingMsRef = useRef<number>(0);
   const previousRaceStoryCarsRef = useRef<readonly RankedCar[] | null>(null);
   const lastRaceStoryMomentMsRef = useRef<number>(0);
   const observedAiCuesRef = useRef<Set<AIReadabilityCue>>(new Set());
@@ -1929,6 +1944,37 @@ function RaceCanvas({
           ghostOverlayRef.current = null;
           ghostOverlayTickRef.current = null;
         }
+        // §16 speed-coupled FOV widen + brake-coupled camera dip. The
+        // smoother takes the live speed/topSpeed/brake and produces small
+        // deltas; we then derive the camera.depth from FOV and override
+        // camera.y with the dip. Reduced-motion gating lives inside the
+        // smoother so this call site stays linear.
+        const cameraSmoothingDtMs = (() => {
+          const now = audioUpdateMs;
+          if (lastCameraSmoothingMsRef.current === 0) {
+            lastCameraSmoothingMsRef.current = now;
+            return 0;
+          }
+          const dt = Math.max(0, now - lastCameraSmoothingMsRef.current);
+          lastCameraSmoothingMsRef.current = now;
+          return dt;
+        })();
+        cameraSmoothingRef.current = tickCameraSmoothing(
+          cameraSmoothingRef.current,
+          {
+            speed: session.player.car.speed,
+            topSpeed: playerStats.topSpeed,
+            brake: lastBrakeRef.current,
+          },
+          cameraSmoothingDtMs,
+        );
+        const cameraOverrides = cameraOverridesFor(
+          cameraSmoothingRef.current,
+          FOV_DEGREES,
+          CAMERA_HEIGHT,
+        );
+        camera.depth = cameraOverrides.depth;
+        camera.y = cameraOverrides.y;
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
           weatherEffects: {
