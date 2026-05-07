@@ -10,6 +10,23 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-089: e2e camera-feel spec via /dev/road harness
+**Created:** 2026-05-06
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** The speed-coupled camera-language slice
+(`feat/speed-coupled-camera-language`, PR pending) shipped the
+smoother + 12 Vitest cases but NOT the dot's named e2e spec
+`e2e/camera-feel.spec.ts`. Capturing two frames in the live race and
+asserting "horizon strip 4 px lower at top speed" is brittle on the
+test/elevation track because `centerRoadTopY` walks the entire
+center column including parallax horizon stripes. Build a
+`/dev/road` harness page that takes a fixed-speed parameter, paints
+one frame, and exposes the resulting canvas. The spec then renders
+two frames at different speeds, samples the horizon strip, and
+asserts a monotonic shift. Unit suite already pins the math; this is
+preventive coverage.
+
 ## F-088: Wire `vfxBridge` into the race page (deferred from fire-camera slice)
 **Created:** 2026-05-06
 **Priority:** nice-to-have
