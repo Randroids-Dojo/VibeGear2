@@ -6,6 +6,82 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(audio): sustained tire-squeal and brake-scrub loops
+
+**GDD sections touched:** [§18](gdd/18-audio.md) "Required sounds:
+tire squeal" + "brake scrub".
+**Branch / PR:** `feat/tire-squeal-loop`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added two new event kinds to the race-session audio stream:
+  `tireSquealLoop` and `brakeScrubLoop`. Each carries
+  `{ active, intensity, speedFactor }`. The session emits one per
+  tick the gate is active (so the loop runtime can update gain +
+  pitch with steer / brake / speed) plus one final `active: false`
+  event the tick the gate transitions back to inactive (so the loop
+  ramps out cleanly). The pre-existing one-shot `tireSqueal` /
+  `brakeScrub` events stay as edge cues for music ducking.
+- Added `updateTireSquealLoop` / `stopTireSquealLoop` plus the
+  brake-scrub pair to `ProceduralSfxRuntime`. The first update
+  spawns a single oscillator (triangle for squeal, sawtooth for
+  scrub) and ramps gain 0 -> target over 50 ms. Subsequent updates
+  ramp pitch + gain toward the new intensity-derived target in
+  place. Stop ramps gain to 0 over 80 ms then schedules
+  `oscillator.stop()`. Either loop can run independently.
+- Routed the new events from `src/app/race/page.tsx` into the loop
+  runtime: `tireSquealLoop` -> `updateTireSquealLoop` (active) /
+  `stopTireSquealLoop` (inactive); brake-scrub mirrors. The
+  vfxBridge correctly ignores both new kinds (they fall through the
+  default branch in `applyAudioEventToVfx`).
+- Music ducking: the new loop kinds resolve to
+  `NO_RACE_MUSIC_DUCKING` so the bed does not pump the music every
+  tick during a sustained corner. Ducking still fires on the
+  one-shot edge events as before.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2847 / 2847 passed (150 suites; 7 new in
+  `sfx.test.ts` covering loop start, in-place update, monotone
+  gain ramp with intensity, 80 ms ramp-out on stop,
+  intensity-zero-as-stop, independent kinds, and `stopAll`
+  teardown). Existing `raceSession.test.ts` cases for one-shot
+  tire-squeal / brake-scrub edge events updated to also assert
+  the new loop event in the same tick.
+
+### Decisions and assumptions
+- Did NOT refactor the one-shot `tireSqueal` / `brakeScrub` events
+  out of the stream. Music ducking still keys off them at the
+  false->true edge; reusing the loop event for ducking would have
+  required teaching `raceMix.ts` about per-tick state, which is
+  out of scope. The two-event design separates "edge cue for
+  music duck" from "per-tick state for audio bed".
+- The loop's frequency mapping mirrors the one-shot pitches the
+  pre-fix code used (squeal 860-1420 Hz across speedFactor;
+  scrub 150-300 Hz). Gain scales with intensity rather than
+  speedFactor so steering harder makes the loop *louder*, which
+  is what the §18 spec implies ("modulates with steer load").
+- Did NOT ship the e2e Playwright spec
+  `e2e/tire-squeal-loop.spec.ts` the dot named. Mocking
+  AudioContext oscillator counts in headless Chromium is
+  brittle; the unit suite pins the start / update / stop
+  contract end-to-end. Filed nothing — F-088 already captures
+  generic audio-feel coverage we may want post-v1.0.
+
+### Coverage ledger
+- Adds loop runtime + event plumbing under §18 audio coverage.
+  Closes the dot
+  `VibeGear2-implement-convert-tiresqueal-d2fd1407`.
+
+### Followups created
+None new.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-06: feat(render): radial speed lines above 0.7 speedNorm and during nitro
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)

@@ -368,6 +368,171 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.gains[0]?.disconnected).toBe(true);
     expect(context.gains[1]?.disconnected).toBe(true);
   });
+
+  describe("§18 sustained loops", () => {
+    it("starts a single tire-squeal oscillator on the first update", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(false);
+      runtime.updateTireSquealLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(true);
+      expect(context.oscillators).toHaveLength(1);
+      expect(context.oscillators[0]?.type).toBe("triangle");
+      expect(context.oscillators[0]?.start).toHaveBeenCalledTimes(1);
+    });
+
+    it("does NOT spawn a second oscillator on subsequent updates", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      runtime.updateTireSquealLoop({
+        intensity: 0.8,
+        speedFactor: 0.7,
+        audio: AUDIO,
+      });
+      runtime.updateTireSquealLoop({
+        intensity: 1,
+        speedFactor: 1,
+        audio: AUDIO,
+      });
+      expect(context.oscillators).toHaveLength(1);
+      // First call setParam-s the frequency at start; subsequent two
+      // calls ramp toward new targets. Gain ramps on every call (the
+      // start uses a 0->target ramp, not a setValueAtTime).
+      expect(
+        context.oscillators[0]?.frequency.linearRampToValueAtTime,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        context.gains[0]?.gain.linearRampToValueAtTime,
+      ).toHaveBeenCalledTimes(3);
+    });
+
+    it("ramps gain monotone-up as intensity climbs", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.2,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      const calls0 = (
+        context.gains[0]?.gain.linearRampToValueAtTime as ReturnType<
+          typeof vi.fn
+        >
+      ).mock.calls;
+      const target0 = calls0[calls0.length - 1]![0] as number;
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.8,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      const calls1 = (
+        context.gains[0]?.gain.linearRampToValueAtTime as ReturnType<
+          typeof vi.fn
+        >
+      ).mock.calls;
+      const target1 = calls1[calls1.length - 1]![0] as number;
+
+      expect(target1).toBeGreaterThan(target0);
+    });
+
+    it("ramps the loop out to 0 over 80 ms on stop", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.8,
+        speedFactor: 0.6,
+        audio: AUDIO,
+      });
+      runtime.stopTireSquealLoop();
+
+      const calls = (
+        context.gains[0]?.gain.linearRampToValueAtTime as ReturnType<
+          typeof vi.fn
+        >
+      ).mock.calls;
+      const last = calls[calls.length - 1]!;
+      expect(last[0]).toBe(0);
+      // Final ramp end-time equals currentTime + 0.08.
+      expect(last[1]).toBeCloseTo(0.08, 6);
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(false);
+    });
+
+    it("treats intensity <= 0 as a stop", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(true);
+      runtime.updateTireSquealLoop({
+        intensity: 0,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(false);
+    });
+
+    it("brake-scrub loop runs independently from tire-squeal", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      runtime.updateBrakeScrubLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(true);
+      expect(runtime.hasActiveLoop("brakeScrub")).toBe(true);
+      expect(context.oscillators).toHaveLength(2);
+      expect(context.oscillators[1]?.type).toBe("sawtooth");
+
+      runtime.stopTireSquealLoop();
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(false);
+      expect(runtime.hasActiveLoop("brakeScrub")).toBe(true);
+    });
+
+    it("stopAll tears down both loops alongside one-shots", () => {
+      const context = new FakeAudioContext();
+      const runtime = new ProceduralSfxRuntime({ context: () => context });
+
+      runtime.updateTireSquealLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      runtime.updateBrakeScrubLoop({
+        intensity: 0.5,
+        speedFactor: 0.5,
+        audio: AUDIO,
+      });
+      runtime.stopAll();
+
+      expect(runtime.hasActiveLoop("tireSqueal")).toBe(false);
+      expect(runtime.hasActiveLoop("brakeScrub")).toBe(false);
+    });
+  });
 });
 
 class FakeAudioParam implements SfxAudioParamLike {

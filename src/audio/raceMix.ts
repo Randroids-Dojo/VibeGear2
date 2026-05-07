@@ -64,6 +64,14 @@ function raceMusicDuckingForAudioEvent(
       return { volumeScale: 0.88, holdMs: 180 };
     case "gearShift":
       return NO_RACE_MUSIC_DUCKING;
+    case "tireSquealLoop":
+    case "brakeScrubLoop":
+      // Loop state events drive the §18 sustained audio bed; the
+      // music ducking already fired on the one-shot edge events
+      // (`tireSqueal` / `brakeScrub`) above. Treat the loop events
+      // as duck-neutral so the bed does not pump the music every
+      // tick during a sustained corner.
+      return NO_RACE_MUSIC_DUCKING;
   }
 }
 

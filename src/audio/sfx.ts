@@ -103,6 +103,26 @@ interface OneShotGraph {
   readonly output: SfxGainLike;
 }
 
+interface LoopGraph {
+  readonly oscillator: SfxOscillatorLike;
+  readonly output: SfxGainLike;
+}
+
+export interface TireSquealLoopUpdate {
+  readonly intensity: number;
+  readonly speedFactor: number;
+  readonly audio: AudioSettings | undefined;
+}
+
+export interface BrakeScrubLoopUpdate {
+  readonly intensity: number;
+  readonly speedFactor: number;
+  readonly audio: AudioSettings | undefined;
+}
+
+const LOOP_RAMP_OUT_SECONDS = 0.08;
+const LOOP_RAMP_PARAM_SECONDS = 0.05;
+
 const DEFAULT_BASE_GAIN = 0.22;
 const DEFAULT_DURATION_SECONDS = 0.12;
 const SILENT_AUDIO: AudioSettings = Object.freeze({
@@ -115,6 +135,8 @@ export class ProceduralSfxRuntime {
   private readonly active = new Set<OneShotGraph>();
   private readonly baseGain: number;
   private readonly durationSeconds: number;
+  private tireSquealLoop: LoopGraph | null = null;
+  private brakeScrubLoop: LoopGraph | null = null;
 
   constructor(private readonly options: ProceduralSfxRuntimeOptions) {
     this.baseGain = nonNegativeOr(options.baseGain, DEFAULT_BASE_GAIN);
@@ -253,10 +275,121 @@ export class ProceduralSfxRuntime {
     });
   }
 
+  /**
+   * §18 sustained tire-squeal loop. Starts a single continuous
+   * oscillator on the first call when intensity > 0; subsequent calls
+   * update gain + frequency in place. Returns true when the loop is
+   * playing audibly after the call.
+   */
+  updateTireSquealLoop(input: TireSquealLoopUpdate): boolean {
+    return this.updateLoop("tireSqueal", input);
+  }
+
+  /** §18 sustained brake-scrub loop. Same lifecycle as tire-squeal. */
+  updateBrakeScrubLoop(input: BrakeScrubLoopUpdate): boolean {
+    return this.updateLoop("brakeScrub", input);
+  }
+
+  /** Ramp the active tire-squeal loop out over 80 ms and stop. */
+  stopTireSquealLoop(): void {
+    this.stopLoop("tireSqueal");
+  }
+
+  /** Ramp the active brake-scrub loop out over 80 ms and stop. */
+  stopBrakeScrubLoop(): void {
+    this.stopLoop("brakeScrub");
+  }
+
+  /** Whether a sustained loop is currently audible. Test-only hook. */
+  hasActiveLoop(kind: "tireSqueal" | "brakeScrub"): boolean {
+    return kind === "tireSqueal"
+      ? this.tireSquealLoop !== null
+      : this.brakeScrubLoop !== null;
+  }
+
   stopAll(): void {
+    this.stopTireSquealLoop();
+    this.stopBrakeScrubLoop();
     for (const graph of Array.from(this.active)) {
       this.disconnect(graph);
     }
+  }
+
+  private updateLoop(
+    kind: "tireSqueal" | "brakeScrub",
+    input: TireSquealLoopUpdate | BrakeScrubLoopUpdate,
+  ): boolean {
+    const baseGain = this.effectiveGain(input.audio);
+    const intensity = clampUnit(input.intensity);
+    if (intensity <= 0) {
+      this.stopLoop(kind);
+      return false;
+    }
+    if (baseGain === 0) {
+      this.stopLoop(kind);
+      return false;
+    }
+    const context = this.options.context();
+    if (context === null) return false;
+
+    const speed = clampUnit(input.speedFactor);
+    const frequency =
+      kind === "tireSqueal"
+        ? Math.round(860 + speed * 560)
+        : Math.round(150 + speed * 150);
+    const gainScale =
+      kind === "tireSqueal"
+        ? 0.4 + intensity * 0.45
+        : 0.32 + intensity * 0.4;
+    const targetGain = baseGain * gainScale;
+    const now = context.currentTime;
+
+    let graph =
+      kind === "tireSqueal" ? this.tireSquealLoop : this.brakeScrubLoop;
+    if (graph === null) {
+      const oscillator = context.createOscillator();
+      const output = context.createGain();
+      oscillator.type = kind === "tireSqueal" ? "triangle" : "sawtooth";
+      setParam(oscillator.frequency, frequency, now);
+      setParam(output.gain, 0, now);
+      rampParam(output.gain, targetGain, now + LOOP_RAMP_PARAM_SECONDS);
+      oscillator.connect(output);
+      output.connect(context.destination);
+      oscillator.start(now);
+      graph = { oscillator, output };
+      if (kind === "tireSqueal") this.tireSquealLoop = graph;
+      else this.brakeScrubLoop = graph;
+      return true;
+    }
+    rampParam(
+      graph.oscillator.frequency,
+      frequency,
+      now + LOOP_RAMP_PARAM_SECONDS,
+    );
+    rampParam(graph.output.gain, targetGain, now + LOOP_RAMP_PARAM_SECONDS);
+    return true;
+  }
+
+  private stopLoop(kind: "tireSqueal" | "brakeScrub"): void {
+    const graph =
+      kind === "tireSqueal" ? this.tireSquealLoop : this.brakeScrubLoop;
+    if (graph === null) return;
+    if (kind === "tireSqueal") this.tireSquealLoop = null;
+    else this.brakeScrubLoop = null;
+    const context = this.options.context();
+    const now = context !== null ? context.currentTime : 0;
+    rampParam(graph.output.gain, 0, now + LOOP_RAMP_OUT_SECONDS);
+    try {
+      graph.oscillator.stop(now + LOOP_RAMP_OUT_SECONDS);
+    } catch {
+      // Some test mocks throw on `stop()` after `start()` was never
+      // called; swallow because the gain ramp + disconnect below still
+      // leaves the graph silent.
+    }
+    graph.oscillator.onended = () => {
+      graph.oscillator.disconnect();
+      graph.output.disconnect();
+    };
   }
 
   private playTone(input: {
