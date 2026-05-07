@@ -65,12 +65,19 @@
  * - Damage-aware rub avoidance and contact fairness scoring.
  */
 
-import type { AIArchetype, AIDriver, CarBaseStats } from "@/data/schemas";
+import type {
+  AIArchetype,
+  AIDriver,
+  CarBaseStats,
+  WeatherOption,
+} from "@/data/schemas";
 import { CURVATURE_SCALE, ROAD_WIDTH, SEGMENT_LENGTH } from "@/road/constants";
 import type { CompiledSegmentBuffer } from "@/road/trackCompiler";
 import type { CpuDifficultyModifiers } from "./aiDifficulty";
 import { getAIBehaviour } from "./aiArchetypes";
+import { decideFireNitro } from "./aiNitroFire";
 import { NEUTRAL_INPUT, type Input } from "./input";
+import { INITIAL_NITRO_STATE, type NitroState } from "./nitro";
 import type { CarState } from "./physics";
 import type { RaceState } from "./raceState";
 import { deserializeRng } from "./rng";
@@ -280,6 +287,8 @@ export function tickAI(
   cpuModifiers: Readonly<CpuDifficultyModifiers> = IDENTITY_CPU_MODIFIERS,
   weatherSkillScalar: number = 1,
   visibilityRiskScalar: number = 1,
+  aiNitro: Readonly<NitroState> = INITIAL_NITRO_STATE,
+  weather: WeatherOption | null = null,
 ): AITickResult {
   const behaviour = getAIBehaviour(driver.archetype);
   const segment = currentSegment(track, aiCar.z);
@@ -458,11 +467,36 @@ export function tickAI(
   const lateralError = idealLateralOffset - aiCar.x;
   const steer = clamp(lateralError / AI_TUNING.STEER_GAIN, -1, 1);
 
+  // Derive the AI's own lap from its z accumulator. `race.lap` is the
+  // player's counter; AI cars run independent lap counters at the
+  // session level (`RaceSessionAICar.lap`) and in track-progress
+  // space here we compute it directly from `aiCar.z` so this module
+  // does not need a session-shape dependency.
+  const aiLap =
+    track.totalLength > 0
+      ? Math.floor(aiCar.z / track.totalLength) + 1
+      : 1;
+
+  const fireNitro = decideFireNitro({
+    archetype: driver.archetype,
+    nitroUsage: driver.nitroUsage,
+    nitro: aiNitro,
+    seed: aiState.seed,
+    aiSpeed: aiCar.speed,
+    topSpeed: stats.topSpeed,
+    authoredCurve,
+    lap: aiLap,
+    totalLaps: race.totalLaps,
+    lapFraction: lapProgressFraction,
+    playerGapMeters: player.car.z - aiCar.z,
+    weather,
+  });
+
   const input: Input = {
     steer,
     throttle,
     brake,
-    nitro: false,
+    nitro: fireNitro,
     handbrake: false,
     pause: false,
     shiftUp: false,

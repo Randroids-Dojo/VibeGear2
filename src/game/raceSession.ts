@@ -1263,6 +1263,8 @@ export function stepRaceSession(
       cpuModifiers,
       aiWeatherSkill,
       weatherVisibilityRiskScalar(trackWeather, aiWeatherSkill),
+      entry.nitro,
+      trackWeather,
     );
   });
 

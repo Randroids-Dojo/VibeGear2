@@ -10,6 +10,168 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-100: Shareable race-result card
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 ten-round mass-appeal audit (Tier C
+#13). The `dailyShareText` panel already renders on the §20 results page
+(`src/app/race/results/page.tsx:323-334`) but the source was wired only
+for the cut Daily-Challenge mode (per Q-015). Generalize the share affordance
+for every Tour finish: copy a one-line text card ("VibeGear2 Velvet Coast,
+Harbor Run, P3, 1:42.318") plus an optional canvas-screenshot data URL.
+Use the existing `DailyShareButton` component as the template. Keep the
+share path local-only (no upload, no telemetry) so it ships under the
+existing privacy stance.
+
+## F-099: Title-page season summary and leaderboard glance
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier C #12).
+The title screen (`src/app/page.tsx`) shows only menu items and a build
+badge. Add a small "Last result" / "Tour standings" glance plus the
+player's current global rank on the most recently raced track (read from
+the existing `LeaderboardPanel` adapter under `src/leaderboard/`). Pulls
+the player back into the loop: a glance answers "how am I doing across
+all my runs?" before they pick the next menu item. Local read of
+`loadSave()` for the standings; the leaderboard read can fall through to
+"offline" gracefully per the existing `LeaderboardPanel` empty state.
+
+## F-098: First-time-player tutorial and coach-marks
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier C #10).
+A first-time player who launches the build sees the title screen, picks
+Start Race, and is dropped into a Velvet Coast race with no explanation
+of nitro, brake, gearing, pickups, or weather. GDD §4 calls for "high
+learnability" + "low dead time"; today the curve has neither. Ship a
+minimal first-race coach overlay: a one-time intro card on the prep page
+("brake into corners, hold nitro on straights"), and 2-3 inline HUD
+hints during the first race only (gated by a new `save.firstRaceSeen`
+flag). Reuse the §20 reduced-motion gate so the hints respect a11y. Do
+not block the player; they can dismiss with any input. After v1.0 a
+fuller §6 "Practice" mode could host a deeper drill, but Q-015 cut
+practice for now, so the inline hints are the v1.0 surface.
+
+## F-097: Car purchase loop in the garage
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier B #9).
+GDD §5 ("Car selection if entering a new championship or buying a new
+car") and §8 ("Full podium progression unlocks bonus content and
+alternate cars") promise a car-buying loop, but the garage
+(`src/app/garage/page.tsx`) only exposes upgrade/repair surfaces. Six
+playable cars exist in `src/data/cars/`. Wire a "Cars" subroute that
+lists owned + purchasable cars, gates by tour completion + credits per
+GDD §11 and §12, and adds the active car to `save.garage`. Leverages
+existing `awardCredits` / save shape; mostly UI plus a save-schema
+migration for `ownedCars`.
+
+## F-096: Cosmetic and livery unlocks on tour podium
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier B #7).
+GDD §8 promises "challenge medals unlock cosmetics, soundtrack remixes,
+and extra championships". Today tour completion unlocks only the next
+tour cursor (`src/game/championship.ts:unlockNextTour`). Add a
+lightweight cosmetic ledger: per-tour podium awards a livery (a
+`paletteRecolour` overlay on the player car sprite), a finisher's badge
+(rendered on the title screen as a row of icons), and one soundtrack
+remix variant the music runtime can rotate to. Pure data + a new
+`save.unlockedCosmetics` array; no new physics or AI. Pulls a player
+back for "I want the gold-podium livery" exactly as Top Gear 2's
+"complete the championship to unlock the secret car" loop did.
+
+## F-095: Authored hazard variety beyond `puddle` and `gravel_band`
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier A #6).
+A grep across all 32 production tracks shows hazards limited to `puddle`
++ `gravel_band` (and most segments are `"hazards": []`). GDD §3 / §9
+call for richer authored tactical decisions. Add three or four new
+hazard kinds to the schema (`oil_slick` (lateral grip drop), `debris`
+(direct damage on contact), `slow_traffic` (a non-AI "back-marker" car
+to weave around), `wind_gust` (banked-corner lateral push)) and
+distribute them across mid-late tours so the §3 "lane congestion +
+harsher weather" curve has authored teeth. Schema bump in
+`src/data/schemas.ts` + a `evaluateHazards` extension in
+`src/game/hazards.ts`. Land after F-094 (pickups) so the §22 schema
+churn ships in one wave.
+
+## F-094: Authored jumps and crests across tours 2-8
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier A #5).
+Zero of the 35 track JSONs declare jumps, ramps, or dramatic positive
+grades for air time. GDD §3 names jumps as a Top Gear 2 staple
+("pickups, jumps, obstacles"). The schema supports `grade` per segment
+but no track uses values that produce visible airborne moments. Either
+extend the schema with an explicit `jump: { rampHeight, landZone }`
+pair, or author the dramatic crests with existing `grade` values and
+add a renderer hop term that briefly lifts the player car sprite when a
+crest is crossed at speed. Pairs with §16 (camera shake on landing).
+
+## F-093: On-track pickups extended to tours 2-8
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier A #4).
+A grep of all 32 production tracks shows pickups are only authored on
+4 of 4 Velvet Coast tracks (1-2 segments each). Tours 2-8 have zero
+on-track tactical decisions beyond steering. The existing
+`VibeGear2-feat-tracks-first-10ebfec0` slice covers tour 1 only. File
+a follow-on slice that distributes 3-6 pickups per track across the
+remaining 28 production tracks, biased to inside-line risk-reward
+placement on corner apexes per the iter-12 priority stack. Pure data
+authoring + the existing pickup runtime; no new code.
+
+## F-092: Named rival driver per race with season-long score
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier S #2).
+Every opponent today is anonymous: `RankedCar` carries a generic id and
+the rivalry HUD signal (`raceMoments.deriveRaceStoryMoment`) reports
+"Rival close" without naming who. Designate one of the 11 AI per race
+as the player's rival for the active tour. Surface name, archetype, and
+season head-to-head score (wins / losses / podiums vs. that rival
+across the tour) on the prep card and the results screen. The
+"Rival close" HUD then names them ("Marquez, 18 m back"). No new
+physics; pure framing on top of existing AI grid. A driver pool already
+exists under `src/data/aiDrivers/`. Adds emotional stakes to every
+race without changing balance. Files Q-026 if a "settle the score"
+end-of-tour bonus credit is desired.
+
+## F-091: AI fires nitro per archetype on straights and last-lap pushes
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier S #1).
+The full nitro plumbing exists for AI cars
+(`src/game/raceSession.ts:1454-1469` ticks `aiNitroResult` and forwards
+the multiplier) but `tickAI` always sets `nitro: false`
+(`src/game/ai.ts:465`), so opponents never spend their charges. Result:
+only the player's nitro is dramatic; opponents look slow on every
+straight. This is the single biggest readability bug for the §15
+"AI must feel like real competitors" goal and the largest gap between
+the live race and the FUN_FACTOR_AUDIT P0 list. Wire archetype-specific
+firing rules: rocket starter spends 1-2 charges in laps 1-2 then fades;
+bully nitros to defend a close pass; enduro saves nitro for the final
+straight; cautious never fires in rain; chaotic occasionally wastes a
+charge mid-corner; clean-line uses nitro on the longest straight only.
+Deterministic, seeded by `AIState.seed`. Ships as the immediate next
+slice per the audit recommendation (Tier S #1, the highest-leverage
+single PR for mass appeal + replay value combined). Distinct from the
+in-flight `VibeGear2-feat-ai-add-573f4cda` dot which scopes to the
+broader archetype behavior pass; this slice can land first or be
+folded into that dot's scope.
+
 ## F-090: Delete dormant non-Tour routes, modules, and tests
 **Created:** 2026-05-06
 **Priority:** nice-to-have

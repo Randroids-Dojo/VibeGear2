@@ -1049,6 +1049,79 @@ describe("tickAI (§23 CPU difficulty mistakeScalar and recoveryScalar)", () => 
   });
 });
 
+describe("tickAI (F-091 nitro firing)", () => {
+  // Closes F-091. Pre-fix, `tickAI` always set `input.nitro = false`.
+  // Post-fix, the canonical clean_line driver fires the bias 1 launch
+  // window on a clean lap-1 straight; switching the §22 nitroUsage to
+  // all-zero collapses the firing back to false even on the same
+  // surface so the wiring is observably bias-driven.
+
+  function withBias(
+    bias: { launchBias: number; straightBias: number; panicBias: number },
+  ): AIDriver {
+    return { ...CLEAN_LINE_DRIVER, nitroUsage: bias };
+  }
+
+  it("fires on a lap-1 launch straight with bias 1", () => {
+    const result = tickAI(
+      withBias({ launchBias: 1, straightBias: 0, panicBias: 0 }),
+      freshAi(),
+      freshCar({ z: 12, speed: 40 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    expect(result.input.nitro).toBe(true);
+  });
+
+  it("does not fire on a lap-1 launch straight with bias 0", () => {
+    const result = tickAI(
+      withBias({ launchBias: 0, straightBias: 0, panicBias: 0 }),
+      freshAi(),
+      freshCar({ z: 12, speed: 40 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    expect(result.input.nitro).toBe(false);
+  });
+
+  it("does not fire during countdown even when bias is 1", () => {
+    const result = tickAI(
+      withBias({ launchBias: 1, straightBias: 1, panicBias: 1 }),
+      freshAi(),
+      freshCar({ z: 0, speed: 0 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      COUNTDOWN,
+      STARTER_STATS,
+    );
+    expect(result.input.nitro).toBe(false);
+  });
+
+  it("does not fire when the AI has zero charges left", () => {
+    const result = tickAI(
+      withBias({ launchBias: 1, straightBias: 1, panicBias: 1 }),
+      freshAi(),
+      freshCar({ z: 12, speed: 40 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      { charges: 0, activeRemainingSec: 0 },
+      "clear",
+    );
+    expect(result.input.nitro).toBe(false);
+  });
+});
+
 describe("AI_TUNING (constants are sane)", () => {
   it("MAX_RACING_LINE_OFFSET keeps the AI inside the road", () => {
     expect(AI_TUNING.MAX_RACING_LINE_OFFSET).toBeLessThan(

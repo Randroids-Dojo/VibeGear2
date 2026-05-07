@@ -79,3 +79,18 @@ ai.intent         // defend / overtake / recover / conserve
 ```
 
 This keeps collisions, passing, and ghost replay deterministic and cheap.
+
+### Build log
+
+- 2026-05-07: F-091 AI nitro firing wired into `tickAI`. Per-archetype
+  decision uses the §22 `nitroUsage` bias triple (`launchBias`,
+  `straightBias`, `panicBias`) gated by lap window, segment curve,
+  speed band, and weather (defender skips medium/high nitro-risk
+  weather). Pre-fix `tickAI` always set `input.nitro = false`, so
+  every opponent looked slow on every straight. Files:
+  `src/game/aiNitroFire.ts` (new),
+  `src/game/ai.ts` (signature + decision call),
+  `src/game/raceSession.ts` (forwards `entry.nitro` and `trackWeather`),
+  `src/game/__tests__/aiNitroFire.test.ts` (new, 22 cases),
+  `src/game/__tests__/ai.test.ts` (4 new cases).
+  PR pending.
