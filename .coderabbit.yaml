@@ -1,0 +1,74 @@
+# CodeRabbit configuration. Schema: https://docs.coderabbit.ai/reference/yaml-template
+#
+# Adopted 2026-05-06 after the Copilot monthly review quota was exhausted.
+# Project context for the reviewer is split between:
+# - AGENTS.md (RULE 1..N: deterministic replays, ledger discipline, slice rules).
+# - docs/WORKING_AGREEMENT.md (PR / merge / review process).
+# - docs/IMPLEMENTATION_PLAN.md (slice template + acceptance gates).
+# - docs/gdd/*.md (per-section game-design specs the slices reference).
+language: en
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  path_filters:
+    # Lockfiles and generated assets — no signal in review.
+    - "!package-lock.json"
+    - "!pnpm-lock.yaml"
+    - "!**/node_modules/**"
+    - "!.next/**"
+    - "!coverage/**"
+    - "!playwright-report/**"
+    - "!test-results/**"
+    - "!public/assets/**"
+    # Append-only ledgers. CodeRabbit should not nitpick prose in
+    # historical entries; the discipline is encoded in
+    # .claude/rules/ledger-append-only.md.
+    - "!docs/PROGRESS_LOG.md"
+    - "!docs/FOLLOWUPS.md"
+    - "!docs/OPEN_QUESTIONS.md"
+    # Archived pre-spiral docs are frozen.
+    - "!docs/archive/**"
+  path_instructions:
+    - path: "src/game/**/*.ts"
+      instructions: |
+        Game logic must stay deterministic for replay (AGENTS.md RULE 8).
+        Flag any new use of Math.random, Date.now, or performance.now in
+        files under src/game. Per-tick state mutations should be derived
+        from a seeded PRNG or the session tick.
+    - path: "src/render/**/*.ts"
+      instructions: |
+        Pure render modules own state objects passed in by the caller.
+        Flag any new module-level mutable state. Reduced-motion gates
+        should re-use prefersReducedMotion() from src/render/vfx.ts
+        rather than re-querying matchMedia per frame.
+    - path: "src/road/**/*.ts"
+      instructions: |
+        Constants in src/road/constants.ts are golden values for the
+        segment projector. Any change here must be paired with a
+        regenerated golden tolerance in segmentProjector tests.
+    - path: "docs/gdd/**/*.md"
+      instructions: |
+        GDD section files follow the build-log discipline
+        (.claude/rules/gdd-build-log.md). Status line + append-only
+        Build log entries with file paths and PR numbers. Flag PRs that
+        modify spec text without an accompanying Build log entry.
+    - path: "e2e/**/*.spec.ts"
+      instructions: |
+        Playwright canvas-pixel-sampling tests on the test/elevation
+        track have been brittle (see F-088). Prefer threshold-based
+        assertions over exact-row assertions when sampling canvas
+        pixels.
+
+chat:
+  auto_reply: true
