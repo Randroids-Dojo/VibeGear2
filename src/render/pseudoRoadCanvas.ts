@@ -31,6 +31,7 @@ import type { WeatherOption } from "@/data/schemas";
 import { visibilityForWeather } from "@/game/weather";
 
 import { drawDust, type DustState } from "./dust";
+import { drawSpeedLines, type SpeedLineState } from "./speedLines";
 import type { PaletteCache } from "./paletteCache";
 import { paletteCacheKey, recolourFrameToImageBitmap } from "./paletteRecolour";
 import { drawParallax, type ParallaxLayer } from "./parallax";
@@ -167,6 +168,13 @@ export interface DrawRoadOptions {
    * pass it in here; the drawer never advances the pool itself.
    */
   dust?: DustState;
+  /**
+   * Optional radial speed-line pool for §16 "Strong foreground speed
+   * cues". Painted above road / dust / weather but below the player
+   * car so streaks read as foreground motion without occluding the
+   * driver. Caller owns the pool; the drawer never advances it.
+   */
+  speedLines?: SpeedLineState;
   /**
    * Optional screen-space weather effects for §14 / §16. These are
    * visual only: physics weather is handled by `src/game/raceSession.ts`.
@@ -487,6 +495,13 @@ export function drawRoad(
 
   drawHeatShimmer(ctx, viewport, options.heatShimmer);
   drawTunnelAdaptation(ctx, strips, viewport, options.tunnelAdaptation);
+
+  // §16 radial speed lines: paint above the road / weather / tunnel
+  // adaptation but BEFORE the player car so streaks read as the
+  // world rushing past the camera, not the driver itself.
+  if (options.speedLines) {
+    drawSpeedLines(ctx, options.speedLines, viewport);
+  }
 
   if (options.playerCar) {
     drawPlayerCar(ctx, options.playerCar, viewport);

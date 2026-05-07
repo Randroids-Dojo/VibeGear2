@@ -144,6 +144,11 @@ import {
   tickCameraSmoothing,
   type CameraSmoothingState,
 } from "@/app/race/cameraSmoothing";
+import {
+  INITIAL_SPEED_LINE_STATE,
+  tickSpeedLines,
+  type SpeedLineState,
+} from "@/render/speedLines";
 import { projectPickupSprites } from "@/render/pickupSprites";
 import { playerCarFrameIndex } from "@/render/carFrame";
 import type { CarSpriteSet } from "@/render/carSpriteCompositor";
@@ -1138,6 +1143,11 @@ function RaceCanvas({
     INITIAL_CAMERA_SMOOTHING_STATE,
   );
   const lastCameraSmoothingMsRef = useRef<number>(0);
+  // §16 radial speed-line pool. The smoother above already gives the
+  // camera a "wide and low" read at top speed; this gives the world
+  // foreground motion cues so high speed actually reads as committed.
+  const speedLineRef = useRef<SpeedLineState>(INITIAL_SPEED_LINE_STATE);
+  const lastSpeedLineMsRef = useRef<number>(0);
   const previousRaceStoryCarsRef = useRef<readonly RankedCar[] | null>(null);
   const lastRaceStoryMomentMsRef = useRef<number>(0);
   const observedAiCuesRef = useRef<Set<AIReadabilityCue>>(new Set());
@@ -1975,8 +1985,41 @@ function RaceCanvas({
         );
         camera.depth = cameraOverrides.depth;
         camera.y = cameraOverrides.y;
+
+        // §16 radial speed lines: tick the pool with the live
+        // speedNorm + nitro flag, then forward the state to drawRoad.
+        // Reduced-motion gating lives inside the pool so this site is
+        // linear. Only forward when the pool is active to keep the
+        // idle render byte-identical to the pre-slice golden.
+        const speedLineDtMs = (() => {
+          const now = audioUpdateMs;
+          if (lastSpeedLineMsRef.current === 0) {
+            lastSpeedLineMsRef.current = now;
+            return 0;
+          }
+          const dt = Math.max(0, now - lastSpeedLineMsRef.current);
+          lastSpeedLineMsRef.current = now;
+          return dt;
+        })();
+        const speedNorm =
+          playerStats.topSpeed > 0
+            ? session.player.car.speed / playerStats.topSpeed
+            : 0;
+        speedLineRef.current = tickSpeedLines(speedLineRef.current, {
+          speedNorm,
+          nitroActive: session.player.nitro.activeRemainingSec > 0,
+          dtMs: speedLineDtMs,
+          seed: session.tick | 0,
+          viewport,
+        });
+        const activeSpeedLines =
+          speedLineRef.current.particles.length > 0
+            ? speedLineRef.current
+            : undefined;
+
         drawRoad(ctx, strips, viewport, {
           parallax: { layers: parallaxLayers, camera },
+          speedLines: activeSpeedLines,
           weatherEffects: {
             weather: renderWeather,
             visualReduction: persistedAssists.weatherVisualReduction,

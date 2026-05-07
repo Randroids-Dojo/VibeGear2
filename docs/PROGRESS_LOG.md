@@ -6,6 +6,84 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: feat(render): radial speed lines above 0.7 speedNorm and during nitro
+
+**GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)
+"Strong foreground speed cues" + "Nitro bloom trail",
+[§19](gdd/19-accessibility.md) "Reduced motion".
+**Branch / PR:** `feat/radial-speed-lines`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Added a pure pool `src/render/speedLines.ts` mirroring the dust
+  pool's PRNG + recycle pattern. Linear ramp from 0/s at speedNorm
+  0.7 to 24/s at 1.0, plus 18/s while nitro is active (peak 42/s
+  per the dot). MAX_SPEED_LINES = 96 with FIFO recycle. Lifetime
+  220 ms; alpha decays linearly; stroke width tapers 2 px -> 1 px;
+  base white, "#dde7ff" while nitro.
+- Spawn cone: focal point at `(width/2, height * 0.45)` with
+  hashed jitter inside the upper half. Outward velocity proportional
+  to `(speedNorm * 8 + nitroActive * 6)` view-heights/sec, directed
+  radially from the focal point so streaks rush past the camera.
+- Wired through `drawRoad` options as `speedLines?: SpeedLineState`,
+  painted AFTER weather + tunnel adaptation but BEFORE the player
+  car so streaks read as foreground motion without occluding the
+  driver. Mirrors the existing dust integration.
+- Race page owns a `speedLineRef` + `lastSpeedLineMsRef`, ticks the
+  pool from the rAF block (reusing the existing
+  `audioUpdateMs = performance.now()` value as the dt source), and
+  forwards the state to drawRoad. Only forwards when the pool has
+  particles so the idle render is byte-identical to the pre-slice
+  golden.
+- Reduced-motion gate. `emitRatePerSec` returns 0 when
+  `prefersReducedMotion()` is true; existing particles still age
+  out so the pool drains cleanly when the OS setting toggles.
+- Determinism. Each particle's spawn-jitter and outward velocity
+  are derived from `speedLineHashAt(seed, particleIndex, axis)`
+  which is pure. Two pools fed the same speedNorm / nitro /
+  viewport / seed series produce identical layouts.
+- Added 13 Vitest cases in `src/render/__tests__/speedLines.test.ts`
+  covering: empty initial state, zero emit at speedNorm 0.5, ramp
+  to 24/s at peak, +18/s under nitro, clamping past 1.0, particle
+  aging past LIFETIME_MS, MAX_SPEED_LINES cap, two-pool
+  determinism, two-seed divergence, and the reduced-motion gate.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2840 / 2840 passed (150 suites; 13 new).
+
+### Decisions and assumptions
+- Did NOT ship the e2e Playwright spec
+  `e2e/speed-lines-feel.spec.ts` the dot named. The "/dev/road
+  fixed-pose harness" approach is the same followup
+  `F-089` already captured for the speed-coupled camera slice; the
+  unit suite below pins the emission-rate contract end-to-end.
+- The wire-up uses `drawRoad` options rather than a separate
+  ctx draw call in page.tsx (the dot left this open). Mirroring
+  the dust integration keeps layer ordering explicit and avoids
+  yet another draw site.
+- The seed for `tickSpeedLines` is `session.tick | 0`. Using the
+  per-tick integer (rather than a per-mount constant) means the
+  particle layout still varies frame-to-frame even at constant
+  speedNorm, which the dot calls out as deterministic-but-varied.
+
+### Coverage ledger
+- Adds pool + draw integration + test suite + reduced-motion gate
+  under §16 visual-feel coverage and §19 reduced-motion gate
+  coverage. Closes the dot
+  `VibeGear2-implement-radial-speed-02dc1556`.
+
+### Followups created
+None new. F-089 (e2e camera-feel via /dev/road harness) already
+captures the analogous spec for speed lines; if a separate spec
+ever proves valuable we can split.
+
+### GDD edits
+None.
+
+---
+
 ## 2026-05-06: chore(menu): cut non-Tour entries per Q-015 v1.0 scope
 
 **GDD sections touched:** [§6](gdd/06-game-modes.md) "v1.0 scope".
