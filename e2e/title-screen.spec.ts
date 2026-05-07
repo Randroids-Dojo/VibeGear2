@@ -61,25 +61,14 @@ test.describe("title screen", () => {
     await expect(worldTour).toHaveText("World Tour");
     await expect(worldTour).toHaveAttribute("href", "/world");
 
-    const timeTrial = page.getByTestId("menu-time-trial");
-    await expect(timeTrial).toBeVisible();
-    await expect(timeTrial).toHaveText("Time Trial");
-    await expect(timeTrial).toHaveAttribute("href", "/time-trial");
-
-    const quickRace = page.getByTestId("menu-quick-race");
-    await expect(quickRace).toBeVisible();
-    await expect(quickRace).toHaveText("Quick Race");
-    await expect(quickRace).toHaveAttribute("href", "/quick-race");
-
-    const practice = page.getByTestId("menu-practice");
-    await expect(practice).toBeVisible();
-    await expect(practice).toHaveText("Practice");
-    await expect(practice).toHaveAttribute("href", "/race?mode=practice");
-
-    const daily = page.getByTestId("menu-daily");
-    await expect(daily).toBeVisible();
-    await expect(daily).toHaveText("Daily Challenge");
-    await expect(daily).toHaveAttribute("href", "/daily");
+    // Q-015 scope cut: Time Trial / Quick Race / Practice / Daily are
+    // not in the v1.0 main menu. The underlying routes still resolve
+    // (full deletion is queued under F-090) but no menu link points at
+    // them.
+    await expect(page.getByTestId("menu-time-trial")).toHaveCount(0);
+    await expect(page.getByTestId("menu-quick-race")).toHaveCount(0);
+    await expect(page.getByTestId("menu-practice")).toHaveCount(0);
+    await expect(page.getByTestId("menu-daily")).toHaveCount(0);
 
     const garage = page.getByTestId("menu-garage");
     await expect(garage).toBeVisible();
@@ -111,48 +100,6 @@ test.describe("title screen", () => {
     await page.getByTestId("menu-world").click();
     await expect(page).toHaveURL(/\/world$/);
     await expect(page.getByTestId("world-page")).toBeVisible();
-  });
-
-  test("Time Trial link navigates to the time-trial launch page", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await page.getByTestId("menu-time-trial").click();
-    await expect(page).toHaveURL(/\/time-trial$/);
-    await expect(page.getByTestId("time-trial-page")).toBeVisible();
-  });
-
-  test("Quick Race link navigates to quick-race picker", async ({ page }) => {
-    await page.goto("/");
-    await page.getByTestId("menu-quick-race").click();
-    await expect(page).toHaveURL(/\/quick-race$/);
-    await expect(page.getByTestId("quick-race-page")).toBeVisible();
-    await expect(page.getByTestId("quick-race-start")).toHaveAttribute(
-      "href",
-      /\/race\?mode=quickRace&track=.+&weather=.+&car=.+/,
-    );
-  });
-
-  test("Practice link navigates to practice race mode", async ({ page }) => {
-    await page.goto("/");
-    await page.getByTestId("menu-practice").click();
-    await expect(page).toHaveURL(/\/race\?mode=practice$/);
-    await expect(page.getByTestId("race-canvas")).toHaveAttribute(
-      "data-mode",
-      "practice",
-    );
-    await expect(page.getByTestId("practice-panel")).toBeVisible();
-  });
-
-  test("Daily Challenge link navigates to /daily", async ({ page }) => {
-    await page.goto("/");
-    await page.getByTestId("menu-daily").click();
-    await expect(page).toHaveURL(/\/daily$/);
-    await expect(page.getByTestId("daily-page")).toBeVisible();
-    await expect(page.getByTestId("daily-start")).toHaveAttribute(
-      "href",
-      /\/race\?mode=timeTrial&track=.+&weather=.+/,
-    );
   });
 
   test("Options link navigates to /options", async ({ page }) => {

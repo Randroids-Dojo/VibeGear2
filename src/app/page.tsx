@@ -6,17 +6,15 @@ import styles from "./page.module.css";
 /**
  * Title screen.
  *
- * Renders the top-level main menu items per GDD §5 and §20:
- * Start Race -> `/race`, World Tour -> `/world`, Time Trial ->
- * `/time-trial`, Quick Race -> `/quick-race`, Practice ->
- * `/race?mode=practice`, Daily Challenge -> `/daily`, Garage ->
- * `/garage`, Options -> `/options`. The Options entry was a disabled
- * placeholder (`menu-options-pending`) until the `/options` scaffold landed in
- * `VibeGear2-implement-options-screen-a9379c4a`. Its replacement keeps
- * the original `menu-options` test id that the e2e suite asserts on.
+ * Per Q-015 (2026-05-06) "gut any feature not related to the world tour
+ * mode", v1.0 ships only the World Tour championship surface. The menu
+ * exposes Start Race -> `/race`, World Tour -> `/world`, Garage ->
+ * `/garage`, Options -> `/options`. Time Trial / Quick Race / Practice
+ * / Daily Challenge entries were removed from this menu in the
+ * world-tour-only scope cut; the underlying routes and game modules
+ * remain importable for now and will be deleted under F-090.
  *
- * Keyboard order is Start Race -> World Tour -> Time Trial -> Quick Race
- * -> Practice -> Daily Challenge -> Garage -> Options (DOM order).
+ * Keyboard order is Start Race -> World Tour -> Garage -> Options.
  *
  * The footer carries two pieces of metadata. The pre-existing
  * `build-status` line tracks the design phase (kept verbatim so the
@@ -36,10 +34,6 @@ interface MenuItem {
 const MENU: ReadonlyArray<MenuItem> = [
   { label: "Start Race", href: "/race", testId: "menu-start-race" },
   { label: "World Tour", href: "/world", testId: "menu-world" },
-  { label: "Time Trial", href: "/time-trial", testId: "menu-time-trial" },
-  { label: "Quick Race", href: "/quick-race", testId: "menu-quick-race" },
-  { label: "Practice", href: "/race?mode=practice", testId: "menu-practice" },
-  { label: "Daily Challenge", href: "/daily", testId: "menu-daily" },
   { label: "Garage", href: "/garage", testId: "menu-garage" },
   { label: "Options", href: "/options", testId: "menu-options" },
 ];
