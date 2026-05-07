@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-06: chore(menu): cut non-Tour entries per Q-015 v1.0 scope
+
+**GDD sections touched:** [§6](gdd/06-game-modes.md) "v1.0 scope".
+**Branch / PR:** `feat/cut-non-tour-from-menu`, PR pending.
+**Status:** Implemented (menu cut). Deeper code deletion deferred to F-090.
+
+### Done
+- Title-screen `MENU` shrunk from 8 entries to 4: Start Race, World
+  Tour, Garage, Options. Time Trial / Quick Race / Practice / Daily
+  Challenge entries removed. The Start Race shortcut is preserved as
+  the legacy direct-to-race entry; v1.0 surfaces World Tour as the
+  championship loop per Q-015.
+- Updated `src/app/__tests__/page.test.tsx`: dropped the
+  Time-Trial / Daily anchor assertions, added a negative-presence
+  assertion, and shrunk the tab-order test to the 4-item menu.
+- Updated `e2e/title-screen.spec.ts`: dropped 4 cut-mode "click ->
+  navigate" tests, replaced the 4 cut-mode anchor blocks with
+  `toHaveCount(0)` assertions in the existing menu-wiring test.
+- GDD §6 gained a "v1.0 scope" subsection at the top noting the
+  Q-015 deferral, with a build-log entry per the
+  `gdd-build-log` rule.
+- Filed F-090 capturing the deeper code deletion (route directories
+  `quick-race/`, `time-trial/`, `daily/`; mode modules
+  `src/game/timeTrial.ts`, `src/game/modes/dailyChallenge.ts`,
+  `src/game/modes/quickRace.ts`, `src/game/modes/timeTrialTargets.ts`;
+  related Vitest and Playwright specs; the deeper `RaceMode`
+  refactor in `src/app/race/page.tsx`; the `content-lint.ts`
+  `deprecated` coverage kind extension and seven
+  `GDD_COVERAGE.json` row updates from the dot).
+
+### Verified
+- `npm run typecheck` (pending).
+- `npm run lint` (pending).
+- `npm run test` (pending).
+
+### Decisions and assumptions
+- This PR is intentionally smaller than the dot's
+  `VibeGear2-implement-cut-non-fdcb3b2d.md` describes. The dot warns
+  "if the diff exceeds ~1500 LOC delta, split into two PRs"; the
+  full surface (routes + modules + tests + race-page mode plumbing
+  + content-lint + GDD coverage) is closer to 2.5k LOC delta and
+  involves a non-trivial refactor of `src/app/race/page.tsx`. The
+  user-visible cut (no menu entry for non-Tour modes) lands here;
+  F-090 carries the rest.
+- Did NOT add the `e2e/world-tour-only-scope.spec.ts` the dot
+  named. The existing `title-screen` spec now asserts the negative
+  case (no menu link to cut routes) plus the positive case (4
+  remaining items with their hrefs), which covers the same contract
+  with less surface duplication. F-090 can revisit if a dedicated
+  spec proves valuable.
+- The `Start Race` entry is kept (despite predating Q-015) because
+  the Tour entry routes through `/world` -> setup -> `/race`. Direct
+  `/race` is still useful for dev / Playwright smoke and the route
+  works in both Tour and direct entry today.
+
+### Coverage ledger
+- §6 game-modes coverage moves from "ships all four modes" to
+  "Championship-only v1.0 with documented deferral". The seven
+  `coverage: ["deprecated"]` rows the dot enumerates remain in
+  scope for F-090 (alongside the `content-lint.ts` enum extension);
+  this slice does not touch `GDD_COVERAGE.json`.
+
+### Followups created
+- F-090: Delete dormant non-Tour routes, modules, and tests. Three-PR
+  recommended split documented inline in the followup entry.
+
+### GDD edits
+- `docs/gdd/06-game-modes.md`: added "v1.0 scope" subsection plus
+  build-log entry. Status moved to `partial`.
+
+---
+
 ## 2026-05-06: feat(render): speed-coupled FOV widen and brake camera dip
 
 **GDD sections touched:** [§16](gdd/16-rendering-and-visual-design.md)

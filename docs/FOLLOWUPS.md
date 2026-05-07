@@ -10,6 +10,39 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-090: Delete dormant non-Tour routes, modules, and tests
+**Created:** 2026-05-06
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Q-015 scope cut deferred the deeper code deletion. The
+v1.0 title-screen menu no longer exposes Time Trial / Quick Race /
+Practice / Daily Challenge, but the underlying surfaces remain in the
+tree because deleting them in one PR would have exceeded the dot's
+~1500 LOC cap (`.dots/VibeGear2-implement-cut-non-fdcb3b2d.md`):
+`src/app/quick-race/`, `src/app/time-trial/`, `src/app/daily/`,
+`src/game/timeTrial.ts`, `src/game/modes/dailyChallenge.ts`,
+`src/game/modes/quickRace.ts`, `src/game/modes/timeTrialTargets.ts`,
+plus their `__tests__/`. The race page still wires `mode === "timeTrial"`
+ghost recording, `mode === "quickRace"` records-only handling, and
+practice-mode toggles in `src/app/race/page.tsx:579-1503` — those
+branches need to be removed when the mode plumbing is cut. Affected
+e2e specs that reference cut routes: `e2e/time-trial.spec.ts`,
+`e2e/daily-challenge.spec.ts`, `e2e/practice-mode.spec.ts`,
+`e2e/release-fun-playtest.spec.ts` (uses /quick-race),
+`e2e/first-race-fun.spec.ts` (uses /quick-race),
+`e2e/ui-selection.spec.ts` (uses /daily),
+`e2e/pause-actions.spec.ts` (asserts router.push to /time-trial),
+`e2e/accessibility-gate.spec.ts` (uses ?mode=practice),
+`e2e/race-pickups.spec.ts` (uses ?mode=practice),
+`e2e/first-tour-authored-events.spec.ts` (uses ?mode=practice).
+Recommended split: PR-A deletes routes + game modules + their tests +
+adapts e2e specs that incidentally hit cut routes; PR-B refactors
+the mode plumbing in `src/app/race/page.tsx` to a Tour-only control
+flow (drop `RaceMode`, drop the timeTrial recorder, drop the
+`mode=quickRace` records-only branch); PR-C extends `content-lint.ts`
+with the `deprecated` coverage kind and updates `GDD_COVERAGE.json`
+rows for the seven deprecated rows named in the dot.
+
 ## F-089: e2e camera-feel spec via /dev/road harness
 **Created:** 2026-05-06
 **Priority:** nice-to-have

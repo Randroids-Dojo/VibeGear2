@@ -32,16 +32,11 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/race"');
   });
 
-  it("renders Time Trial as an anchor pointing at /time-trial", () => {
-    const match = html.match(/<a[^>]*data-testid="menu-time-trial"[^>]*>/);
-    expect(match, "menu-time-trial anchor not found").not.toBeNull();
-    expect(match?.[0]).toContain('href="/time-trial"');
-  });
-
-  it("renders Daily Challenge as an anchor pointing at /daily", () => {
-    const match = html.match(/<a[^>]*data-testid="menu-daily"[^>]*>/);
-    expect(match, "menu-daily anchor not found").not.toBeNull();
-    expect(match?.[0]).toContain('href="/daily"');
+  it("does NOT render Time Trial / Quick Race / Practice / Daily entries (Q-015 scope cut)", () => {
+    expect(html).not.toContain('data-testid="menu-time-trial"');
+    expect(html).not.toContain('data-testid="menu-quick-race"');
+    expect(html).not.toContain('data-testid="menu-practice"');
+    expect(html).not.toContain('data-testid="menu-daily"');
   });
 
   it("renders World Tour as an anchor pointing at /world", () => {
@@ -62,18 +57,14 @@ describe("TitlePage", () => {
     expect(match?.[0]).toContain('href="/options"');
   });
 
-  it("places Start Race before World Tour before Time Trial before Daily before Garage before Options in tab order", () => {
+  it("places Start Race -> World Tour -> Garage -> Options in tab order", () => {
     const startIdx = html.indexOf('data-testid="menu-start-race"');
     const worldIdx = html.indexOf('data-testid="menu-world"');
-    const timeTrialIdx = html.indexOf('data-testid="menu-time-trial"');
-    const dailyIdx = html.indexOf('data-testid="menu-daily"');
     const garageIdx = html.indexOf('data-testid="menu-garage"');
     const optionsIdx = html.indexOf('data-testid="menu-options"');
     expect(startIdx).toBeGreaterThan(-1);
     expect(worldIdx).toBeGreaterThan(startIdx);
-    expect(timeTrialIdx).toBeGreaterThan(worldIdx);
-    expect(dailyIdx).toBeGreaterThan(timeTrialIdx);
-    expect(garageIdx).toBeGreaterThan(dailyIdx);
+    expect(garageIdx).toBeGreaterThan(worldIdx);
     expect(optionsIdx).toBeGreaterThan(garageIdx);
   });
 
