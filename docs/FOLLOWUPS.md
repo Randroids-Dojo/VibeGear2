@@ -13,8 +13,18 @@ or `obsolete` so the trail is preserved.
 ## F-100: Shareable race-result card
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 ten-round mass-appeal audit (Tier C
+**Status:** in-progress
+**Notes:** 2026-05-07 text-card path shipped under
+`feat/share-card`. New module
+`src/components/results/raceShareText.ts` builds the multi-line
+share text from track / tour names + placement + race time +
+best lap; new component
+`src/components/results/RaceShareButton.tsx` reuses the
+daily-share clipboard + fallback flow. The optional
+canvas-screenshot data URL extension stays open under this
+F-NNN; ship after the text-card path validates.
+
+Surfaced by the 2026-05-07 ten-round mass-appeal audit (Tier C
 #13). The `dailyShareText` panel already renders on the §20 results page
 (`src/app/race/results/page.tsx:323-334`) but the source was wired only
 for the cut Daily-Challenge mode (per Q-015). Generalize the share affordance
