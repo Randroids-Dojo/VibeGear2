@@ -13,11 +13,41 @@
   "segments": [
     { "len": 280, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "sign_marker", "hazards": [] },
     { "len": 260, "curve": -0.14, "grade": -0.01, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": ["puddle"] },
-    { "len": 240, "curve": 0.16, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["slick_paint"] },
+    {
+      "len": 240,
+      "curve": 0.16,
+      "grade": 0.02,
+      "roadsideLeft": "sign_marker",
+      "roadsideRight": "tree_pine",
+      "hazards": ["slick_paint"],
+      "pickups": [
+        { "id": "millstream-paint-cash", "kind": "cash", "laneOffset": 0.35, "value": 75 }
+      ]
+    },
     { "len": 300, "curve": -0.08, "grade": 0.03, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": ["puddle"] },
     { "len": 260, "curve": 0.18, "grade": -0.02, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
-    { "len": 300, "curve": -0.2, "grade": 0.01, "roadsideLeft": "rock_boulder", "roadsideRight": "sign_marker", "hazards": ["gravel_band"] },
-    { "len": 340, "curve": 0, "grade": 0, "roadsideLeft": "fence_post", "roadsideRight": "tree_pine", "hazards": [] }
+    {
+      "len": 300,
+      "curve": -0.2,
+      "grade": 0.01,
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "sign_marker",
+      "hazards": ["gravel_band"],
+      "pickups": [
+        { "id": "millstream-apex-nitro", "kind": "nitro", "laneOffset": -0.4, "value": 25 }
+      ]
+    },
+    {
+      "len": 340,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "fence_post",
+      "roadsideRight": "tree_pine",
+      "hazards": [],
+      "pickups": [
+        { "id": "millstream-finish-cash", "kind": "cash", "laneOffset": 0, "value": 75 }
+      ]
+    }
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" },

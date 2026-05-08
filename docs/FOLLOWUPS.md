@@ -152,13 +152,12 @@ crest is crossed at speed. Pairs with §16 (camera shake on landing).
 **Created:** 2026-05-07
 **Priority:** nice-to-have
 **Status:** in-progress
-**Notes:** 2026-05-07 split per-tour. Tours 2-6 (Iron Borough,
-Ember Steppe, Breakwater Isles, Glass Ridge, Neon Meridian)
-shipped each in their own PR with 3 pickups per track (1
-inside-line nitro on a corner apex, 1 cash on a tactical beat,
-1 cash on the final straight) across all 20 tracks. Tours 7-8
-(Moss Frontier, Crown Circuit) stay open under this F-NNN; each
-subsequent tour ships as its own PR for review tractability.
+**Notes:** 2026-05-07 split per-tour. Tours 2-7 (Iron Borough,
+Ember Steppe, Breakwater Isles, Glass Ridge, Neon Meridian,
+Moss Frontier) shipped each in their own PR with 3 pickups per
+track (1 inside-line nitro on a corner apex, 1 cash on a
+tactical beat, 1 cash on the final straight) across all 24
+tracks. Tour 8 (Crown Circuit) stays open under this F-NNN.
 Original notes follow.
 
 Surfaced by the 2026-05-07 mass-appeal audit (Tier A #4).
