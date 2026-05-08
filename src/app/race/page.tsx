@@ -119,6 +119,7 @@ import type { DailyChallengeSelection } from "@/game/modes/dailyChallenge";
 import {
   CAMERA_DEPTH,
   CAMERA_HEIGHT,
+  CURVATURE_SCALE,
   FOV_DEGREES,
   SEGMENT_LENGTH,
   fitToBox,
@@ -162,6 +163,8 @@ import type { ParallaxLayer } from "@/render/parallax";
 import { drawSplitsWidget } from "@/render/hudSplits";
 import { drawHud } from "@/render/uiRenderer";
 import { defaultSave, loadSave, saveSave } from "@/persistence/save";
+import { TutorialHintOverlay } from "@/components/tutorial/TutorialHintOverlay";
+import { deriveTutorialHint } from "@/game/tutorialHints";
 import {
   awardCredits,
   baseRewardForTrackDifficulty,
@@ -1230,6 +1233,24 @@ function RaceCanvas({
   const [raceMoment, setRaceMoment] = useState<RaceMoment | null>(null);
   const [lastRaceStoryMoment, setLastRaceStoryMoment] =
     useState<RaceStoryMoment | null>(null);
+  const [tutorialHintText, setTutorialHintText] = useState<string | null>(
+    null,
+  );
+  // F-101 first-race HUD hint gate. Computed once on mount from
+  // `Object.keys(save.records).length === 0` so a returning player
+  // who already has any race result silences every hint. The ref
+  // never changes during a single race (`save.records` updates
+  // happen on race finish, after this page unmounts).
+  const tutorialHintsEnabledRef = useRef(false);
+  // F-101 captures the compiled track and player top-speed once the
+  // session is built so the slow (250 ms) hint poller can evaluate
+  // its predicates without re-deriving them per tick. `RaceSessionState`
+  // intentionally does not retain `config`, so we mirror just the two
+  // fields the trigger module needs.
+  const tutorialHintContextRef = useRef<{
+    readonly segments: readonly CompiledSegment[];
+    readonly topSpeedMps: number;
+  } | null>(null);
 
   const clearRaceMomentTimeout = useCallback(() => {
     if (raceMomentTimeoutRef.current === null) return;
@@ -1262,6 +1283,14 @@ function RaceCanvas({
     const persisted = loadSave();
     const sessionSave =
       persisted.kind === "loaded" ? persisted.save : defaultSave();
+    // F-101 first-race HUD hint gate. The hints fire only when the
+    // player has zero recorded race results, i.e., this is the
+    // first race ever on the active save. Returning players (any
+    // race result on file) silence every hint. The gate is set
+    // here once per mount; the per-frame poller below reads the
+    // ref without re-loading the save.
+    tutorialHintsEnabledRef.current =
+      Object.keys(sessionSave.records ?? {}).length === 0;
     const sessionCar = resolveSessionCar(sessionSave, selectedCarId);
     const spriteSet = carSpriteSetForVisualProfile(sessionCar.spriteSet);
     carSpriteSetRef.current = spriteSet;
@@ -1284,6 +1313,50 @@ function RaceCanvas({
       active = false;
     };
   }, [selectedCarId]);
+
+  // F-101 first-race HUD hint poller. Sampling cadence is slow (250 ms)
+  // because hints flip across multi-second windows (corners, straights)
+  // and a per-frame derive would force a React re-render at 60 Hz. The
+  // poller short-circuits when the gate is off, so returning players
+  // pay only a single setInterval / clearInterval cost per race mount.
+  useEffect(() => {
+    if (!tutorialHintsEnabledRef.current) return undefined;
+    const intervalId = window.setInterval(() => {
+      const session = sessionRef.current;
+      const ctx = tutorialHintContextRef.current;
+      if (!session || !ctx || session.race.phase !== "racing") {
+        setTutorialHintText((prev) => (prev === null ? prev : null));
+        return;
+      }
+      const segments = ctx.segments;
+      const upcoming = upcomingCurvature(segments, session.player.car.z);
+      const segIndex = Math.max(
+        0,
+        Math.min(
+          segments.length - 1,
+          Math.floor(session.player.car.z / SEGMENT_LENGTH),
+        ),
+      );
+      const authoredCurve =
+        Math.abs(segments[segIndex]?.curve ?? 0) * CURVATURE_SCALE;
+      const hint = deriveTutorialHint({
+        enabled: true,
+        upcomingCurveMagnitude: Math.abs(upcoming),
+        playerSpeedMps: session.player.car.speed,
+        topSpeedMps: ctx.topSpeedMps,
+        authoredCurveMagnitude: authoredCurve,
+        nitroCharges: session.player.nitro.charges,
+        nitroActive: session.player.nitro.activeRemainingSec > 0,
+      });
+      setTutorialHintText((prev) => {
+        const nextText = hint?.text ?? null;
+        return prev === nextText ? prev : nextText;
+      });
+    }, 250);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const pause = usePauseToggle({ loop: () => handleRef.current });
   const { openMenu: openPauseMenu } = pause;
@@ -1474,6 +1547,10 @@ function RaceCanvas({
     setPickupFeedback(null);
     setAiReadability(null);
     sessionRef.current = createRaceSession(config);
+    tutorialHintContextRef.current = {
+      segments: config.track.segments,
+      topSpeedMps: playerStats.topSpeed,
+    };
     resetTimeTrialRuntime();
     // Re-arm the natural-finish guard on every fresh mount. The
     // restart callback below also flips it back so a second race
@@ -2463,6 +2540,7 @@ function RaceCanvas({
         style={canvasStyle}
       />
       <TouchControls layout={touchLayout} />
+      <TutorialHintOverlay text={tutorialHintText} />
       {raceMoment !== null ? (
         <div
           data-testid="race-moment"

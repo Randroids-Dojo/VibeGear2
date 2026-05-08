@@ -13,16 +13,24 @@ or `obsolete` so the trail is preserved.
 ## F-101: First-race race-time HUD hints
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Slice B of the F-098 split. The prep-page coach card
-ships first; the in-race HUD hints (brake-before-corner,
-space-for-nitro, top-4-to-advance) land here once the card flow is
-proven. Will add a `firstRaceFinished` boolean to
-`save.tutorialState` (still optional for back-compat). Hints
-respect reduced-motion (no animation), fade out automatically
-after 4 seconds or on any input. Hint trigger logic lives in a
-new pure module (`src/game/tutorialHints.ts`) so the trigger
-table is testable end-to-end without driving the canvas.
+**Status:** in-progress
+**Notes:** Slice B of the F-098 split. 2026-05-08 first-cut shipped
+under `feat/first-race-hud-hints`. Pure trigger module
+`src/game/tutorialHints.ts` resolves at most one hint per frame from
+the upcoming-curvature lookahead, the player's speed band, and the
+nitro state; the HUD overlay
+`src/components/tutorial/TutorialHintOverlay.tsx` renders that text
+near the bottom-center of the canvas. Gate is the absence of any
+recorded race result (`Object.keys(save.records).length === 0`), so
+no save-schema migration was needed for slice B - the F-098
+tutorialState slot is still the only schema extension. The static
+overlay (no fade, no transition) already satisfies §19
+reduced-motion. Top-4 advancement hint deferred: the §6 / §7 rule is
+already surfaced on the prep card under F-098 and a HUD-side cue
+would duplicate it. Re-evaluate after a manual playtest. Auto-fade
+after 4 s deferred for the same reason - the current cycle clears
+the hint as soon as the player satisfies the predicate (slows for
+the corner, fires nitro).
 
 ## F-100: Shareable race-result card
 **Created:** 2026-05-07
