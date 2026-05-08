@@ -74,6 +74,65 @@ None this slice.
 
 ---
 
+## 2026-05-07: feat(tracks): authored pickups for Glass Ridge (F-093 tour 5)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-glass-ridge`, PR pending.
+**Status:** Implemented (Glass Ridge only). F-093 stays open
+covering tours 6-8.
+
+### Done
+- Added 3 pickups per track to all 4 Glass Ridge alpine tracks
+  (Tour 5): Frostrelay, Hollow Crest, Summit Echo, Whitepass.
+  Same template Iron Borough through Breakwater Isles
+  established.
+- Two of four tracks (Hollow Crest, Summit Echo) use the
+  `long-scenic` archetype with 2 laps. The pickup count per
+  track is unchanged because the template is per-lap-relevant
+  rather than per-meter; a 2-lap player still gets 6 pickups
+  per race (3 per lap), the same density as a 3-lap standard
+  track.
+- Hollow Crest: nitro on the +0.2 corner inside the second
+  tunnel (segment 3, blue-safety-lighting). Rewards "blast
+  through the tunnel and grab the boost on the exit corner"
+  play. Cash on the snow-buildup climb (segment 1) for the
+  inside-line reward.
+- Summit Echo: nitro on the sharpest +0.22 right turn (the
+  hardest corner in the tour). Cash on the descent inside left
+  for high-commitment downhill play.
+- Snow weather authoring: every Glass Ridge track has snow or
+  fog in its weatherOptions. Three of four tracks place a cash
+  on a `snow_buildup` segment so reduced grip pays for a
+  committed apex.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2881 / 2881 passed (152 suites).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- The tunnel-pickup placement on Hollow Crest is consistent
+  with the Velvet Coast Cliffline Arc and Iron Borough Rivet
+  Tunnel patterns: a cash-or-nitro pickup inside a tunnel
+  segment is fully supported by the existing pickup runtime
+  and renderer overlay. The visibility reduction is a minor
+  difficulty boost, not a different rule.
+
+### Coverage ledger
+- §9 track-design coverage gains 4 more tracks worth of authored
+  pickup data. F-093 stays open with 12 tracks remaining (Neon
+  Meridian + Moss Frontier + Crown Circuit).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-07: feat(tracks): authored pickups for Breakwater Isles (F-093 tour 4)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log

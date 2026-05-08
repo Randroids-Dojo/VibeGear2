@@ -13,11 +13,41 @@
   "segments": [
     { "len": 280, "curve": 0, "grade": 0.06, "roadsideLeft": "sign_marker", "roadsideRight": "tree_pine", "hazards": ["snow_buildup"] },
     { "len": 260, "curve": -0.18, "grade": 0.08, "roadsideLeft": "rock_boulder", "roadsideRight": "fence_post", "hazards": [] },
-    { "len": 280, "curve": 0.22, "grade": -0.02, "roadsideLeft": "tree_pine", "roadsideRight": "light_pole", "hazards": ["snow_buildup"] },
-    { "len": 300, "curve": -0.16, "grade": -0.07, "roadsideLeft": "fence_post", "roadsideRight": "rock_boulder", "hazards": [] },
+    {
+      "len": 280,
+      "curve": 0.22,
+      "grade": -0.02,
+      "roadsideLeft": "tree_pine",
+      "roadsideRight": "light_pole",
+      "hazards": ["snow_buildup"],
+      "pickups": [
+        { "id": "summit-echo-apex-nitro", "kind": "nitro", "laneOffset": 0.4, "value": 25 }
+      ]
+    },
+    {
+      "len": 300,
+      "curve": -0.16,
+      "grade": -0.07,
+      "roadsideLeft": "fence_post",
+      "roadsideRight": "rock_boulder",
+      "hazards": [],
+      "pickups": [
+        { "id": "summit-echo-descent-cash", "kind": "cash", "laneOffset": -0.35, "value": 75 }
+      ]
+    },
     { "len": 260, "curve": 0.12, "grade": 0.04, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["traffic_cone"] },
     { "len": 340, "curve": -0.08, "grade": -0.04, "roadsideLeft": "tree_pine", "roadsideRight": "fence_post", "hazards": [] },
-    { "len": 380, "curve": 0, "grade": 0, "roadsideLeft": "rock_boulder", "roadsideRight": "tree_pine", "hazards": [] }
+    {
+      "len": 380,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "tree_pine",
+      "hazards": [],
+      "pickups": [
+        { "id": "summit-echo-finish-cash", "kind": "cash", "laneOffset": 0, "value": 75 }
+      ]
+    }
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" },
