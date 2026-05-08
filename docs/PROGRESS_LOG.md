@@ -6,6 +6,81 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(tutorial): first-race HUD hints for brake and nitro (F-101)
+
+**GDD sections touched:** [§19](gdd/19-accessibility.md) (overlay is
+static, no animation; satisfies reduced-motion),
+[§20](gdd/20-hud-and-pause.md) (new HUD overlay near the canvas
+bottom-center).
+**Branch / PR:** `feat/first-race-hud-hints`, PR pending.
+**Status:** Slice B of F-098 onboarding pair. Card was slice A; this
+ships the in-race hints. Top-4 advancement hint and 4 s auto-fade
+deferred (see F-101 notes).
+
+### Done
+- Added `src/game/tutorialHints.ts`. Pure
+  `deriveTutorialHint(input)` returns at most one of two hints per
+  frame: brake-before-corner (upcoming curve magnitude over the
+  authored threshold and player above the speed floor) and tap-nitro
+  (long straight, mid-band speed, charges available, no active
+  burn). Brake takes precedence when both fire.
+- Added `src/components/tutorial/TutorialHintOverlay.tsx`. Static,
+  fixed-position banner near the bottom-center of the canvas. No
+  fade, no transition, `pointer-events: none` so it never steals
+  input.
+- Wired into `src/app/race/page.tsx`. Gate set on mount from
+  `Object.keys(save.records).length === 0` so returning players
+  silence every hint. A 250 ms `setInterval` poller resolves the
+  hint and feeds it to the overlay; the slow cadence avoids forcing
+  React re-renders at 60 Hz, and the gate short-circuits the poller
+  for returning players. New `tutorialHintContextRef` mirrors the
+  compiled segments and player top-speed so the poller does not
+  re-derive them per tick.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2900 / 2900 passed across 154 suites; new
+  `src/game/__tests__/tutorialHints.test.ts` pins 11 cases over the
+  predicate table (gate disabled, brake fires, brake withholds when
+  slow, brake withholds below curve threshold, nitro fires on
+  straight, nitro withholds without charges, nitro withholds while
+  burning, nitro withholds below the speed floor, nitro withholds on
+  curving authored geometry, brake precedence, zero-top-speed guard).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- No save-schema migration. The F-098 `tutorialState` slot already
+  exists for back-compat; this slice piggybacks on the simpler
+  `save.records` count gate so legacy and test saves silence the
+  hints automatically.
+- Curvature scaling matches the
+  `src/road/segmentProjector.ts:upcomingCurvature` contract.
+  Compiled segments store `curve / CURVATURE_SCALE`, so the poller
+  re-multiplies by `CURVATURE_SCALE` (100) to compare to the authored
+  band. An earlier draft used `25` and would have shifted the
+  straight-detection threshold by a factor of four.
+- Top-4 advancement hint deferred. The §6 / §7 rule is already on
+  the F-098 prep card; a HUD echo would duplicate it without adding
+  information.
+- 4 s auto-fade deferred. The current cycle clears the hint as soon
+  as the player satisfies the predicate (slows into the corner,
+  fires nitro), which is the natural endpoint. Re-evaluate after a
+  manual playtest.
+
+### Coverage ledger
+- §19 reduced-motion: overlay is static; nothing new to track.
+- §20 HUD: new overlay component, no GDD row (the existing HUD
+  budget already covers banner-style elements).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(title): season glance card on the title screen (F-099)
 
 **GDD sections touched:** [§4](gdd/04-player-experience-goals.md)
