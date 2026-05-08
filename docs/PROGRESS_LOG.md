@@ -74,6 +74,61 @@ None this slice.
 
 ---
 
+## 2026-05-07: feat(tracks): authored pickups for Breakwater Isles (F-093 tour 4)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-breakwater-isles`, PR pending.
+**Status:** Implemented (Breakwater Isles only). F-093 stays open
+covering tours 5-8.
+
+### Done
+- Added 3 pickups per track to all 4 Breakwater Isles tracks (Tour 4):
+  Gull Point, Sealight Shelf, Storm Span, Tidewire.
+  Same template Iron Borough (#188) and Ember Steppe (#190)
+  established: one inside-line nitro at the dominant corner apex,
+  one cash on a tactical beat, one cash on the final straight.
+- Wet-weather authoring: every Breakwater Isles track ships with
+  rain or heavy rain in its `weatherOptions`. The cash on the
+  middle apex sits on a `slick_paint` hazard segment for three of
+  four tracks (Gull Point, Storm Span, Tidewire) so the player
+  rewards holding the racing line through reduced grip. Sealight
+  Shelf (the difficulty-5 track) skips the slick-paint placement
+  because the apex sits on a clean climb instead.
+- The nitro placement consistently rewards the inside-line on the
+  strongest left turn in each track (curves -0.16 to -0.22), so a
+  player who threads the apex through standing puddles gets paid.
+- Pickup ids and 75 cr / 25% values match the established template.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2881 / 2881 passed (152 suites; the existing
+  `tracks-content.test.ts` validates every JSON against the
+  schema).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not add or change any code. Pure data authoring against
+  the existing pickup runtime and schema.
+- The `slick_paint` hazard interaction with pickups is reused
+  here exactly as Iron Borough's `traffic_cone` placements:
+  pickups sit on the inside line so a clean apex collects them
+  even with reduced surface grip.
+
+### Coverage ledger
+- §9 track-design coverage gains 4 more tracks worth of authored
+  pickup data. F-093 stays open with 16 tracks remaining (Glass
+  Ridge + Neon Meridian + Moss Frontier + Crown Circuit).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-07: feat(tracks): authored pickups for Ember Steppe (F-093 tour 3)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
