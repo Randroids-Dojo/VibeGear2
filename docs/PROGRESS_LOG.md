@@ -6,6 +6,53 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(tracks): authored pickups for Moss Frontier (F-093 tour 7)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-moss-frontier`, PR pending.
+**Status:** Implemented (Moss Frontier only). F-093 stays open
+covering tour 8 (Crown Circuit).
+
+### Done
+- Added 3 pickups per track to all 4 Moss Frontier tracks (Tour 7):
+  Millstream, Mistbarrow, Pine Switchback, Wetroot Drive. Same
+  template Iron Borough through Neon Meridian established.
+- All four Moss Frontier tracks are difficulty 5 long-scenic
+  (2-lap) with heavy rain or fog. The pickup placement compounds
+  the wet-grip pressure: every track puts the cash on a
+  `slick_paint` or `gravel_band` segment at an inside-line apex,
+  and the nitro on the strongest left-or-right curve in the track
+  also surrounded by a wet hazard.
+- Pickup ids and 75 cr / 25% values match the established
+  template. The 480-460-420 m closing straights (longer than any
+  previous tour) get the standard centerline finish cash.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2889 / 2889 passed (153 suites).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not add or change any code. Pure data authoring against
+  the existing pickup runtime and schema.
+- Per-lap pickup density on these 2-lap tracks matches the
+  3-lap standard tracks (3 pickups per lap, 6 per race).
+
+### Coverage ledger
+- §9 track-design coverage gains 4 more tracks worth of authored
+  pickup data. F-093 stays open with 4 tracks remaining (Crown
+  Circuit only).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(tracks): authored pickups for Neon Meridian (F-093 tour 6)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
