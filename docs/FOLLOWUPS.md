@@ -160,14 +160,16 @@ crest is crossed at speed. Pairs with §16 (camera shake on landing).
 ## F-093: On-track pickups extended to tours 2-8
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** in-progress
-**Notes:** 2026-05-07 split per-tour. Tours 2-7 (Iron Borough,
-Ember Steppe, Breakwater Isles, Glass Ridge, Neon Meridian,
-Moss Frontier) shipped each in their own PR with 3 pickups per
-track (1 inside-line nitro on a corner apex, 1 cash on a
-tactical beat, 1 cash on the final straight) across all 24
-tracks. Tour 8 (Crown Circuit) stays open under this F-NNN.
-Original notes follow.
+**Status:** done
+**Resolved:** 2026-05-08
+**Notes:** All 7 remaining tours shipped in 7 PRs (tours 2-8):
+Iron Borough, Ember Steppe, Breakwater Isles, Glass Ridge, Neon
+Meridian, Moss Frontier, Crown Circuit. 3 pickups per track (1
+inside-line nitro on a corner apex, 1 cash on a tactical beat,
+1 cash on the final straight) across all 28 tracks. The full
+32-track production set (including Velvet Coast tour 1) now
+ships with on-track tactical decisions across the whole World
+Tour. Original notes follow.
 
 Surfaced by the 2026-05-07 mass-appeal audit (Tier A #4).
 A grep of all 32 production tracks shows pickups are only authored on
