@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-07: feat(tracks): authored pickups for Iron Borough (F-093 tour 2)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-tours-2-to-8`, PR pending.
+**Status:** Implemented (Iron Borough only). F-093 stays open
+covering tours 3-8.
+
+### Done
+- Added 3 pickups per track to all 4 Iron Borough tracks (Tour 2):
+  Foundry Mile, Freightline Ring, Outer Exchange, Rivet Tunnel.
+  Pattern per track:
+  1. One inside-line nitro pickup at a corner apex (laneOffset
+     toward the curve direction, magnitude 0.35-0.4) so the
+     player must hold the racing line to collect.
+  2. One cash pickup on a corner-exit straight or descent
+     (centerline or inside line) rewarding clean exits.
+  3. One cash pickup on the final straight (centerline) so a
+     close finish has a small additional decision: hit the line
+     or save lateral grip for a late pass.
+- Pickup ids follow the existing
+  `<track-slug-suffix>-<beat>-<kind>` shape (per the Velvet Coast
+  template). `cash` value 75 cr, `nitro` value 25%, mirroring the
+  Velvet Coast authored values.
+- Per F-093, tours 3-8 (Ember Steppe, Breakwater Isles, Glass
+  Ridge, Neon Meridian, Moss Frontier, Crown Circuit) stay open.
+  Each subsequent tour ships as its own PR for review
+  tractability.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2873 / 2873 passed (151 suites; the existing
+  `tracks-content.test.ts` validates every JSON against the
+  schema and the new pickups passed without change).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not add or change any code. Pure data authoring against
+  the existing pickup runtime (`src/game/pickups.ts`) and schema
+  (`PickupSchema` in `src/data/schemas.ts`).
+- Pickup placement biases toward "tactical decision the player
+  must commit to before the apex" rather than free centerline
+  collectibles. The §3 + §15 reference material treats authored
+  pickups as the racing-line layer, not as a reward for driving
+  straight.
+- Tunnel-track Rivet Tunnel: the cash pickup sits on the tunnel
+  exit corner, so the player who held the racing line through
+  reduced visibility gets paid for it.
+- Foundry Mile is the only Iron Borough track with two corner
+  beats placed in pickups (the inside-curve nitro on segment 1
+  plus the post-corner cash on segment 4) because its difficulty
+  rating is 3 (the highest in the tour) and the §3 narrative
+  authors more decisions for the harder tracks.
+
+### Coverage ledger
+- §9 track-design coverage gains 4 tracks worth of authored
+  pickup data. F-093 stays open with 24 tracks remaining
+  (Ember Steppe + Breakwater Isles + Glass Ridge + Neon Meridian
+  + Moss Frontier + Crown Circuit).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice. Tour-by-tour pickup data does not change the
+GDD spec text; the §9 build-log entry was last touched on
+2026-05-06 for the archetype classification slice and stays as
+the canonical pickup-placement note.
+
+---
+
 ## 2026-05-07: feat(ai): per-archetype nitro firing (F-091)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md) "AI design
