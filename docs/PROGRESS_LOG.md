@@ -6,6 +6,99 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-07: feat(ai): per-archetype nitro firing (F-091)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md) "AI design
+goals" + "CPU archetypes" + "Mistakes" (build-log entry).
+**Branch / PR:** `feat/ai-nitro-archetype`, PR pending.
+**Status:** Implemented.
+
+### Done
+- Filed F-091 through F-100 in `docs/FOLLOWUPS.md` capturing the
+  2026-05-07 ten-round mass-appeal audit findings (AI nitro, named
+  rival, pickups beyond tour 1, jumps, hazard variety, cosmetics, car
+  purchase, tutorial, title-page glance, share card).
+- Added `src/game/aiNitroFire.ts` with `decideFireNitro(...)`. Pure,
+  deterministic, seeded by `AIState.seed`. Three mutually-exclusive
+  decision windows (launch / panic / straight) each gated by the §22
+  `nitroUsage` bias triple. Hard gates: no charges, active burn,
+  mid-corner (`|curve| > 0.15`), defender in medium/high
+  nitro-risk weather.
+- Extended `tickAI` signature with two trailing optional params:
+  `aiNitro: NitroState` (defaults to `INITIAL_NITRO_STATE` for
+  backwards-compat with existing callers / tests) and `weather:
+  WeatherOption | null` (defaults to `null`). Wired the firing
+  decision into the returned `Input.nitro`. The countdown
+  short-circuit at `ai.ts` line ~444 still returns
+  `NEUTRAL_INPUT` so AI cars never pre-fire on the grid.
+- `raceSession.ts` forwards `entry.nitro` and `trackWeather` into
+  `tickAI`. The existing per-AI nitro reducer (`tickNitro`) at line
+  1454 already consumes the rising edge from `tick.input.nitro`;
+  this slice is the missing decision layer.
+- Added 22 Vitest cases in `src/game/__tests__/aiNitroFire.test.ts`
+  covering each window's truth table, every hard gate, and a
+  determinism pin.
+- Added 4 cases in `src/game/__tests__/ai.test.ts` covering the
+  wired-up `tickAI` (fires on lap-1 launch with bias 1, does not
+  fire with bias 0, never fires during countdown, never fires when
+  charges are 0).
+- Updated `TEST_DRIVER` in `src/game/__tests__/raceSession.test.ts`
+  to use zero `nitroUsage` biases so existing damage / collision /
+  pace tests preserve their pre-slice numerics.
+- Appended a §15 build-log entry.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2873 / 2873 passed (151 suites; 26 new tests
+  across `aiNitroFire.test.ts` and the `tickAI (F-091 nitro
+  firing)` describe block).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- The fire decision is one window per tick (mutually-exclusive,
+  first match wins). A future "lookahead curvature for pre-fire on
+  long straights" pass is filed under the iter-12 priority stack
+  (`feat-ai-add-573f4cda`) and is out of scope here.
+- The §22 `nitroUsage` bias triple is consumed verbatim from the
+  authored `src/data/ai/*.json` rows; this slice does not change
+  any data file. A future balancing pass can re-tune the biases
+  without re-deriving the call shape.
+- `tickAI`'s new params default such that callers that have not
+  threaded the AI's nitro state collapse to "no firing", matching
+  the pre-slice behaviour bit-for-bit. This avoids a cascade of
+  signature churn across the 1000+ existing AI tests.
+- The PRNG draw uses a per-window 32-bit salt (`LAUNCH_SALT`,
+  `PANIC_SALT`, `STRAIGHT_SALT`) so the three rolls decorrelate
+  across consecutive ticks. Each draw is a fresh
+  `deserializeRng(seed ^ salt).next()` and does not mutate
+  `AIState.seed`, so the existing chaotic-mistake hook keeps owning
+  the seed-advance contract.
+- Did not ship a Playwright spec for visible AI nitro flares. The
+  unit suite pins the decision contract end-to-end; the e2e
+  preventive coverage is the same flake risk that produced F-088
+  (canvas-pixel-sampling on test/elevation regressed under
+  parallel motion-FX paths). File F-091's e2e coverage as a
+  follow-up if a `/dev/road` AI-fixture harness lands.
+
+### Coverage ledger
+- §15 "AI design goals" + "CPU archetypes" coverage moves toward
+  "done" for the nitro-firing surface. The §15 GDD coverage row(s)
+  for AI behavior gain the new files as `implementationRefs`.
+- F-091 marked in-flight in `docs/FOLLOWUPS.md` (PR pending).
+
+### Followups created
+- F-091: filed in this PR.
+- F-092 through F-100: filed in this PR (named rival, pickups
+  beyond tour 1, jumps, hazard variety, cosmetics, car purchase,
+  tutorial, title-page glance, share card).
+
+### GDD edits
+- `docs/gdd/15-cpu-opponents-and-ai.md`: appended a Build log
+  section with the F-091 entry per the gdd-build-log discipline.
+
+---
+
 ## 2026-05-06: feat(audio): sustained tire-squeal and brake-scrub loops
 
 **GDD sections touched:** [§18](gdd/18-audio.md) "Required sounds:

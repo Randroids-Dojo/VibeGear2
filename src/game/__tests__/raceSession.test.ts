@@ -73,7 +73,11 @@ const TEST_DRIVER: AIDriver = Object.freeze({
   mistakeRate: 0,
   aggression: 0.3,
   weatherSkill: { clear: 1, rain: 1, fog: 1, snow: 1 },
-  nitroUsage: { launchBias: 0.5, straightBias: 0.5, panicBias: 0.1 },
+  // Zero nitroUsage so the F-091 AI-nitro firing wired into `tickAI`
+  // does not perturb tests in this file that pin damage / collision /
+  // pace numerics. Tests that exercise AI nitro live in
+  // `aiNitroFire.test.ts` and `ai.test.ts`.
+  nitroUsage: { launchBias: 0, straightBias: 0, panicBias: 0 },
 });
 
 const DT = 1 / 60;
