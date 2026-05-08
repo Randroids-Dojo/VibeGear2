@@ -13,10 +13,40 @@
   "segments": [
     { "len": 300, "curve": 0, "grade": 0.01, "roadsideLeft": "rock_spire", "roadsideRight": "sign_marker", "hazards": [] },
     { "len": 260, "curve": 0.04, "grade": 0, "roadsideLeft": "heat_sign", "roadsideRight": "rock_boulder", "hazards": ["gravel_band"] },
-    { "len": 320, "curve": 0, "grade": 0.03, "roadsideLeft": "rock_boulder", "roadsideRight": "heat_sign", "hazards": [] },
-    { "len": 240, "curve": -0.08, "grade": -0.02, "roadsideLeft": "sign_marker", "roadsideRight": "rock_spire", "hazards": ["traffic_cone"] },
+    {
+      "len": 320,
+      "curve": 0,
+      "grade": 0.03,
+      "roadsideLeft": "rock_boulder",
+      "roadsideRight": "heat_sign",
+      "hazards": [],
+      "pickups": [
+        { "id": "redglass-straight-climb-nitro", "kind": "nitro", "laneOffset": 0, "value": 25 }
+      ]
+    },
+    {
+      "len": 240,
+      "curve": -0.08,
+      "grade": -0.02,
+      "roadsideLeft": "sign_marker",
+      "roadsideRight": "rock_spire",
+      "hazards": ["traffic_cone"],
+      "pickups": [
+        { "id": "redglass-straight-bend-cash", "kind": "cash", "laneOffset": -0.3, "value": 75 }
+      ]
+    },
     { "len": 260, "curve": 0.08, "grade": 0, "roadsideLeft": "rock_spire", "roadsideRight": "fence_post", "hazards": [] },
-    { "len": 360, "curve": 0, "grade": 0, "roadsideLeft": "heat_sign", "roadsideRight": "sign_marker", "hazards": [] }
+    {
+      "len": 360,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "heat_sign",
+      "roadsideRight": "sign_marker",
+      "hazards": [],
+      "pickups": [
+        { "id": "redglass-straight-finish-cash", "kind": "cash", "laneOffset": 0, "value": 75 }
+      ]
+    }
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" },
