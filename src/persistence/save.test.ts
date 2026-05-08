@@ -82,6 +82,20 @@ describe("defaultSave", () => {
     expect(save.ghosts).toEqual({});
     expect(save.downloadedGhosts).toEqual({});
   });
+
+  it("seeds the F-098 first-race tutorial state unseen", () => {
+    const save = defaultSave();
+    expect(save.tutorialState).toEqual({ prepCardSeen: false });
+  });
+
+  it("validates a save whose tutorialState slot is omitted (back-compat)", async () => {
+    // Existing v4 saves were written before the tutorialState slot
+    // existed. The optional schema must still accept them.
+    const { SaveGameSchema } = await import("@/data/schemas");
+    const legacy = { ...defaultSave() } as Record<string, unknown>;
+    delete legacy.tutorialState;
+    expect(SaveGameSchema.safeParse(legacy).success).toBe(true);
+  });
 });
 
 describe("loadSave", () => {

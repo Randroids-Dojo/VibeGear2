@@ -1002,5 +1002,20 @@ export const SaveGameSchema = z.object({
    * migration; fresh saves seed an empty map.
    */
   downloadedGhosts: z.record(slug, GhostReplaySchema).optional(),
+  /**
+   * §4 onboarding tutorial state per F-098. `prepCardSeen` flips to
+   * `true` the first time the player dismisses the prep-page coach
+   * overlay; the overlay then never re-appears. Optional so existing
+   * saves validate without a schema-version bump (the loader treats
+   * `undefined` as `{ prepCardSeen: false }` so a v4 save naturally
+   * shows the card on first launch). The HUD-side hints will land
+   * under F-101 and add additional fields here without a v-bump for
+   * the same reason.
+   */
+  tutorialState: z
+    .object({
+      prepCardSeen: z.boolean(),
+    })
+    .optional(),
 });
 export type SaveGame = z.infer<typeof SaveGameSchema>;

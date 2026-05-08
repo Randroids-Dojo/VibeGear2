@@ -10,6 +10,20 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-101: First-race race-time HUD hints
+**Created:** 2026-05-07
+**Priority:** nice-to-have
+**Status:** open
+**Notes:** Slice B of the F-098 split. The prep-page coach card
+ships first; the in-race HUD hints (brake-before-corner,
+space-for-nitro, top-4-to-advance) land here once the card flow is
+proven. Will add a `firstRaceFinished` boolean to
+`save.tutorialState` (still optional for back-compat). Hints
+respect reduced-motion (no animation), fade out automatically
+after 4 seconds or on any input. Hint trigger logic lives in a
+new pure module (`src/game/tutorialHints.ts`) so the trigger
+table is testable end-to-end without driving the canvas.
+
 ## F-100: Shareable race-result card
 **Created:** 2026-05-07
 **Priority:** nice-to-have
@@ -51,8 +65,15 @@ all my runs?" before they pick the next menu item. Local read of
 ## F-098: First-time-player tutorial and coach-marks
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier C #10).
+**Status:** in-progress
+**Notes:** 2026-05-07 split into two slices. Slice A (this PR):
+prep-page coach card, gated by `save.tutorialState.prepCardSeen`,
+shipped under `feat/first-race-tutorial`. Slice B (filed as F-101):
+2-3 inline race-time HUD hints (brake-before-corner,
+space-for-nitro, top-4-to-advance) gated by an additional
+`save.tutorialState.firstRaceFinished` flag. Original notes follow.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier C #10).
 A first-time player who launches the build sees the title screen, picks
 Start Race, and is dropped into a Velvet Coast race with no explanation
 of nitro, brake, gearing, pickups, or weather. GDD §4 calls for "high

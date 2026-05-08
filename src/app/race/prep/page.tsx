@@ -25,7 +25,8 @@ import {
   type PreRaceCard,
 } from "@/game/preRaceCard";
 import type { TireKind } from "@/game/weather";
-import { loadSave } from "@/persistence/save";
+import { loadSave, saveSave } from "@/persistence/save";
+import { TutorialPrepCard } from "@/components/tutorial/TutorialPrepCard";
 
 const CHAMPIONSHIP_ID = "world-tour-standard";
 
@@ -342,6 +343,19 @@ function RacePrepShell(): ReactElement {
           Start race
         </Link>
       </footer>
+
+      {save.tutorialState?.prepCardSeen ? null : (
+        <TutorialPrepCard
+          onDismiss={() => {
+            const next: SaveGame = {
+              ...save,
+              tutorialState: { prepCardSeen: true },
+            };
+            setSave(next);
+            saveSave(next);
+          }}
+        />
+      )}
     </main>
   );
 }

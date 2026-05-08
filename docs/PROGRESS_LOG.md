@@ -6,6 +6,92 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-07: feat(onboarding): first-race tutorial prep card (F-098 slice A)
+
+**GDD sections touched:** [§4](gdd/04-player-experience-goals.md)
+"high learnability, low dead time" (build-log entry).
+**Branch / PR:** `feat/first-race-tutorial`, PR pending.
+**Status:** Implemented (slice A of F-098). Slice B (in-race HUD
+hints) split out as F-101.
+
+### Done
+- Added an optional `tutorialState` slot to `SaveGameSchema`
+  (`src/data/schemas.ts`) carrying a `prepCardSeen: boolean` flag.
+  Optional so existing v4 saves validate without a schema-version
+  bump; loaders treat `undefined` as "card not yet seen".
+- Seeded `defaultSave().tutorialState = { prepCardSeen: false }` so
+  fresh saves show the card once.
+- Added `src/components/tutorial/TutorialPrepCard.tsx`. Static
+  overlay (no animation, vestibular safe). Dismissed by Enter,
+  Space, Escape, the "Got it" button, or a backdrop click. Focus
+  is trapped on the dismiss button. ARIA: `role="dialog"` +
+  `aria-modal` + `aria-labelledby` + `aria-describedby`.
+- Card content names every primary input (Up / Down / Left /
+  Right / Space) plus the pickup and tour-advance rules so a new
+  player can read it once and start racing without docs.
+- Wired the card into `src/app/race/prep/page.tsx`. Renders only
+  when `save.tutorialState?.prepCardSeen` is not `true`. On
+  dismiss the page state updates and `saveSave(next)` persists
+  the flag so the card never re-appears.
+- Added `src/components/tutorial/__tests__/TutorialPrepCard.test.tsx`
+  with 6 SSR-shape cases (test-ids, dialog ARIA, primary input
+  copy, no-em-dash regex). Interactive flows are pinned in the
+  follow-up Playwright spec the slice does not ship.
+- Added 2 cases in `src/persistence/save.test.ts` covering the
+  default tutorialState shape and back-compat for legacy saves
+  whose tutorialState slot was omitted.
+- Filed F-101 (in-race HUD hints) splitting the original F-098
+  scope into two slices so each PR stays small.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2881 / 2881 passed (152 suites; 8 new tests).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not bump the save schema version. `tutorialState` is
+  optional and defaults to "card not yet seen" on read, so a v4
+  save written before this slice still validates and naturally
+  shows the card on next launch. Mirrors the same back-compat
+  pattern the `ghosts` and `downloadedGhosts` slots used.
+- The card's dismiss persists synchronously via `saveSave`. If
+  the storage write fails, the local state still flips so the
+  card does not re-appear within the current session; the next
+  session will re-show the card. Acceptable: tutorial state is
+  not load-bearing.
+- Did not ship the e2e Playwright spec
+  `e2e/race-prep-tutorial.spec.ts` for the click / Escape /
+  Enter flows. The SSR-shape suite pins the test-ids and ARIA
+  contract; F-101 will pick up the e2e coverage when the in-race
+  hints land.
+- The card content uses plain English, not GDD jargon
+  ("throttle", "brake", "nitro"). Matches §4 "high learnability"
+  intent. A future i18n slice can extract these strings; today
+  they are inline JSX.
+
+### Coverage ledger
+- §4 "high learnability, low dead time" coverage moves toward
+  "done" for the prep-side onboarding surface. The §4 GDD
+  coverage row(s) gain the new component and tests as
+  `implementationRefs`.
+- F-098 marked in-progress in `docs/FOLLOWUPS.md` with the slice
+  split documented. F-101 filed for the HUD-hint follow-up.
+
+### Followups created
+- F-101: in-race HUD hints (brake-before-corner,
+  space-for-nitro, top-4-to-advance) gated by a new
+  `firstRaceFinished` flag in `save.tutorialState`. Trigger
+  logic lives in a pure module so the table is testable
+  end-to-end.
+
+### GDD edits
+- `docs/gdd/04-player-experience-goals.md`: appended a Build log
+  section with the F-098 slice A entry per the gdd-build-log
+  discipline.
+
+---
+
 ## 2026-05-07: feat(results): generic Tour share card (F-100 text path)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) "Results
