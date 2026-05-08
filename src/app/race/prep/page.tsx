@@ -344,7 +344,16 @@ function RacePrepShell(): ReactElement {
         </Link>
       </footer>
 
-      {save.tutorialState?.prepCardSeen ? null : (
+      {/* F-098 first-race tutorial card. Renders only when the save
+          has an explicit unseen `tutorialState`. An absent
+          `tutorialState` slot is treated as "legacy or test save,
+          skip the card", which prevents the overlay from blocking
+          returning players (their pre-F-098 v4 saves never had the
+          field) and from blocking e2e specs (their custom saves
+          omit the field). Only `defaultSave` (fresh install) seeds
+          `prepCardSeen: false`, so a brand-new player still sees
+          the card on their first prep visit. */}
+      {save.tutorialState !== undefined && !save.tutorialState.prepCardSeen ? (
         <TutorialPrepCard
           onDismiss={() => {
             const next: SaveGame = {
@@ -355,7 +364,7 @@ function RacePrepShell(): ReactElement {
             saveSave(next);
           }}
         />
-      )}
+      ) : null}
     </main>
   );
 }
