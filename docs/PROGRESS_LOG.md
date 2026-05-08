@@ -74,6 +74,68 @@ None this slice.
 
 ---
 
+## 2026-05-07: feat(tracks): authored pickups for Ember Steppe (F-093 tour 3)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-ember-steppe`, PR pending.
+**Status:** Implemented (Ember Steppe only). F-093 stays open
+covering tours 4-8.
+
+### Done
+- Added 3 pickups per track to all 4 Ember Steppe tracks (Tour 3):
+  Cinder Gate, Dustbreak Causeway, Mesa Coil, Redglass Straight.
+  Same pattern the Iron Borough slice established: one inside-line
+  nitro at the dominant corner apex, one cash on a tactical beat
+  (corner exit, climb, or supporting curve), one cash on the final
+  straight.
+- Difficulty-aware placement:
+  - Cinder Gate (difficulty 5, hardest in tour): nitro on the
+    sharp +0.2 right apex (segment 2), cash on the descent
+    +0.14 right (segment 4).
+  - Mesa Coil (4): nitro on the -0.2 left apex (segment 2),
+    cash on the +0.16 climb (segment 3).
+  - Dustbreak Causeway (4): cash on the +0.12 climb (segment 2),
+    nitro on the -0.14 left apex (segment 4).
+  - Redglass Straight (3, mostly straight): nitro on the long
+    320 m climb at grade 0.03 (segment 2, centerline) since the
+    track has no strong corner apex; cash on the only meaningful
+    -0.08 bend (segment 3).
+- Pickup ids follow the same `<track-slug-suffix>-<beat>-<kind>`
+  shape Iron Borough used. Values stay at 75 cr cash and 25%
+  nitro mirroring the Velvet Coast and Iron Borough authored
+  values.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2881 / 2881 passed (152 suites; the existing
+  `tracks-content.test.ts` validates every JSON against the
+  schema and the new pickups passed without change).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not add or change any code. Pure data authoring against
+  the existing pickup runtime and schema.
+- Redglass Straight's nitro on a centerline straight is an
+  intentional break from the inside-apex template because the
+  track has no strong corner. Rewards the player who holds the
+  racing line on the climb instead of drifting to the rumble.
+
+### Coverage ledger
+- §9 track-design coverage gains 4 more tracks worth of authored
+  pickup data. F-093 stays open with 20 tracks remaining
+  (Breakwater Isles + Glass Ridge + Neon Meridian + Moss Frontier
+  + Crown Circuit).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-07: feat(tracks): authored pickups for Iron Borough (F-093 tour 2)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log

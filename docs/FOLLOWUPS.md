@@ -131,13 +131,15 @@ crest is crossed at speed. Pairs with §16 (camera shake on landing).
 **Created:** 2026-05-07
 **Priority:** nice-to-have
 **Status:** in-progress
-**Notes:** 2026-05-07 split per-tour. Tour 2 (Iron Borough)
-shipped under `feat/pickups-tours-2-to-8`: 3 pickups per track
-(1 inside-line nitro on a corner apex, 1 cash on a curve or
-post-curve straight, 1 cash on the final straight) across all
-4 tracks. Tours 3-8 stay open under this F-NNN; each subsequent
-tour ships as its own PR for review tractability. Original
-notes follow.
+**Notes:** 2026-05-07 split per-tour. Tour 2 (Iron Borough) and
+Tour 3 (Ember Steppe) shipped under `feat/pickups-tours-2-to-8`
+and `feat/pickups-ember-steppe`: 3 pickups per track each (1
+inside-line nitro on a corner apex, 1 cash on a tactical beat,
+1 cash on the final straight) across all 8 tracks. Tours 4-8
+(Breakwater Isles, Glass Ridge, Neon Meridian, Moss Frontier,
+Crown Circuit) stay open under this F-NNN; each subsequent tour
+ships as its own PR for review tractability. Original notes
+follow.
 
 Surfaced by the 2026-05-07 mass-appeal audit (Tier A #4).
 A grep of all 32 production tracks shows pickups are only authored on
