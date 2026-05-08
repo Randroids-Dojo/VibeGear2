@@ -54,6 +54,14 @@ The game should maintain compulsion using the following loop triggers:
 
 ### Build log
 
+- 2026-05-08: F-099 title-page season glance (text-and-link
+  path). Read-only card on the title screen below the tagline,
+  showing credits / tours-completed / owned-cars and a
+  "Continue <Tour>" deep-link when an active tour cursor is set.
+  Files: `src/components/title/titleGlanceState.ts` (new pure
+  builder), `src/components/title/TitleGlance.tsx` (new
+  hydration-safe component), `src/components/title/__tests__/titleGlanceState.test.ts` (new, 6 cases),
+  `src/app/page.tsx`. PR pending.
 - 2026-05-07: F-098 first-race tutorial card. Coach overlay on
   `/race/prep` shown once before the player's first race, gated
   by an optional `save.tutorialState.prepCardSeen` flag. Files:

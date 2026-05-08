@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(title): season glance card on the title screen (F-099)
+
+**GDD sections touched:** [§4](gdd/04-player-experience-goals.md)
+"One-more-race hooks" (build-log entry).
+**Branch / PR:** `feat/title-season-glance`, PR pending.
+**Status:** Implemented (text-and-link path). The optional
+per-track leaderboard rank glance stays open under F-099 as a
+follow-up once a third leaderboard caller exists.
+
+### Done
+- Added `src/components/title/titleGlanceState.ts` with
+  `buildTitleGlance(save, championship)`. Pure: returns
+  credits, owned-car count, tours-completed-of-total, and an
+  optional `continueTour` affordance derived from
+  `progress.activeTour`. Unknown tour ids and out-of-range
+  raceIndex collapse to a null `continueTour` so a corrupt
+  cursor renders nothing instead of a broken link.
+- Added `src/components/title/TitleGlance.tsx`. Hydration-safe:
+  SSR pass renders an empty `data-state="hydrating"` placeholder
+  so the static markup always carries the test-id; the
+  client-only `useEffect` calls `loadSave()` and populates the
+  glance after mount. No animation; respects §19 reduced-motion
+  by being static.
+- Wired `<TitleGlance />` into `src/app/page.tsx` between the
+  tagline and the menu nav. Existing menu items, build badge,
+  and title test-ids stay unchanged so the e2e
+  `title-screen.spec.ts` contracts continue to hold.
+- Added 6 Vitest cases in
+  `src/components/title/__tests__/titleGlanceState.test.ts`
+  covering: fresh-save baseline, completed-tour count,
+  active-tour deep-link, out-of-range raceIndex (null), unknown
+  tour id (null), and tour-id title-casing.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2895 / 2895 passed (154 suites; 6 new tests).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Glance reads only `save.garage.credits`,
+  `save.garage.ownedCars`, `save.progress.completedTours`, and
+  `save.progress.activeTour`. Did not pull in the leaderboard
+  panel (separate adapter, network-dependent); a follow-up
+  slice can layer it in once the third leaderboard caller
+  arrives.
+- Glance section is read-only and additive. No save schema
+  change. Existing v4 saves render the glance correctly.
+- The `Continue <Tour>` deep link routes to `/race/prep` with
+  `track=`, `tour=`, `raceIndex=` mirroring the same shape the
+  World Tour page uses, so the tour-pressure summary and
+  pre-race card render the same way regardless of entry point.
+- Did not ship a Playwright spec for the title-page glance.
+  The SSR-shape contract is implicitly covered (empty
+  `data-state="hydrating"` placeholder), and the pure builder
+  has 6 unit cases. An e2e that drives the localStorage seed
+  + click-through can land later.
+
+### Coverage ledger
+- §4 "One-more-race hooks" coverage gains a passive surface
+  that surfaces tour standings + cash + cars at a glance from
+  the title screen. F-099 stays open for the optional
+  leaderboard-rank glance and the last-race summary block.
+
+### Followups created
+None new.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(tracks): authored pickups for Moss Frontier (F-093 tour 7)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log

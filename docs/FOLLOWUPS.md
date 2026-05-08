@@ -51,8 +51,17 @@ existing privacy stance.
 ## F-099: Title-page season summary and leaderboard glance
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier C #12).
+**Status:** in-progress
+**Notes:** 2026-05-08 text-and-link glance shipped under
+`feat/title-season-glance`. Adds a card on the title screen with
+credits, tours-completed-of-total, owned-car count, and a
+"Continue <Tour>" deep-link when the save has an active tour
+cursor. The optional per-track leaderboard rank glance stays
+open under this F-NNN; ship after a third leaderboard caller
+appears so the adapter wiring earns its keep. Original notes
+follow.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier C #12).
 The title screen (`src/app/page.tsx`) shows only menu items and a build
 badge. Add a small "Last result" / "Tour standings" glance plus the
 player's current global rank on the most recently raced track (read from

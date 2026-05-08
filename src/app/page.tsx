@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { TitleGlance } from "@/components/title/TitleGlance";
+
 import { formatBuildBadge } from "./buildInfo";
 import styles from "./page.module.css";
 
@@ -46,6 +48,7 @@ export default function TitlePage() {
           VibeGear2
         </h1>
         <p className={styles.tagline}>Spiritual successor to Top Gear 2.</p>
+        <TitleGlance />
         <nav className={styles.menu} aria-label="Main menu">
           {MENU.map((item) => (
             <Link
