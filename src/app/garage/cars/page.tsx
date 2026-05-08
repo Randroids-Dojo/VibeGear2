@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CARS, getCar } from "@/data/cars";
 import type { Car, CarBaseStats, SaveGame } from "@/data/schemas";
+import { isCarUnlocked } from "@/game/carUnlock";
 import { defaultSave, loadSave, saveSave } from "@/persistence";
 
 interface PageStatus {
@@ -105,6 +106,13 @@ export default function GarageCarsPage() {
       if (ownedCars.has(carId)) return;
       const car = getCar(carId);
       if (!car) return;
+      if (!isCarUnlocked(car, save.progress.completedTours)) {
+        setStatus({
+          kind: "error",
+          message: `${car.name} unlocks after winning ${formatTourName(car.requiresTour ?? "")}.`,
+        });
+        return;
+      }
       if (save.garage.credits < car.purchasePrice) {
         setStatus({
           kind: "error",
@@ -175,6 +183,7 @@ export default function GarageCarsPage() {
             owned={ownedCars.has(car.id)}
             active={save.garage.activeCarId === car.id}
             credits={save.garage.credits}
+            unlocked={isCarUnlocked(car, save.progress.completedTours)}
             onSelect={() => selectCar(car.id)}
             onBuy={() => buyCar(car.id)}
           />
@@ -189,6 +198,7 @@ interface CarCardProps {
   owned: boolean;
   active: boolean;
   credits: number;
+  unlocked: boolean;
   onSelect: () => void;
   onBuy: () => void;
 }
@@ -198,10 +208,14 @@ function CarCard({
   owned,
   active,
   credits,
+  unlocked,
   onSelect,
   onBuy,
 }: CarCardProps): ReactElement {
   const canAfford = credits >= car.purchasePrice;
+  const lockedReason = !unlocked
+    ? `Win ${formatTourName(car.requiresTour ?? "")} to unlock`
+    : "";
   const action = owned ? (
     <button
       type="button"
@@ -211,6 +225,16 @@ function CarCard({
       style={buttonStyle(active)}
     >
       {active ? "Active" : "Set Active"}
+    </button>
+  ) : !unlocked ? (
+    <button
+      type="button"
+      disabled
+      data-testid={`buy-${car.id}`}
+      style={buttonStyle(false)}
+      title={lockedReason}
+    >
+      Locked
     </button>
   ) : (
     <button
@@ -233,6 +257,14 @@ function CarCard({
           <p style={{ margin: 0, color: "var(--muted, #aaa)", fontSize: "0.875rem" }}>
             Class: <span data-testid={`class-${car.id}`}>{car.class}</span>. Repair x{car.repairFactor.toFixed(2)}.
           </p>
+          {!unlocked ? (
+            <p
+              style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "#f8c060" }}
+              data-testid={`lock-reason-${car.id}`}
+            >
+              {lockedReason}.
+            </p>
+          ) : null}
         </div>
         {action}
       </header>
@@ -255,6 +287,14 @@ function CarCard({
 
 function formatStat(value: number): string {
   return Number.isInteger(value) ? value.toFixed(1) : value.toFixed(2);
+}
+
+function formatTourName(tourId: string): string {
+  if (tourId === "") return "the next tour";
+  return tourId
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 const pageStyle: CSSProperties = {

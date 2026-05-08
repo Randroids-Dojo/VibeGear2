@@ -6,6 +6,89 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(garage): tour-completion gate on car purchases (F-097)
+
+**GDD sections touched:** [§8](gdd/08-progression-and-rewards.md)
+"Full podium progression unlocks bonus content and alternate cars"
+(build-log entry), [§11](gdd/11-cars-and-stats.md) (car catalogue
+gains an optional `requiresTour` slug; existing data files load
+unchanged because the field is optional).
+**Branch / PR:** `feat/car-tour-gating`, PR pending.
+**Status:** Tour-gating shipped. The other half of the F-097
+ledger ask (the cars subroute itself, ownership tracking, and the
+`ownedCars` save slot) was already in place from earlier slices.
+F-097 stays in-progress for the deferred items noted in FOLLOWUPS
+(pretty tour display names, livery cosmetics under F-096, locked
+e2e).
+
+### Done
+- Added optional `requiresTour: slug` to `CarSchema` in
+  `src/data/schemas.ts`. Documented as optional so existing car
+  files (sparrow-gt, breaker-s, vanta-xr) keep loading unchanged.
+- Authored the gate on the late-tier cars: Bastion LM gates on
+  `iron-borough`, Tempest R gates on `breakwater-isles`, and
+  Nova Shade gates on `neon-meridian`. The progression curve
+  matches the GDD §8 "podium unlocks bonus content" promise:
+  cars get more capable as the player wins later tours.
+- Added `src/game/carUnlock.ts` with pure
+  `isCarUnlocked(car, completedTours)`. Cars without
+  `requiresTour` are always unlocked; gated cars unlock once the
+  required tour appears in `save.progress.completedTours`. The
+  helper does not look at credits so the UI can show the lock
+  message before the credits message in the natural reading
+  order.
+- Wired the helper into `src/app/garage/cars/page.tsx`. The
+  Buy button now renders as a disabled "Locked" affordance with a
+  "Win <Tour> to unlock" tooltip when the gate fails, and a small
+  amber lock-reason line appears under the class / repair row.
+  The buyCar callback also short-circuits with a status-bar error
+  if the lock somehow gets bypassed (defense in depth so a bad
+  click can not slip through).
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2916 / 2916 passed across 157 suites; new
+  `src/game/__tests__/carUnlock.test.ts` pins the three cases the
+  UI branches on (no requiresTour, required tour absent, required
+  tour present).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- No save schema migration. The lock reads
+  `save.progress.completedTours` (already a `string[]` on the
+  schema) and the new `requiresTour` is optional on `Car`, so
+  existing v4 saves and existing car JSONs both load without a
+  bump.
+- "Win" used in the lock copy maps to the GDD §8 podium rule, the
+  same condition that drives `unlockNextTour` in
+  `src/game/championship.ts`. A future slice can refine the
+  gate to "podium win" vs. "any completion" if needed.
+- Tour name in the lock copy is title-cased from the slug
+  (`iron-borough` -> `Iron Borough`) inline. Pretty names from
+  the championship JSON are deferred (those don't exist on the
+  data file today; adding them is its own slice).
+- Three cars gated, three cars unlocked from the start. The
+  starter (Sparrow GT, 0 credits) and the two early choices
+  (Breaker S, Vanta XR) stay available as-is so a brand-new save
+  still has the §11 starter picker.
+
+### Coverage ledger
+- §8 progression: car-purchase loop now has the podium gate
+  promised by the GDD; F-097 stays open only for the deferred
+  niceties (pretty names, livery overlay, e2e).
+- §11 cars: `Car.requiresTour` is the only schema addition. No
+  data migration; existing car files unchanged.
+
+### Followups created
+None. F-097 ledger updated to in-progress with the deferred
+items.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(rivalry): named per-race rival in the HUD pressure moment (F-092 slice 1)
 
 **GDD sections touched:** [§15](gdd/15-ai.md) (rivalry framing on the

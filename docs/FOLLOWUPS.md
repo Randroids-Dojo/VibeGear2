@@ -106,8 +106,26 @@ practice for now, so the inline hints are the v1.0 surface.
 ## F-097: Car purchase loop in the garage
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier B #9).
+**Status:** in-progress
+**Notes:** 2026-05-08 tour-gating slice shipped under
+`feat/car-tour-gating`. Verified that the cars subroute, the
+purchase callback, and the `save.garage.ownedCars` schema were
+already in place pre-audit (the F-097 entry overstated the gap).
+The remaining gap was the GDD §8 podium-progression unlock: the
+buy affordance was credit-only, no tour gate. Slice adds an
+optional `requiresTour` slug to `CarSchema`, authors it on
+Bastion LM (`iron-borough`), Tempest R (`breakwater-isles`), and
+Nova Shade (`neon-meridian`), and threads a pure
+`isCarUnlocked(car, completedTours)` helper through the cars page
+so the Buy button locks with a "Win <Tour> to unlock" reason
+until the prerequisite tour is in `save.progress.completedTours`.
+No save schema migration needed (the existing `completedTours`
+list is read directly). Deferred under this F-NNN: pretty tour
+display names from championship data, livery-cosmetic unlocks
+(those belong under F-096), and an e2e for the locked-state
+disabled button. Original notes follow.
+
+Originally surfaced by the 2026-05-07 mass-appeal audit (Tier B #9).
 GDD §5 ("Car selection if entering a new championship or buying a new
 car") and §8 ("Full podium progression unlocks bonus content and
 alternate cars") promise a car-buying loop, but the garage

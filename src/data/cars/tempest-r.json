@@ -3,6 +3,7 @@
   "name": "Tempest R",
   "class": "balance",
   "purchasePrice": 32000,
+  "requiresTour": "breakwater-isles",
   "repairFactor": 1.15,
   "baseStats": {
     "topSpeed": 76.0,
