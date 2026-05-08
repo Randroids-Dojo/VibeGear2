@@ -165,6 +165,7 @@ import { drawHud } from "@/render/uiRenderer";
 import { defaultSave, loadSave, saveSave } from "@/persistence/save";
 import { TutorialHintOverlay } from "@/components/tutorial/TutorialHintOverlay";
 import { deriveTutorialHint } from "@/game/tutorialHints";
+import { pickRival, type RivalRef } from "@/game/rival";
 import {
   awardCredits,
   baseRewardForTrackDifficulty,
@@ -1175,6 +1176,12 @@ function RaceCanvas({
   const lastSpeedLineMsRef = useRef<number>(0);
   const previousRaceStoryCarsRef = useRef<readonly RankedCar[] | null>(null);
   const lastRaceStoryMomentMsRef = useRef<number>(0);
+  // F-092 slice 1. Designated rival for the active race. Resolved
+  // once at session creation by `pickRival(aiDriverRoster)` and read
+  // by the per-frame `deriveRaceStoryMoment` call below so the
+  // rivalry HUD signal can name them when the trailing pressure is
+  // them. Stays `null` for practice / time-trial (empty AI grid).
+  const rivalRef = useRef<RivalRef | null>(null);
   const observedAiCuesRef = useRef<Set<AIReadabilityCue>>(new Set());
   // Per-mount guard for the natural finish wiring. The render callback
   // fires every frame, so without this latch a `phase === "finished"`
@@ -1551,6 +1558,7 @@ function RaceCanvas({
       segments: config.track.segments,
       topSpeedMps: playerStats.topSpeed,
     };
+    rivalRef.current = pickRival({ drivers: aiDriverRoster });
     resetTimeTrialRuntime();
     // Re-arm the natural-finish guard on every fresh mount. The
     // restart callback below also flips it back so a second race
@@ -2194,11 +2202,16 @@ function RaceCanvas({
           }),
         ];
         if (session.race.phase === "racing") {
+          const rival = rivalRef.current;
           const raceStoryMoment = deriveRaceStoryMoment({
             playerId: PLAYER_ID,
             previousCars: previousRaceStoryCarsRef.current,
             currentCars: cars,
             threatDistanceMeters: RIVAL_PRESSURE_DISTANCE_METERS,
+            rival:
+              rival === null
+                ? null
+                : { carId: rival.carId, displayName: rival.displayName },
           });
           const nowMs = performance.now();
           if (

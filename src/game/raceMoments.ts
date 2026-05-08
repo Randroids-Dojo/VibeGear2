@@ -11,30 +11,49 @@ export interface RaceStoryMoment {
   readonly detail: string;
 }
 
+export interface RivalNamingRef {
+  /** In-race car id that maps to the named rival (e.g. `"ai-3"`). */
+  readonly carId: string;
+  /** Player-facing short name (`"D. Korsak"`). */
+  readonly displayName: string;
+}
+
 export interface RaceStoryMomentInput {
   readonly playerId: string;
   readonly previousCars: readonly RankedCar[] | null;
   readonly currentCars: readonly RankedCar[];
   readonly threatDistanceMeters: number;
+  /**
+   * F-092 slice 1. Optional rival ref. When present and the trailing
+   * pressure is the rival, the rival-pressure moment surfaces their
+   * name in the detail string. Absent for non-tour or practice runs.
+   */
+  readonly rival?: RivalNamingRef | null;
 }
 
-function nearestTrailingGap(input: {
+interface TrailingCar {
+  readonly id: string;
+  readonly gap: number;
+}
+
+function nearestTrailingCar(input: {
   readonly playerId: string;
   readonly cars: readonly RankedCar[];
-}): number | null {
+}): TrailingCar | null {
   const player = input.cars.find((car) => car.id === input.playerId);
   if (player === undefined) return null;
 
-  let closestGap = Number.POSITIVE_INFINITY;
+  let closest: TrailingCar | null = null;
   for (const car of input.cars) {
     if (car.id === input.playerId) continue;
     const gap = player.totalProgress - car.totalProgress;
-    if (gap > 0.5 && gap < closestGap) {
-      closestGap = gap;
+    if (gap <= 0.5) continue;
+    if (closest === null || gap < closest.gap) {
+      closest = { id: car.id, gap };
     }
   }
 
-  return Number.isFinite(closestGap) ? closestGap : null;
+  return closest;
 }
 
 export function deriveRaceStoryMoment(
@@ -69,18 +88,21 @@ export function deriveRaceStoryMoment(
     }
   }
 
-  const trailingGap = nearestTrailingGap({
+  const trailing = nearestTrailingCar({
     playerId: input.playerId,
     cars: input.currentCars,
   });
   if (
-    trailingGap !== null &&
-    trailingGap <= Math.max(1, input.threatDistanceMeters)
+    trailing !== null &&
+    trailing.gap <= Math.max(1, input.threatDistanceMeters)
   ) {
+    const meters = Math.round(trailing.gap);
+    const rival = input.rival ?? null;
+    const isRival = rival !== null && rival.carId === trailing.id;
     return {
       kind: "rival-pressure",
-      title: "Rival close",
-      detail: `${Math.round(trailingGap)} m back`,
+      title: isRival ? rival.displayName : "Rival close",
+      detail: `${meters} m back`,
     };
   }
 

@@ -6,6 +6,72 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(rivalry): named per-race rival in the HUD pressure moment (F-092 slice 1)
+
+**GDD sections touched:** [§15](gdd/15-ai.md) (rivalry framing on the
+existing AI grid; no balance change),
+[§20](gdd/20-hud-and-pause.md) (HUD rivalry signal now names the
+trailing pressure when it is the designated rival).
+**Branch / PR:** `feat/named-rival`, PR pending.
+**Status:** Slice 1 of F-092. Tour-pinned rival selection, save-resident
+head-to-head score, and the prep-card / results-screen surfaces stay
+open under F-092 for follow-up slices.
+
+### Done
+- Added `src/game/rival.ts`. Pure `pickRival({ drivers })` returns
+  `{ driverId, displayName, carId }` for the AI with the highest
+  `paceScalar`, ties broken on `id` ascending so the choice is stable
+  without consuming any RNG. Empty grids return `null` so practice
+  and time-trial sessions branch on absence cleanly.
+- Extended `src/game/raceMoments.ts:deriveRaceStoryMoment` with an
+  optional `rival: { carId, displayName } | null`. When the trailing
+  pressure car id matches the rival, the existing `rival-pressure`
+  moment surfaces the driver name in the `title` field
+  (e.g. "D. Korsak"); the `detail` ("18 m back") is unchanged. The
+  generic "Rival close" string is preserved for non-rival pressure
+  and for sessions that do not pass a rival.
+- Refactored `nearestTrailingGap` -> `nearestTrailingCar` so the
+  helper carries the trailing car id alongside the gap. Equivalent
+  behavior on the existing call sites; required to match against the
+  rival's `carId`.
+- Wired into `src/app/race/page.tsx`. New `rivalRef` is populated
+  once at session creation from `pickRival(aiDriverRoster)` and read
+  per frame by the existing `deriveRaceStoryMoment` call. No
+  changes to the in-race tick or session shape.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2913 / 2913 passed across 156 suites; 5 new cases
+  in `src/game/__tests__/rival.test.ts` (empty grid, max paceScalar,
+  id tie-break, grid-index threading, single-driver grid) and 2 new
+  cases in `raceMoments.test.ts` (rival named when trailing, generic
+  title kept when the trailing pressure is not the rival).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- No save schema change. The rival is per-race, derived from the
+  active AI roster at session creation. Cross-race head-to-head is
+  a follow-up slice once the basic plumbing is proven.
+- "Highest paceScalar" rather than tour-pinned. A tour-pinned rival
+  needs a save slot to remember the choice; deferred to slice 2 to
+  keep slice 1 a pure plumbing change.
+- HUD title carries the rival name; detail keeps the gap. This
+  preserves the existing layout / character budget rather than
+  cramming both into one string.
+
+### Coverage ledger
+- §15 AI framing gains a named rival surface; balance unchanged.
+- §20 HUD rivalry signal now optionally names the trailing pressure.
+
+### Followups created
+None. F-092 stays open for the deferred slices noted above.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(tutorial): first-race HUD hints for brake and nitro (F-101)
 
 **GDD sections touched:** [§19](gdd/19-accessibility.md) (overlay is

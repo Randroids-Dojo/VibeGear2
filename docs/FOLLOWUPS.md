@@ -192,8 +192,24 @@ authoring + the existing pickup runtime; no new code.
 ## F-092: Named rival driver per race with season-long score
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier S #2).
+**Status:** in-progress
+**Notes:** 2026-05-08 slice 1 shipped under `feat/named-rival`. New
+pure module `src/game/rival.ts` picks the AI with the highest
+`paceScalar` as the per-race rival (ties break on driver id
+ascending) and threads the grid index into the in-race car id so
+the rivalry HUD can match against `RankedCar.id`. Extended
+`deriveRaceStoryMoment` with an optional `rival: { carId,
+displayName } | null`: when the trailing pressure is the rival,
+the existing "Rival close" moment now reads the driver name
+(e.g. "D. Korsak") in the title; the gap detail is unchanged. No
+save schema change. Practice and time-trial sessions stay
+unaffected (empty AI grid -> `null` rival). Follow-up slices
+under this F-NNN: tour-pinned rival so the same name recurs
+across all 4 races; `save.rivalScores` head-to-head (wins /
+losses / podiums) persisted per driver across the tour; prep-card
+and results-screen surfaces. Original notes follow.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier S #2).
 Every opponent today is anonymous: `RankedCar` carries a generic id and
 the rivalry HUD signal (`raceMoments.deriveRaceStoryMoment`) reports
 "Rival close" without naming who. Designate one of the 11 AI per race
