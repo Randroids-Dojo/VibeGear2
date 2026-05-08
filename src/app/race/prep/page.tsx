@@ -25,7 +25,8 @@ import {
   type PreRaceCard,
 } from "@/game/preRaceCard";
 import type { TireKind } from "@/game/weather";
-import { loadSave } from "@/persistence/save";
+import { loadSave, saveSave } from "@/persistence/save";
+import { TutorialPrepCard } from "@/components/tutorial/TutorialPrepCard";
 
 const CHAMPIONSHIP_ID = "world-tour-standard";
 
@@ -342,6 +343,28 @@ function RacePrepShell(): ReactElement {
           Start race
         </Link>
       </footer>
+
+      {/* F-098 first-race tutorial card. Renders only when the save
+          has an explicit unseen `tutorialState`. An absent
+          `tutorialState` slot is treated as "legacy or test save,
+          skip the card", which prevents the overlay from blocking
+          returning players (their pre-F-098 v4 saves never had the
+          field) and from blocking e2e specs (their custom saves
+          omit the field). Only `defaultSave` (fresh install) seeds
+          `prepCardSeen: false`, so a brand-new player still sees
+          the card on their first prep visit. */}
+      {save.tutorialState !== undefined && !save.tutorialState.prepCardSeen ? (
+        <TutorialPrepCard
+          onDismiss={() => {
+            const next: SaveGame = {
+              ...save,
+              tutorialState: { prepCardSeen: true },
+            };
+            setSave(next);
+            saveSave(next);
+          }}
+        />
+      ) : null}
     </main>
   );
 }

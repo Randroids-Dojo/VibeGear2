@@ -51,3 +51,15 @@ The game should maintain compulsion using the following loop triggers:
 - Track unlock reveals.
 - Personal best and ghost goals.
 - Fast restart and rematch.
+
+### Build log
+
+- 2026-05-07: F-098 first-race tutorial card. Coach overlay on
+  `/race/prep` shown once before the player's first race, gated
+  by an optional `save.tutorialState.prepCardSeen` flag. Files:
+  `src/components/tutorial/TutorialPrepCard.tsx` (new),
+  `src/components/tutorial/__tests__/TutorialPrepCard.test.tsx` (new),
+  `src/data/schemas.ts`, `src/persistence/save.ts`,
+  `src/persistence/save.test.ts`, `src/app/race/prep/page.tsx`. The
+  in-race HUD hints (brake-before-corner, space-for-nitro,
+  top-4-to-advance) ship as F-101. PR pending.

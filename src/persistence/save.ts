@@ -161,6 +161,9 @@ export function defaultSave(): SaveGame {
     // Cross-tab last-write-wins counter. Seeds at 0; `saveSave` increments
     // before every persist so two tabs can compare which write came last.
     writeCounter: 0,
+    // §4 onboarding tutorial state (F-098). Fresh save shows the
+    // first-race coach card on /race/prep until dismissed.
+    tutorialState: { prepCardSeen: false },
   };
 }
 
