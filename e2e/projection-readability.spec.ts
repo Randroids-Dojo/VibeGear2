@@ -112,7 +112,15 @@ test.describe("projection readability", () => {
         sample.aiWidth! >= 20 &&
         sample.aiWidth! <= 92,
     );
-    expect(aiSamples.length).toBeGreaterThanOrEqual(6);
+    // F-091 (AI nitro firing) shortens the window the rocket-archetype
+    // quick-race fallback driver spends in the player's projection cone:
+    // the AI bursts forward on the lap-1 launch and clears the visible
+    // strip range faster. The spec's actual goal is the scale-stability
+    // ratio + lateral-stability check across consecutive samples; four
+    // samples is enough to assert that contract without coupling the
+    // spec to the pre-F-091 rocket driver pace. Quick-race itself is
+    // deprecated under F-090.
+    expect(aiSamples.length).toBeGreaterThanOrEqual(4);
     expect(adjacentMaxRatio(aiSamples.map((sample) => sample.aiWidthDepth!))).toBeLessThan(1.7);
     for (let i = 1; i < aiSamples.length; i += 1) {
       expect(Math.abs(aiSamples[i]!.aiX! - aiSamples[i - 1]!.aiX!)).toBeLessThan(160);
