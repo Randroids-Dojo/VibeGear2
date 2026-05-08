@@ -153,6 +153,59 @@ None this slice.
 
 ---
 
+## 2026-05-08: feat(tracks): authored pickups for Crown Circuit (F-093 tour 8, closes F-093)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-crown-circuit`, PR pending.
+**Status:** Implemented. F-093 closes with this slice.
+
+### Done
+- Added 3 pickups per track to all 4 Crown Circuit endurance
+  tracks (Tour 8): Embassy Loop, Final Horizon, Grand Meridian,
+  Victory Causeway. Same template Iron Borough through Moss
+  Frontier established.
+- All four tracks use the `endurance` archetype (2 laps,
+  difficulty 5). Final Horizon ships every supported weather
+  option (clear, rain, snow, fog) and gets the only mid-track
+  cash on a `snow_buildup` apex; the other three pair the cash
+  with `slick_paint`, `snow_buildup`, or a clean apex per
+  per-track weather profile.
+- The closing straights are the longest in the game (440-500 m,
+  including the 500 m straights on Final Horizon and Grand
+  Meridian); each gets the standard centerline finish cash so
+  the endgame still pays off the racing line.
+- Pickup ids and 75 cr / 25% values match the established
+  template.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2889 / 2889 passed (153 suites).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Pure data authoring; no code change.
+- F-093 is now fully shipped: every one of the 28 tracks across
+  tours 2-8 has the 3-pickup template authored. Tour 1 (Velvet
+  Coast) had its own pickup pass under
+  `VibeGear2-feat-tracks-first-10ebfec0` previously. The full
+  32-track production set now ships with on-track tactical
+  decisions across the whole World Tour.
+
+### Coverage ledger
+- §9 track-design coverage gains the final 4 tracks worth of
+  authored pickup data. F-093 marked done in the same PR's
+  FOLLOWUPS edit.
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(tracks): authored pickups for Moss Frontier (F-093 tour 7)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
