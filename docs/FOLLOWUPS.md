@@ -120,8 +120,16 @@ crest is crossed at speed. Pairs with §16 (camera shake on landing).
 ## F-093: On-track pickups extended to tours 2-8
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier A #4).
+**Status:** in-progress
+**Notes:** 2026-05-07 split per-tour. Tour 2 (Iron Borough)
+shipped under `feat/pickups-tours-2-to-8`: 3 pickups per track
+(1 inside-line nitro on a corner apex, 1 cash on a curve or
+post-curve straight, 1 cash on the final straight) across all
+4 tracks. Tours 3-8 stay open under this F-NNN; each subsequent
+tour ships as its own PR for review tractability. Original
+notes follow.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier A #4).
 A grep of all 32 production tracks shows pickups are only authored on
 4 of 4 Velvet Coast tracks (1-2 segments each). Tours 2-8 have zero
 on-track tactical decisions beyond steering. The existing
