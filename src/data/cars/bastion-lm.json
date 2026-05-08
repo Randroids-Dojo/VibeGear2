@@ -3,6 +3,7 @@
   "name": "Bastion LM",
   "class": "enduro",
   "purchasePrice": 28000,
+  "requiresTour": "iron-borough",
   "repairFactor": 0.85,
   "baseStats": {
     "topSpeed": 72.0,

@@ -3,6 +3,7 @@
   "name": "Nova Shade",
   "class": "power",
   "purchasePrice": 48000,
+  "requiresTour": "neon-meridian",
   "repairFactor": 1.3,
   "baseStats": {
     "topSpeed": 82.0,

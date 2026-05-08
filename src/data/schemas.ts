@@ -296,6 +296,14 @@ export const CarSchema = z.object({
   baseStats: CarBaseStatsSchema,
   upgradeCaps: CarUpgradeCapsSchema,
   visualProfile: CarVisualProfileSchema,
+  /**
+   * F-097 follow-up. Optional tour-completion gate. When present, the
+   * car only becomes purchasable after the player has completed the
+   * named tour (the slug must appear in
+   * `save.progress.completedTours`). Omitted on starter cars and the
+   * mid-pack catalogue so existing data files load unchanged.
+   */
+  requiresTour: slug.optional(),
 });
 export type Car = z.infer<typeof CarSchema>;
 
