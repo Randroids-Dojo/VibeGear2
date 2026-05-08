@@ -93,4 +93,36 @@ describe("deriveRaceStoryMoment", () => {
       }),
     ).toBeNull();
   });
+
+  it("names the rival when the trailing pressure is them", () => {
+    expect(
+      deriveRaceStoryMoment({
+        playerId: PLAYER,
+        previousCars: [car(PLAYER, 200), car("ai-a", 160)],
+        currentCars: [car(PLAYER, 220), car("ai-a", 199.6), car("ai-b", 40)],
+        threatDistanceMeters: 25,
+        rival: { carId: "ai-a", displayName: "D. Korsak" },
+      }),
+    ).toEqual({
+      kind: "rival-pressure",
+      title: "D. Korsak",
+      detail: "20 m back",
+    });
+  });
+
+  it("keeps the generic title when the trailing pressure is not the rival", () => {
+    expect(
+      deriveRaceStoryMoment({
+        playerId: PLAYER,
+        previousCars: [car(PLAYER, 200), car("ai-a", 160)],
+        currentCars: [car(PLAYER, 220), car("ai-a", 199.6), car("ai-b", 40)],
+        threatDistanceMeters: 25,
+        rival: { carId: "ai-b", displayName: "K. Vega" },
+      }),
+    ).toEqual({
+      kind: "rival-pressure",
+      title: "Rival close",
+      detail: "20 m back",
+    });
+  });
 });
