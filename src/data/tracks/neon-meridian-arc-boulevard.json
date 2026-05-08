@@ -12,12 +12,42 @@
   "archetype": "standard",
   "segments": [
     { "len": 300, "curve": 0.04, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] },
-    { "len": 240, "curve": 0.16, "grade": 0.01, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": ["slick_paint"] },
-    { "len": 260, "curve": -0.18, "grade": 0.02, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": [] },
+    {
+      "len": 240,
+      "curve": 0.16,
+      "grade": 0.01,
+      "roadsideLeft": "guardrail",
+      "roadsideRight": "light_pole",
+      "hazards": ["slick_paint"],
+      "pickups": [
+        { "id": "arc-boulevard-paint-cash", "kind": "cash", "laneOffset": 0.35, "value": 75 }
+      ]
+    },
+    {
+      "len": 260,
+      "curve": -0.18,
+      "grade": 0.02,
+      "roadsideLeft": "sign_marker",
+      "roadsideRight": "guardrail",
+      "hazards": [],
+      "pickups": [
+        { "id": "arc-boulevard-apex-nitro", "kind": "nitro", "laneOffset": -0.4, "value": 25 }
+      ]
+    },
     { "len": 260, "curve": 0.12, "grade": -0.01, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": ["puddle"] },
     { "len": 260, "curve": -0.1, "grade": 0.03, "roadsideLeft": "guardrail", "roadsideRight": "light_pole", "hazards": [] },
     { "len": 300, "curve": 0.08, "grade": -0.02, "roadsideLeft": "sign_marker", "roadsideRight": "guardrail", "hazards": ["traffic_cone"] },
-    { "len": 340, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "sign_marker", "hazards": [] }
+    {
+      "len": 340,
+      "curve": 0,
+      "grade": 0,
+      "roadsideLeft": "light_pole",
+      "roadsideRight": "sign_marker",
+      "hazards": [],
+      "pickups": [
+        { "id": "arc-boulevard-finish-cash", "kind": "cash", "laneOffset": 0, "value": 75 }
+      ]
+    }
   ],
   "checkpoints": [
     { "segmentIndex": 0, "label": "start" },

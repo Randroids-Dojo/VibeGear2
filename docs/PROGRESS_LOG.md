@@ -6,6 +6,58 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(tracks): authored pickups for Neon Meridian (F-093 tour 6)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
+entry).
+**Branch / PR:** `feat/pickups-neon-meridian`, PR pending.
+**Status:** Implemented (Neon Meridian only). F-093 stays open
+covering tours 7-8 (Moss Frontier, Crown Circuit).
+
+### Done
+- Added 3 pickups per track to all 4 Neon Meridian tracks (Tour 6):
+  Afterglow Run, Arc Boulevard, Prism Cut, Skyline Drain. Same
+  template Iron Borough through Glass Ridge established.
+- Tunnel-aware authoring. Two of four tracks (Afterglow Run,
+  Prism Cut) place a cash pickup inside a neon-strip or
+  violet-service-lighting tunnel segment so a player who holds
+  the racing line through reduced visibility gets paid. Mirrors
+  the Hollow Crest pattern from Glass Ridge tour 5.
+- Wet/night weather authoring. Every Neon Meridian track has
+  rain or dusk or night in its weatherOptions; three of four
+  combine `slick_paint` with the apex pickup so reduced grip
+  scales the difficulty of the inside-line collection.
+- Skyline Drain places its nitro on a `slick_paint` puddle apex
+  (segment 2, +0.18 right) so the difficulty-5 final track
+  rewards the most committed grip play in the tour.
+- Pickup ids and 75 cr / 25% values match the established
+  template.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2889 / 2889 passed (153 suites; the existing
+  `tracks-content.test.ts` validates every JSON against the
+  schema).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not add or change any code. Pure data authoring against
+  the existing pickup runtime and schema.
+
+### Coverage ledger
+- §9 track-design coverage gains 4 more tracks worth of authored
+  pickup data. F-093 stays open with 8 tracks remaining (Moss
+  Frontier + Crown Circuit).
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-07: feat(onboarding): first-race tutorial prep card (F-098 slice A)
 
 **GDD sections touched:** [§4](gdd/04-player-experience-goals.md)
