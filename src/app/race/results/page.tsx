@@ -43,12 +43,14 @@ import { BonusChip } from "@/components/results/BonusChip";
 import { DamageBar } from "@/components/results/DamageBar";
 import { FinishingOrderTable } from "@/components/results/FinishingOrderTable";
 import { LeaderboardPanel } from "@/components/results/LeaderboardPanel";
+import { RaceShareButton } from "@/components/results/RaceShareButton";
+import { formatRaceShareText } from "@/components/results/raceShareText";
 import {
   clearRaceResult,
   loadRaceResult,
 } from "@/components/results/raceResultStorage";
 import { DailyShareButton } from "@/app/daily/DailyShareButton";
-import { getChampionship } from "@/data";
+import { getChampionship, TRACK_RAW } from "@/data";
 import { formatDailyChallengeShareText } from "@/game/modes/dailyChallenge";
 import type { RaceResult } from "@/game/raceResult";
 import type { FinalCarRecord } from "@/game/raceRules";
@@ -168,6 +170,39 @@ function ResultsView(props: ResultsViewProps): ReactElement {
   const dailyShareText = result.dailyChallenge
     ? formatDailyChallengeShareText(result.dailyChallenge, playerBestLapMs)
     : null;
+  // F-100 Tour-finish share card. Pulls the player's row + the tour
+  // slug + a track-name lookup off `TRACK_RAW`. Renders for any
+  // result that has a player row (finished or DNF). Replaces the
+  // dormant Daily-only share surface with a generic Tour share so
+  // every World Tour finish has a copyable summary.
+  const raceShareText = useMemo<string | null>(() => {
+    if (!playerRow) return null;
+    const trackEntry = TRACK_RAW[result.trackId] as
+      | { name?: string }
+      | undefined;
+    const trackName = trackEntry?.name ?? result.trackId;
+    const tourId = result.tourProgress?.tourId ?? null;
+    const tourName = tourId
+      ? tourId
+          .split("-")
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ")
+      : null;
+    return formatRaceShareText({
+      trackName,
+      tourName,
+      placement: result.playerPlacement,
+      status: playerRow.status === "finished" ? "finished" : "dnf",
+      raceTimeMs: playerRow.raceTimeMs,
+      bestLapMs: playerBestLapMs,
+    });
+  }, [
+    playerBestLapMs,
+    playerRow,
+    result.playerPlacement,
+    result.tourProgress?.tourId,
+    result.trackId,
+  ]);
   const tourProgress = result.tourProgress ?? null;
   const continueTourHref =
     result.nextRace && tourProgress && tourProgress.nextRaceIndex !== null
@@ -330,6 +365,19 @@ function ResultsView(props: ResultsViewProps): ReactElement {
                 Daily Challenge
               </h3>
               <DailyShareButton text={dailyShareText} />
+            </section>
+          ) : null}
+
+          {raceShareText ? (
+            <section
+              data-testid="results-share"
+              style={dailySharePanelStyle}
+              aria-labelledby="results-share-title"
+            >
+              <h3 id="results-share-title" style={subHeading}>
+                Share result
+              </h3>
+              <RaceShareButton text={raceShareText} />
             </section>
           ) : null}
         </div>

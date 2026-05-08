@@ -6,6 +6,74 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-07: feat(results): generic Tour share card (F-100 text path)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-ui-ux.md) "Results
+screen" (build-log entry).
+**Branch / PR:** `feat/share-card`, PR pending.
+**Status:** Implemented (text-card path). The optional
+canvas-screenshot data URL stays open under F-100.
+
+### Done
+- Added `src/components/results/raceShareText.ts` with
+  `formatRaceShareText(...)`. Pure: same inputs always produce
+  the same string. Outputs a multi-line text card naming the
+  tour and track, placement, total race time, and best lap.
+  DNF rows render only the DNF marker.
+- Added `src/components/results/RaceShareButton.tsx` reusing the
+  Clipboard / fallback / status pill flow from
+  `DailyShareButton`. Test-ids `race-share`, `race-share-copy`,
+  `race-share-text`, `race-share-status` keep the surface
+  scopable in Playwright.
+- Wired into `src/app/race/results/page.tsx`. The page now
+  renders the share section whenever `playerRow` is non-null
+  (every World Tour finish, including DNF). The dormant Daily
+  share remains for the post-v1.0 daily mode (per F-090
+  cleanup).
+- Tour-name resolution title-cases the tour slug (e.g.
+  `iron-borough` becomes `Iron Borough`) inline in the page;
+  the legacy `displayTourName` helper in `preRaceCard.ts` was
+  not exported here to keep the slice tight (export when a
+  third caller arrives).
+- Track-name resolution reads `TRACK_RAW[result.trackId].name`
+  with a slug fallback so an unknown track id never crashes
+  the share section.
+- Added 8 Vitest cases in
+  `src/components/results/__tests__/raceShareText.test.ts`
+  covering: full finished result, no best lap, no tour name,
+  DNF, unknown placement with finished status, sub-second
+  millisecond padding, hour-long runs, and the no-em-dash rule.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2881 / 2881 passed (152 suites; 8 new tests).
+- `npm run content-lint` clean.
+
+### Decisions and assumptions
+- Did not extract a shared `<ShareTextButton>` primitive between
+  the daily and race surfaces. Two implementations are simpler
+  to read than one abstraction with a hidden test-id parameter;
+  extract on the third caller per the slice-discipline rule.
+- Share text is plain ASCII multi-line. No em-dash, no en-dash;
+  the project rule is enforced both at the source level and in
+  the test suite (regex on the formatter output).
+- The optional canvas-screenshot extension stays in F-100. The
+  text-card path is the high-leverage win and ships first.
+
+### Coverage ledger
+- §20 results-screen coverage gains the new component + builder
+  + tests as `implementationRefs` / `testRefs`. F-100 stays
+  in-progress for the optional screenshot path.
+
+### Followups created
+None.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-07: feat(tracks): authored pickups for Iron Borough (F-093 tour 2)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (build-log
