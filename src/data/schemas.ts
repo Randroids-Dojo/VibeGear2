@@ -1032,5 +1032,15 @@ export const SaveGameSchema = z.object({
       prepCardSeen: z.boolean(),
     })
     .optional(),
+  /**
+   * F-096 slice 1. Cosmetic ids the player has unlocked. Today the
+   * only authored entries are the per-tour liveries minted by
+   * `unlockNextTour` (`livery-${tourId}`); the title screen renders
+   * one text badge per id. Future slices wire the same ids into a
+   * paletteRecolour overlay on the player car sprite and a
+   * soundtrack-remix rotation. Optional so existing v4 saves load
+   * without a schema-version bump.
+   */
+  unlockedCosmetics: z.array(slug).optional(),
 });
 export type SaveGame = z.infer<typeof SaveGameSchema>;

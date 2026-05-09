@@ -139,8 +139,23 @@ migration for `ownedCars`.
 ## F-096: Cosmetic and livery unlocks on tour podium
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier B #7).
+**Status:** in-progress
+**Notes:** 2026-05-08 ledger slice shipped under
+`feat/cosmetic-ledger`. Adds an optional
+`save.unlockedCosmetics: string[]` slot, mints a per-tour
+`livery-${tourId}` cosmetic on first completion via
+`unlockNextTour`, and renders a row of text badges below the
+title-screen TitleGlance (one per unlocked cosmetic). Pure
+helpers (`cosmeticIdForTour`, `appendUnlockedCosmetic`,
+`buildCosmeticBadges`) live in `src/game/cosmetics.ts` so the
+mint and the read-side render are testable without React. No
+schema-version bump (the slot is optional). Follow-up slices
+under this F-NNN: replace the text badges with sprite icons,
+wire the unlocked livery into the player car sprite as a
+`paletteRecolour` overlay, and add the per-tour soundtrack remix
+to the music-runtime rotation. Original notes follow.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier B #7).
 GDD §8 promises "challenge medals unlock cosmetics, soundtrack remixes,
 and extra championships". Today tour completion unlocks only the next
 tour cursor (`src/game/championship.ts:unlockNextTour`). Add a

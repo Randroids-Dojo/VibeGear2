@@ -55,6 +55,7 @@
 import type { Championship, ChampionshipTour, SaveGame } from "@/data/schemas";
 
 import { computeStipend, easyModeBonus, recordStipendClaim } from "./catchUp";
+import { appendUnlockedCosmetic, cosmeticIdForTour } from "./cosmetics";
 import { PLACEMENT_POINTS } from "./raceResult";
 import { tourCompletionBonus, type RaceBonus } from "./raceBonuses";
 
@@ -474,6 +475,13 @@ export function unlockNextTour(
     nextTourId === null || alreadyUnlocked
       ? save.progress.unlockedTours
       : [...save.progress.unlockedTours, nextTourId];
+  // F-096 slice 1. Mint the per-tour livery cosmetic on first
+  // completion. Re-completion (already in `completedTours`) never
+  // re-mints because `appendUnlockedCosmetic` collapses duplicates.
+  const unlockedCosmetics = appendUnlockedCosmetic(
+    save.unlockedCosmetics,
+    cosmeticIdForTour(completedTourId),
+  );
 
   return {
     ...save,
@@ -482,5 +490,6 @@ export function unlockNextTour(
       completedTours,
       unlockedTours,
     },
+    unlockedCosmetics,
   };
 }
