@@ -31,9 +31,14 @@ the per-tick status flip. Slice 2 shipped under
 `feat/fuel-hud-gauge`: HUD fuel gauge wired through
 `HudStateInput.fuel` -> `summarizeHudFuel` -> bottom-center bar
 above the nitro meter; `FUEL_CRITICAL_PERCENT = 15` flips the bar
-red and the label to `FUEL EMPTY` on depletion. Slices 3-4 still
-open: garage gearbox copy + per-archetype tuning, out-of-fuel UX
-polish (audio sputter, results-screen reason copy).
+red and the label to `FUEL EMPTY` on depletion. Slice 3 shipped
+under `feat/fuel-garage-copy`: gearbox tier rows on the upgrade
+page now surface the cumulative fuel-range bonus (`+10 % fuel
+range` at tier 1, `+20 %` at tier 2, ...) alongside the existing
+top-speed effect, so the player sees why upgrading the gearbox
+extends how far they get on a tank. Pure UI; runtime drain still
+reads the same `gearboxFuelEfficiency` curve. Slice 4 still open:
+out-of-fuel UX polish (audio sputter, results-screen reason copy).
 
 ## F-103: Prep-card tire recommendation one-click action
 **Created:** 2026-05-09
