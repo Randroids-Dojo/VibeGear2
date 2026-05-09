@@ -50,6 +50,14 @@ describe("race music ducking", () => {
     ).toEqual({ volumeScale: 0.78, holdMs: 260 });
   });
 
+  it("ducks the music for the fuel-depleted sputter cue", () => {
+    expect(
+      raceMusicDuckingForAudioEvents([
+        { kind: "fuelDepleted", carId: "player" },
+      ]),
+    ).toEqual({ volumeScale: 0.6, holdMs: 600 });
+  });
+
   it("ducks countdown and go cues without muting the music", () => {
     expect(raceMusicDuckingForCountdownStep(3)).toEqual({
       volumeScale: 0.82,

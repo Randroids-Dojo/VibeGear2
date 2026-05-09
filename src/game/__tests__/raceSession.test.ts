@@ -810,6 +810,70 @@ describe("stepRaceSession (nitro)", () => {
   });
 });
 
+describe("stepRaceSession (fuel depletion audio)", () => {
+  // Seed the player car at racing speed so the per-tick fuel burn
+  // is non-trivial; pair with a near-empty tank so depletion lands
+  // in one tick. Tiny capacity floor (0.0001 L) is below any per-
+  // tick drain at racing speed and cannot be affected by future
+  // BASE_CONSUMPTION tuning.
+  const buildAlmostEmptySession = (config: RaceSessionConfig) => {
+    const baseline = createRaceSession({
+      ...config,
+      player: { ...config.player, initial: { speed: 50 } },
+    });
+    return {
+      ...baseline,
+      player: {
+        ...baseline.player,
+        fuel: { liters: 0.0001, capacityLiters: baseline.player.fuel.capacityLiters },
+      },
+    };
+  };
+
+  it("emits a fuelDepleted audio event on the depletion edge and flips the player to dnf", () => {
+    const config = buildConfig({
+      track: loadTrack("test/straight"),
+      player: { stats: STARTER_STATS },
+      ai: [],
+      countdownSec: 0,
+    });
+    const session = buildAlmostEmptySession(config);
+    const next = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(next.player.fuel.liters).toBe(0);
+    expect(next.player.status).toBe("dnf");
+    expect(next.player.dnfReason).toBe("out-of-fuel");
+    expect(next.audioEvents).toContainEqual({
+      kind: "fuelDepleted",
+      carId: PLAYER_CAR_ID,
+    });
+  });
+
+  it("does not emit fuelDepleted when the tank starts empty (no rising edge)", () => {
+    // The depletion edge only fires the tick the tank crosses from
+    // `liters > 0` to `liters === 0`. Starting with the tank already
+    // dry must not synthesize a fresh cue at session start; the
+    // §20 fuel-empty render has nothing new to announce.
+    const config = buildConfig({
+      track: loadTrack("test/straight"),
+      player: { stats: STARTER_STATS, initial: { speed: 50 } },
+      ai: [],
+      countdownSec: 0,
+    });
+    const baseline = createRaceSession(config);
+    const session = {
+      ...baseline,
+      player: {
+        ...baseline.player,
+        fuel: { liters: 0, capacityLiters: baseline.player.fuel.capacityLiters },
+      },
+    };
+    const next = stepRaceSession(session, fullThrottle(), config, DT);
+    expect(
+      next.audioEvents.some((event) => event.kind === "fuelDepleted"),
+    ).toBe(false);
+  });
+});
+
 describe("stepRaceSession (pickups)", () => {
   it("collects cash pickups into the player race cash delta once", () => {
     const config = buildConfig({

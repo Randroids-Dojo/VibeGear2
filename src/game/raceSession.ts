@@ -319,6 +319,17 @@ export interface RaceSessionPickupCollectedAudioEvent {
   readonly value: number;
 }
 
+/**
+ * Fired the tick a car's fuel state crosses from `liters > 0` to
+ * `liters === 0`. The race-page SFX dispatcher plays a short engine-
+ * sputter cue so the player hears the moment the tank runs dry; the
+ * music ducker reads it for a short hold so the cue lands cleanly.
+ */
+export interface RaceSessionFuelDepletedAudioEvent {
+  readonly kind: "fuelDepleted";
+  readonly carId: string;
+}
+
 type RaceSessionLapMilestoneAudioEvent =
   | RaceSessionLapCompleteAudioEvent
   | RaceSessionRaceFinishAudioEvent;
@@ -335,7 +346,8 @@ export type RaceSessionAudioEvent =
   | RaceSessionTireSquealLoopAudioEvent
   | RaceSessionBrakeScrubLoopAudioEvent
   | RaceSessionSurfaceHushAudioEvent
-  | RaceSessionPickupCollectedAudioEvent;
+  | RaceSessionPickupCollectedAudioEvent
+  | RaceSessionFuelDepletedAudioEvent;
 
 export interface RaceSessionConfig {
   /** Compiled track to drive on. Frozen output of `compileTrack`. */
@@ -1876,6 +1888,10 @@ export function stepRaceSession(
   if (playerFuelResult.depleted && !playerWreckedThisTick) {
     nextPlayerStatus = "dnf";
   }
+  const playerFuelDepletedAudioEvents: ReadonlyArray<RaceSessionFuelDepletedAudioEvent> =
+    playerFuelResult.depleted && !playerWreckedThisTick
+      ? [{ kind: "fuelDepleted", carId: PLAYER_CAR_ID }]
+      : [];
 
   // §7 per-AI lap rollover + finishing. Each AI tracks its own lap
   // counter (the `RaceState.lap` field is player-only) and accumulates
@@ -2066,7 +2082,8 @@ export function stepRaceSession(
     playerLapEvents.length > 0 ||
     playerDamageWarningEvents.length > 0 ||
     playerSurfaceAudio.events.length > 0 ||
-    playerPickupAudioEvents.length > 0;
+    playerPickupAudioEvents.length > 0 ||
+    playerFuelDepletedAudioEvents.length > 0;
   const nextAudioEvents: ReadonlyArray<RaceSessionAudioEvent> =
     hasPlayerNonImpactAudioEvents
       ? [
@@ -2076,6 +2093,7 @@ export function stepRaceSession(
           ...playerDamageWarningEvents,
           ...playerSurfaceAudio.events,
           ...playerPickupAudioEvents,
+          ...playerFuelDepletedAudioEvents,
           ...playerImpactEvents,
         ]
       : playerImpactEvents;

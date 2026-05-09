@@ -170,6 +170,27 @@ describe("ProceduralSfxRuntime", () => {
     expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.18);
   });
 
+  it("plays a low descending sawtooth as the fuel-depleted sputter cue", () => {
+    const context = new FakeAudioContext();
+    const runtime = new ProceduralSfxRuntime({
+      context: () => context,
+      baseGain: 0.2,
+    });
+
+    expect(runtime.playFuelDepleted({ audio: AUDIO })).toBe(true);
+
+    expect(context.oscillators).toHaveLength(1);
+    expect(context.oscillators[0]?.type).toBe("sawtooth");
+    expect(context.oscillators[0]?.frequency.setValueAtTime).toHaveBeenCalledWith(
+      220,
+      0,
+    );
+    expect(
+      context.oscillators[0]?.frequency.linearRampToValueAtTime,
+    ).toHaveBeenCalledWith(90, 0.36);
+    expect(context.oscillators[0]?.stop).toHaveBeenCalledWith(0.36);
+  });
+
   it("plays distinct cash and nitro pickup collection cues", () => {
     const context = new FakeAudioContext();
     const runtime = new ProceduralSfxRuntime({

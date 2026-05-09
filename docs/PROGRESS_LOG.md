@@ -6,6 +6,67 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(audio): fuel-depleted sputter cue (F-104 follow-on)
+
+**GDD sections touched:** [§18](gdd/18-audio-and-music.md) (race
+SFX events) and [§20](gdd/20-hud-and-pause.md) (the depletion cue
+companions the existing HUD `FUEL EMPTY` red label so the player
+hears + sees the moment the run becomes a DNF).
+**Branch / PR:** `feat/fuel-sputter-audio`, PR pending.
+**Status:** Closes the F-104 deferred sub-item ("audio sputter
+cue"). F-104 itself was already marked `done` after the 2026-05-09
+slice 4 merge; this slice retires the last open audio note.
+
+### Done
+- Added `RaceSessionFuelDepletedAudioEvent` to
+  `src/game/raceSession.ts` and unioned it onto
+  `RaceSessionAudioEvent`. Emission gates on
+  `playerFuelResult.depleted && !playerWreckedThisTick` so the
+  rising-edge cue fires exactly once - on the tick the tank
+  crosses from `liters > 0` to `liters === 0` - and a wreck on
+  the same tick still wins per the §13 precedence rule.
+- Added the duck row in `src/audio/raceMix.ts`:
+  `{ volumeScale: 0.6, holdMs: 600 }`. Heavier hold than the
+  pickup row so the cue lands cleanly over the music bed.
+- Added `playFuelDepleted(input)` on `ProceduralSfxRuntime`
+  (`src/audio/sfx.ts`). Low sawtooth tone descending from 220 Hz
+  to 90 Hz over 360 ms - sits below the pickup / nitro band so it
+  reads as an engine misfire rather than a UI bleep.
+- Added the dispatch case in
+  `src/app/race/page.tsx:playRaceSfxEvents` so the new event
+  triggers `runtime.playFuelDepleted({ audio })`.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2981 / 2981 across 162 suites; new cases
+  added: 1 in `raceMix.test.ts` for the duck row, 1 in
+  `sfx.test.ts` for the synthesis path, 2 in `raceSession.test.ts`
+  for the rising-edge emission and the no-rising-edge guard.
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- 220 Hz / 90 Hz / 360 ms were chosen so the cue is audibly
+  distinct from `nitroEngage` (980 Hz / 1460 Hz, 180 ms) and
+  `playPickupCollected` (720-1180 Hz, 180 ms). The frequency
+  band is intentionally lower than any other SFX so a future
+  re-tune does not have to preserve the exact numbers.
+- The dedicated unit test "no emission when the tank starts
+  empty (no rising edge)" pins the contract that the cue is a
+  rising-edge signal, not a state-poll. A future caller cannot
+  drop fuel to zero pre-tick and expect the cue.
+
+### GDD coverage
+- §18 Audio and music: covered. The new event piggybacks on the
+  existing audio-event plumbing without restructuring it.
+
+### Followups
+- F-104 audio note retires with this slice. The followup entry
+  body has been updated.
+
+---
+
 ## 2026-05-09: test(e2e): garage cars locked state (F-097 follow-on)
 
 **GDD sections touched:** [§8](gdd/08-progression-and-economy.md)
