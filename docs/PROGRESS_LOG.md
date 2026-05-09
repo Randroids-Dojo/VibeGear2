@@ -6,6 +6,88 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(results): DNF reason copy (F-104 slice 4)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-pause.md) (results
+screen "finishing order" row gains an inline reason label below the
+DNF marker for cars that flipped out via a recorded
+`dnfReason`; existing iter-26 "Did Not Finish label replaces the
+position" stress-test contract preserved).
+**Branch / PR:** `feat/fuel-out-of-fuel-ux`, PR pending.
+**Status:** Slice 4 of the F-104 four-slice fuel feature, the final
+slice. F-104 closes once this lands.
+
+### Done
+- Extended `FinalCarRecord` and `FinalCarInput` in
+  `src/game/raceRules.ts` with an optional `dnfReason: DnfReason`
+  field. Optional so the 89+ existing test fixtures and the
+  pre-field session-storage payloads stay valid; consumers treat
+  `undefined` as "no specific reason recorded" and render the bare
+  DNF marker. `buildFinalRaceState` forwards the value for `dnf`
+  rows and writes `undefined` for finishers so the field stays
+  noise-free on a clean finish.
+- Wired `buildFinalCarInputsFromSession` in
+  `src/game/raceSessionActions.ts` to pass the player's
+  `state.player.dnfReason` and each AI's `entry.dnfReason` into the
+  final-car inputs. The retire path and the natural-finish path
+  both flow through this helper, so no race-page edits were needed.
+- Updated `FinishingOrderTable` in
+  `src/components/results/FinishingOrderTable.tsx` to render the
+  `dnfReason` as a small muted label below the DNF marker. Friendly
+  copy maps every DnfReason value (`out-of-fuel` -> "Out of fuel",
+  `wrecked` -> "Wrecked", `off-track` -> "Off track",
+  `no-progress` -> "No progress", `retired` -> "Retired"); rows
+  with `dnfReason` `undefined` or `null` keep the bare "DNF" cell.
+  Static text only - no animation, so the change is reduced-motion
+  safe per §19.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2963 / 2963 passed across 162 suites; new
+  cases: `buildFinalRaceState forwards dnfReason from the input
+  onto the per-car record` in `raceRules.test.ts`, and four
+  cases in the new
+  `src/components/results/__tests__/FinishingOrderTable.test.tsx`
+  (out-of-fuel rendered, other reasons rendered, undefined
+  omitted, finisher rows skipped).
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- The friendly-copy map covers every DnfReason value, even though
+  this slice was scoped to "out of fuel" specifically. The
+  alternative - rendering "Out of fuel" while every other DNF
+  reason stays bare "DNF" - would create a visual asymmetry that
+  reads as a bug. The mapping is a single 5-case switch in the
+  component file; the labels are content, not policy, and the
+  formatting cost is sub-slice. Future slices can re-tune the
+  copy without touching the wiring.
+- Optional vs. required field: making `dnfReason` required would
+  cascade across every fixture in the unit suite (89+ matches on
+  `status: "finished"`/`status: "dnf"` shape literals) and force
+  a session-storage version bump. Optional + `?? null` reads at
+  the boundary keeps the change small while preserving
+  type-safety on new producers.
+- No save schema change. The handoff lives in `sessionStorage`
+  under the existing `vibegear2:race-result:v1` key; old payloads
+  without `dnfReason` parse as `undefined` and the renderer
+  gracefully omits the label.
+
+### GDD coverage
+- §20 Results screen: presentation-only refinement of the
+  finishing-order row.
+
+### Followups
+- F-104 closes with this slice. The follow-up entry will be
+  marked `done` once the PR merges.
+- Audio sputter on depletion deferred: the slice intentionally
+  ships UI-only polish and leaves audio to a future loop. No new
+  followup created since the gap is already implicit in the
+  F-104 entry's "audio sputter" note.
+
+---
+
 ## 2026-05-09: feat(garage): gearbox fuel-range copy (F-104 slice 3)
 
 **GDD sections touched:** [§12](gdd/12-upgrade-and-economy-system.md)

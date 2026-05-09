@@ -37,8 +37,18 @@ page now surface the cumulative fuel-range bonus (`+10 % fuel
 range` at tier 1, `+20 %` at tier 2, ...) alongside the existing
 top-speed effect, so the player sees why upgrading the gearbox
 extends how far they get on a tank. Pure UI; runtime drain still
-reads the same `gearboxFuelEfficiency` curve. Slice 4 still open:
-out-of-fuel UX polish (audio sputter, results-screen reason copy).
+reads the same `gearboxFuelEfficiency` curve. Slice 4 shipped
+under `feat/fuel-out-of-fuel-ux`: the results-screen finishing-
+order row now renders an inline reason label below the DNF marker
+for cars that flipped out via a recorded `dnfReason`. New optional
+field `dnfReason: DnfReason` on `FinalCarRecord` and
+`FinalCarInput`; `buildFinalRaceState` forwards it,
+`buildFinalCarInputsFromSession` reads `state.player.dnfReason` and
+each AI's `entry.dnfReason`, and `FinishingOrderTable` maps every
+DnfReason value to a friendly label ("Out of fuel", "Wrecked",
+"Off track", "No progress", "Retired"). Static text only; reduced-
+motion safe per §19. Audio sputter cue deferred for a future loop;
+the four-slice F-104 feature otherwise closes with this slice.
 
 ## F-103: Prep-card tire recommendation one-click action
 **Created:** 2026-05-09

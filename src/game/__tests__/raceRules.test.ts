@@ -472,6 +472,24 @@ describe("buildFinalRaceState", () => {
     expect(buildFinalRaceState(input)).toEqual(buildFinalRaceState(input));
   });
 
+  it("forwards dnfReason from the input onto the per-car record", () => {
+    const result = buildFinalRaceState({
+      trackId: "test-curve",
+      totalLaps: 2,
+      cars: [
+        { carId: "a", lapTimes: [60_000, 60_000], raceTimeMs: 120_000, status: "finished" },
+        { carId: "b", lapTimes: [], raceTimeMs: null, status: "dnf", dnfReason: "out-of-fuel" },
+        { carId: "c", lapTimes: [60_000], raceTimeMs: null, status: "dnf" },
+      ],
+    });
+    const a = result.finishingOrder.find((r) => r.carId === "a");
+    const b = result.finishingOrder.find((r) => r.carId === "b");
+    const c = result.finishingOrder.find((r) => r.carId === "c");
+    expect(a?.dnfReason).toBeUndefined();
+    expect(b?.dnfReason).toBe("out-of-fuel");
+    expect(c?.dnfReason).toBeNull();
+  });
+
   it("ignores non-positive or non-finite lap entries when computing fastest lap", () => {
     const result = buildFinalRaceState({
       trackId: "test-curve",

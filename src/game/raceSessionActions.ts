@@ -166,18 +166,25 @@ export function buildFinalCarInputsFromSession(
   state: Readonly<RaceSessionState>,
 ): ReadonlyArray<FinalCarInput> {
   const cars: FinalCarInput[] = [];
+  const playerStatus: FinalCarInput["status"] =
+    state.player.status === "finished" ? "finished" : "dnf";
   cars.push({
     carId: PLAYER_CAR_ID,
-    status: state.player.status === "finished" ? "finished" : "dnf",
+    status: playerStatus,
     raceTimeMs: state.player.finishedAtMs,
     lapTimes: state.player.lapTimes.slice(),
+    dnfReason:
+      playerStatus === "dnf" ? (state.player.dnfReason ?? null) : undefined,
   });
   state.ai.forEach((entry, index) => {
+    const aiStatus: FinalCarInput["status"] =
+      entry.status === "finished" ? "finished" : "dnf";
     cars.push({
       carId: aiCarId(index),
-      status: entry.status === "finished" ? "finished" : "dnf",
+      status: aiStatus,
       raceTimeMs: entry.finishedAtMs,
       lapTimes: entry.lapTimes.slice(),
+      dnfReason: aiStatus === "dnf" ? (entry.dnfReason ?? null) : undefined,
     });
   });
   return cars;
