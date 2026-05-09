@@ -258,6 +258,16 @@ function RacePrepShell(): ReactElement {
           >
             {card.selectedTireWarning || "Tire choice matches the forecast."}
           </p>
+          {selectedTire !== card.recommendedTire ? (
+            <button
+              type="button"
+              style={recommendActionStyle}
+              onClick={() => setSelectedTire(card.recommendedTire)}
+              data-testid="pre-race-use-recommended-tire"
+            >
+              Use recommended ({card.recommendedTire})
+            </button>
+          ) : null}
         </article>
 
         <article style={panelStyle}>
@@ -559,6 +569,17 @@ const activeSegmentStyle: CSSProperties = {
 const mutedTextStyle: CSSProperties = {
   margin: 0,
   color: "#aab0bd",
+};
+
+const recommendActionStyle: CSSProperties = {
+  marginTop: "0.6rem",
+  padding: "0.45rem 0.85rem",
+  color: "#081018",
+  background: "#ffd166",
+  border: "1px solid #ffd166",
+  borderRadius: "0.35rem",
+  fontWeight: 700,
+  cursor: "pointer",
 };
 
 const footerStyle: CSSProperties = {
