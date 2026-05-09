@@ -179,13 +179,16 @@ export type TrackPickup = z.infer<typeof TrackPickupSchema>;
  * renderer reads `rampHeight` (in meters) to compute a parabolic
  * sprite lift on top of the existing grade-driven projection;
  * `grade` continues to shape the road silhouette, and `rampHeight`
- * adds a decoupled launch on top of it. Future slices may extend
- * this object with audio-cue or landing-zone fields, but the v1.0
- * contract is deliberately one numeric knob so authoring stays
- * legible across the 35 shipped track JSONs.
+ * adds a decoupled launch on top of it. The field's presence
+ * means "this segment is a jump"; a zero or negative ramp would
+ * be a degenerate authoring (no visible launch), so the schema
+ * requires a strictly positive height. Future slices may extend
+ * this object with audio-cue or landing-zone fields; v1.0 is
+ * deliberately one numeric knob so authoring stays legible
+ * across the existing track JSONs.
  */
 export const TrackJumpSchema = z.object({
-  rampHeight: z.number().min(0).max(3),
+  rampHeight: z.number().positive().max(3),
 });
 export type TrackJump = z.infer<typeof TrackJumpSchema>;
 

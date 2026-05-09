@@ -331,8 +331,8 @@ churn ships in one wave.
 **Notes:** Slice 1 shipped 2026-05-09 under
 `feat/jump-schema-field` after a 2-agent design debate landed on
 "explicit schema field, one numeric knob, no runtime state
-machine at v1.0." Adds `TrackJumpSchema` (`{ rampHeight: 0..3 }`)
-optionally on `TrackSegmentSchema`, mirrors it as
+machine at v1.0." Adds `TrackJumpSchema` (`{ rampHeight }` strictly positive, max
+3 m) optionally on `TrackSegmentSchema`, mirrors it as
 `jumpRampHeight?: number` on `CompiledSegment`, and the compiler
 writes the value onto the first compiled subsegment only so the
 runtime trigger does not multiply when an authored segment

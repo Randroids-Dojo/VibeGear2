@@ -17,9 +17,11 @@ parity, and the per-tour authoring slices stay open.
 
 ### Done
 - Added `TrackJumpSchema` in `src/data/schemas.ts` with a single
-  bounded numeric field (`rampHeight: 0..3 meters`). Optional on
-  `TrackSegmentSchema` so the 35 existing track JSONs validate
-  unchanged.
+  bounded numeric field (`rampHeight`: strictly positive, max 3
+  meters). Optional on `TrackSegmentSchema` so the existing track
+  JSONs validate unchanged. Zero rejects so the field's presence
+  always marks a real launch; a zero ramp would be a degenerate
+  authoring.
 - Mirrored the field as `jumpRampHeight?: number` on
   `CompiledSegment` in `src/road/types.ts`. Optional so legacy
   consumers see the same shape they always did.
@@ -35,7 +37,7 @@ parity, and the per-tour authoring slices stay open.
 - `pnpm vitest run` 2983 / 2983 across 162 suites; 2 new cases in
   `trackCompiler.test.ts` covering the schema-accept + first-
   subsegment-only mirror, and the schema-reject path for out-of-
-  range `rampHeight` (negative + above 3).
+  range `rampHeight` (negative, zero, and above 3).
 - `pnpm content-lint` clean.
 - `pnpm docs:check` clean.
 

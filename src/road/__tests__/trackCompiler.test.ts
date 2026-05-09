@@ -251,6 +251,14 @@ describe("compileTrack (full-track entry point)", () => {
       lengthMeters: 60,
     });
     expect(TrackSchema.safeParse(negative).success).toBe(false);
+    // Zero is a degenerate authoring: the field's presence marks
+    // the segment as a jump, but a zero ramp would launch nothing.
+    // Reject so authors do not ship surprise no-ops.
+    const zero = track({
+      segments: [seg({ len: 60, jump: { rampHeight: 0 } })],
+      lengthMeters: 60,
+    });
+    expect(TrackSchema.safeParse(zero).success).toBe(false);
   });
 
   it("compiles a 13 m authored segment to 3 compiled segments (ceil(13/6))", () => {
