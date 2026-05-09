@@ -2259,6 +2259,7 @@ function RaceCanvas({
           nitroMaxCharges:
             DEFAULT_NITRO_CHARGES + nitroUpgradeTier.chargesBonus,
           nitroChargeDurationSec: nitroDurationForTier(nitroUpgradeTier),
+          fuel: session.player.fuel,
           transmission: session.player.transmission,
           cashDelta: projectedCashDelta,
         });

@@ -125,6 +125,8 @@ const CUSTOM_COLORS: HudColors = {
   weatherChipFill: "#002244",
   nitroFill: "#0044aa",
   nitroActiveFill: "#aa7700",
+  fuelFill: "#22aa44",
+  fuelCriticalFill: "#aa2211",
 };
 
 function badge(

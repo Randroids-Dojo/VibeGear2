@@ -6,6 +6,80 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(hud): fuel gauge meter (F-104 slice 2)
+
+**GDD sections touched:** [§20](gdd/20-hud-and-pause.md) (new
+bottom-center fuel meter above the nitro bar; reuses the existing
+`drawShadowedText` + status-panel-fill palette).
+**Branch / PR:** `feat/fuel-hud-gauge`, PR pending.
+**Status:** Slice 2 of the F-104 four-slice fuel feature. Slices
+3-4 (garage gearbox copy + per-archetype tune, out-of-fuel UX
+polish) stay open under F-104.
+
+### Done
+- Extended `HudStateInput` with optional `fuel: Readonly<FuelState>`
+  and `HudState` with `fuel: HudFuelSummary`. New
+  `summarizeHudFuel(fuel)` clamps `liters` to `[0, capacityLiters]`,
+  rounds `liters` and `percent` for display, and flips
+  `critical: true` at or below the new
+  `FUEL_CRITICAL_PERCENT = 15` constant. `depleted` mirrors the
+  empty-tank state for the renderer's `FUEL EMPTY` label.
+- Wired the fuel summary through the race-page `deriveHudState`
+  call in `src/app/race/page.tsx` so the renderer sees the live
+  per-tick fuel snapshot.
+- Added `drawFuelMeter` in `src/render/uiRenderer.ts`. Bottom-
+  center bar 160 x 10 px above the nitro meter; new `fuelFill`
+  (#66d17a green) / `fuelCriticalFill` (#ef4b4b red) entries on
+  the `HudColors` palette gate the fill colour on
+  `summary.critical`. Label reads `FUEL <liters> / <capacity> L`
+  in normal state and `FUEL EMPTY` once `depleted` flips. No
+  animation; the colour swap is the entire critical signal.
+- Updated the existing `uiRenderer.test.ts` `CUSTOM_COLORS`
+  fixture so the typecheck stays clean (the new fields are
+  required on `HudColors`).
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2956 / 2956 passed across 161 suites; 4 new
+  cases in `hudState.test.ts` cover full tank, critical
+  threshold (boundary at exactly 15 % vs. 16 %), depleted
+  state, and clamp on out-of-range readings.
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- No animation on the critical pulse this slice. The §19
+  reduced-motion contract demands a static fallback; rather than
+  a motion-aware pulse + a static fallback, slice 2 ships the
+  static colour-swap and leaves animation for slice 4 alongside
+  the audio sputter.
+- Bottom-center placement above the nitro meter. The nitro and
+  fuel gauges read together as a "burn vs. budget" pair: nitro
+  spends pace, fuel sets the budget. Same width (160 px) and
+  height (10 px) so the column is visually consistent.
+- `summarizeHudFuel` clamps both ends. A `liters > capacity`
+  reading rounds to `capacity` so a future bug that overshoots
+  the tank cannot show "fuel: 110 / 100 L".
+- Did not bundle a Playwright spec. The drawer is exercised by
+  the existing `uiRenderer.test.ts` colour-fixture path which
+  now requires the new fields; an e2e canvas-pixel sample for
+  the fuel bar can land alongside the slice 4 polish if the
+  bar's pixel position needs pinning.
+
+### Coverage ledger
+- §20 HUD: bottom-center column gains a fuel meter; existing
+  nitro layout is unchanged because the fuel bar lives 18 px
+  above it.
+
+### Followups created
+None. F-104 stays open for slices 3-4.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-09: feat(fuel): TG2-faithful fuel runtime + DNF wiring (F-104 slice 1)
 
 **GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md)

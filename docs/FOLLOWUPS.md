@@ -27,9 +27,13 @@ economy. Slice 1 shipped under `feat/fuel-runtime`: pure
 `gearboxFuelEfficiency`, `tickFuel`, `createFuelState`),
 `out-of-fuel` `DnfReason`, `archetype` mirrored on `CompiledTrack`,
 fuel state on `RaceSessionPlayerCar`, depletion edge wired into
-the per-tick status flip. Slices 2-4 still open: HUD fuel gauge,
-garage gearbox copy + per-archetype tuning, out-of-fuel UX polish
-(audio sputter, results-screen reason copy).
+the per-tick status flip. Slice 2 shipped under
+`feat/fuel-hud-gauge`: HUD fuel gauge wired through
+`HudStateInput.fuel` -> `summarizeHudFuel` -> bottom-center bar
+above the nitro meter; `FUEL_CRITICAL_PERCENT = 15` flips the bar
+red and the label to `FUEL EMPTY` on depletion. Slices 3-4 still
+open: garage gearbox copy + per-archetype tuning, out-of-fuel UX
+polish (audio sputter, results-screen reason copy).
 
 ## F-103: Prep-card tire recommendation one-click action
 **Created:** 2026-05-09
