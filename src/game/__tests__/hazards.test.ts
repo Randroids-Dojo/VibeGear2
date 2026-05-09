@@ -107,4 +107,21 @@ describe("evaluateHazards", () => {
     expect(effect.gripMultiplier).toBeCloseTo(0.5, 6);
     expect(effect.events[0]?.hit).toBeNull();
   });
+
+  it("emits a F-095 debris hit and breaks the entry on first contact", () => {
+    // Rivet Tunnel authored segment 0 (z range 0-240) carries the
+    // F-095 debris entry. Pickup ids and grip stay clean: damage is
+    // direct (offRoadObject, magnitude 10) and the entry is breakable
+    // so a struck debris pile does not re-trigger on the same lap.
+    const track = loadTrack("iron-borough/rivet-tunnel");
+    const effect = evaluateHazards({
+      car: car({ z: 120 }),
+      track,
+      hazardsById: HAZARDS_BY_ID,
+    });
+    expect(effect.events[0]?.hazard.id).toBe("debris");
+    expect(effect.events[0]?.hit?.kind).toBe("offRoadObject");
+    expect(effect.gripMultiplier).toBe(1);
+    expect(effect.brokenHazards.size).toBeGreaterThan(0);
+  });
 });

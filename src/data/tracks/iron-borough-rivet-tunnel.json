@@ -11,7 +11,7 @@
   "difficulty": 2,
   "archetype": "short-sprint",
   "segments": [
-    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "light_pole", "hazards": [] },
+    { "len": 240, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "light_pole", "hazards": ["debris"] },
     {
       "len": 240,
       "curve": -0.1,

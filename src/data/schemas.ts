@@ -121,6 +121,13 @@ export const HazardKindSchema = z.enum([
   // a drive-by hit. Future slices add `debris`, `slow_traffic`, and
   // `wind_gust` per the F-095 ask.
   "oil_slick",
+  // F-095 slice 2. Debris. A breakable obstacle that lands a
+  // direct off-road-object hit on contact. Higher magnitude than a
+  // traffic cone (10 vs. 6) and narrower (1.5 m vs. 1.8 m) so the
+  // player can thread the gap if they pick a clean line. Once
+  // struck the entry is added to `brokenHazards` for the rest of
+  // the lap, mirroring the existing breakable-cone pattern.
+  "debris",
 ]);
 export type HazardKind = z.infer<typeof HazardKindSchema>;
 
