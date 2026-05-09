@@ -6,6 +6,48 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: test(e2e): feedback FAB coverage (F-077)
+
+**GDD sections touched:** Q-012 option (b) - the global feedback
+FAB that POSTs to `/api/feedback`. Coverage was unit + SSR-shape
+only; this slice pins the live in-browser flow against a stubbed
+API route.
+**Branch / PR:** `test/feedback-fab-e2e`, PR pending.
+**Status:** Closes F-077.
+
+### Done
+- Added `e2e/feedback-fab.spec.ts` with three cases: open + type +
+  submit + assert success state (with the POST request payload
+  inspected via `page.waitForRequest`); Escape closes without
+  submitting; click outside closes the panel.
+- Each case stubs `/api/feedback` via `page.route` so the test
+  never reaches GitHub or the production rate-limit token.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm playwright test e2e/feedback-fab.spec.ts --project=chromium`
+  3 / 3 passed in 11.8 s on the dev server.
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- The `?errors=1` hidden-while rule mentioned in the F-077 entry
+  was an inaccurate read of the FAB doc comment. The comment
+  actually says the FAB and the dev `?errors=1` panel "can
+  coexist", so there is no hide-rule to test.
+- Click-outside is asserted against the `game-title` element on
+  `/`, which sits well outside the panel and the toggle button so
+  the click never accidentally hits either.
+
+### GDD coverage
+- Q-012: feedback surface. Live-browser coverage now exists in
+  addition to the unit + SSR-shape tests.
+
+### Followups
+- F-077 closes.
+
+---
+
 ## 2026-05-09: feat(audio): fuel-depleted sputter cue (F-104 follow-on)
 
 **GDD sections touched:** [§18](gdd/18-audio-and-music.md) (race
