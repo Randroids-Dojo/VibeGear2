@@ -10,6 +10,27 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-104: TG2-faithful fuel and gearbox economy
+**Created:** 2026-05-09
+**Priority:** nice-to-have
+**Status:** in-progress
+**Notes:** Third of the three TG2 core-loop polish slices identified
+on 2026-05-09 (alongside F-102 car-bump kick and F-103 prep-card
+tire affordance, both shipped). Goal: TG2-faithful fuel runtime so
+the gearbox upgrade actually matters - longer races are
+unsurvivable at gearbox tier 0 unless the player upgrades. 2026-05-09
+research pass confirmed TG2 had per-race fuel that depleted with
+no mid-race refuel (no on-road gas cans, no pit stops); the
+strategic spend driver was the gearbox upgrade improving fuel
+economy. Slice 1 shipped under `feat/fuel-runtime`: pure
+`src/game/fuel.ts` module (`fuelCapacityForArchetype`,
+`gearboxFuelEfficiency`, `tickFuel`, `createFuelState`),
+`out-of-fuel` `DnfReason`, `archetype` mirrored on `CompiledTrack`,
+fuel state on `RaceSessionPlayerCar`, depletion edge wired into
+the per-tick status flip. Slices 2-4 still open: HUD fuel gauge,
+garage gearbox copy + per-archetype tuning, out-of-fuel UX polish
+(audio sputter, results-screen reason copy).
+
 ## F-103: Prep-card tire recommendation one-click action
 **Created:** 2026-05-09
 **Priority:** nice-to-have

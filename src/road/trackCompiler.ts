@@ -303,6 +303,7 @@ export function compileTrack(track: Track): CompiledTrack {
     laneCount: track.laneCount,
     weatherOptions: [...track.weatherOptions],
     difficulty: track.difficulty,
+    archetype: track.archetype,
     minimapPoints,
     pickupsById,
     warnings,

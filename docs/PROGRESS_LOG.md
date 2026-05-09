@@ -6,6 +6,105 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(fuel): TG2-faithful fuel runtime + DNF wiring (F-104 slice 1)
+
+**GDD sections touched:** [§7](gdd/07-race-rules-and-structure.md)
+(`DnfReason` gains `out-of-fuel`),
+[§11](gdd/11-cars-and-stats.md) (gearbox upgrade tier now also
+scales fuel economy via the F-104 runtime), [§22](gdd/22-data-and-content-pipeline.md)
+(`CompiledTrack` gains `archetype` mirrored from the source
+`Track.archetype`).
+**Branch / PR:** `feat/fuel-runtime`, PR pending.
+**Status:** Slice 1 of the F-104 four-slice fuel feature. Slices
+2-4 (HUD gauge, garage gearbox copy + per-archetype tune,
+out-of-fuel UX polish) stay open under F-104.
+
+### Done
+- Added `src/game/fuel.ts` with four pure helpers:
+  `fuelCapacityForArchetype` (100/400/280/220 L for short-sprint /
+  standard / long-scenic / endurance), `gearboxFuelEfficiency`
+  (linear 10 % per tier, tier 0 = 1.0, tier 5 = 1.5),
+  `tickFuel` (per-tick drain reducer with depletion edge), and
+  `createFuelState` (full tank at session creation).
+  `BASE_CONSUMPTION_LPS_PER_MPS = 0.015` is sized so a stock-gearbox
+  player at 50 m/s avg burns ~98 L over a 130 s short-sprint - tight
+  but survivable at gearbox tier 0 on tour 1.
+- Extended `DnfReason` in `src/game/raceRules.ts` with
+  `"out-of-fuel"`. The depletion edge in `stepRaceSession` flips
+  `nextPlayerStatus` to `"dnf"` and `nextPlayerDnfReason` to
+  `"out-of-fuel"`. The fuel reason wins over the §7 off-track /
+  no-progress windows on the same tick (the car can no longer
+  make progress because the tank is empty); the §13 wreck reason
+  still wins over fuel.
+- Mirrored the source `Track.archetype` onto `CompiledTrack` in
+  `src/road/types.ts` and `src/road/trackCompiler.ts` so the
+  fuel runtime can size the per-race capacity at session creation
+  without re-reading the authored JSON.
+- Extended `RaceSessionPlayerCar` with a `fuel: FuelState` field;
+  initialised in `createRaceSession` from the track archetype and
+  threaded through `clonePlayerCar` so the countdown -> racing
+  promotion preserves it. Wired `tickFuel` into the per-tick
+  player path in `stepRaceSession`. AI cars are not tracked in
+  slice 1 (the grid runs without fuel so a stock-gearbox player
+  does not race against AI that DNFs on lap 6 of a 16-lap
+  standard).
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2952 / 2952 passed across 161 suites; new
+  `src/game/__tests__/fuel.test.ts` pins 12 cases covering the
+  per-archetype capacity table, the gearbox-tier scalar (tier
+  0..5 + negative + NaN), the per-tick drain (tier 0 baseline,
+  tier 5 reduction, zero / negative dt no-op, zero / negative
+  speed no-op, depletion edge, no-double-edge), and the long-run
+  130 s short-sprint sanity (player at gearbox 0 finishes with
+  margin). The 158 existing race-session tests stayed green
+  because every fixture builds player state through
+  `createRaceSession`, which now seeds `fuel` automatically.
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- Player only in slice 1. AI cars do not have fuel state. The
+  grid race-finish flow already handles AI DNFs cleanly, but the
+  fuel runtime intentionally skips them so the player can race
+  against opponents that always finish. Adding AI fuel later
+  would require a per-AI capacity curve and a tuning pass; that
+  belongs in F-104 slice 3 or beyond.
+- Gearbox tier read once per tick from
+  `config.player.upgrades?.gearbox`. The tier never changes mid-
+  race, so a lookup per tick is safe (no stale-tier hazard).
+- Capacity values are placeholders. The 100/400/280/220 numbers
+  are seeded against rough lap-time math (4-lap short-sprint at
+  50 m/s avg burns ~90 L). Slice 3 tunes against playtest data
+  per archetype; the test that pins the long-run drain is the
+  guard.
+- `tickFuel` always returns a fresh `FuelState` even when the
+  drain rounds to zero. Avoids the reference-equality footgun
+  the F-096 cosmetics slice hit; downstream callers can compare
+  by value.
+
+### Coverage ledger
+- §7 race rules: DNF surface gains a 5th reason. Existing tests
+  pin the 4 prior reasons; the test fixture for the new reason
+  is the depletion-edge case in `fuel.test.ts`.
+- §11 cars and stats: gearbox upgrade tier now also scales fuel
+  economy via the F-104 runtime. The §11 spec already named the
+  gearbox tier; slice 1 wires it to a second consumer.
+- §22 schema: `CompiledTrack.archetype` joins `difficulty` as a
+  source-mirrored field on the compiled output. No data file
+  changes; existing tracks already declare `archetype` (default
+  `"standard"`).
+
+### Followups created
+None. F-104 stays open for slices 2-4.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-09: feat(prep): one-click "Use recommended" tire button (F-103)
 
 **GDD sections touched:** [§14](gdd/14-weather.md) (prep-card tire
