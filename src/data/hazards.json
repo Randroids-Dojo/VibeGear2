@@ -94,5 +94,17 @@
     "damageKind": null,
     "damageMagnitude": null,
     "breakable": false
+  },
+  {
+    "id": "debris",
+    "kind": "debris",
+    "displayName": "Debris",
+    "defaultWidth": 1.5,
+    "defaultLength": 4,
+    "laneOffset": 0,
+    "gripMultiplier": 1,
+    "damageKind": "offRoadObject",
+    "damageMagnitude": 10,
+    "breakable": true
   }
 ]

@@ -171,7 +171,16 @@ back for "I want the gold-podium livery" exactly as Top Gear 2's
 **Created:** 2026-05-07
 **Priority:** nice-to-have
 **Status:** in-progress
-**Notes:** 2026-05-08 oil-slick slice shipped under
+**Notes:** 2026-05-08 debris slice shipped under
+`feat/debris-hazard` (slice 2 of 4). Adds `debris` to
+`HazardKindSchema`, registers it with grip 1 / damage 10
+offRoadObject / 1.5 m width / breakable, and authors three
+placements: Iron Borough Rivet Tunnel start straight, Glass Ridge
+Frostrelay decreasing-radius right, Crown Circuit Victory Causeway
+late-tour right approach. Pure runtime untouched: the existing
+breakable-cone path handled the new entry without code changes.
+
+2026-05-08 oil-slick slice shipped under
 `feat/oil-slick-hazard`. Audit-correction note: the original
 "limited to puddle + gravel_band" framing was wrong on second
 look. The schema already has 7 kinds and 6 are authored (the
@@ -184,11 +193,10 @@ non-breakable, narrower 8 m footprint than a puddle so it sits
 on a single lane), and three authored placements (Foundry Mile
 inside-line uphill apex, Cinder Gate left-curve climb, Grand
 Meridian late tour decreasing-radius left). Deferred under this
-F-NNN: `debris`, `slow_traffic`, `wind_gust`. Each is a clean
-follow-up slice (the pure runtime already handles per-tick grip
-+ optional damage, so debris is a one-line addition; slow_traffic
-needs a per-tick lane-bias term; wind_gust needs a lateral-push
-extension to evaluateHazards). Original notes follow.
+F-NNN: `slow_traffic`, `wind_gust`. Each is a clean follow-up
+slice. `slow_traffic` needs a per-tick lane-bias term;
+`wind_gust` needs a lateral-push extension to `evaluateHazards`.
+Original notes follow.
 
 Surfaced by the 2026-05-07 mass-appeal audit (Tier A #6).
 A grep across all 32 production tracks shows hazards limited to `puddle`

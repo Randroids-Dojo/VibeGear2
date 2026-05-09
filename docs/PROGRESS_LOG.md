@@ -6,6 +6,69 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(hazards): debris breakable obstacle (F-095 slice 2)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (track
+authoring gains a breakable damage hazard), [§22](gdd/22-data-and-content-pipeline.md)
+(`HazardKindSchema` enum extension; existing data files unchanged).
+**Branch / PR:** `feat/debris-hazard`, PR pending.
+**Status:** Slice 2 of 4 in F-095. `slow_traffic` and `wind_gust`
+stay open under F-095.
+
+### Done
+- Added `debris` to `HazardKindSchema`. Schema entry now lists 9
+  kinds (8 after slice 1 + this one).
+- Registered the hazard in `src/data/hazards.json`. Grip 1
+  (damage-only, no lateral grip change), damage 10 offRoadObject
+  (higher than a traffic cone's 6 so the hit reads as a real
+  consequence), 1.5 m width (narrower than a cone's 1.8 m so the
+  player can thread the gap), 4 m length, breakable so the entry
+  joins `brokenHazards` after first contact.
+- Authored the hazard on three production tracks: Iron Borough
+  Rivet Tunnel start straight (segment 0), Glass Ridge Frostrelay
+  late-track decreasing-radius right (segment 7), Crown Circuit
+  Victory Causeway late-tour right approach (segment 6). Each
+  placement targets a sight-line that lets the player react by
+  lap 2 even if they get clipped on lap 1.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2918 / 2918 passed across 157 suites; new
+  `hazards.test.ts` case asserts the Rivet Tunnel authored
+  placement emits an offRoadObject hit with grip 1 and joins
+  `brokenHazards`.
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- Pure runtime untouched. `evaluateHazards` already handles the
+  breakable-cone path (write the key into `brokenHazards`, then
+  short-circuit on the next pass), so debris reused that path
+  with damage 10 instead of 6.
+- Width 1.5 m. Cones are 1.8 m and the road is 14 m wide, so a
+  player who picks a clean line can thread debris without
+  bleeding speed. That preserves the tactical-decision goal:
+  debris punishes a sloppy line, not the lap as a whole.
+- Three placements, one per region. A full sweep across all 32
+  tracks belongs in a separate authoring slice once
+  `slow_traffic` / `wind_gust` also land so the tracks pass once
+  in batch, not three times.
+
+### Coverage ledger
+- §9 track-design: hazard variety expanded from 7 authored kinds
+  (after slice 1) to 8 across the 32-track production set.
+- §22 schema: `HazardKindSchema` now lists 9 kinds. Existing
+  hazard JSONs and track files load unchanged.
+
+### Followups created
+None. F-095 stays open for the two remaining hazard kinds.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(cosmetics): tour-podium livery ledger and title-screen badges (F-096 slice 1)
 
 **GDD sections touched:** [§8](gdd/08-progression-and-rewards.md)
