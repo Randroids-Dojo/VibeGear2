@@ -198,6 +198,14 @@ display names from championship data, livery-cosmetic unlocks
 (those belong under F-096), and an e2e for the locked-state
 disabled button.
 
+2026-05-09 locked-state e2e slice shipped under
+`test/car-locked-state-e2e`. Adds
+`e2e/garage-cars-locked.spec.ts` with two cases: bastion-lm shows
+a disabled "Locked" Buy button plus a "Win Iron Borough to
+unlock." reason pill when no tours are completed, and the same
+button switches to an enabled price label when `iron-borough` is
+in `progress.completedTours`. Closes the deferred sub-item.
+
 2026-05-08 pretty-tour-names slice shipped under
 `feat/tour-pretty-names`. Adds optional `name` to
 `ChampionshipTourSchema`, authors names on all eight tours in
