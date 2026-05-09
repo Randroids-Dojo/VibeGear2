@@ -74,6 +74,11 @@ import {
 import { getDamageBand, getDamageScalars } from "./damageBands";
 import type { DamageScalars } from "./damageBands";
 import {
+  createFuelState,
+  tickFuel,
+  type FuelState,
+} from "./fuel";
+import {
   resolvePresetScalars,
   type AssistScalars,
 } from "./difficultyPresets";
@@ -484,6 +489,17 @@ export interface RaceSessionAICar {
 export interface RaceSessionPlayerCar {
   car: CarState;
   nitro: NitroState;
+  /**
+   * F-104 slice 1. Per-race fuel reserve. Drains as the player drives
+   * via `tickFuel`; the gearbox upgrade tier scales economy.
+   * Depletion mid-race flips status to `dnf` with `dnfReason:
+   * "out-of-fuel"`. Capacity comes from
+   * `fuelCapacityForArchetype(track.archetype)` at session creation.
+   * AI cars are not tracked in slice 1 (the grid runs without fuel
+   * so a stock-gearbox player does not race against AI that DNFs on
+   * lap 6 of a 16-lap standard).
+   */
+  fuel: FuelState;
   lastNitroPressed: boolean;
   transmission: TransmissionState;
   /**
@@ -806,6 +822,7 @@ export function createRaceSession(config: RaceSessionConfig): RaceSessionState {
   const player: RaceSessionPlayerCar = {
     car: { ...INITIAL_CAR_STATE, ...(config.player.initial ?? {}) },
     nitro: createNitroForCar(config.player.stats, config.player.upgrades ?? null),
+    fuel: createFuelState(config.track.archetype),
     lastNitroPressed: false,
     transmission: createTransmissionForCar(config.player.stats, {
       mode: config.player.transmissionMode ?? "auto",
@@ -1832,6 +1849,23 @@ export function stepRaceSession(
     }
   }
 
+  // F-104 slice 1. Fuel tick. Drains only while the player is in
+  // `"racing"` status; countdown / pause / DNF ticks do not consume
+  // fuel. The depletion edge flips the player to `dnf` with reason
+  // `"out-of-fuel"` unless the player already wrecked this tick (wreck
+  // wins because the car is out of the race for a different reason).
+  const playerFuelResult = playerIsRacing
+    ? tickFuel({
+        state: state.player.fuel,
+        speedMps: nextPlayerCar.speed,
+        gearboxTier: config.player.upgrades?.gearbox ?? 0,
+        dt,
+      })
+    : { state: state.player.fuel, depleted: false };
+  if (playerFuelResult.depleted && !playerWreckedThisTick) {
+    nextPlayerStatus = "dnf";
+  }
+
   // §7 per-AI lap rollover + finishing. Each AI tracks its own lap
   // counter (the `RaceState.lap` field is player-only) and accumulates
   // a per-lap-times array so the §7 final-state builder can derive the
@@ -1888,6 +1922,11 @@ export function stepRaceSession(
   // so it doesn't even run on the wrecked tick.)
   if (playerWreckedThisTick) {
     nextPlayerDnfReason = "wrecked";
+  } else if (playerFuelResult.depleted) {
+    // F-104 slice 1. Out-of-fuel wins over off-track / no-progress on
+    // the same tick: the car can no longer make progress because the
+    // tank is empty, so the §7 windows are irrelevant.
+    nextPlayerDnfReason = "out-of-fuel";
   } else if (playerDnfResult?.dnf) {
     nextPlayerStatus = "dnf";
     nextPlayerDnfReason = playerDnfResult.reason;
@@ -2045,6 +2084,7 @@ export function stepRaceSession(
     player: {
       car: nextPlayerCar,
       nitro: playerNitroAfterPickups,
+      fuel: playerFuelResult.state,
       // Mirror the post-assist nitro value so the next tick's
       // rising-edge detection in `tickNitro` matches the input the
       // physics step actually consumed. This matters under
@@ -2329,6 +2369,7 @@ function clonePlayerCar(
   return {
     car: { ...player.car },
     nitro: { ...player.nitro },
+    fuel: { ...player.fuel },
     lastNitroPressed: player.lastNitroPressed,
     transmission: { ...player.transmission },
     lastShiftUpPressed: player.lastShiftUpPressed,

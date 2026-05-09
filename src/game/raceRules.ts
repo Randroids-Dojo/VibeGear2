@@ -194,6 +194,7 @@ export type DnfReason =
   | "no-progress"
   | "retired"
   | "wrecked"
+  | "out-of-fuel"
   | null;
 
 export interface DnfTickResult {

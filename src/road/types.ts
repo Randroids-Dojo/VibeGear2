@@ -7,7 +7,12 @@
  * without pulling in either the projector or the canvas drawer.
  */
 
-import type { TrackPickup, TrackSpawn, WeatherOption } from "@/data/schemas";
+import type {
+  TrackArchetype,
+  TrackPickup,
+  TrackSpawn,
+  WeatherOption,
+} from "@/data/schemas";
 
 /**
  * Virtual camera that the player car never visibly leaves.
@@ -120,6 +125,13 @@ export interface CompiledTrack {
    * keep the runtime path single-source from the compiled output.
    */
   difficulty: number;
+  /**
+   * §7 lap-count archetype mirrored from the source `Track.archetype`.
+   * The F-104 fuel runtime reads this to size the per-race fuel
+   * capacity at session creation without re-reading the authored
+   * JSON.
+   */
+  archetype: TrackArchetype;
   /**
    * Minimap polyline, one point per compiled segment, normalised into
    * the unit square. Honours `Track.minimapPoints` when supplied;
