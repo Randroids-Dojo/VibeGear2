@@ -783,6 +783,97 @@ describe("tickAI (AI-vs-AI overtake awareness)", () => {
   });
 });
 
+describe("tickAI (context-aware pass side)", () => {
+  const SWEEPER_RIGHT: CompiledSegmentBuffer = compileSegments([
+    { len: 1200, curve: 0.2, grade: 0, roadsideLeft: "d", roadsideRight: "d", hazards: [] },
+  ]);
+  const TIGHT_LEFT: CompiledSegmentBuffer = compileSegments([
+    { len: 1200, curve: -0.5, grade: 0, roadsideLeft: "d", roadsideRight: "d", hazards: [] },
+  ]);
+
+  function tickWith(driver: AIDriver, track: CompiledSegmentBuffer) {
+    return tickAI(
+      driver,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      { car: freshCar({ x: 0, z: -200, speed: 30 }) },
+      track,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [{ x: 0, z: 110, speed: 28 }],
+    );
+  }
+
+  it("clean line passes outside on a right-handed sweeper", () => {
+    const result = tickWith(archetypeDriver("clean_line"), SWEEPER_RIGHT);
+    // Outside of a right-handed sweeper is the left side (negative
+    // x). The combined racing-line bias (also pulls left) and the
+    // outside-pass offset both push steer negative; the overtake
+    // intent flips the readability cue and sets the intent.
+    expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.input.steer).toBeLessThan(0);
+  });
+
+  it("bully passes on the easier side regardless of curve direction", () => {
+    const cleanLine = tickWith(archetypeDriver("clean_line"), SWEEPER_RIGHT);
+    const bully = tickWith(
+      archetypeDriver("aggressive", { aggression: 1 }),
+      SWEEPER_RIGHT,
+    );
+    // Both archetypes fire overtake intent against the same target.
+    expect(cleanLine.nextAiState.intent).toBe("overtake");
+    expect(bully.nextAiState.intent).toBe("overtake");
+    // Clean line follows the §15 outside-pass rule (negative steer).
+    // Bully ignores convention and reads the easier-pass rule from
+    // `target.x <= 0 -> +1`, so its overtake-offset contribution
+    // pulls right while clean line pulls left. Expect a strict
+    // ordering: bully's steer is greater (less negative or
+    // positive) than clean line's on the same geometry.
+    expect(bully.input.steer).toBeGreaterThan(cleanLine.input.steer);
+  });
+
+  it("clean line passes inside on a tight left-hander (under-braking line)", () => {
+    const result = tickWith(archetypeDriver("clean_line"), TIGHT_LEFT);
+    // Inside of a tight left curve is the left side. The racing-
+    // line bias also pulls left, so steer should be strongly
+    // negative.
+    expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.input.steer).toBeLessThan(0);
+  });
+
+  it("falls back to the easier-pass rule on a straight track", () => {
+    const playerLeft = { x: -1, z: 110, speed: 28 };
+    const result = tickAI(
+      archetypeDriver("clean_line"),
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      { car: freshCar({ x: 0, z: -200, speed: 30 }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [playerLeft],
+    );
+    // Target is to the left of the AI; the easier-pass rule selects
+    // the right side, so steer goes positive.
+    expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.input.steer).toBeGreaterThan(0);
+  });
+});
+
 describe("tickAI (bully pass-margin override)", () => {
   // Place the AI directly behind a target on the centerline so the
   // pass-side branch (target.x <= 0) picks side = +1 and the lateral

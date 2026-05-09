@@ -27,6 +27,16 @@ export interface AIBehaviour {
    * during a pass.
    */
   readonly passMarginScalar: number;
+  /**
+   * When `true`, the overtake routine reads the authored curve under
+   * the AI and prefers the inside line in a braking zone (tight
+   * curve) and the outside line in a sweeper (gentle curve). When
+   * `false` the archetype falls back to the simple "easier-pass"
+   * rule (whichever side has more room) regardless of context. The
+   * bully archetype reads `false` per §15 "Passing behavior" - the
+   * bully ignores convention.
+   */
+  readonly prefersContextPasses: boolean;
 }
 
 export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>> =
@@ -46,6 +56,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantPaceBonus: 0,
       trafficLanePressure: 0.05,
       passMarginScalar: 1,
+      prefersContextPasses: true,
     }),
     clean_line: Object.freeze({
       archetype: "clean_line",
@@ -62,6 +73,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantPaceBonus: 0,
       trafficLanePressure: 0,
       passMarginScalar: 1,
+      prefersContextPasses: true,
     }),
     aggressive: Object.freeze({
       archetype: "aggressive",
@@ -79,6 +91,9 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       trafficLanePressure: 0.45,
       // Bully rubs more on a pass: 60 % of the polite pass margin.
       passMarginScalar: 0.6,
+      // Bully ignores convention - takes the easier pass regardless
+      // of inside / outside line context.
+      prefersContextPasses: false,
     }),
     defender: Object.freeze({
       archetype: "defender",
@@ -96,6 +111,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       trafficLanePressure: -0.2,
       // Cautious leaves more lateral room on a pass.
       passMarginScalar: 1.25,
+      prefersContextPasses: true,
     }),
     wet_specialist: Object.freeze({
       archetype: "wet_specialist",
@@ -112,6 +128,10 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantPaceBonus: 0.06,
       trafficLanePressure: 0.2,
       passMarginScalar: 1,
+      // Chaotic is occasionally brilliant, occasionally wrong - we
+      // let it follow context too so the brilliant moments are read-
+      // able as actual racing decisions rather than coin flips.
+      prefersContextPasses: true,
     }),
     endurance: Object.freeze({
       archetype: "endurance",
@@ -128,6 +148,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantPaceBonus: 0,
       trafficLanePressure: 0,
       passMarginScalar: 1,
+      prefersContextPasses: true,
     }),
   });
 

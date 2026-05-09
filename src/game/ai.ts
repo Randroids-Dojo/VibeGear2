@@ -226,6 +226,22 @@ export const AI_TUNING = Object.freeze({
    * `MAX_FIELD_COMPRESSION_PACE`.
    */
   FIELD_COMPRESSION_PER_METER: 0.0003,
+  /**
+   * Authored curve magnitude above which the overtake routine treats
+   * the segment as a tight braking zone and prefers the inside line
+   * (curve-direction side). `TrackSegmentSchema` keeps `curve` in
+   * `[-1, 1]`; `0.4` selects the upper-third of cornering values
+   * authored on real tracks.
+   */
+  OVERTAKE_BRAKING_CURVE_THRESHOLD: 0.4,
+  /**
+   * Lower bound on the sweeper window. Authored curves between this
+   * value and `OVERTAKE_BRAKING_CURVE_THRESHOLD` are treated as
+   * "in a sweeper" and pass on the outside line. Below this value
+   * the segment counts as effectively straight and the routine falls
+   * back to the easier-pass rule.
+   */
+  OVERTAKE_SWEEPER_CURVE_THRESHOLD: 0.1,
   /** Lap fraction where rocket starter launch boost stops applying. */
   ROCKET_LAUNCH_FRACTION: 0.18,
   /** Lap fraction where rocket starter late fade starts applying. */
@@ -352,6 +368,7 @@ export function tickAI(
         overtakeTarget,
         context.roadHalfWidth,
         behaviour.passMarginScalar,
+        behaviour.prefersContextPasses ? authoredCurve : 0,
       )
     : { active: false, offset: 0 };
   const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset + overtake.offset;
@@ -674,11 +691,56 @@ function pickOvertakeTarget(
   return best;
 }
 
+/**
+ * Pick the lateral side (`+1` for right of the target, `-1` for
+ * left) the AI should pass on. The default rule is "more room" -
+ * whichever side of the target has more clear road - but when an
+ * authored curve is supplied the AI prefers the §15 racing-line
+ * preferences:
+ *
+ *   - Tight curve (|curve| > `OVERTAKE_BRAKING_CURVE_THRESHOLD`):
+ *     inside-pass-under-braking. Pass-side equals the sign of the
+ *     curve so a right-hander selects the right side (the inside
+ *     line is the shorter path).
+ *   - Sweeper (|curve| in `[OVERTAKE_SWEEPER_CURVE_THRESHOLD,
+ *     OVERTAKE_BRAKING_CURVE_THRESHOLD]`): outside-pass-in-sweepers.
+ *     Pass-side is the negative of the sign of the curve so the AI
+ *     swings wide and uses the natural arc.
+ *   - Below the sweeper threshold (effectively straight): falls
+ *     through to the more-room rule.
+ *
+ * The bully archetype passes `0` here at the call site so it
+ * always falls through to the more-room rule.
+ */
+function pickOvertakePassSide(
+  target: OvertakeThreat,
+  authoredCurve: number,
+): 1 | -1 {
+  if (Number.isFinite(authoredCurve)) {
+    const magnitude = Math.abs(authoredCurve);
+    if (magnitude >= AI_TUNING.OVERTAKE_BRAKING_CURVE_THRESHOLD) {
+      return authoredCurve > 0 ? 1 : -1;
+    }
+    if (magnitude >= AI_TUNING.OVERTAKE_SWEEPER_CURVE_THRESHOLD) {
+      return authoredCurve > 0 ? -1 : 1;
+    }
+  }
+  return target.x <= 0 ? 1 : -1;
+}
+
 function overtakeOffset(
   aiCar: Readonly<CarState>,
   target: OvertakeThreat,
   roadHalfWidth: number,
   passMarginScalar: number,
+  /**
+   * Authored curve under the AI on this tick. `0` selects the
+   * easier-pass rule (whichever side has more room). A non-zero
+   * value selects an inside or outside line based on the curve
+   * magnitude. Bully archetypes pass `0` here so they ignore the
+   * preference per §15.
+   */
+  authoredCurve: number,
 ): { active: boolean; offset: number } {
   // Effective pass margin scaled by the archetype's
   // `passMarginScalar`. Bully rubs more (< 1.0); cautious leaves
@@ -687,7 +749,7 @@ function overtakeOffset(
     0,
     AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS * passMarginScalar,
   );
-  const passSide = target.x <= 0 ? 1 : -1;
+  const passSide = pickOvertakePassSide(target, authoredCurve);
   const desiredTarget = target.x + passSide * effectiveMargin;
   const boundedTarget = clamp(
     desiredTarget,
