@@ -169,6 +169,10 @@ export function compileTrack(track: Track): CompiledTrack {
         pickupIds: i === 0 ? pickupIds : EMPTY_IDS,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
+        // A jump is one discrete launch event per authored segment; only
+        // the first compiled subsegment carries it so the runtime
+        // trigger does not multiply when an authored segment subdivides.
+        jumpRampHeight: i === 0 ? seg.jump?.rampHeight : undefined,
       });
       cumulativeIndex += 1;
     }
@@ -356,6 +360,7 @@ export function compileSegments(authored: readonly TrackSegment[]): CompiledSegm
         pickupIds: i === 0 ? pickupIds : EMPTY_IDS,
         inTunnel: seg.inTunnel === true || seg.hazards.includes("tunnel"),
         tunnelMaterialId: seg.tunnelMaterial,
+        jumpRampHeight: i === 0 ? seg.jump?.rampHeight : undefined,
       });
       cumulativeIndex += 1;
     }

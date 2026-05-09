@@ -174,6 +174,21 @@ export const TrackPickupSchema = z.object({
 });
 export type TrackPickup = z.infer<typeof TrackPickupSchema>;
 
+/**
+ * Optional decorator marking a segment as an authored jump. The
+ * renderer reads `rampHeight` (in meters) to compute a parabolic
+ * sprite lift on top of the existing grade-driven projection;
+ * `grade` continues to shape the road silhouette, and `rampHeight`
+ * adds a decoupled launch on top of it. Future slices may extend
+ * this object with audio-cue or landing-zone fields, but the v1.0
+ * contract is deliberately one numeric knob so authoring stays
+ * legible across the 35 shipped track JSONs.
+ */
+export const TrackJumpSchema = z.object({
+  rampHeight: z.number().min(0).max(3),
+});
+export type TrackJump = z.infer<typeof TrackJumpSchema>;
+
 export const TrackSegmentSchema = z.object({
   len: positiveNumber,
   curve: z.number().min(-1).max(1),
@@ -184,6 +199,7 @@ export const TrackSegmentSchema = z.object({
   pickups: z.array(TrackPickupSchema).optional(),
   inTunnel: z.boolean().optional(),
   tunnelMaterial: slug.optional(),
+  jump: TrackJumpSchema.optional(),
 });
 export type TrackSegment = z.infer<typeof TrackSegmentSchema>;
 

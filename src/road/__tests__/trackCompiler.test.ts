@@ -217,6 +217,42 @@ describe("compileTrack (full-track entry point)", () => {
     });
   });
 
+  it("accepts authored jump.rampHeight in TrackSchema and mirrors it onto the first compiled subsegment", () => {
+    const t = track({
+      segments: [
+        seg({ len: 13, jump: { rampHeight: 1.8 } }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+        seg({ len: 60 }),
+      ],
+      lengthMeters: 193,
+    });
+    const parsed = TrackSchema.safeParse(t);
+    expect(parsed.success).toBe(true);
+    const compiled = compileTrack(t);
+    // 13 m authored at 6 m/segment compiles to 3 subsegments. Only
+    // the first carries jumpRampHeight so the runtime trigger does
+    // not multiply when an authored segment subdivides.
+    expect(compiled.segments[0]!.jumpRampHeight).toBeCloseTo(1.8, 6);
+    expect(compiled.segments[1]!.jumpRampHeight).toBeUndefined();
+    expect(compiled.segments[2]!.jumpRampHeight).toBeUndefined();
+    // Segments without an authored jump stay unchanged.
+    expect(compiled.segments[3]!.jumpRampHeight).toBeUndefined();
+  });
+
+  it("rejects out-of-range jump.rampHeight values via the schema", () => {
+    const tooHigh = track({
+      segments: [seg({ len: 60, jump: { rampHeight: 5 } })],
+      lengthMeters: 60,
+    });
+    expect(TrackSchema.safeParse(tooHigh).success).toBe(false);
+    const negative = track({
+      segments: [seg({ len: 60, jump: { rampHeight: -1 } })],
+      lengthMeters: 60,
+    });
+    expect(TrackSchema.safeParse(negative).success).toBe(false);
+  });
+
   it("compiles a 13 m authored segment to 3 compiled segments (ceil(13/6))", () => {
     const t = track({
       segments: [seg({ len: 13 }), seg({ len: 13 })],
