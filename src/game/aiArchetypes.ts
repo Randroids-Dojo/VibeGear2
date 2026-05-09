@@ -18,6 +18,15 @@ export interface AIBehaviour {
    * player is close enough to engage traffic pressure.
    */
   readonly trafficLanePressure: number;
+  /**
+   * Multiplier on the overtake pass margin. `1.0` is the default
+   * polite pass; `< 1.0` rubs more (aggressive / bully); `> 1.0`
+   * leaves more room (defender / cautious). The product
+   * `OVERTAKE_PLAYER_MARGIN_METERS * passMarginScalar` is the
+   * effective lateral spacing the AI tries to keep from a target
+   * during a pass.
+   */
+  readonly passMarginScalar: number;
 }
 
 export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>> =
@@ -36,6 +45,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0.05,
+      passMarginScalar: 1,
     }),
     clean_line: Object.freeze({
       archetype: "clean_line",
@@ -51,6 +61,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0,
+      passMarginScalar: 1,
     }),
     aggressive: Object.freeze({
       archetype: "aggressive",
@@ -66,6 +77,8 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0.45,
+      // Bully rubs more on a pass: 60 % of the polite pass margin.
+      passMarginScalar: 0.6,
     }),
     defender: Object.freeze({
       archetype: "defender",
@@ -81,6 +94,8 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: -0.2,
+      // Cautious leaves more lateral room on a pass.
+      passMarginScalar: 1.25,
     }),
     wet_specialist: Object.freeze({
       archetype: "wet_specialist",
@@ -96,6 +111,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantChance: 0.015,
       brilliantPaceBonus: 0.06,
       trafficLanePressure: 0.2,
+      passMarginScalar: 1,
     }),
     endurance: Object.freeze({
       archetype: "endurance",
@@ -111,6 +127,7 @@ export const AI_ARCHETYPE_BEHAVIOURS: Readonly<Record<AIArchetype, AIBehaviour>>
       brilliantChance: 0,
       brilliantPaceBonus: 0,
       trafficLanePressure: 0,
+      passMarginScalar: 1,
     }),
   });
 

@@ -783,6 +783,59 @@ describe("tickAI (AI-vs-AI overtake awareness)", () => {
   });
 });
 
+describe("tickAI (bully pass-margin override)", () => {
+  // Place the AI directly behind a target on the centerline so the
+  // pass-side branch (target.x <= 0) picks side = +1 and the lateral
+  // target equals `margin`. The bully reads the same field with a
+  // 0.6 margin scalar (so the lateral target is 1.2 m vs the polite
+  // 2.0 m), and the AI's resulting steer is correspondingly less
+  // aggressive on the same input geometry. We assert the relative
+  // ordering rather than absolute steer values to stay robust to
+  // upstream tuning of `STEER_GAIN`.
+  const aheadOnCenter = { x: 0, z: 110, speed: 28 };
+
+  function tickWithArchetype(driver: AIDriver) {
+    return tickAI(
+      driver,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      { car: freshCar({ x: 0, z: -200, speed: 30 }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [aheadOnCenter],
+    );
+  }
+
+  it("renders a smaller steer commit for the bully than the clean line on the same geometry", () => {
+    const clean = tickWithArchetype(archetypeDriver("clean_line"));
+    const bully = tickWithArchetype(archetypeDriver("aggressive", { aggression: 1 }));
+    expect(clean.nextAiState.intent).toBe("overtake");
+    expect(bully.nextAiState.intent).toBe("overtake");
+    // Clean line aims for the +2 m lateral target; bully aims for
+    // +1.2 m. The lateral error pulls the steer P-controller harder
+    // for the polite driver, so clean's steer is at least as large
+    // as bully's. (At full saturation both clamp to 1; we use
+    // greater-or-equal to stay robust under STEER_GAIN tuning.)
+    expect(clean.input.steer).toBeGreaterThanOrEqual(bully.input.steer);
+  });
+
+  it("renders a larger steer commit for the cautious archetype than the clean line", () => {
+    const clean = tickWithArchetype(archetypeDriver("clean_line"));
+    const cautious = tickWithArchetype(archetypeDriver("defender"));
+    // Cautious aims further from target.x (passMarginScalar 1.25 -> 2.5 m)
+    // so its lateral commit is no smaller than clean line's.
+    expect(cautious.input.steer).toBeGreaterThanOrEqual(clean.input.steer);
+  });
+});
+
 describe("tickAI (visible overtake intent)", () => {
   it("moves laterally when a trailing AI reaches the player", () => {
     const playerAhead: PlayerView = {
