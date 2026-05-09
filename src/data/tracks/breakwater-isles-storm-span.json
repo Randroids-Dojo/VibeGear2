@@ -13,7 +13,7 @@
   "segments": [
     { "len": 260, "curve": 0, "grade": 0, "roadsideLeft": "light_pole", "roadsideRight": "light_pole", "hazards": [] },
     { "len": 260, "curve": -0.12, "grade": 0.02, "roadsideLeft": "guardrail", "roadsideRight": "water_wall", "hazards": ["puddle"] },
-    { "len": 280, "curve": 0, "grade": 0.04, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": [] },
+    { "len": 280, "curve": 0, "grade": 0.04, "roadsideLeft": "water_wall", "roadsideRight": "guardrail", "hazards": ["wind_gust_left"] },
     {
       "len": 260,
       "curve": 0.16,

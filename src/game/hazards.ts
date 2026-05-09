@@ -12,6 +12,14 @@ export interface HazardEvent {
   readonly gripMultiplier: number;
   readonly hit: HitEvent | null;
   readonly breakable: boolean;
+  /**
+   * F-095 slice 3. Signed lateral push in m/s per second contributed
+   * by this hazard for the current tick. `0` for hazards without a
+   * `lateralPushMpsPerSecond` registry field. The runtime applies
+   * the per-tick aggregate (`HazardTickEffect.lateralPush`) after
+   * the physics step.
+   */
+  readonly lateralPush: number;
 }
 
 export interface EvaluateHazardsInput {
@@ -25,6 +33,13 @@ export interface HazardTickEffect {
   readonly events: readonly HazardEvent[];
   readonly gripMultiplier: number;
   readonly brokenHazards: ReadonlySet<string>;
+  /**
+   * F-095 slice 3. Aggregate lateral push (m/s per second) summed
+   * across all active hazards on this tick. The runtime applies this
+   * to `car.x` once the physics step has integrated input. `0` when
+   * no overlapping hazard carries a `lateralPushMpsPerSecond` field.
+   */
+  readonly lateralPush: number;
 }
 
 const EMPTY_EVENTS: readonly HazardEvent[] = [];
@@ -40,6 +55,7 @@ export function evaluateHazards(input: EvaluateHazardsInput): HazardTickEffect {
   let writableBroken: Set<string> | null = null;
   let events: HazardEvent[] | null = null;
   let gripMultiplier = 1;
+  let lateralPush = 0;
 
   for (const hazardId of segment.hazardIds) {
     const hazard = input.hazardsById.get(hazardId);
@@ -52,6 +68,7 @@ export function evaluateHazards(input: EvaluateHazardsInput): HazardTickEffect {
     events ??= [];
     events.push(event);
     gripMultiplier *= event.gripMultiplier;
+    lateralPush += event.lateralPush;
     if (event.breakable) {
       writableBroken ??= new Set(nextBroken);
       writableBroken.add(key);
@@ -63,6 +80,7 @@ export function evaluateHazards(input: EvaluateHazardsInput): HazardTickEffect {
     events: events ?? EMPTY_EVENTS,
     gripMultiplier,
     brokenHazards: nextBroken,
+    lateralPush,
   };
 }
 
@@ -93,6 +111,7 @@ function buildHazardEvent(
     gripMultiplier: hazard.gripMultiplier ?? 1,
     hit: buildHit(hazard, speed),
     breakable: hazard.breakable,
+    lateralPush: hazard.lateralPushMpsPerSecond ?? 0,
   };
 }
 
@@ -126,5 +145,6 @@ function noHazardEffect(
     events: EMPTY_EVENTS,
     gripMultiplier: 1,
     brokenHazards: brokenHazards ?? EMPTY_BROKEN_HAZARDS,
+    lateralPush: 0,
   };
 }

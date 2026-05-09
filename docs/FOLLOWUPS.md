@@ -183,7 +183,22 @@ back for "I want the gold-podium livery" exactly as Top Gear 2's
 **Created:** 2026-05-07
 **Priority:** nice-to-have
 **Status:** in-progress
-**Notes:** 2026-05-08 debris slice shipped under
+**Notes:** 2026-05-08 wind-gust slice shipped under
+`feat/wind-gust-hazard` (slice 3 of 4). Adds `wind_gust` to
+`HazardKindSchema` and the optional
+`lateralPushMpsPerSecond` field to
+`HazardRegistryEntrySchema`; registers two oriented entries
+(`wind_gust_right` +4 m/s/s, `wind_gust_left` -4 m/s/s) so a
+single registry handles both bias directions; extends
+`evaluateHazards` to aggregate the per-tick lateral push and
+threads it through the player and AI step paths in
+`raceSession.ts`. The push is applied after the existing physics
+step (`car.x += effect.lateralPush * dt`) so non-windy tracks
+keep identical numerics. Authored on Velvet Coast Cliffline Arc
+(right gust on the climb segment) and Breakwater Isles Storm Span
+(left gust on the open straight).
+
+2026-05-08 debris slice shipped under
 `feat/debris-hazard` (slice 2 of 4). Adds `debris` to
 `HazardKindSchema`, registers it with grip 1 / damage 10
 offRoadObject / 1.5 m width / breakable, and authors three
@@ -205,9 +220,9 @@ non-breakable, narrower 8 m footprint than a puddle so it sits
 on a single lane), and three authored placements (Foundry Mile
 inside-line uphill apex, Cinder Gate left-curve climb, Grand
 Meridian late tour decreasing-radius left). Deferred under this
-F-NNN: `slow_traffic`, `wind_gust`. Each is a clean follow-up
-slice. `slow_traffic` needs a per-tick lane-bias term;
-`wind_gust` needs a lateral-push extension to `evaluateHazards`.
+F-NNN: `slow_traffic`. Needs a non-AI back-marker car runtime
+the player has to weave around; that is its own slice once the
+authoring placements (debris / wind_gust) prove out in playtest.
 Original notes follow.
 
 Surfaced by the 2026-05-07 mass-appeal audit (Tier A #6).

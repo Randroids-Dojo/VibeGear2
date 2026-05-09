@@ -128,6 +128,14 @@ export const HazardKindSchema = z.enum([
   // struck the entry is added to `brokenHazards` for the rest of
   // the lap, mirroring the existing breakable-cone pattern.
   "debris",
+  // F-095 slice 3. Wind gust. Full-road lateral push authored on
+  // exposed coastal / cliff segments. No grip change, no damage:
+  // the consequence is that the player drifts toward the outside
+  // of the road if they do not counter-steer through the affected
+  // segment. Registry entries carry the signed
+  // `lateralPushMpsPerSecond` (positive = push right, negative =
+  // push left) which the runtime applies after the physics step.
+  "wind_gust",
 ]);
 export type HazardKind = z.infer<typeof HazardKindSchema>;
 
@@ -142,6 +150,16 @@ export const HazardRegistryEntrySchema = z.object({
   damageKind: z.enum(["rub", "offRoadObject"]).nullable().optional(),
   damageMagnitude: positiveNumber.nullable().optional(),
   breakable: z.boolean(),
+  /**
+   * F-095 slice 3. Optional signed lateral push in m/s per second
+   * applied to a car overlapping this hazard. Positive pushes the
+   * car to the right, negative to the left; the runtime applies it
+   * once per tick alongside the existing grip multiplier so a
+   * windy segment can deflect the car without scrubbing speed.
+   * Omitted on every existing hazard so non-wind kinds keep their
+   * lateral integration unchanged.
+   */
+  lateralPushMpsPerSecond: z.number().optional(),
 });
 export type HazardRegistryEntry = z.infer<typeof HazardRegistryEntrySchema>;
 
