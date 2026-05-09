@@ -6,6 +6,59 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(garage): gearbox fuel-range copy (F-104 slice 3)
+
+**GDD sections touched:** [§12](gdd/12-upgrade-and-economy-system.md)
+(no schema or data change; presentation-only refinement of the
+gearbox tier row on the garage upgrade page so the player sees why
+the gearbox upgrade extends fuel range).
+**Branch / PR:** `feat/fuel-garage-copy`, PR pending.
+**Status:** Slice 3 of the F-104 four-slice fuel feature. Slice 4
+(out-of-fuel UX polish - audio sputter and results-screen reason
+copy) stays open under F-104.
+
+### Done
+- Added `gearboxFuelRangeBonusLabel(tier)` and `formatRowEffects`
+  in `src/components/garage/garageUpgradeState.ts`. Gearbox rows
+  now append `+N% fuel range` (cumulative vs. stock, derived from
+  the existing `gearboxFuelEfficiency` curve) to the existing
+  `formatEffects` output. Non-gearbox rows are unchanged.
+- The label uses `gearboxFuelEfficiency(upgrade.tier)` directly so
+  the per-tier bonus stays in sync with the runtime drain curve in
+  `src/game/fuel.ts`. Linear ramp at 10 % per tier vs. stock
+  matches the §12 cap of tier 5.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run src/components/garage/__tests__/garageUpgradeState.test.ts`
+  7 / 7 passed; two new cases assert the gearbox row contains
+  `+10% fuel range` at tier 1 and `+20% fuel range` at tier 2,
+  plus a regression case asserting non-gearbox rows do not pick up
+  the suffix.
+
+### Assumptions
+- The cumulative-vs-stock framing (`+10 %`, `+20 %`, ...) is
+  clearer than marginal-from-previous-tier (`+10 %`, `+9.1 %`,
+  ...). It mirrors how the existing numeric effect labels
+  surface percentages relative to the base stat (`accel +4 %`,
+  `top speed +3 %`), so the row stays consistent.
+- No tuning change to `BASE_CONSUMPTION_LPS_PER_MPS` or the
+  per-archetype capacity table in this slice. Playtest data
+  drives the next tune pass; in the meantime the slice 1
+  defaults stand.
+
+### GDD coverage
+- §12 Upgrade and economy: presentation-only; no requirement
+  delta. The §12 row already lists gearbox as a category; this
+  slice surfaces the F-104 fuel-range effect on it.
+
+### Followups
+- F-104 slice 4 (out-of-fuel UX polish) still open per the
+  `docs/FOLLOWUPS.md` F-104 entry.
+
+---
+
 ## 2026-05-09: feat(hud): fuel gauge meter (F-104 slice 2)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-pause.md) (new

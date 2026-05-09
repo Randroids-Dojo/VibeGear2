@@ -8,6 +8,7 @@ import type {
 import { UpgradeCategorySchema } from "@/data/schemas";
 import { UPGRADES } from "@/data/upgrades";
 import type { EconomyFailure } from "@/game/economy";
+import { gearboxFuelEfficiency } from "@/game/fuel";
 
 const UPGRADE_CATEGORIES: ReadonlyArray<UpgradeCategory> =
   UpgradeCategorySchema.options;
@@ -65,7 +66,9 @@ export function buildGarageUpgradeView(
         : nextUpgrade
           ? `${tierLabel(nextUpgrade.tier)} (${nextUpgrade.cost} credits)`
           : "No upgrade available",
-      effectsLabel: nextUpgrade ? formatEffects(nextUpgrade.effects) : "No further effect",
+      effectsLabel: nextUpgrade
+        ? formatRowEffects(category, nextUpgrade)
+        : "No further effect",
       canPurchase,
       disabledReason: disabledReason({
         activeCar,
@@ -166,6 +169,25 @@ function tierLabel(tier: number): string {
     default:
       return `Tier ${tier}`;
   }
+}
+
+function formatRowEffects(
+  category: UpgradeCategory,
+  upgrade: Upgrade,
+): string {
+  const base = formatEffects(upgrade.effects);
+  if (category !== "gearbox") return base;
+  // F-104 slice 3. Surface the gearbox tier's fuel-range bonus next to the
+  // numeric effects so the player sees why upgrading the gearbox extends
+  // how far they get on a tank. The per-tier range multiplier comes from
+  // `gearboxFuelEfficiency` and is linear (10 % per tier vs stock).
+  const range = gearboxFuelRangeBonusLabel(upgrade.tier);
+  return base === "No numeric effect listed" ? range : `${base}, ${range}`;
+}
+
+function gearboxFuelRangeBonusLabel(tier: number): string {
+  const bonus = (gearboxFuelEfficiency(tier) - 1) * 100;
+  return `+${Math.round(bonus)}% fuel range`;
 }
 
 function formatEffects(effects: Upgrade["effects"]): string {

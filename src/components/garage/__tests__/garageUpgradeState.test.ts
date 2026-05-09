@@ -34,6 +34,48 @@ describe("buildGarageUpgradeView", () => {
     expect(engine?.disabledReason).toBe("");
   });
 
+  it("surfaces the cumulative fuel-range bonus on gearbox rows", () => {
+    const save: SaveGame = {
+      ...defaultSave(),
+      garage: {
+        ...defaultSave().garage,
+        credits: 50000,
+      },
+    };
+
+    const view = buildGarageUpgradeView(save);
+    const gearbox = view.rows.find((row) => row.category === "gearbox");
+    expect(gearbox?.nextUpgrade?.tier).toBe(1);
+    expect(gearbox?.effectsLabel).toContain("+10% fuel range");
+
+    const tier2View = buildGarageUpgradeView({
+      ...save,
+      garage: {
+        ...save.garage,
+        installedUpgrades: {
+          ...save.garage.installedUpgrades,
+          "sparrow-gt": {
+            ...save.garage.installedUpgrades["sparrow-gt"]!,
+            gearbox: 1,
+          },
+        },
+      },
+    });
+    const tier2Gearbox = tier2View.rows.find((row) => row.category === "gearbox");
+    expect(tier2Gearbox?.nextUpgrade?.tier).toBe(2);
+    expect(tier2Gearbox?.effectsLabel).toContain("+20% fuel range");
+  });
+
+  it("does not append a fuel-range bonus to non-gearbox rows", () => {
+    const save: SaveGame = {
+      ...defaultSave(),
+      garage: { ...defaultSave().garage, credits: 50000 },
+    };
+    const view = buildGarageUpgradeView(save);
+    const engine = view.rows.find((row) => row.category === "engine");
+    expect(engine?.effectsLabel).not.toContain("fuel range");
+  });
+
   it("disables a next tier when credits are short", () => {
     const save: SaveGame = {
       ...defaultSave(),
