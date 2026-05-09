@@ -327,8 +327,22 @@ churn ships in one wave.
 ## F-094: Authored jumps and crests across tours 2-8
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier A #5).
+**Status:** in-progress
+**Notes:** Slice 1 shipped 2026-05-09 under
+`feat/jump-schema-field` after a 2-agent design debate landed on
+"explicit schema field, one numeric knob, no runtime state
+machine at v1.0." Adds `TrackJumpSchema` (`{ rampHeight }` strictly positive, max
+3 m) optionally on `TrackSegmentSchema`, mirrors it as
+`jumpRampHeight?: number` on `CompiledSegment`, and the compiler
+writes the value onto the first compiled subsegment only so the
+runtime trigger does not multiply when an authored segment
+subdivides. Behaviour-neutral on the 35 existing tracks. Slices
+2-5 still open: renderer lift (parabolic `liftPx` curve keyed on
+`rampHeight`), audio cue + §16 camera shake on the lift curve's
+descent-zero crossing, AI sprite parity, and per-tour authoring
+across tours 2-8. Original entry below.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier A #5).
 Zero of the 35 track JSONs declare jumps, ramps, or dramatic positive
 grades for air time. GDD §3 names jumps as a Top Gear 2 staple
 ("pickups, jumps, obstacles"). The schema supports `grade` per segment

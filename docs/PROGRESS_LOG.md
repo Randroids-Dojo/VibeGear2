@@ -6,6 +6,71 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(schema): jump.rampHeight field (F-094 slice 1)
+
+**GDD sections touched:** [§3](gdd/03-design-pillars.md) (Top Gear 2
+"jumps, obstacles" staple) and [§22](gdd/22-data-schemas.md)
+(`TrackSegmentSchema` extension).
+**Branch / PR:** `feat/jump-schema-field`, PR pending.
+**Status:** Slice 1 of F-094. Renderer lift, audio cue, AI sprite
+parity, and the per-tour authoring slices stay open.
+
+### Done
+- Added `TrackJumpSchema` in `src/data/schemas.ts` with a single
+  bounded numeric field (`rampHeight`: strictly positive, max 3
+  meters). Optional on `TrackSegmentSchema` so the existing track
+  JSONs validate unchanged. Zero rejects so the field's presence
+  always marks a real launch; a zero ramp would be a degenerate
+  authoring.
+- Mirrored the field as `jumpRampHeight?: number` on
+  `CompiledSegment` in `src/road/types.ts`. Optional so legacy
+  consumers see the same shape they always did.
+- Compiler in `src/road/trackCompiler.ts` writes
+  `jumpRampHeight` only on the first compiled subsegment of an
+  authored segment. A jump is one discrete launch event per
+  authored segment; subdividing across compiled subsegments would
+  multiply the runtime trigger.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2983 / 2983 across 162 suites; 2 new cases in
+  `trackCompiler.test.ts` covering the schema-accept + first-
+  subsegment-only mirror, and the schema-reject path for out-of-
+  range `rampHeight` (negative, zero, and above 3).
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- **One numeric knob over three.** The 2-agent design debate that
+  produced this slice considered three-field
+  (`rampHeight + landZone + minSpeedMps`) and one-field designs.
+  Both agents converged on one field after Round 3: speed-gating
+  is a runtime feel constant and `landZone` can be derived from
+  the lift curve's descent-zero crossing in slice 3, so encoding
+  them in 35 track JSONs would be premature.
+- **Schema vs. renderer-only detection.** The debate's other axis
+  was "use existing `grade` band edges + a derived crest detector"
+  vs. "explicit schema field." Both agents agreed authorial intent
+  ("this is a jump") is a contract worth encoding rather than
+  reverse-engineering from a numerical coincidence on `grade`.
+- **First subsegment only.** Pickups already follow this pattern
+  in `trackCompiler.ts`. Reusing the convention keeps the runtime
+  trigger semantics consistent across schema decorators.
+
+### GDD coverage
+- §22 Data schemas: `TrackSegmentSchema` extended in a backward-
+  compatible way.
+- §3 Design pillars: this slice does not yet make jumps visible -
+  that lands in slice 2 (renderer lift). It's the schema scaffold
+  for the visible feature.
+
+### Followups
+- F-094 stays in-progress for slices 2-5 (renderer lift, audio +
+  camera shake, AI sprite parity, per-tour authoring).
+
+---
+
 ## 2026-05-09: test(e2e): feedback FAB coverage (F-077)
 
 **GDD sections touched:** Q-012 option (b) - the global feedback

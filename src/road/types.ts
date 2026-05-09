@@ -74,6 +74,14 @@ export interface CompiledSegment {
   pickupIds: readonly string[];
   inTunnel?: boolean;
   tunnelMaterialId?: string;
+  /**
+   * Authored jump decorator mirrored from `TrackSegment.jump`. When
+   * set, the renderer reads `rampHeight` (meters) to lift the player
+   * car sprite along a parabolic curve on top of the existing
+   * grade-driven projection. Optional so the 35 existing tracks
+   * compile unchanged.
+   */
+  jumpRampHeight?: number;
 }
 
 /**
