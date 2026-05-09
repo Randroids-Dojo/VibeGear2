@@ -1424,7 +1424,7 @@ export function stepRaceSession(
   // post-finish). Freezing the snapshot is what makes a retired player
   // sit in place across the rest of the race rather than continuing to
   // coast through whatever was already in `car.speed`.
-  const nextPlayerCar = playerIsRacing
+  const nextPlayerCarPostStep = playerIsRacing
     ? step(
         state.player.car,
         effectivePlayerInput,
@@ -1440,6 +1440,17 @@ export function stepRaceSession(
         },
       )
     : { ...state.player.car };
+  // F-095 slice 3. Apply the per-tick wind-gust lateral push after
+  // the physics integration so the gust deflects the post-step
+  // lane position. Pure additive on `car.x`; no impact when no
+  // overlapping hazard contributes a `lateralPushMpsPerSecond`.
+  const nextPlayerCar =
+    playerIsRacing && playerHazards.lateralPush !== 0
+      ? {
+          ...nextPlayerCarPostStep,
+          x: nextPlayerCarPostStep.x + playerHazards.lateralPush * dt,
+        }
+      : nextPlayerCarPostStep;
 
   const nextAi: RaceSessionAICar[] = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
@@ -1520,7 +1531,7 @@ export function stepRaceSession(
       aiConfig.stats,
       nextWeather,
     );
-    const nextCar = step(
+    const nextCarPostStep = step(
       entry.car,
       tick.input,
       aiConfig.stats,
@@ -1533,6 +1544,11 @@ export function stepRaceSession(
         weatherGripScalar: aiWeatherGripScalar,
       },
     );
+    // F-095 slice 3. Same wind-gust lateral push as the player path.
+    const nextCar =
+      aiHazards.lateralPush !== 0
+        ? { ...nextCarPostStep, x: nextCarPostStep.x + aiHazards.lateralPush * dt }
+        : nextCarPostStep;
     return {
       car: nextCar,
       state: tick.nextAiState,
@@ -2199,6 +2215,7 @@ const EMPTY_HAZARD_EFFECT = Object.freeze({
   events: Object.freeze([]),
   gripMultiplier: 1,
   brokenHazards: EMPTY_BROKEN_HAZARDS,
+  lateralPush: 0,
 });
 const EMPTY_PICKUP_EFFECT = Object.freeze({
   events: Object.freeze([]),

@@ -106,5 +106,31 @@
     "damageKind": "offRoadObject",
     "damageMagnitude": 10,
     "breakable": true
+  },
+  {
+    "id": "wind_gust_right",
+    "kind": "wind_gust",
+    "displayName": "Wind Gust",
+    "defaultWidth": 14,
+    "defaultLength": 24,
+    "laneOffset": 0,
+    "gripMultiplier": 1,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false,
+    "lateralPushMpsPerSecond": 4
+  },
+  {
+    "id": "wind_gust_left",
+    "kind": "wind_gust",
+    "displayName": "Wind Gust",
+    "defaultWidth": 14,
+    "defaultLength": 24,
+    "laneOffset": 0,
+    "gripMultiplier": 1,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false,
+    "lateralPushMpsPerSecond": -4
   }
 ]

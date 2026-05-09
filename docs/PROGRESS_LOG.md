@@ -6,6 +6,89 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(hazards): wind-gust lateral-push hazard (F-095 slice 3)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (track
+authoring gains a lateral-push hazard for exposed segments),
+[§22](gdd/22-data-and-content-pipeline.md) (`HazardKindSchema`
+enum extension and new optional `lateralPushMpsPerSecond` field on
+`HazardRegistryEntrySchema`; existing data files load unchanged
+because both additions are optional).
+**Branch / PR:** `feat/wind-gust-hazard`, PR pending.
+**Status:** Slice 3 of 4 in F-095. `slow_traffic` is the only
+hazard kind still open under F-095.
+
+### Done
+- Added `wind_gust` to `HazardKindSchema`. Schema entry now lists
+  10 kinds (8 after slice 1, 9 after slice 2, 10 after this).
+- Added optional `lateralPushMpsPerSecond` to
+  `HazardRegistryEntrySchema`. Signed: positive pushes the car
+  right, negative pushes left. Omitted on every existing hazard so
+  non-wind kinds keep their lateral integration unchanged.
+- Registered two oriented entries in `src/data/hazards.json`:
+  `wind_gust_right` (+4 m/s/s) and `wind_gust_left` (-4 m/s/s).
+  Two ids share the same `kind` so a single registry covers both
+  bias directions without an authoring-time wrapper.
+- Extended `HazardEvent` and `HazardTickEffect` in
+  `src/game/hazards.ts` with a `lateralPush` field. Per-event
+  values come from the registry; the per-tick aggregate sums them
+  so two concurrent overlapping wind hazards combine instead of
+  cancelling.
+- Wired the per-tick aggregate into `stepRaceSession`. After the
+  physics step, the player car's `x` is adjusted by
+  `lateralPush * dt`; the AI integration applies the same push.
+  Tracks without a `wind_gust` placement keep `lateralPush === 0`
+  so existing race-session test fixtures see identical numerics.
+- Authored two placements: Velvet Coast Cliffline Arc segment 2
+  (right gust on the cliff climb so the player drifts toward the
+  outside guardrail unless they counter-steer), Breakwater Isles
+  Storm Span segment 2 (left gust on the open coastal straight
+  for symmetry).
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2934 / 2934 passed across 159 suites; new
+  `hazards.test.ts` case asserts the Cliffline Arc placement
+  contributes a +4 m/s/s push with grip 1 and no hit. The
+  existing race-session integration tests stayed green because
+  none of their fixtures author a `wind_gust`.
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- Two oriented registry entries vs. a signed laneOffset. Authoring
+  bias direction at the registry level keeps track JSON clean
+  (`hazards: ["wind_gust_right"]`) and avoids a per-segment sign
+  flip; modders can add additional entries (a stronger gust, a
+  diagonal corner gust) without runtime changes.
+- Push applied after step, not within. Threading a per-tick
+  lateral-push parameter through `step()` would touch the entire
+  physics surface; layering a single post-step `car.x` adjustment
+  is the smallest change that produces a visible deflection.
+- Two placements rather than the F-095 ask of "distribute across
+  mid-late tours". A full sweep belongs in a separate authoring
+  slice once `slow_traffic` also lands so the tracks pass once in
+  batch, not three times.
+
+### Coverage ledger
+- §9 track-design: hazard variety expanded from 8 authored kinds
+  (after slice 2) to 9 across the 32-track production set; oil
+  slick remains the only kind authored on three tracks, the rest
+  are sized for a follow-up sweep.
+- §22 schema: `HazardKindSchema` lists 10 kinds; the optional
+  `lateralPushMpsPerSecond` joins `gripMultiplier` and
+  `damageKind` / `damageMagnitude` as the optional behavior knobs
+  on `HazardRegistryEntrySchema`.
+
+### Followups created
+None. F-095 stays open for `slow_traffic`.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(tours): pretty tour names from championship data (F-097 follow-up)
 
 **GDD sections touched:** [§22](gdd/22-data-and-content-pipeline.md)

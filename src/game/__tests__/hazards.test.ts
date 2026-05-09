@@ -108,6 +108,23 @@ describe("evaluateHazards", () => {
     expect(effect.events[0]?.hit).toBeNull();
   });
 
+  it("aggregates the F-095 wind-gust lateral push", () => {
+    // Cliffline Arc segment 2 (z range 480-660) carries the F-095
+    // `wind_gust_right` entry. Lateral push is signed (positive =
+    // right) and the per-tick aggregate flows through the
+    // HazardTickEffect for the runtime to apply post-step.
+    const track = loadTrack("velvet-coast/cliffline-arc");
+    const effect = evaluateHazards({
+      car: car({ z: 540 }),
+      track,
+      hazardsById: HAZARDS_BY_ID,
+    });
+    expect(effect.events[0]?.hazard.id).toBe("wind_gust_right");
+    expect(effect.lateralPush).toBeCloseTo(4, 6);
+    expect(effect.gripMultiplier).toBe(1);
+    expect(effect.events[0]?.hit).toBeNull();
+  });
+
   it("emits a F-095 debris hit and breaks the entry on first contact", () => {
     // Rivet Tunnel authored segment 0 (z range 0-240) carries the
     // F-095 debris entry. Pickup ids and grip stay clean: damage is
