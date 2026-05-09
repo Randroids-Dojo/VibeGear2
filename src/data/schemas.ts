@@ -114,6 +114,13 @@ export const HazardKindSchema = z.enum([
   "gravel_band",
   "snow_buildup",
   "tunnel",
+  // F-095 slice 1. Oil slick. Lateral grip drop sharper than a
+  // puddle (0.5 vs. 0.65) and authored on industrial / pit-stop
+  // adjacent segments where the fiction reads. No direct damage so
+  // the player can recover with a careful steer rather than getting
+  // a drive-by hit. Future slices add `debris`, `slow_traffic`, and
+  // `wind_gust` per the F-095 ask.
+  "oil_slick",
 ]);
 export type HazardKind = z.infer<typeof HazardKindSchema>;
 

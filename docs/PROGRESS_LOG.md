@@ -6,6 +6,78 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(hazards): oil-slick lateral-grip hazard (F-095 slice 1)
+
+**GDD sections touched:** [§9](gdd/09-track-design.md) (track
+authoring gains a fourth grip-drop kind), [§22](gdd/22-data-and-content-pipeline.md)
+(`HazardKindSchema` enum extension; existing data files unchanged).
+**Branch / PR:** `feat/oil-slick-hazard`, PR pending.
+**Status:** First of four hazard kinds the F-095 audit named.
+F-095 stays in-progress for `debris`, `slow_traffic`, `wind_gust`.
+
+### Done
+- Added `oil_slick` to `HazardKindSchema` in `src/data/schemas.ts`.
+- Registered the hazard in `src/data/hazards.json`. Grip 0.5 (sharper
+  than a puddle's 0.65, less punishing than gravel's 0.55 + 3 dmg),
+  defaultWidth 8 m so it occupies one lane (puddles are 14 m and
+  cover the road), no damage so the player can recover with a careful
+  steer rather than getting a body hit, non-breakable.
+- Authored the hazard on three production tracks distributed across
+  the difficulty curve: Iron Borough Foundry Mile (industrial uphill
+  inside-line apex, segment 2), Ember Steppe Cinder Gate (left-curve
+  climb, segment 3), and Crown Circuit Grand Meridian (late-tour
+  decreasing-radius left, segment 5). Each placement is on a corner
+  approach where braking already matters, so the grip drop adds
+  tactical pressure rather than feeling random.
+- Documented the audit-correction in FOLLOWUPS: the original
+  "limited to puddle + gravel_band" framing was a grep miss. 6 of
+  7 existing kinds are authored on 32 tracks; the genuine gap is
+  the four new kinds the F-095 entry names.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2917 / 2917 passed across 157 suites; new case in
+  `src/game/__tests__/hazards.test.ts` confirms the Foundry Mile
+  authored placement yields a 0.5 grip multiplier with no hit
+  payload.
+- `npm run content-lint` clean. The `hazards-content.test` suite
+  validates the new registry entry against `HazardRegistryEntrySchema`
+  and confirms every hazard id referenced by tracks resolves.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- No runtime change. `evaluateHazards` already reads the optional
+  `gripMultiplier` and `damageKind` from the registry entry, so
+  adding a new kind is data-only as long as the new kind fits the
+  existing event shape (per-tick grip with optional damage).
+  `wind_gust` will need a lateral-push extension; that lives in a
+  follow-up slice.
+- Width 8 m vs. puddle 14 m. The thinner footprint means the player
+  can pick a wider line to skip the slick, so an inside-line apex
+  placement lets the player choose between a fast tight line at
+  reduced grip and a wider safe line. That asymmetry is the §9
+  authored-tactical-decision goal.
+- Three placements rather than the F-095 ask of "distribute across
+  mid-late tours". Three is enough to validate the kind in playtest;
+  a sweep across all 32 tracks belongs in a separate authoring slice
+  once `debris` / `slow_traffic` / `wind_gust` also land so we don't
+  re-pass the tracks four times.
+
+### Coverage ledger
+- §9 track-design: hazard variety expanded from 6 authored kinds
+  to 7 across the 32-track production set.
+- §22 schema: `HazardKindSchema` now lists 8 kinds. Existing
+  hazard JSONs and track files load unchanged.
+
+### Followups created
+None. F-095 stays open for the three remaining hazard kinds.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(garage): tour-completion gate on car purchases (F-097)
 
 **GDD sections touched:** [§8](gdd/08-progression-and-rewards.md)

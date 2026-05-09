@@ -35,7 +35,7 @@
       ]
     },
     { "len": 340, "curve": 0.14, "grade": -0.04, "roadsideLeft": "rock_boulder", "roadsideRight": "light_pole", "hazards": ["snow_buildup"] },
-    { "len": 320, "curve": -0.16, "grade": -0.02, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": [] },
+    { "len": 320, "curve": -0.16, "grade": -0.02, "roadsideLeft": "guardrail", "roadsideRight": "sign_marker", "hazards": ["oil_slick"] },
     { "len": 360, "curve": 0.1, "grade": 0.02, "roadsideLeft": "light_pole", "roadsideRight": "guardrail", "hazards": ["traffic_cone"] },
     {
       "len": 500,
