@@ -347,7 +347,12 @@ export function tickAI(
     ...otherAiCars,
   ]);
   const overtake = overtakeTarget
-    ? overtakeOffset(aiCar, overtakeTarget, context.roadHalfWidth)
+    ? overtakeOffset(
+        aiCar,
+        overtakeTarget,
+        context.roadHalfWidth,
+        behaviour.passMarginScalar,
+      )
     : { active: false, offset: 0 };
   const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset + overtake.offset;
   const baseIdealLateralOffset = clamp(
@@ -673,19 +678,26 @@ function overtakeOffset(
   aiCar: Readonly<CarState>,
   target: OvertakeThreat,
   roadHalfWidth: number,
+  passMarginScalar: number,
 ): { active: boolean; offset: number } {
+  // Effective pass margin scaled by the archetype's
+  // `passMarginScalar`. Bully rubs more (< 1.0); cautious leaves
+  // more room (> 1.0); the polite default is 1.0.
+  const effectiveMargin = Math.max(
+    0,
+    AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS * passMarginScalar,
+  );
   const passSide = target.x <= 0 ? 1 : -1;
-  const desiredTarget =
-    target.x + passSide * AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS;
+  const desiredTarget = target.x + passSide * effectiveMargin;
   const boundedTarget = clamp(
     desiredTarget,
-    -roadHalfWidth + AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS,
-    roadHalfWidth - AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS,
+    -roadHalfWidth + effectiveMargin,
+    roadHalfWidth - effectiveMargin,
   );
   const directionalTarget =
     passSide * Math.min(AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, roadHalfWidth);
   const lateral =
-    Math.abs(boundedTarget - target.x) >= AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS
+    Math.abs(boundedTarget - target.x) >= effectiveMargin
       ? boundedTarget
       : directionalTarget;
   return {

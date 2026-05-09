@@ -6,6 +6,60 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(ai): bully pass-margin override (F-085 slice 2)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)
+("Passing behavior" / "Bully defends and rubs more often"; per-
+archetype lateral spacing on overtake decisions).
+**Branch / PR:** `feat/bully-pass-margin`, PR pending.
+**Status:** Slice 2 of F-085. Inside-pass-under-braking and
+outside-pass-in-sweepers preferences remain open under F-085.
+
+### Done
+- Added `passMarginScalar: number` to `AIBehaviour` in
+  `src/game/aiArchetypes.ts`. Threaded a value through every
+  archetype: bully `0.6` (rubs more), cautious `1.25` (leaves
+  more room), every other archetype `1.0` (polite default).
+- Threaded `behaviour.passMarginScalar` from `tickAI` into
+  `overtakeOffset(aiCar, target, roadHalfWidth, passMarginScalar)`.
+  Inside the function the scalar multiplies
+  `AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS` once and the same
+  effective margin then drives the desired lateral target, the
+  road-half-width clamp, and the distance check that picks
+  between bounded and directional targets.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2973 / 2973 across 162 suites; 2 new cases
+  in the new `tickAI (bully pass-margin override)` describe block:
+  bully steer commit smaller than clean line on the same geometry,
+  cautious steer commit at least as large as clean line. Existing
+  `bully drivers pressure toward nearby traffic` case still
+  passes (the pressure cue takes precedence over the generic
+  overtake cue per yesterday's slice 1 fix).
+
+### Assumptions
+- A scalar field on the archetype behaviour is the right shape
+  here. The followup spec mentioned "bully overrides" generically;
+  scaling the existing `OVERTAKE_PLAYER_MARGIN_METERS` constant per
+  archetype is the smallest change that produces the §15 readability
+  signal ("bully rubs more") without reshaping the overtake function
+  or introducing a side-channel for archetype-specific decisions.
+- The cautious row at `1.25` (+25 % margin) was chosen as a small
+  symmetric counterweight to the bully's -40 %. The number can be
+  re-tuned without touching the wiring.
+
+### GDD coverage
+- §15 Passing behavior: covered for the "bully rubs more" facet.
+  Inside-pass-under-braking and outside-pass-in-sweepers pref-
+  erences remain deferred per F-085.
+
+### Followups
+- F-085 stays in-progress for the inside/outside-pass preferences.
+
+---
+
 ## 2026-05-09: feat(ai): rubber-band lead compression (F-084)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)

@@ -537,8 +537,15 @@ threat (player or AI) and added `pickOvertakeTarget` that picks
 the closest qualifying threat ahead within
 `AI_TUNING.OVERTAKE_WINDOW_METERS`. `tickAI` now takes an optional
 `otherAiCars` argument and `stepRaceSession` pre-computes a per-
-tick threat snapshot so peers are visible across the field.
-Original entry below.
+tick threat snapshot so peers are visible across the field. Slice 2
+shipped 2026-05-09 under `feat/bully-pass-margin`: added
+`passMarginScalar` to every `AIBehaviour` row (bully `0.6`,
+cautious `1.25`, others `1.0`) and threaded it into
+`overtakeOffset` so the effective lateral pass margin scales by
+archetype. Bully now rubs more on a pass per §15 "Bully defends
+and rubs more often"; cautious leaves more lateral room. Inside-
+pass-under-braking and outside-pass-in-sweepers preferences are
+the remaining open work for F-085. Original entry below.
 
 Pain point #3 diagnosis (loop iter 3) confirmed all six
 §15 archetypes are wired in `src/game/aiArchetypes.ts` and reach the
