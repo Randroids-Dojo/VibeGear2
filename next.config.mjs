@@ -84,6 +84,7 @@ const nextConfig = {
     NEXT_PUBLIC_BUILD_ID: BUILD_ID,
     NEXT_PUBLIC_BUILD_VERSION: BUILD_VERSION,
   },
+  transpilePackages: ["@randroids-dojo/vibekit"],
 };
 
 export default nextConfig;

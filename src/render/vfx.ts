@@ -1,3 +1,5 @@
+import { clamp } from '@randroids-dojo/vibekit'
+
 /**
  * VFX module: stateful pure flash + shake stack with a reduced-motion
  * accessibility gate on shake.
@@ -288,8 +290,3 @@ export function drawVfx(
   };
 }
 
-function clamp(value: number, min: number, max: number): number {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
-}

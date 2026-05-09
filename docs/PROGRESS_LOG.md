@@ -6,6 +6,40 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: chore(deps): adopt @randroids-dojo/vibekit v0.1.0
+
+**GDD sections touched:** none. Process / dependency hygiene.
+**Branch / PR:** `chore/deps/adopt-vibekit-v0.1.0`, PR pending.
+**Status:** First adoption slice. The four open VibeKit migration dots all want richer kit APIs than v0.1.0 ships (RNG superset, multi-touch joystick, versioned storage, wider Redis surface). Those swaps require a v0.2.0 widening of the kit upstream, tracked separately. This slice lands the dep + one trivial consumer so the upgrade gate has something to fire against, and the next firing of the gate will be the first real one.
+
+### Done
+- Added `@randroids-dojo/vibekit` at `github:Randroids-Dojo/VibeKit#v0.1.0` to `package.json`.
+- Added `transpilePackages: ['@randroids-dojo/vibekit']` to `next.config.mjs` (the kit ships TypeScript source; Next does not transpile `node_modules` by default and would otherwise fail on `export type` syntax in production builds).
+- Replaced the local `clamp(value, min, max)` helper in `src/render/vfx.ts` with `import { clamp } from '@randroids-dojo/vibekit'`. Signature is identical (`(value, lo, hi)`).
+- Refreshed `package-lock.json`.
+
+### Verification
+- Dash check (no em-dash / en-dash hits).
+- `git diff --check` clean.
+- `npm run typecheck` passes.
+- `npm test` passes (2981 / 2981 tests).
+- `npm run build` succeeds; all routes prerender; `postbuild` source-map scrub OK.
+
+### Assumptions
+- The richer kit APIs that the four open VibeKit dots want (Rng interface with serialize / split / nextInt / nextBool, hset / hgetall / zadd-range KV, multi-touch zone joystick, versioned-and-migrating storage) belong upstream first. VibeGear2 is the superset donor for those features. Dots stay open against a future v0.2.0+.
+- `clamp` is the smallest viable real consumer for this slice. Picking a larger swap would have bundled mechanical work with API design discussions that should live in their own PRs.
+
+### GDD coverage
+No GDD section change.
+
+### Followups
+- Lift VibeGear2's RNG superset (`Rng`, `splitRng`, `serializeRng`, `deserializeRng`, `nextInt`, `nextBool`, FNV-1a label hash for replay determinism) into VibeKit. Once shipped in a v0.2.0+ tag, swap `src/game/rng.ts` consumers.
+- Lift VibeGear2's leaderboard Upstash usage (hset / hgetall / zadd / zrange) into a richer `@randroids-dojo/vibekit/server/kv` API.
+- Decide whether VibeKit's single-stick `virtual-joystick` should grow a multi-touch zone variant or whether VibeGear2's `inputTouch` is project-specific enough to stay local.
+- Decide whether VibeKit's flat `storage` should grow a versioned variant or whether VibeGear2's `persistence/save` versioning stays project-specific.
+
+---
+
 ## 2026-05-09: feat(schema): jump.rampHeight field (F-094 slice 1)
 
 **GDD sections touched:** [§3](gdd/03-design-pillars.md) (Top Gear 2
