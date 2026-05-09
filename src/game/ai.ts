@@ -654,7 +654,11 @@ function readabilityCueFor(input: {
   brilliantPaceBonus: number;
   overtakeActive: boolean;
 }): AIReadabilityCue {
-  if (input.overtakeActive) return "overtake";
+  // Archetype-specific cues take precedence over the generic overtake
+  // cue. Once AI-vs-AI overtake awareness is wired, overtake fires
+  // frequently against the pack and would crowd out the more specific
+  // archetype reads (bully-pressure, rocket-launch, etc.) that the
+  // §15 readability spec calls out by name.
   if (input.archetype === "nitro_burst") {
     if (input.launchPaceBonus > 0) return "rocket-launch";
     if (input.fadePacePenalty > 0) return "rocket-fade";
@@ -677,6 +681,7 @@ function readabilityCueFor(input: {
     if (input.brilliantPaceBonus > 0) return "chaotic-brilliant";
   }
   if (input.archetype === "endurance") return "enduro-consistent";
+  if (input.overtakeActive) return "overtake";
   return "clean-line";
 }
 
