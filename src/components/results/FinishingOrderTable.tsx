@@ -34,16 +34,29 @@ export function FinishingOrderTable(props: FinishingOrderTableProps): ReactEleme
       <tbody>
         {rows.map((row, idx) => {
           const isPlayer = row.carId === playerCarId;
-          const place = row.status === "finished" ? `${idx + 1}` : "DNF";
+          const isDnf = row.status !== "finished";
+          const place = isDnf ? "DNF" : `${idx + 1}`;
+          const reasonLabel = isDnf ? formatDnfReason(row.dnfReason) : null;
           return (
             <tr
               key={row.carId}
               data-testid={`results-row-${row.carId}`}
               data-player={isPlayer ? "true" : "false"}
               data-status={row.status}
+              data-dnf-reason={row.dnfReason ?? ""}
               style={isPlayer ? playerRowStyle : rowStyle}
             >
-              <td style={tdStyle}>{place}</td>
+              <td style={tdStyle}>
+                <span>{place}</span>
+                {reasonLabel ? (
+                  <span
+                    data-testid={`results-row-${row.carId}-dnf-reason`}
+                    style={dnfReasonStyle}
+                  >
+                    {reasonLabel}
+                  </span>
+                ) : null}
+              </td>
               <td style={tdStyle}>{row.carId}</td>
               <td style={tdStyle}>{formatMs(row.raceTimeMs)}</td>
               <td style={tdStyle}>{formatMs(row.bestLapMs)}</td>
@@ -53,6 +66,25 @@ export function FinishingOrderTable(props: FinishingOrderTableProps): ReactEleme
       </tbody>
     </table>
   );
+}
+
+function formatDnfReason(
+  reason: FinalCarRecord["dnfReason"],
+): string | null {
+  switch (reason) {
+    case "out-of-fuel":
+      return "Out of fuel";
+    case "wrecked":
+      return "Wrecked";
+    case "off-track":
+      return "Off track";
+    case "no-progress":
+      return "No progress";
+    case "retired":
+      return "Retired";
+    default:
+      return null;
+  }
 }
 
 function formatMs(ms: number | null): string {
@@ -99,4 +131,12 @@ const rowStyle: CSSProperties = {};
 const playerRowStyle: CSSProperties = {
   background: "rgba(255,255,255,0.07)",
   fontWeight: 600,
+};
+
+const dnfReasonStyle: CSSProperties = {
+  display: "block",
+  marginTop: "0.15rem",
+  fontSize: "0.75rem",
+  fontWeight: 400,
+  color: "var(--muted, #aaa)",
 };

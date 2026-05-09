@@ -425,6 +425,15 @@ export interface FinalCarRecord {
   status: FinalCarStatus;
   raceTimeMs: number | null;
   bestLapMs: number | null;
+  /**
+   * DNF reason for cars with `status === "dnf"`. Carries the value the
+   * race-session reducer pinned at the moment the car flipped out of
+   * the race so the §20 results screen can render a friendly label
+   * (e.g. "Out of fuel"). Optional so fixtures and legacy storage reads
+   * that predate the field stay valid; consumers treat `undefined` as
+   * "no specific reason recorded" and fall back to the bare "DNF" label.
+   */
+  dnfReason?: DnfReason;
 }
 
 /**
@@ -476,6 +485,8 @@ export interface FinalCarInput {
   status: FinalCarStatus;
   raceTimeMs: number | null;
   lapTimes: ReadonlyArray<number>;
+  /** Forwarded onto `FinalCarRecord.dnfReason`. Optional. */
+  dnfReason?: DnfReason;
 }
 
 export interface BuildFinalRaceStateInput {
@@ -514,6 +525,7 @@ export function buildFinalRaceState(
       car.lapTimes.length === 0
         ? null
         : Math.min(...car.lapTimes),
+    dnfReason: car.status === "dnf" ? (car.dnfReason ?? null) : undefined,
   }));
 
   // Sort the finishing order. The comparator handles the status

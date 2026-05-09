@@ -61,7 +61,8 @@ test.describe("pause actions", () => {
     // Route hops to /race/results; the page reads the
     // session-storage handoff. The player row carries
     // `data-status="dnf"` per `<FinishingOrderTable />` and renders
-    // "DNF" in the position column.
+    // "DNF" in the position column with a "Retired" reason label
+    // below it (the retire path pins `dnfReason: "retired"`).
     await expect(page).toHaveURL(/\/race\/results/);
     await expect(page.getByTestId("race-results")).toBeVisible({
       timeout: 10_000,
@@ -69,7 +70,11 @@ test.describe("pause actions", () => {
     const playerRow = page.getByTestId("results-row-player");
     await expect(playerRow).toBeVisible();
     await expect(playerRow).toHaveAttribute("data-status", "dnf");
-    await expect(playerRow.locator("td").first()).toHaveText("DNF");
+    await expect(playerRow).toHaveAttribute("data-dnf-reason", "retired");
+    await expect(playerRow.locator("td").first()).toContainText("DNF");
+    await expect(
+      page.getByTestId("results-row-player-dnf-reason"),
+    ).toHaveText("Retired");
   });
 
   test("Exit to title routes back to the home page", async ({ page }) => {
