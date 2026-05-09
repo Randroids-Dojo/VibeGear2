@@ -735,8 +735,18 @@ post-merge; rotation does not require code changes.
 ## F-077: Playwright coverage for the Feedback FAB
 **Created:** 2026-05-05
 **Priority:** polish
-**Status:** open
-**Notes:** The slice ships unit tests for `POST /api/feedback` and a
+**Status:** done
+**Resolved:** 2026-05-09 (shipped under `test/feedback-fab-e2e`).
+Adds `e2e/feedback-fab.spec.ts` with three cases against a stubbed
+`/api/feedback` route: open + type + submit + assert success
+(including request-payload inspection via `page.waitForRequest`),
+Escape closes the panel without POSTing, click outside dismisses
+the panel. The `?errors=1` hide rule mentioned in the original
+note was an inaccurate read of the FAB doc comment - the FAB and
+the dev `?errors=1` panel "can coexist", so no hide-rule applies.
+Original note follows.
+
+The slice ships unit tests for `POST /api/feedback` and a
 server-render smoke test for `FeedbackFab`. A future spec should drive
 the open-panel, type, submit flow in a real browser against a stubbed
 `/api/feedback` route and assert the success state, the Escape and
