@@ -6,6 +6,39 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: chore(meta): bring .dots/ into source history
+
+**GDD sections touched:** none.
+**Branch / PR:** committed on `main` as `d3bc7bb`.
+**Status:** policy change.
+
+### Done
+- Removed the `.dots/` line (and its "# dots task tracking (not part of source)"
+  comment) from `.gitignore`.
+- Committed the existing `.dots/` folder (49 active dots, ~207 archived,
+  config) so the backlog now lives in source history alongside other
+  planning docs. Matches the convention in VibeRacer, Flatline,
+  FrackingAsteroids, and VibeCity.
+- Added `.dots/AGENTS.md` documenting the new convention and flagging the
+  four open VibeKit migration dots as protected (do not revert without
+  explicit user approval).
+
+### Followups created
+- None.
+
+### GDD edits
+- None.
+
+### Notes
+This supersedes the earlier entry (further down this file) titled
+"Excluded `.dots/` from version control" from the Phase 0 bootstrap
+slice. That decision held for a long time but the cross-project
+convergence on tracked dots makes the current flip the right call.
+Per the append-only-do-not-delete rule, that earlier entry stays
+in history; this one corrects it forward.
+
+---
+
 ## 2026-05-08: feat(hazards): wind-gust lateral-push hazard (F-095 slice 3)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (track
