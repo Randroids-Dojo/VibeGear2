@@ -6,6 +6,83 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(ai): context-aware pass side (F-085 slice 3)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)
+("Passing behavior" - inside-pass-under-braking and outside-pass-
+in-sweepers preferences with a bully override that ignores
+convention).
+**Branch / PR:** `feat/context-pass-side`, PR pending.
+**Status:** Closes F-085. Final slice of the AI overtake-awareness
+trio shipped today (slice 1 AI-vs-AI overtake awareness, slice 2
+bully pass-margin override, slice 3 context-aware pass side).
+
+### Done
+- Added `prefersContextPasses: boolean` to `AIBehaviour` in
+  `src/game/aiArchetypes.ts`. The aggressive (Bully) row reads
+  `false`; every other row reads `true`. Bully ignores §15
+  passing convention per spec.
+- Added two `AI_TUNING` thresholds in `src/game/ai.ts`:
+  `OVERTAKE_BRAKING_CURVE_THRESHOLD = 0.4` (above this magnitude,
+  treat segment as a tight curve / braking zone and prefer the
+  inside line) and `OVERTAKE_SWEEPER_CURVE_THRESHOLD = 0.1` (above
+  this and below the braking threshold, treat as a sweeper and
+  prefer the outside line).
+- Added `pickOvertakePassSide(target, authoredCurve)` helper.
+  Inside-pass picks `sign(curve)` so a right-hander selects the
+  right side (the inside line is shorter); outside-pass picks
+  `-sign(curve)` so the AI swings wide and uses the natural arc.
+  Below the sweeper threshold the helper falls through to the
+  easier-pass rule (`target.x <= 0 ? 1 : -1`).
+- Threaded `behaviour.prefersContextPasses ? authoredCurve : 0`
+  from `tickAI` into `overtakeOffset(..., authoredCurve)` so the
+  bully archetype always passes `0` and falls through to the
+  easier-pass rule, while every other archetype reads the live
+  authored curve under the AI on this tick.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2977 / 2977 across 162 suites; 4 new cases
+  in the new `tickAI (context-aware pass side)` describe block:
+  outside-pass on right sweeper, bully ignores convention on
+  same right sweeper (ordering vs clean line), inside-pass on
+  tight left, easier-pass fallback on a straight.
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- The two thresholds at `0.4` and `0.1` were chosen against the
+  authored cornering values across the 35 track JSONs:
+  `TrackSegmentSchema` keeps `curve` in `[-1, 1]`, real authored
+  curves cluster around `0.2 - 0.5` for sweepers and corners,
+  and `0.4` selects the upper band that drivers reliably brake
+  for.
+- Below the sweeper threshold (effectively straight), the
+  easier-pass rule still fires. This preserves the previous
+  behaviour for the straight-line overtake case shipped in slice
+  1, so the existing four `tickAI (AI-vs-AI overtake awareness)`
+  cases (which use `STRAIGHT_TRACK`) all pass without change.
+- The bully gate is implemented at the call site
+  (`prefersContextPasses ? authoredCurve : 0`) rather than inside
+  `pickOvertakePassSide`. This keeps the helper pure - it reads
+  one input and returns one output without an archetype branch -
+  and centralises the archetype-policy decision next to the
+  other archetype-keyed reads in `tickAI`.
+
+### GDD coverage
+- §15 Passing behavior: covered. Inside-pass-under-braking,
+  outside-pass-in-sweepers, and the bully override all ship with
+  this slice. The remaining racing-line concerns (e.g.,
+  defensive line on the inside when defending vs. attacking) are
+  out of scope for F-085 and would file as future followups if
+  the playtest reveals a gap.
+
+### Followups
+- F-085 closes with this slice.
+
+---
+
 ## 2026-05-09: feat(ai): bully pass-margin override (F-085 slice 2)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)

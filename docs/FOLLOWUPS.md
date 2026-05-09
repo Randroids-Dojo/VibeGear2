@@ -530,7 +530,8 @@ schema field does not exist yet.
 ## F-085: Late-race overtake decisions and racing-line overtake awareness
 **Created:** 2026-05-05
 **Priority:** nice-to-have
-**Status:** in-progress
+**Status:** done
+**Resolved:** 2026-05-09
 **Notes:** Slice 1 shipped 2026-05-09 under
 `feat/ai-vs-ai-overtake`: extended `overtakeOffset` to accept any
 threat (player or AI) and added `pickOvertakeTarget` that picks
@@ -543,9 +544,16 @@ shipped 2026-05-09 under `feat/bully-pass-margin`: added
 cautious `1.25`, others `1.0`) and threaded it into
 `overtakeOffset` so the effective lateral pass margin scales by
 archetype. Bully now rubs more on a pass per §15 "Bully defends
-and rubs more often"; cautious leaves more lateral room. Inside-
-pass-under-braking and outside-pass-in-sweepers preferences are
-the remaining open work for F-085. Original entry below.
+and rubs more often"; cautious leaves more lateral room. Slice 3
+shipped 2026-05-09 under `feat/context-pass-side` and closes the
+followup: added `prefersContextPasses` to `AIBehaviour` (bully
+`false`, others `true`) plus
+`OVERTAKE_BRAKING_CURVE_THRESHOLD = 0.4` /
+`OVERTAKE_SWEEPER_CURVE_THRESHOLD = 0.1` tuning, and a
+`pickOvertakePassSide(target, authoredCurve)` helper. Tight curves
+select inside-pass; sweepers select outside-pass; below the
+sweeper threshold and for the bully archetype the routine falls
+through to the easier-pass rule. Original entry below.
 
 Pain point #3 diagnosis (loop iter 3) confirmed all six
 §15 archetypes are wired in `src/game/aiArchetypes.ts` and reach the
