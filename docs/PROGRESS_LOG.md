@@ -6,6 +6,86 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(physics): car-bump lateral kick on contact (F-102)
+
+**GDD sections touched:** [§13](gdd/13-damage-and-collisions.md)
+(contact pair scan now also emits a per-tick lateral kick alongside
+the existing `carHit` damage event).
+**Branch / PR:** `feat/car-bump-kick`, PR pending.
+**Status:** First of the three core-loop polish slices identified
+in the 2026-05-09 audit (alongside F-103 tire-affordance and F-104
+fuel system). Closes F-102.
+
+### Done
+- Extended the §13 contact pair scan in `stepRaceSession` with a
+  per-id lateral-kick accumulator. For each pair in contact, the
+  loop appends an equal-and-opposite kick scaled by the mean pair
+  speed factor (clamped to `[0.25, 1.5]` so a stationary grid jam
+  still separates and a high-speed contact does not catapult either
+  car off the road). Same-x cars get a deterministic +1 bias so
+  two perfectly overlapping cars never stay welded.
+- Added two exports in `src/game/raceSession.ts`:
+  `BUMP_KICK_BASE_MPS = 1.6` (the per-tick velocity-per-second
+  base) and the helper `clampSpeedFactor`. Sized so a 60 Hz contact
+  at the §23 reference top speed produces a ~3 cm-per-tick
+  separation that reads as a visible jostle without ejecting cars
+  off the road on a single touch.
+- Threaded the accumulated kicks through `nextPlayerCar` and the
+  `nextAi[i].car` snapshots after the contact loop so all
+  downstream consumers (off-road check, lap rollover, results
+  mapping) see the post-bump positions. Renamed the F-095 slice 3
+  wind-gust binding from `const` to `let` so the same `nextPlayerCar`
+  variable can absorb both the wind-gust deflection and the
+  contact-pair kick.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2940 / 2940 passed across 160 suites; new
+  `src/game/__tests__/carContactKick.test.ts` pins six cases
+  (stationary overlapping cars separate symmetrically, kick scales
+  with speed factor, equal-and-opposite invariant, no kick when
+  cars are out of contact, BUMP_KICK_BASE_MPS export, car-id
+  helpers re-exported).
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- Kick applied as `car.x += signedKick * dt` after the existing
+  physics step. The simulation is purely additive on `x`; no impact
+  on speed, no impact on damage numerics. The existing `carHit`
+  damage event still fires, so the slice is layered cleanly on top
+  of the §13 contract.
+- Speed-factor floor at 0.25. A stationary grid jam (both cars
+  speed = 0) still produces a non-zero separation so cars that
+  spawn overlapping at the start line cannot stay welded together.
+- Kick is symmetric. Two cars in a head-on / side-by-side pair get
+  the same magnitude but opposite signs. A car sandwiched between
+  two pairs receives both kicks summed; opposing-side contacts
+  cancel so a true sandwich squeeze stays put rather than catapulting
+  out one side.
+- No clamp against road bounds in this slice. `advanceDamage` reads
+  the post-kick `nextPlayerCar`, so a car bumped off the road takes
+  off-road damage on the same tick rather than the next - subjectively
+  more correct (an overcommit at the apex bites immediately) and at
+  current tuning the max per-tick kick is ~4 cm, far below
+  `roadHalfWidth`. Future tunes that raise `BUMP_KICK_BASE_MPS`
+  should add a regression test.
+
+### Coverage ledger
+- §13 collisions: contact pair scan now produces a visible lateral
+  separation in addition to the existing damage and audio events.
+  Existing `carHit` damage numerics unchanged.
+
+### Followups created
+None. F-102 closes; F-103 prep-card tire affordance and F-104
+fuel system are the remaining core-loop polish items.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: chore(meta): bring .dots/ into source history
 
 **GDD sections touched:** none.
