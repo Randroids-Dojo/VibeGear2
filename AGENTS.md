@@ -39,6 +39,7 @@ Before you write code, edit docs, or open a PR, read in this order:
 3. [`docs/WORKING_AGREEMENT.md`](docs/WORKING_AGREEMENT.md) for **how to behave** while building it (branching, commits, PRs, auto-deploy, verification, clarification protocol, risky-action gates).
 4. [`GDD.md`](GDD.md) and the section files under [`docs/gdd/`](docs/gdd/) for the design itself. The Markdown tree is canonical. `GDD.docx` is a historical export; do not edit it.
 5. The most recent dozen entries of [`docs/PROGRESS_LOG.md`](docs/PROGRESS_LOG.md), then [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) and [`docs/FOLLOWUPS.md`](docs/FOLLOWUPS.md), so you know what just happened and what is in flight.
+6. [`docs/DEPENDENCY_LEDGER.md`](docs/DEPENDENCY_LEDGER.md), then run the **Dependency Upgrade Gate** described there: at every loop boundary that touches `main` (after pulling main, and again before opening a PR), check each watched dep's `Detect-new` command against the ledger's `Currently pinned` value. If newer, the upgrade is the next slice unless red CI / a P0 incident takes over.
 
 If anything in this file conflicts with `IMPLEMENTATION_PLAN.md` or `WORKING_AGREEMENT.md`, those documents win. Update this file in the same PR that resolves the conflict.
 

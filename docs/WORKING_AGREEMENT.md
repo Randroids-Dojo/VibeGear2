@@ -95,6 +95,31 @@ For every slice, before marking it done:
 - For data-driven content (tracks, cars, tours), validate against the schema
   defined in [`docs/gdd/22-data-schemas.md`](gdd/22-data-schemas.md) as part of CI.
 
+For dependency-upgrade slices (`chore(deps): bump <dep> from <from> to <to>`),
+also:
+
+- Read the upstream CHANGELOG between the pinned and target version BEFORE
+  editing project code. Document the breaking changes and migrations applied
+  in the PR body.
+- Update [`docs/DEPENDENCY_LEDGER.md`](DEPENDENCY_LEDGER.md) **Currently
+  pinned** in the same PR.
+- Run smoke tests for any feature that imports from the upgraded dep.
+- See `DEPENDENCY_LEDGER.md` §"Upgrade procedure" for the full step list.
+
+## 6.1 Dependency Upgrade Gate
+
+Run the gate at every loop boundary that touches `main`:
+
+- After landing on fresh `main` (post-merge or fresh pull), before picking
+  the next slice.
+- Before opening a new PR, in case a watched release landed while the slice
+  was in flight.
+
+Mechanism lives in [`docs/IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+§4.1; the watched dep list and per-dep procedure live in
+[`docs/DEPENDENCY_LEDGER.md`](DEPENDENCY_LEDGER.md). Treat a new release as a
+non-optional signal: the upgrade is the next slice unless red CI takes over.
+
 ## 7. Refactoring
 
 - Refactor *as part of* the slice that touches the code, not as a separate

@@ -160,16 +160,45 @@ The loop terminates only when:
 
 Until all three are true, the loop continues.
 
+### 4.1 Dependency Upgrade Gate
+
+Run the gate at every loop boundary that touches `main`:
+
+- **After landing on fresh `main`** (post-merge or fresh pull), before
+  selecting the next slice.
+- **Before opening a new PR**, in case a watched release landed while the
+  slice was in flight.
+
+Read [`docs/DEPENDENCY_LEDGER.md`](DEPENDENCY_LEDGER.md). For every watched
+dep, run its **Detect-new** command and compare against the ledger's
+**Currently pinned** value. If newer, the upgrade IS the next slice unless
+red CI / a P0 incident takes over (slice selection §5.0). Follow the per-dep
+procedure in `DEPENDENCY_LEDGER.md` §"Upgrade procedure" (branch, read
+upstream CHANGELOG, bump pin, type-check, test, build, smoke, PR titled
+`chore(deps): bump <dep> from <from> to <to>`). If the upgrade requires a
+migration that cannot land in one PR, abort the bump, file an `F-NNN`
+followup for the migration work, and continue with the prior pin. The bump
+PR updates the ledger's **Currently pinned** line in the same diff that
+bumps `package.json`.
+
+The gate is mechanical, not optional. A new pinned tag is the same kind of
+"fresh state" that a new commit on `main` is: the agent observes and reacts.
+
 ## 5. Slice selection rules
 
 When picking the next slice the agent should prefer, in order:
 
-1. Anything blocking the current phase's primary focus.
-2. Anything that unblocks the most other slices (e.g. shared schemas, shared
+0. Anything blocking `main` (broken build, red CI, broken auto-deploy, P0
+   incident). This pre-empts every other rule including the dep gate.
+1. **Pending dependency upgrades from `docs/DEPENDENCY_LEDGER.md`** (see
+   §4.1). Trigger fires whenever the agent enters the loop on fresh `main`
+   or before opening a PR.
+2. Anything blocking the current phase's primary focus.
+3. Anything that unblocks the most other slices (e.g. shared schemas, shared
    rendering primitives).
-3. Items in `FOLLOWUPS.md` flagged `blocks-release`.
-4. Items that close `OPEN_QUESTIONS.md` entries the dev has answered.
-5. The next unimplemented item in GDD section order.
+4. Items in `FOLLOWUPS.md` flagged `blocks-release`.
+5. Items that close `OPEN_QUESTIONS.md` entries the dev has answered.
+6. The next unimplemented item in GDD section order.
 
 Never pick a slice the agent does not fully understand from the GDD. File a
 question instead.
