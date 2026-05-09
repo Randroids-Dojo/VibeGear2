@@ -1285,10 +1285,20 @@ export function stepRaceSession(
   // the resulting multiplier the same tick. `tickAI` is called once per
   // AI per session step; the second physics-step pass below reuses the
   // captured `tick.input` and `tick.nextAiState` rather than re-running.
+  // Pre-physics field snapshot for AI-vs-AI overtake awareness. Every
+  // AI sees its peers' positions from the start of this tick so the
+  // overtake selector picks targets deterministically and decisions
+  // do not depend on the iteration order through `state.ai`.
+  const aiThreatField = state.ai.map((entry) => ({
+    x: entry.car.x,
+    z: entry.car.z,
+    speed: entry.car.speed,
+  }));
   const aiTickResults = state.ai.map((entry, index) => {
     const aiConfig = config.ai[index];
     if (!aiConfig) return null;
     const aiWeatherSkill = weatherSkillFor(aiConfig.driver, trackWeather);
+    const otherAiCars = aiThreatField.filter((_, i) => i !== index);
     return tickAI(
       aiConfig.driver,
       entry.state,
@@ -1304,6 +1314,7 @@ export function stepRaceSession(
       weatherVisibilityRiskScalar(trackWeather, aiWeatherSkill),
       entry.nitro,
       trackWeather,
+      otherAiCars,
     );
   });
 

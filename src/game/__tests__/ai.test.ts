@@ -533,6 +533,113 @@ describe("tickAI (§15 archetype behaviours)", () => {
   });
 });
 
+describe("tickAI (AI-vs-AI overtake awareness)", () => {
+  it("targets a slower AI ahead when no player is in range", () => {
+    const playerOffField: PlayerView = {
+      car: freshCar({ x: 0, z: -200, speed: 30 }),
+    };
+    const slowerAiAhead = { x: 0, z: 110, speed: 24 };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      playerOffField,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [slowerAiAhead],
+    );
+    expect(result.nextAiState.intent).toBe("overtake");
+    expect(result.nextAiState.readabilityCue).toBe("overtake");
+    expect(Math.abs(result.input.steer)).toBeGreaterThan(0);
+  });
+
+  it("picks the closest threat ahead when both player and another AI are in range", () => {
+    const playerNearAhead: PlayerView = {
+      car: freshCar({ x: -2, z: 130, speed: 30 }),
+    };
+    const closerAiAhead = { x: 1, z: 108, speed: 28 };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      playerNearAhead,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [closerAiAhead],
+    );
+    expect(result.nextAiState.intent).toBe("overtake");
+    // The closer AI is on the right (x = 1); the AI should pass on the
+    // left, i.e. steer negative.
+    expect(result.input.steer).toBeLessThan(0);
+  });
+
+  it("ignores AI threats behind the ego car", () => {
+    const playerFarAhead: PlayerView = {
+      car: freshCar({ x: 0, z: 1000, speed: 30 }),
+    };
+    const aiBehind = { x: 0, z: 80, speed: 30 };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      playerFarAhead,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [aiBehind],
+    );
+    expect(result.nextAiState.intent).not.toBe("overtake");
+  });
+
+  it("ignores AI threats the ego car cannot match speed against", () => {
+    const playerFarAhead: PlayerView = {
+      car: freshCar({ x: 0, z: 1000, speed: 30 }),
+    };
+    const fasterAiAhead = { x: 0, z: 110, speed: 40 };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: 30 }),
+      playerFarAhead,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      [fasterAiAhead],
+    );
+    expect(result.nextAiState.intent).not.toBe("overtake");
+  });
+});
+
 describe("tickAI (visible overtake intent)", () => {
   it("moves laterally when a trailing AI reaches the player", () => {
     const playerAhead: PlayerView = {

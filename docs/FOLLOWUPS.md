@@ -530,8 +530,17 @@ schema field does not exist yet.
 ## F-085: Late-race overtake decisions and racing-line overtake awareness
 **Created:** 2026-05-05
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Pain point #3 diagnosis (loop iter 3) confirmed all six
+**Status:** in-progress
+**Notes:** Slice 1 shipped 2026-05-09 under
+`feat/ai-vs-ai-overtake`: extended `overtakeOffset` to accept any
+threat (player or AI) and added `pickOvertakeTarget` that picks
+the closest qualifying threat ahead within
+`AI_TUNING.OVERTAKE_WINDOW_METERS`. `tickAI` now takes an optional
+`otherAiCars` argument and `stepRaceSession` pre-computes a per-
+tick threat snapshot so peers are visible across the field.
+Original entry below.
+
+Pain point #3 diagnosis (loop iter 3) confirmed all six
 §15 archetypes are wired in `src/game/aiArchetypes.ts` and reach the
 runtime through `tickAI` in `src/game/ai.ts`. The current overtake
 logic (`overtakeOffset` at `src/game/ai.ts:530-560`) only fires when
