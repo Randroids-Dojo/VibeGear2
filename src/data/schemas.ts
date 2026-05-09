@@ -367,6 +367,14 @@ export type DifficultyPreset = z.infer<typeof DifficultyPresetSchema>;
 
 export const ChampionshipTourSchema = z.object({
   id: slug,
+  /**
+   * F-097 follow-up. Optional player-facing name. UIs that label a
+   * tour (locked-car copy on the garage cars page, future
+   * prep-card / results banners) read this with a fallback to the
+   * title-cased slug so existing fixtures and modder-authored
+   * championships without a name still load.
+   */
+  name: z.string().min(1).optional(),
   requiredStanding: positiveInt,
   tracks: z.array(slug).min(1),
   /**

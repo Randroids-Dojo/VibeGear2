@@ -5,6 +5,7 @@
   "tours": [
     {
       "id": "velvet-coast",
+      "name": "Velvet Coast",
       "requiredStanding": 4,
       "tracks": [
         "velvet-coast/harbor-run",
@@ -32,6 +33,7 @@
     },
     {
       "id": "iron-borough",
+      "name": "Iron Borough",
       "requiredStanding": 4,
       "tracks": [
         "iron-borough/freightline-ring",
@@ -59,6 +61,7 @@
     },
     {
       "id": "ember-steppe",
+      "name": "Ember Steppe",
       "requiredStanding": 3,
       "tracks": [
         "ember-steppe/redglass-straight",
@@ -73,6 +76,7 @@
     },
     {
       "id": "breakwater-isles",
+      "name": "Breakwater Isles",
       "requiredStanding": 3,
       "tracks": [
         "breakwater-isles/tidewire",
@@ -87,6 +91,7 @@
     },
     {
       "id": "glass-ridge",
+      "name": "Glass Ridge",
       "requiredStanding": 2,
       "tracks": [
         "glass-ridge/whitepass",
@@ -101,6 +106,7 @@
     },
     {
       "id": "neon-meridian",
+      "name": "Neon Meridian",
       "requiredStanding": 2,
       "tracks": [
         "neon-meridian/arc-boulevard",
@@ -115,6 +121,7 @@
     },
     {
       "id": "moss-frontier",
+      "name": "Moss Frontier",
       "requiredStanding": 1,
       "tracks": [
         "moss-frontier/pine-switchback",
@@ -129,6 +136,7 @@
     },
     {
       "id": "crown-circuit",
+      "name": "Crown Circuit",
       "requiredStanding": 1,
       "tracks": [
         "crown-circuit/embassy-loop",

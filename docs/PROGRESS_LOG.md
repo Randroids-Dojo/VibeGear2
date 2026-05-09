@@ -6,6 +6,83 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(tours): pretty tour names from championship data (F-097 follow-up)
+
+**GDD sections touched:** [§22](gdd/22-data-and-content-pipeline.md)
+(`ChampionshipTourSchema` gains an optional `name`; existing
+fixtures and modder-authored championships load unchanged).
+**Branch / PR:** `feat/tour-pretty-names`, PR pending.
+**Status:** F-097 follow-up shipped. F-097 stays open for the
+locked-state e2e spec; livery cosmetics remain under F-096.
+
+### Done
+- Added optional `name: z.string().min(1)` to
+  `ChampionshipTourSchema`. The locked-car copy on the garage cars
+  page reads it via the new resolver, falling back to the
+  title-cased slug if the field is absent so existing test
+  fixtures and modder-authored championships still render.
+- Authored player-facing names on all eight tours in
+  `src/data/championships/world-tour-standard.json`: Velvet Coast,
+  Iron Borough, Ember Steppe, Breakwater Isles, Glass Ridge, Neon
+  Meridian, Moss Frontier, Crown Circuit. Slug ids unchanged so
+  existing references (URL params, deep links) keep working.
+- Added `src/game/tourNames.ts` with
+  `resolveTourName(championship, tourId)`. The helper takes the
+  championship as a dependency-injected argument so tests pin the
+  fallback path without mounting React, and so a future surface
+  (prep card sub-header, results banner) can reuse the same
+  resolution from a different championship without duplicating
+  the logic.
+- Wired the helper into `src/app/garage/cars/page.tsx`. The
+  inline 4-line title-casing function from the F-097 slice is now
+  a one-liner that delegates to `resolveTourName`. Locked-car
+  copy still reads "Win Iron Borough to unlock" for tours that
+  have an authored name and falls back gracefully for any tour
+  that does not.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2933 / 2933 passed across 159 suites; new
+  `src/game/__tests__/tourNames.test.ts` pins five cases (authored
+  name, missing-name fallback, unknown-tour fallback, undefined
+  championship, empty-slug "the next tour" sentinel).
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- Optional schema field rather than required. Existing test
+  fixtures (`FIXTURE_CHAMPIONSHIP` in
+  `src/game/__tests__/championship.test.ts` and the example under
+  `src/data/examples/`) construct ChampionshipTour without a
+  name, and modders may keep the slug-only shape for ergonomic
+  edits. The fallback covers both cases.
+- Resolver lives in `src/game/tourNames.ts` rather than the cars
+  page. Three near-future surfaces (cars-page tooltip, prep-card
+  sub-header, results banner) all need the same lookup; centralising
+  the resolution prevents three slight variations of the same
+  function.
+- Did not touch the `formatTourName` callers in any other surface
+  yet. The cars page is the only current consumer; the prep-card
+  / results-banner wiring lands when those surfaces ship.
+
+### Coverage ledger
+- §22 schema: `ChampionshipTour.name` joins the optional fields
+  on the championship shape. No data migration; existing fixtures
+  load unchanged.
+- §8 progression copy: locked-car tooltip now reads from the
+  championship JSON when a name is authored. F-097 stays open
+  only for the deferred locked-state e2e.
+
+### Followups created
+None. F-097 ledger updated to in-progress with the deferred
+locked-state e2e.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(hazards): debris breakable obstacle (F-095 slice 2)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (track

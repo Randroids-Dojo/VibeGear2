@@ -23,9 +23,10 @@
 import type { CSSProperties, ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { CARS, getCar } from "@/data/cars";
+import { CARS, getCar, getChampionship } from "@/data";
 import type { Car, CarBaseStats, SaveGame } from "@/data/schemas";
 import { isCarUnlocked } from "@/game/carUnlock";
+import { resolveTourName } from "@/game/tourNames";
 import { defaultSave, loadSave, saveSave } from "@/persistence";
 
 interface PageStatus {
@@ -289,12 +290,10 @@ function formatStat(value: number): string {
   return Number.isInteger(value) ? value.toFixed(1) : value.toFixed(2);
 }
 
+const WORLD_TOUR_CHAMPIONSHIP_ID = "world-tour-standard";
+
 function formatTourName(tourId: string): string {
-  if (tourId === "") return "the next tour";
-  return tourId
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return resolveTourName(getChampionship(WORLD_TOUR_CHAMPIONSHIP_ID), tourId);
 }
 
 const pageStyle: CSSProperties = {
