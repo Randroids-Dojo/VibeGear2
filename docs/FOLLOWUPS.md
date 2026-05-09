@@ -10,6 +10,22 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-102: Car-contact lateral kick on bump
+**Created:** 2026-05-09
+**Priority:** nice-to-have
+**Status:** done
+**Resolved:** 2026-05-09
+**Notes:** First of three TG2 core-loop polish slices identified
+on 2026-05-09 (alongside F-103 prep-card tire affordance and F-104
+TG2-faithful fuel system). Goal: cars that occupy the same §13
+contact box jostle laterally instead of clipping through each
+other. Implementation extends the existing contact pair scan in
+`stepRaceSession` with an equal-and-opposite kick accumulator
+(`BUMP_KICK_BASE_MPS = 1.6`); the kick is scaled by the §23 mean
+pair speed factor (clamped to [0.25, 1.5]) and applied to
+`car.x` after the contact loop on both player and AI snapshots.
+No schema or save change. Shipped under `feat/car-bump-kick`.
+
 ## F-101: First-race race-time HUD hints
 **Created:** 2026-05-07
 **Priority:** nice-to-have

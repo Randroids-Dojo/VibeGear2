@@ -725,6 +725,28 @@ export const COLLISION_REFERENCE_TOP_SPEED_M_PER_S = 60;
 export const COLLISION_CAR_HIT_BASE_MAGNITUDE =
   (HIT_MAGNITUDE_RANGES.carHit.min + HIT_MAGNITUDE_RANGES.carHit.max) / 2;
 
+/**
+ * F-102. Base lateral kick (m/s of velocity per second of contact)
+ * applied to each car in a §13 contact pair. The pair scan emits
+ * equal-and-opposite kicks so the cars separate symmetrically; the
+ * per-tick `dx` lands as `BUMP_KICK_BASE_MPS * speedFactor * dt`.
+ * Sized so a contact at the §23 reference top speed produces a
+ * ~3 cm-per-tick separation at 60 Hz, which reads as a visible
+ * jostle without ejecting cars off the road on a single touch.
+ */
+export const BUMP_KICK_BASE_MPS = 1.6;
+
+/**
+ * F-102. Clamp the §13 `speedFactor` (mean pair speed normalised to
+ * the §23 reference top speed) to `[0.25, 1.5]` so a stationary
+ * grid-jam still produces a visible separation kick and a high-speed
+ * contact does not catapult either car off the road.
+ */
+function clampSpeedFactor(value: number): number {
+  if (!Number.isFinite(value)) return 0.25;
+  return Math.max(0.25, Math.min(1.5, value));
+}
+
 const DEFAULT_RACE_SESSION_SEED = 1;
 
 /**
@@ -1444,7 +1466,10 @@ export function stepRaceSession(
   // the physics integration so the gust deflects the post-step
   // lane position. Pure additive on `car.x`; no impact when no
   // overlapping hazard contributes a `lateralPushMpsPerSecond`.
-  const nextPlayerCar =
+  // F-102. The car-bump lateral-kick pass below may further mutate
+  // `nextPlayerCar.x` once the contact pair scan finishes, so this
+  // value is held in a `let` instead of a `const`.
+  let nextPlayerCar =
     playerIsRacing && playerHazards.lateralPush !== 0
       ? {
           ...nextPlayerCarPostStep,
@@ -1613,6 +1638,14 @@ export function stepRaceSession(
   // populates both sides of every contact pair so the §13 carHit
   // distribution applies symmetrically.
   const hitsByCarId = new Map(hazardHitsByCarId);
+  // F-102. Per-id signed lateral kick (m/s) accumulated by the
+  // contact pair scan. Applied below to `nextPlayerCar.x` and each
+  // `nextAi[i].car.x` once the loop finishes so cars in pack racing
+  // jostle each other instead of clipping through. Sign is the
+  // direction the receiving car is pushed (positive = right). Two
+  // overlapping contacts on opposite sides cancel (a sandwich
+  // squeeze stays put rather than catapulting one direction).
+  const lateralKicksByCarId = new Map<string, number>();
   for (let i = 0; i < damageEntries.length; i += 1) {
     const a = damageEntries[i]!;
     if (!a.racing) continue;
@@ -1627,7 +1660,39 @@ export function stepRaceSession(
       const bHits = hitsByCarId.get(b.id) ?? [];
       bHits.push(event);
       hitsByCarId.set(b.id, bHits);
+      const dxRaw = a.car.x - b.car.x;
+      // Equal-x cars get a deterministic +1 bias so two perfectly
+      // overlapping cars never stay welded together.
+      const directionA = dxRaw === 0 ? 1 : Math.sign(dxRaw);
+      const speedFactor = clampSpeedFactor(
+        (a.car.speed + b.car.speed) / 2 / COLLISION_REFERENCE_TOP_SPEED_M_PER_S,
+      );
+      const kickMagnitude = BUMP_KICK_BASE_MPS * speedFactor;
+      lateralKicksByCarId.set(
+        a.id,
+        (lateralKicksByCarId.get(a.id) ?? 0) + directionA * kickMagnitude,
+      );
+      lateralKicksByCarId.set(
+        b.id,
+        (lateralKicksByCarId.get(b.id) ?? 0) - directionA * kickMagnitude,
+      );
     }
+  }
+  // Apply the F-102 lateral kicks to the post-step car snapshots so
+  // downstream consumers (off-road check, lap rollover, results
+  // mapping) see the bumped positions.
+  const playerKickDx = (lateralKicksByCarId.get(PLAYER_CAR_ID) ?? 0) * dt;
+  if (playerKickDx !== 0) {
+    nextPlayerCar = { ...nextPlayerCar, x: nextPlayerCar.x + playerKickDx };
+  }
+  for (let i = 0; i < nextAi.length; i += 1) {
+    const aiKickDx = (lateralKicksByCarId.get(aiCarId(i)) ?? 0) * dt;
+    if (aiKickDx === 0) continue;
+    const entry = nextAi[i]!;
+    nextAi[i] = {
+      ...entry,
+      car: { ...entry.car, x: entry.car.x + aiKickDx },
+    };
   }
   const playerImpactEvents = (hitsByCarId.get(PLAYER_CAR_ID) ?? []).map(
     (hit): RaceSessionImpactAudioEvent => ({
