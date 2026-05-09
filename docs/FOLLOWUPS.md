@@ -385,7 +385,18 @@ end-of-tour bonus credit is desired.
 ## F-091: AI fires nitro per archetype on straights and last-lap pushes
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
+**Status:** done
+**Resolved:** 2026-05-09 (audit-correction; the entry was filed against
+a stale `tickAI` snapshot. The decision module
+`src/game/aiNitroFire.ts` exists - 213 lines, four window types: launch,
+panic, straight, finish-line - and `src/game/ai.ts:480` already calls
+`decideFireNitro({ archetype, nitroUsage, nitro, seed, aiSpeed,
+topSpeed, authoredCurve, lap, totalLaps, lapFraction, playerGapMeters,
+weather })` and forwards the result onto the `Input.nitro` field at
+line 499. The 2026-05-07 audit was filed before the call site was
+wired; the actual implementation landed before the audit was logged.
+Verified by reading `src/game/ai.ts:480-499` and the
+`src/game/__tests__/aiNitroFire.test.ts` coverage.)
 **Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier S #1).
 The full nitro plumbing exists for AI cars
 (`src/game/raceSession.ts:1454-1469` ticks `aiNitroResult` and forwards
