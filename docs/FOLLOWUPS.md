@@ -123,7 +123,19 @@ No save schema migration needed (the existing `completedTours`
 list is read directly). Deferred under this F-NNN: pretty tour
 display names from championship data, livery-cosmetic unlocks
 (those belong under F-096), and an e2e for the locked-state
-disabled button. Original notes follow.
+disabled button.
+
+2026-05-08 pretty-tour-names slice shipped under
+`feat/tour-pretty-names`. Adds optional `name` to
+`ChampionshipTourSchema`, authors names on all eight tours in
+`world-tour-standard.json`, and centralises the resolution in
+`src/game/tourNames.ts` (`resolveTourName(championship, tourId)`)
+so the cars page tooltip and future prep-card / results banner
+all read from one source with the slug-title-case fallback. Pure
+helper, no save migration. Locked-state e2e and livery cosmetics
+remain the deferred items under this F-NNN.
+
+Original notes follow.
 
 Originally surfaced by the 2026-05-07 mass-appeal audit (Tier B #9).
 GDD §5 ("Car selection if entering a new championship or buying a new
