@@ -177,10 +177,9 @@ function formatRowEffects(
 ): string {
   const base = formatEffects(upgrade.effects);
   if (category !== "gearbox") return base;
-  // F-104 slice 3. Surface the gearbox tier's fuel-range bonus next to the
-  // numeric effects so the player sees why upgrading the gearbox extends
-  // how far they get on a tank. The per-tier range multiplier comes from
-  // `gearboxFuelEfficiency` and is linear (10 % per tier vs stock).
+  // Gearbox tiers extend fuel range via `gearboxFuelEfficiency`; surface
+  // the cumulative-vs-stock bonus alongside the numeric effects so the
+  // upgrade row tells the player why this row matters for endurance.
   const range = gearboxFuelRangeBonusLabel(upgrade.tier);
   return base === "No numeric effect listed" ? range : `${base}, ${range}`;
 }
