@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CosmeticBadgeRow } from "@/components/title/CosmeticBadgeRow";
 import { TitleGlance } from "@/components/title/TitleGlance";
 
 import { formatBuildBadge } from "./buildInfo";
@@ -49,6 +50,7 @@ export default function TitlePage() {
         </h1>
         <p className={styles.tagline}>Spiritual successor to Top Gear 2.</p>
         <TitleGlance />
+        <CosmeticBadgeRow />
         <nav className={styles.menu} aria-label="Main menu">
           {MENU.map((item) => (
             <Link

@@ -6,6 +6,88 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-08: feat(cosmetics): tour-podium livery ledger and title-screen badges (F-096 slice 1)
+
+**GDD sections touched:** [§8](gdd/08-progression-and-rewards.md)
+"challenge medals unlock cosmetics" (build-log entry),
+[§22](gdd/22-data-and-content-pipeline.md)
+(`SaveGameSchema.unlockedCosmetics` extension; existing v4 saves
+load unchanged because the slot is optional).
+**Branch / PR:** `feat/cosmetic-ledger`, PR pending.
+**Status:** Slice 1 of F-096. Sprite-based badge icons, livery
+`paletteRecolour` overlay on the player sprite, and the
+soundtrack-remix rotation stay open under F-096 for follow-up
+slices.
+
+### Done
+- Added `src/game/cosmetics.ts` with three pure helpers:
+  `cosmeticIdForTour(tourId)` mints `livery-${tourId}`,
+  `appendUnlockedCosmetic(list, id)` returns a fresh array with
+  the id absent or unchanged contents otherwise (always a copy
+  so the result fits zod's `string[]` shape), and
+  `buildCosmeticBadges(list)` filters non-livery ids and
+  title-cases the tour slug into a player-facing label.
+- Extended `SaveGameSchema` with optional
+  `unlockedCosmetics: z.array(slug)` so existing v4 saves load
+  unchanged. The schema-version field stays at 4.
+- Wired `unlockNextTour` in `src/game/championship.ts` to mint
+  the per-tour livery on first completion. Re-completion no-ops
+  via the existing early-return guard (the test that pins
+  reference equality on a re-run still holds).
+- Added `src/components/title/CosmeticBadgeRow.tsx`. Hydration-
+  safe: SSR pass renders an empty placeholder so the static
+  markup carries the test-id, the client-only effect loads the
+  save and populates a row of text badges below
+  `<TitleGlance />`. No animation; row is static so the surface
+  respects vestibular sensitivity per §19.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2926 / 2926 passed across 158 suites; 9 new
+  cases in `src/game/__tests__/cosmetics.test.ts` cover all
+  three helpers (id format, append idempotence, badge filter +
+  title-casing, malformed-id skip), plus 2 new
+  `championship.test.ts` cases (cosmetic minted on first
+  completion, no duplicate on re-run).
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- Cosmetic ids derived as `livery-${tourId}` rather than a
+  hand-authored mapping table. A future migration that renames
+  a tour can rename the cosmetic by editing the slug, not by
+  re-mapping a separate file.
+- Text badges instead of sprite icons in slice 1. The art for
+  per-tour badges is its own deliverable; shipping the ledger
+  first lets a player see the unlocked count on the title
+  screen without waiting for the icon set. The text is
+  accessible by default (no alt-text dance) and the layout
+  reuses the same pill style as the F-101 hint overlay.
+- One livery per tour, awarded on completion. The GDD §8 ask
+  also names "challenge medals" and "soundtrack remixes"; those
+  belong in follow-up slices because each adds a separate save
+  slot and runtime surface (medal -> per-race-result challenge
+  state, remix -> music-runtime rotation).
+
+### Coverage ledger
+- §8 progression: tour completion now mints a player-visible
+  cosmetic in addition to the next-tour unlock. F-096 stays
+  open for the deferred icon / livery / remix wiring.
+- §22 schema: `SaveGame.unlockedCosmetics` joins the optional
+  fields (`ghosts`, `downloadedGhosts`, `tutorialState`); no
+  migration required because the loader treats `undefined` as
+  "no cosmetics yet".
+
+### Followups created
+None. F-096 ledger updated to in-progress with the deferred
+items.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-08: feat(hazards): oil-slick lateral-grip hazard (F-095 slice 1)
 
 **GDD sections touched:** [§9](gdd/09-track-design.md) (track

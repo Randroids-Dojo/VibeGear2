@@ -618,4 +618,17 @@ describe("unlockNextTour", () => {
     unlockNextTour(save, "first-tour", FIXTURE_CHAMPIONSHIP);
     expect(save).toEqual(before);
   });
+
+  it("mints the F-096 livery cosmetic on first completion", () => {
+    const save = unlockedSave("first-tour");
+    const after = unlockNextTour(save, "first-tour", FIXTURE_CHAMPIONSHIP);
+    expect(after.unlockedCosmetics).toEqual(["livery-first-tour"]);
+  });
+
+  it("does not duplicate the F-096 cosmetic on a second completion", () => {
+    const save = unlockedSave("first-tour");
+    const once = unlockNextTour(save, "first-tour", FIXTURE_CHAMPIONSHIP);
+    const twice = unlockNextTour(once, "first-tour", FIXTURE_CHAMPIONSHIP);
+    expect(twice.unlockedCosmetics).toEqual(["livery-first-tour"]);
+  });
 });
