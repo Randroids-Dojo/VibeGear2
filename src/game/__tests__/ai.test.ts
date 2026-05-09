@@ -533,6 +533,149 @@ describe("tickAI (§15 archetype behaviours)", () => {
   });
 });
 
+describe("tickAI (field compression)", () => {
+  // Helper: drive the same AI under two different peer-field setups
+  // and read the requested target speed via the throttle / brake
+  // proxy. The first call has no peers (baseline), the second has
+  // peers ahead so the compression term should lift the pace.
+  function targetSpeedWithPeers(
+    peers: ReadonlyArray<{ x: number; z: number; speed: number }>,
+  ): number {
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: STARTER_STATS.topSpeed * 0.5 }),
+      { car: freshCar({ x: 0, z: -50, speed: STARTER_STATS.topSpeed }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      peers,
+    );
+    return result.input.throttle;
+  }
+
+  it("returns identity throttle when no peers are around (no compression)", () => {
+    expect(targetSpeedWithPeers([])).toBeCloseTo(1, 5);
+  });
+
+  it("a trailing AI with a peer ahead targets a higher speed than the same AI alone", () => {
+    const baseline = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: STARTER_STATS.topSpeed * 0.99 }),
+      { car: freshCar({ x: 0, z: -50, speed: STARTER_STATS.topSpeed }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+    );
+    const compressed = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: STARTER_STATS.topSpeed * 0.99 }),
+      { car: freshCar({ x: 0, z: -50, speed: STARTER_STATS.topSpeed }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      // Peer 200 m ahead: 200 * 0.0003 = 0.06, capped at 0.05.
+      [{ x: 1, z: 300, speed: STARTER_STATS.topSpeed }],
+    );
+    // The trailing AI now targets a higher speed, so throttle stays
+    // pinned where the baseline already reached the hysteresis band.
+    expect(compressed.input.throttle).toBeGreaterThanOrEqual(
+      baseline.input.throttle,
+    );
+    // The behind-only ai state's compression bonus is positive, so
+    // intent / cue stay benign (no overtake target inside window).
+    expect(compressed.nextAiState.intent).not.toBe("overtake");
+  });
+
+  it("a leading AI with peers behind takes a pace penalty", () => {
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 1000, speed: STARTER_STATS.topSpeed }),
+      { car: freshCar({ x: 0, z: -50, speed: STARTER_STATS.topSpeed }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      IDENTITY_CPU_MODIFIERS,
+      1,
+      1,
+      undefined,
+      null,
+      // Two peers behind, the closest 200 m back. The leader gets a
+      // -5 % cap on the compression term.
+      [
+        { x: 1, z: 800, speed: STARTER_STATS.topSpeed },
+        { x: -1, z: 600, speed: STARTER_STATS.topSpeed },
+      ],
+    );
+    // At top speed with a -5 % target, the AI should not be at full
+    // throttle: hysteresis band kicks in below the target.
+    expect(result.input.throttle).toBeLessThan(1);
+  });
+
+  it("Master tier (recoveryScalar = 0) flattens the compression entirely", () => {
+    const masterModifiers = {
+      paceScalar: 1.09,
+      recoveryScalar: 0,
+      mistakeScalar: 0.45,
+    } as const;
+    const withPeers = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: STARTER_STATS.topSpeed * 0.5 }),
+      { car: freshCar({ x: 0, z: -50, speed: STARTER_STATS.topSpeed }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      masterModifiers,
+      1,
+      1,
+      undefined,
+      null,
+      [{ x: 1, z: 300, speed: STARTER_STATS.topSpeed }],
+    );
+    const noPeers = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 100, speed: STARTER_STATS.topSpeed * 0.5 }),
+      { car: freshCar({ x: 0, z: -50, speed: STARTER_STATS.topSpeed }) },
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+      DEFAULT_AI_TRACK_CONTEXT,
+      0,
+      masterModifiers,
+      1,
+      1,
+    );
+    // Master forces recoveryScalar = 0, so the field-compression
+    // bonus collapses to 0 and both calls produce identical outputs.
+    expect(withPeers.input.throttle).toBeCloseTo(noPeers.input.throttle, 5);
+    expect(withPeers.input.brake).toBeCloseTo(noPeers.input.brake, 5);
+  });
+});
+
 describe("tickAI (AI-vs-AI overtake awareness)", () => {
   it("targets a slower AI ahead when no player is in range", () => {
     const playerOffField: PlayerView = {

@@ -211,6 +211,21 @@ export const AI_TUNING = Object.freeze({
   MAX_RECOVERY_PACE_BONUS: 0.05,
   /** Player gap, in meters, that reaches the maximum recovery term. */
   RECOVERY_GAP_FOR_MAX_BONUS: 240,
+  /**
+   * Inter-AI rubber-band compression cap before the §23
+   * `recoveryScalar` row is applied. A trailing AI gets up to +5 %
+   * pace toward the nearest peer ahead; a leading AI gets up to -5 %
+   * toward the nearest peer behind. Easy / Normal scale this to keep
+   * the §15 mid-pack churn observable; Hard / Master flatten it via
+   * `recoveryScalar = 0.25 / 0`.
+   */
+  MAX_FIELD_COMPRESSION_PACE: 0.05,
+  /**
+   * Per-meter scale on the inter-AI compression. The followup spec
+   * is `+/-3 % per 100 m`; the term is clamped at
+   * `MAX_FIELD_COMPRESSION_PACE`.
+   */
+  FIELD_COMPRESSION_PER_METER: 0.0003,
   /** Lap fraction where rocket starter launch boost stops applying. */
   ROCKET_LAUNCH_FRACTION: 0.18,
   /** Lap fraction where rocket starter late fade starts applying. */
@@ -382,6 +397,10 @@ export function tickAI(
     AI_TUNING.MAX_RECOVERY_PACE_BONUS *
     cpuModifiers.recoveryScalar *
     behaviour.recoveryScalar;
+  const fieldCompressionPaceBonus =
+    fieldCompressionBonus(aiCar, otherAiCars) *
+    cpuModifiers.recoveryScalar *
+    behaviour.recoveryScalar;
 
   // Target speed per segment. §15 "AI chooses a lane offset target" plus
   // a per-driver `paceScalar` from §22 maps onto a curve-aware target
@@ -424,7 +443,7 @@ export function tickAI(
     stats.topSpeed *
     Math.max(0, curvePenalty) *
     composedPaceScalar *
-    (1 + recoveryPaceBonus);
+    (1 + recoveryPaceBonus + fieldCompressionPaceBonus);
   const targetSpeed = clamp(rawTarget, AI_TUNING.MIN_AI_SPEED, stats.topSpeed);
 
   // The state we will return regardless of phase. Mirrors the car so
@@ -550,6 +569,47 @@ function lapFraction(totalLength: number, z: number): number {
   if (!Number.isFinite(totalLength) || totalLength <= 0) return 0;
   const normalized = ((z % totalLength) + totalLength) % totalLength;
   return clamp(normalized / totalLength, 0, 1);
+}
+
+/**
+ * Inter-AI lead compression. Returns a signed pace bonus before the
+ * §23 `recoveryScalar` row scales it: positive pulls a trailing AI
+ * toward the pack, negative pulls a runaway leader back. The signed
+ * gap to the closest peer ahead and the closest peer behind are
+ * scaled by `FIELD_COMPRESSION_PER_METER` and clamped at
+ * `MAX_FIELD_COMPRESSION_PACE`.
+ *
+ * Both ends are computed independently and summed so a mid-pack AI
+ * with peers on both sides cancels out (the field stays compressed
+ * around the median rather than collapsing to a point).
+ */
+function fieldCompressionBonus(
+  aiCar: Readonly<CarState>,
+  otherAiCars: ReadonlyArray<OvertakeThreat>,
+): number {
+  if (otherAiCars.length === 0) return 0;
+  let nearestAheadGap = Number.POSITIVE_INFINITY;
+  let nearestBehindGap = Number.POSITIVE_INFINITY;
+  for (const peer of otherAiCars) {
+    const gap = peer.z - aiCar.z;
+    if (gap > 0 && gap < nearestAheadGap) nearestAheadGap = gap;
+    else if (gap < 0 && -gap < nearestBehindGap) nearestBehindGap = -gap;
+  }
+  const aheadBonus = Number.isFinite(nearestAheadGap)
+    ? clamp(
+        nearestAheadGap * AI_TUNING.FIELD_COMPRESSION_PER_METER,
+        0,
+        AI_TUNING.MAX_FIELD_COMPRESSION_PACE,
+      )
+    : 0;
+  const leaderPenalty = Number.isFinite(nearestBehindGap)
+    ? clamp(
+        nearestBehindGap * AI_TUNING.FIELD_COMPRESSION_PER_METER,
+        0,
+        AI_TUNING.MAX_FIELD_COMPRESSION_PACE,
+      )
+    : 0;
+  return aheadBonus - leaderPenalty;
 }
 
 function trafficPressureOffset(
