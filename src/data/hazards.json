@@ -82,5 +82,17 @@
     "damageKind": null,
     "damageMagnitude": null,
     "breakable": false
+  },
+  {
+    "id": "oil_slick",
+    "kind": "oil_slick",
+    "displayName": "Oil Slick",
+    "defaultWidth": 8,
+    "defaultLength": 16,
+    "laneOffset": 0,
+    "gripMultiplier": 0.5,
+    "damageKind": null,
+    "damageMagnitude": null,
+    "breakable": false
   }
 ]

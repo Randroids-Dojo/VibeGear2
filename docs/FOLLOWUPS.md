@@ -155,8 +155,27 @@ back for "I want the gold-podium livery" exactly as Top Gear 2's
 ## F-095: Authored hazard variety beyond `puddle` and `gravel_band`
 **Created:** 2026-05-07
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** Surfaced by the 2026-05-07 mass-appeal audit (Tier A #6).
+**Status:** in-progress
+**Notes:** 2026-05-08 oil-slick slice shipped under
+`feat/oil-slick-hazard`. Audit-correction note: the original
+"limited to puddle + gravel_band" framing was wrong on second
+look. The schema already has 7 kinds and 6 are authored (the
+audit grep missed the recurring `slick_paint`, `traffic_cone`,
+`sign_marker`, `snow_buildup`, and `tunnel`). The real gap is
+the four new kinds the audit names. Slice 1 ships the first of
+those four (`oil_slick`, lateral grip drop) end-to-end: schema
+enum, registry entry (grip 0.5 vs. puddle 0.65, no damage,
+non-breakable, narrower 8 m footprint than a puddle so it sits
+on a single lane), and three authored placements (Foundry Mile
+inside-line uphill apex, Cinder Gate left-curve climb, Grand
+Meridian late tour decreasing-radius left). Deferred under this
+F-NNN: `debris`, `slow_traffic`, `wind_gust`. Each is a clean
+follow-up slice (the pure runtime already handles per-tick grip
++ optional damage, so debris is a one-line addition; slow_traffic
+needs a per-tick lane-bias term; wind_gust needs a lateral-push
+extension to evaluateHazards). Original notes follow.
+
+Surfaced by the 2026-05-07 mass-appeal audit (Tier A #6).
 A grep across all 32 production tracks shows hazards limited to `puddle`
 + `gravel_band` (and most segments are `"hazards": []`). GDD §3 / §9
 call for richer authored tactical decisions. Add three or four new

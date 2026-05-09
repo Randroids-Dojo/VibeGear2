@@ -91,4 +91,20 @@ describe("evaluateHazards", () => {
     expect(effect.events).toEqual([]);
     expect(effect.gripMultiplier).toBe(1);
   });
+
+  it("applies the F-095 oil-slick grip drop without damage", () => {
+    // Foundry Mile authored segment 2 (z range 480-720) carries the
+    // F-095 oil_slick. The 0.5 grip drop is sharper than a puddle's
+    // 0.65 so a player who clips the inside line bleeds noticeable
+    // grip without taking a body hit.
+    const track = loadTrack("iron-borough/foundry-mile");
+    const effect = evaluateHazards({
+      car: car({ z: 600 }),
+      track,
+      hazardsById: HAZARDS_BY_ID,
+    });
+    expect(effect.events[0]?.hazard.id).toBe("oil_slick");
+    expect(effect.gripMultiplier).toBeCloseTo(0.5, 6);
+    expect(effect.events[0]?.hit).toBeNull();
+  });
 });
