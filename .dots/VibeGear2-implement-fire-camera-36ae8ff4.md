@@ -1,0 +1,9 @@
+---
+title: "implement: fire camera shake on impact and HUD flash on lap complete (wire dormant VfxState into race renderer)"
+status: open
+priority: 1
+issue-type: task
+created-at: "2026-05-06T00:11:38.660569-05:00"
+---
+
+WIRE DORMANT VFX. src/render/vfx.ts ships fireFlash/fireShake/tickVfx/drawVfx and §16 calls for "light camera shake on impact" + "HUD flash on lap complete", but no caller anywhere in src/app/race/page.tsx creates a VfxState, ticks it, fires impacts/laps, or passes vfx into drawRoad(). drawRoad accepts options.vfx (pseudoRoadCanvas.ts:152, 397) but the race page never sets it. Net: every impact today is silent visually, every lap rollover is silent visually, and reduced-motion gating is irrelevant because the FX never run. Affected files: src/app/race/page.tsx (own a vfxRef, fire on RaceSessionImpactAudioEvent + lapComplete + raceFinish, tickVfx in the rAF, pass vfx into drawRoad). Implementation Notes: fireFlash on impact (intensity 0.45 wallHit / 0.32 carHit / 0.18 rub, 220 ms, color #fff for wall/car / #ffaa00 for rub); fireShake on impact (amplitudePx 14 wallHit / 9 carHit / 4 rub, 280 ms, seed = session.tick + hitKindHash, frequencyHz 30); fireFlash on lapComplete (intensity 0.55, 360 ms, color #ffd700) per §16 "HUD flash on lap complete"; fireFlash on raceFinish (intensity 0.7, 600 ms, color #ffd700). Verify: unit test e2e/vfx-impact-feedback.spec.ts that drives /race, induces a rub by holding hard steer at top speed (post-lateral-fix) so the player rubs the rumble, asserts a non-zero canvas pixel delta within 200 ms compared to no-impact baseline; AND a Vitest case in src/app/race/__tests__/vfxBridge.test.ts (new file) that pumps a fake RaceSessionImpactAudioEvent through the bridge function and asserts state.shakes.length === 1 and state.flashes.length === 1.

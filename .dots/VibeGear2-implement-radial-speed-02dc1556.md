@@ -1,0 +1,11 @@
+---
+title: "implement: radial speed-line streaks above 0.7 speed-norm and during nitro to make high speed feel committed"
+status: done
+priority: 3
+issue-type: task
+created-at: "2026-05-06T00:12:38.660818-05:00"
+blocks:
+  - VibeGear2-implement-fix-lateral-b2503f6f
+---
+
+SPEED-LINE FX. src/render/pseudoRoadCanvas.ts and src/render/vfx.ts have no radial speed-line / streak particle module. §16 "Strong foreground speed cues" + §16 "Nitro bloom trail" call for it; today the only motion-FX above the road are the rain streaks (rain-only, downward, never radial) and the off-road dust pool (only fires on grass). At 0.95 topSpeed on a clear track the player gets ZERO foreground motion cues. Affected files: src/render/speedLines.ts (new pure module, mirroring src/render/dust.ts pure-PRNG pool pattern: state object, INITIAL_SPEED_LINE_STATE, tickSpeedLines(state, speedNorm, nitroActive, dtMs, seed), drawSpeedLines(ctx, state, viewport)); src/render/index.ts (re-export); src/app/race/page.tsx (own a speedLineRef, tick + draw above road but below HUD). Implementation Notes: emit threshold speedNorm >= 0.7 (linear ramp 0 emit-rate at 0.7 -> 24/s at 1.0; +18/s when nitro active so peak is 42/s); each line spawns at horizon (0, viewport.height * 0.45) plus jittered offset within the upper half, drifts radially outward toward the bottom corners with velocity proportional to (speedNorm * 8 + nitroActive * 6) view-heights/sec; alpha 0.6 -> 0 over 220 ms; stroke width 1-2 px; color "#ffffff" base, "#dde7ff" when nitro. MAX_LINES = 96 (recycle oldest like dust). Determinism: seed-hashed jitter, never Math.random(). Reduced-motion: gate emissions to 0 when prefersReducedMotion (mirror the vfx pattern). Verify: Vitest src/render/__tests__/speedLines.test.ts (initial state empty, no emit at speedNorm 0.5, ~24/s emit rate at 1.0, ~42/s with nitro, deterministic across two pools with same seed, zero emit when reducedMotion); Playwright e2e/speed-lines-feel.spec.ts at /dev/road sets a fixed pose at speed=top and asserts canvas has at least 12 active line strokes in the upper half. after: VibeGear2-implement-fix-lateral-b2503f6f because the FX should only fire when the player can hold top speed without immediately scraping a rumble.
