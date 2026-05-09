@@ -6,6 +6,76 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(ai): rubber-band lead compression (F-084)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)
+("Rubber-banding philosophy" - "small pace bonuses to keep midfield
+relevant" + "mild lead compression in easy mode"; tier gating via
+the existing `recoveryScalar` row from §23 so Hard / Master keep
+the "minimal / none" rubber-band).
+**Branch / PR:** `feat/ai-rubber-band`, PR pending.
+**Status:** Closes F-084. Pairs with F-085 slice 1 (AI-vs-AI
+overtake awareness, shipped earlier today): the overtake intent
+only matters when the field stays close enough to pass, and this
+slice keeps the field that close.
+
+### Done
+- Added two `AI_TUNING` constants in `src/game/ai.ts`:
+  `MAX_FIELD_COMPRESSION_PACE = 0.05` (cap +/-5 %) and
+  `FIELD_COMPRESSION_PER_METER = 0.0003` (3 % per 100 m).
+- Added `fieldCompressionBonus(aiCar, otherAiCars)`. Returns a
+  signed pace bonus before the §23 `recoveryScalar` row scales it:
+  positive lifts a trailing AI toward the pack, negative pulls a
+  runaway leader back. Both ends are computed independently and
+  summed so a mid-pack AI cancels out and the field stays
+  compressed around the median.
+- Wired `fieldCompressionPaceBonus` into `tickAI` next to the
+  existing `recoveryPaceBonus`. The composed pace target reads
+  `(1 + recoveryPaceBonus + fieldCompressionPaceBonus)`. Both
+  scale by `cpuModifiers.recoveryScalar * behaviour.recoveryScalar`
+  so the §23 difficulty ladder (`easy = 1.0`, `normal = 0.6`,
+  `hard = 0.25`, `master = 0`) gates compression as the followup
+  spec required without a separate hard/easy branch in the AI tick.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2971 / 2971 across 162 suites; 4 new cases in
+  the new `tickAI (field compression)` describe block: identity
+  throttle with no peers, trailing-AI lift toward a peer ahead,
+  leading-AI penalty with peers behind, Master tier (recoveryScalar
+  = 0) collapses the entire term.
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- The compression term reuses `otherAiCars` already threaded
+  through `tickAI` for F-085 slice 1, so this slice does not
+  extend the function signature again. The pre-physics field
+  snapshot in `stepRaceSession` is the correct read for both
+  features.
+- Reusing `recoveryScalar` rather than introducing a new
+  `compressionScalar` keeps the §23 ladder authoritative. The
+  followup spec ("Easy / Normal only; Hard / Master keep the
+  minimal / none rubber-band") matches the `recoveryScalar`
+  values 1.0 / 0.6 / 0.25 / 0 already in `aiDifficulty.ts`.
+- The leader penalty is symmetric with the trailer bonus
+  (signed sum of two clamped legs). A leader with a peer 100 m
+  behind sees a -3 % cap; a trailer with a peer 100 m ahead
+  sees +3 %. A mid-pack AI with peers on both sides cancels.
+
+### GDD coverage
+- §15 Rubber-banding philosophy: covered by this slice. Tier
+  gating via §23 `recoveryScalar` resolves the "easy mode only"
+  qualifier without a separate code path.
+
+### Followups
+- F-084 closes with this slice.
+- F-085 stays in-progress for the bully overrides + inside /
+  outside pass preferences from the original §15 spec.
+
+---
+
 ## 2026-05-09: feat(ai): AI-vs-AI overtake awareness (F-085 slice 1)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)

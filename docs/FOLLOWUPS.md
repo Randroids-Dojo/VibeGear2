@@ -557,8 +557,20 @@ is tightly bounded; this is the natural follow-on.
 ## F-084: AI rubber-band lead compression for visible mid-pack churn
 **Created:** 2026-05-05
 **Priority:** nice-to-have
-**Status:** open
-**Notes:** §15 "Rubber-banding philosophy" allows "small pace
+**Status:** done
+**Resolved:** 2026-05-09 (shipped under `feat/ai-rubber-band`).
+Added `fieldCompressionBonus` in `src/game/ai.ts` reading the
+`otherAiCars` snapshot already threaded through `tickAI` for
+F-085 slice 1. Constants `MAX_FIELD_COMPRESSION_PACE = 0.05` and
+`FIELD_COMPRESSION_PER_METER = 0.0003` give +/-3 % per 100 m gap
+to nearest peer ahead / behind, capped at +/-5 %, and the term
+rides the existing `cpuModifiers.recoveryScalar *
+behaviour.recoveryScalar` chain so the §23 ladder
+(`easy = 1.0`, `normal = 0.6`, `hard = 0.25`, `master = 0`)
+naturally enforces the "Easy / Normal only" gate. Original entry
+below.
+
+§15 "Rubber-banding philosophy" allows "small pace
 bonuses to keep midfield relevant" and "mild lead compression in
 easy mode". The current recovery term in `tickAI` only fires when
 the AI trails the player and is capped at +5 % pace
