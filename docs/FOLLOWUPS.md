@@ -13,7 +13,8 @@ or `obsolete` so the trail is preserved.
 ## F-104: TG2-faithful fuel and gearbox economy
 **Created:** 2026-05-09
 **Priority:** nice-to-have
-**Status:** in-progress
+**Status:** done
+**Resolved:** 2026-05-09
 **Notes:** Third of the three TG2 core-loop polish slices identified
 on 2026-05-09 (alongside F-102 car-bump kick and F-103 prep-card
 tire affordance, both shipped). Goal: TG2-faithful fuel runtime so
