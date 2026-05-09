@@ -64,6 +64,12 @@ function raceMusicDuckingForAudioEvent(
       return { volumeScale: 0.88, holdMs: 180 };
     case "gearShift":
       return NO_RACE_MUSIC_DUCKING;
+    case "fuelDepleted":
+      // One-shot sputter on the depletion edge. Heavier hold than
+      // pickup events because the cue marks the moment the run
+      // becomes a DNF; the player should hear it cleanly over the
+      // music bed.
+      return { volumeScale: 0.6, holdMs: 600 };
     case "tireSquealLoop":
     case "brakeScrubLoop":
       // Loop state events drive the §18 sustained audio bed; the

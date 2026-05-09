@@ -92,6 +92,10 @@ export interface SurfaceHushSfxInput {
   readonly audio: AudioSettings | undefined;
 }
 
+export interface FuelDepletedSfxInput {
+  readonly audio: AudioSettings | undefined;
+}
+
 export interface ProceduralSfxRuntimeOptions {
   readonly context: () => SfxAudioContextLike | null;
   readonly baseGain?: number;
@@ -178,6 +182,20 @@ export class ProceduralSfxRuntime {
       gainScale: 0.75,
       durationSeconds: 0.18,
       endFrequency: 1460,
+    });
+  }
+
+  playFuelDepleted(input: FuelDepletedSfxInput): boolean {
+    // Engine-sputter cue: low sawtooth that drops in pitch over
+    // ~360 ms. Sits below the pickup / nitro band so it reads as
+    // an engine misfire rather than a UI bleep.
+    return this.playTone({
+      audio: input.audio,
+      frequency: 220,
+      oscillatorType: "sawtooth",
+      gainScale: 0.6,
+      durationSeconds: 0.36,
+      endFrequency: 90,
     });
   }
 

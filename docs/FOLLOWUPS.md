@@ -48,8 +48,13 @@ field `dnfReason: DnfReason` on `FinalCarRecord` and
 each AI's `entry.dnfReason`, and `FinishingOrderTable` maps every
 DnfReason value to a friendly label ("Out of fuel", "Wrecked",
 "Off track", "No progress", "Retired"). Static text only; reduced-
-motion safe per §19. Audio sputter cue deferred for a future loop;
-the four-slice F-104 feature otherwise closes with this slice.
+motion safe per §19. 2026-05-09 audio sputter cue shipped under
+`feat/fuel-sputter-audio`: new `RaceSessionFuelDepletedAudioEvent`
+fires the tick the player's fuel crosses from `liters > 0` to
+`liters === 0`, ducks the music bed at 0.6 / 600 ms, and the
+`ProceduralSfxRuntime` plays a low descending sawtooth from
+220 Hz to 90 Hz over 360 ms so the player hears the moment the
+run becomes a DNF. F-104 closes fully with this slice.
 
 ## F-103: Prep-card tire recommendation one-click action
 **Created:** 2026-05-09

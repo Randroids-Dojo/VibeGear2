@@ -366,6 +366,8 @@ function playRaceSfxEvents(
         speedFactor: event.speedFactor,
         audio,
       });
+    } else if (event.kind === "fuelDepleted") {
+      runtime.playFuelDepleted({ audio });
     }
   }
 }
