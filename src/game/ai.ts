@@ -239,6 +239,8 @@ export const DEFAULT_AI_TRACK_CONTEXT: Readonly<AITrackContext> = Object.freeze(
   roadHalfWidth: ROAD_WIDTH,
 });
 
+const EMPTY_THREATS: ReadonlyArray<OvertakeThreat> = Object.freeze([]);
+
 /**
  * Minimal player view the AI consumes. Kept to one nested object now so
  * later overtake / collision-avoidance work can extend it without a
@@ -289,6 +291,13 @@ export function tickAI(
   visibilityRiskScalar: number = 1,
   aiNitro: Readonly<NitroState> = INITIAL_NITRO_STATE,
   weather: WeatherOption | null = null,
+  /**
+   * Other AI cars on the field this tick, in pre-physics positions.
+   * `tickAI` reads them only as overtake targets so the AI can attempt
+   * to pass slower cars in the pack instead of trailing them. Empty
+   * array (or omitted) preserves the player-only overtake behaviour.
+   */
+  otherAiCars: ReadonlyArray<OvertakeThreat> = EMPTY_THREATS,
 ): AITickResult {
   const behaviour = getAIBehaviour(driver.archetype);
   const segment = currentSegment(track, aiCar.z);
@@ -318,11 +327,13 @@ export function tickAI(
     player.car,
     context.roadHalfWidth,
   );
-  const overtake = overtakeOffset(
-    aiCar,
+  const overtakeTarget = pickOvertakeTarget(aiCar, [
     player.car,
-    context.roadHalfWidth,
-  );
+    ...otherAiCars,
+  ]);
+  const overtake = overtakeTarget
+    ? overtakeOffset(aiCar, overtakeTarget, context.roadHalfWidth)
+    : { active: false, offset: 0 };
   const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset + overtake.offset;
   const baseIdealLateralOffset = clamp(
     idealOffsetWithTraffic === 0 ? 0 : idealOffsetWithTraffic,
@@ -561,21 +572,51 @@ function trafficPressureOffset(
   return direction * pressure * clamp(aggression, 0, 1) * closeness;
 }
 
+/**
+ * Minimal threat shape `overtakeOffset` reads. Any car with `x`, `z`,
+ * and `speed` can serve as a pass target - the player or another AI.
+ */
+interface OvertakeThreat {
+  readonly x: number;
+  readonly z: number;
+  readonly speed: number;
+}
+
+/**
+ * Pick the closest car ahead of the AI within the overtake window
+ * that the AI can actually pass (its closing speed must be at least
+ * even with the threat). Returns `null` when no candidate qualifies.
+ *
+ * Candidates are scanned in input order and the closest qualifying
+ * threat wins on ties so the function stays deterministic across
+ * runs of the same field.
+ */
+function pickOvertakeTarget(
+  aiCar: Readonly<CarState>,
+  candidates: ReadonlyArray<OvertakeThreat>,
+): OvertakeThreat | null {
+  let best: OvertakeThreat | null = null;
+  let bestGap = Number.POSITIVE_INFINITY;
+  for (const candidate of candidates) {
+    const gap = candidate.z - aiCar.z;
+    if (gap <= 0 || gap > AI_TUNING.OVERTAKE_WINDOW_METERS) continue;
+    if (aiCar.speed + 1 < candidate.speed) continue;
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 function overtakeOffset(
   aiCar: Readonly<CarState>,
-  playerCar: Readonly<CarState>,
+  target: OvertakeThreat,
   roadHalfWidth: number,
 ): { active: boolean; offset: number } {
-  const gap = playerCar.z - aiCar.z;
-  if (gap <= 0 || gap > AI_TUNING.OVERTAKE_WINDOW_METERS) {
-    return { active: false, offset: 0 };
-  }
-  if (aiCar.speed + 1 < playerCar.speed) {
-    return { active: false, offset: 0 };
-  }
-  const passSide = playerCar.x <= 0 ? 1 : -1;
+  const passSide = target.x <= 0 ? 1 : -1;
   const desiredTarget =
-    playerCar.x + passSide * AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS;
+    target.x + passSide * AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS;
   const boundedTarget = clamp(
     desiredTarget,
     -roadHalfWidth + AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS,
@@ -583,13 +624,13 @@ function overtakeOffset(
   );
   const directionalTarget =
     passSide * Math.min(AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, roadHalfWidth);
-  const target =
-    Math.abs(boundedTarget - playerCar.x) >= AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS
+  const lateral =
+    Math.abs(boundedTarget - target.x) >= AI_TUNING.OVERTAKE_PLAYER_MARGIN_METERS
       ? boundedTarget
       : directionalTarget;
   return {
     active: true,
-    offset: clamp(target - aiCar.x, -AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, AI_TUNING.OVERTAKE_LANE_SHIFT_METERS),
+    offset: clamp(lateral - aiCar.x, -AI_TUNING.OVERTAKE_LANE_SHIFT_METERS, AI_TUNING.OVERTAKE_LANE_SHIFT_METERS),
   };
 }
 
@@ -613,7 +654,11 @@ function readabilityCueFor(input: {
   brilliantPaceBonus: number;
   overtakeActive: boolean;
 }): AIReadabilityCue {
-  if (input.overtakeActive) return "overtake";
+  // Archetype-specific cues take precedence over the generic overtake
+  // cue. Once AI-vs-AI overtake awareness is wired, overtake fires
+  // frequently against the pack and would crowd out the more specific
+  // archetype reads (bully-pressure, rocket-launch, etc.) that the
+  // §15 readability spec calls out by name.
   if (input.archetype === "nitro_burst") {
     if (input.launchPaceBonus > 0) return "rocket-launch";
     if (input.fadePacePenalty > 0) return "rocket-fade";
@@ -636,6 +681,7 @@ function readabilityCueFor(input: {
     if (input.brilliantPaceBonus > 0) return "chaotic-brilliant";
   }
   if (input.archetype === "endurance") return "enduro-consistent";
+  if (input.overtakeActive) return "overtake";
   return "clean-line";
 }
 

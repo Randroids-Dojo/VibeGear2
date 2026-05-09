@@ -6,6 +6,79 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(ai): AI-vs-AI overtake awareness (F-085 slice 1)
+
+**GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)
+("Passing behavior" requirement that the AI attempts to pass any
+slower car ahead, not just the player; mid-pack churn now visible
+from the player's perspective).
+**Branch / PR:** `feat/ai-vs-ai-overtake`, PR pending.
+**Status:** Slice 1 of F-085. Inside-pass-under-braking and
+outside-pass-in-sweepers preferences plus bully overrides remain
+open under F-085 for future slices.
+
+### Done
+- Refactored `overtakeOffset` in `src/game/ai.ts` to take a generic
+  `OvertakeThreat` (anything with `x`, `z`, `speed`) instead of the
+  player car specifically. Logic is unchanged; the function
+  previously only read `playerCar.x / z / speed` so the rename is
+  the entire surface change.
+- Added `pickOvertakeTarget(aiCar, candidates)` that picks the
+  closest qualifying threat ahead within
+  `AI_TUNING.OVERTAKE_WINDOW_METERS` whose speed the AI can match.
+  Returns `null` when no candidate qualifies; deterministic tie-
+  break favours the closest gap.
+- Extended `tickAI` with an optional 16th parameter
+  `otherAiCars: ReadonlyArray<OvertakeThreat>` (defaulted to a
+  frozen empty array). The previous player-only behaviour stays
+  the default; existing 44 cases pass without change.
+- Wired `stepRaceSession` in `src/game/raceSession.ts` to pre-
+  compute a per-tick `aiThreatField` snapshot of every AI's pre-
+  physics `{x, z, speed}` and pass each AI its peers via
+  `Array.filter` exclusion. Reading the snapshot up-front (rather
+  than re-reading `state.ai[i].car` per tick) keeps the field
+  iteration order from leaking into the overtake decision.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm lint` clean.
+- `pnpm vitest run` 2967 / 2967 across 162 suites; 4 new cases in
+  the new `tickAI (AI-vs-AI overtake awareness)` describe block:
+  closer AI ahead with no player in range, closer AI vs. nearer
+  player tie-break, AI threat behind the ego ignored, faster AI
+  ahead the ego cannot match ignored.
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- The pre-physics snapshot is the right read for AI-vs-AI: every
+  AI sees its peers from the start of the tick rather than from
+  whatever the upstream AI integrated to. This preserves
+  determinism and matches how `aiTickResults.map` already produces
+  inputs in lock-step against a frozen field.
+- `EMPTY_THREATS` is a frozen module-level singleton so callers
+  that omit the parameter share the same allocation per tick.
+- No tuning change to `AI_TUNING.OVERTAKE_WINDOW_METERS` /
+  `OVERTAKE_LANE_SHIFT_METERS` / `OVERTAKE_PLAYER_MARGIN_METERS`.
+  The lane-shift cap that used to be the player-pass margin still
+  reads with the same constants because the function shape is
+  unchanged.
+
+### GDD coverage
+- §15 Passing behavior: minimum-viable AI-vs-AI extension. The
+  "inside-pass-under-braking", "outside-pass-in-sweepers", and
+  "bully overrides" preferences mentioned in §15 are still
+  deferred to a later slice; this slice surfaces the basic
+  overtake intent across the field.
+
+### Followups
+- F-085 stays in-progress for the bully overrides + inside /
+  outside pass preferences. F-084 (rubber-band lead compression
+  for visible mid-pack churn) is a sibling concern that pairs
+  naturally with this slice and remains open.
+
+---
+
 ## 2026-05-09: feat(results): DNF reason copy (F-104 slice 4)
 
 **GDD sections touched:** [§20](gdd/20-hud-and-pause.md) (results
