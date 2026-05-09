@@ -60,6 +60,10 @@ export interface HudColors {
   nitroFill: string;
   /** Nitro meter fill while a charge is active. */
   nitroActiveFill: string;
+  /** F-104 slice 2 fuel meter fill above critical threshold. */
+  fuelFill: string;
+  /** F-104 slice 2 fuel meter fill at or below critical threshold. */
+  fuelCriticalFill: string;
 }
 
 export interface DrawHudOptions {
@@ -90,6 +94,8 @@ const DEFAULT_COLORS: HudColors = {
   weatherChipFill: "rgba(104, 160, 220, 0.78)",
   nitroFill: "#5ba7ff",
   nitroActiveFill: "#f4d24a",
+  fuelFill: "#66d17a",
+  fuelCriticalFill: "#ef4b4b",
 };
 
 const DEFAULT_PADDING = 16;
@@ -133,6 +139,15 @@ const DAMAGE_BAR_HEIGHT = 5;
 const NITRO_METER_WIDTH = 160;
 const NITRO_METER_HEIGHT = 10;
 const NITRO_METER_BOTTOM = 18;
+
+const FUEL_METER_WIDTH = 160;
+const FUEL_METER_HEIGHT = 10;
+/**
+ * Fuel meter sits 18 px above the nitro meter so the two share the
+ * bottom-center column. Together they read "burning vs. saving" at a
+ * glance: nitro grants pace, fuel sets the budget.
+ */
+const FUEL_METER_BOTTOM = NITRO_METER_BOTTOM + NITRO_METER_HEIGHT + 18;
 
 /**
  * Draw a string with a one-pixel drop shadow underlay so it reads over
@@ -275,6 +290,9 @@ export function drawHud(
   if (state.nitro !== undefined) {
     drawNitroMeter(ctx, state, viewport, padding, fontFamily, colors);
   }
+  if (state.fuel !== undefined) {
+    drawFuelMeter(ctx, state, viewport, padding, fontFamily, colors);
+  }
 
   // Top-right (below the splits widget): accessibility-assist badge.
   // Drawer is a no-op when the badge is missing or inactive so the §19
@@ -327,6 +345,42 @@ function drawNitroMeter(
 function formatNitroCharges(value: number): string {
   if (!Number.isFinite(value)) return "0.0";
   return value.toFixed(1);
+}
+
+function drawFuelMeter(
+  ctx: CanvasRenderingContext2D,
+  state: HudState,
+  viewport: Viewport,
+  padding: number,
+  fontFamily: string,
+  colors: HudColors,
+): void {
+  const fuel = state.fuel;
+  if (fuel === undefined) return;
+  const x = Math.round((viewport.width - FUEL_METER_WIDTH) / 2);
+  const y = viewport.height - padding - FUEL_METER_BOTTOM;
+  ctx.fillStyle = colors.statusPanelFill;
+  ctx.fillRect(x, y, FUEL_METER_WIDTH, FUEL_METER_HEIGHT);
+  ctx.fillStyle = fuel.critical ? colors.fuelCriticalFill : colors.fuelFill;
+  ctx.fillRect(
+    x,
+    y,
+    Math.round((FUEL_METER_WIDTH * Math.max(0, Math.min(100, fuel.percent))) / 100),
+    FUEL_METER_HEIGHT,
+  );
+  ctx.font = `600 11px ${fontFamily}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  drawShadowedText(
+    ctx,
+    fuel.depleted
+      ? "FUEL EMPTY"
+      : `FUEL ${fuel.liters} / ${fuel.capacityLiters} L`,
+    viewport.width / 2,
+    y - 3,
+    colors.shadow,
+    fuel.critical ? colors.fuelCriticalFill : colors.textMuted,
+  );
 }
 
 function drawStatusCluster(

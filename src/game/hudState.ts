@@ -26,6 +26,7 @@ import type { SpeedUnit } from "@/data/schemas";
 import type { WeatherOption } from "@/data/schemas";
 import type { AssistBadge } from "./assists";
 import type { DamageState, DamageZone } from "./damage";
+import type { FuelState } from "./fuel";
 import {
   BASE_NITRO_DURATION_SEC,
   DEFAULT_NITRO_CHARGES,
@@ -105,6 +106,13 @@ export interface HudStateInput {
   weatherGripScalar?: number;
   /** Optional live §10 nitro snapshot for the §20 bottom-center meter. */
   nitro?: Readonly<NitroState>;
+  /**
+   * F-104 slice 2. Optional live fuel snapshot for the HUD gauge.
+   * Omit on modes that bypass the fuel runtime (slice 1 wires it
+   * for World Tour races; practice / time-trial / quick-race bypass
+   * the same way they bypass damage today).
+   */
+  fuel?: Readonly<FuelState>;
   /**
    * Race-start maximum nitro charges. Defaults to the stock §10 value.
    * Used only to size the meter.
@@ -190,6 +198,8 @@ export interface HudState {
   weather?: HudWeatherSummary;
   /** Optional §20 nitro HUD summary. */
   nitro?: HudNitroSummary;
+  /** F-104 slice 2 fuel HUD summary. */
+  fuel?: HudFuelSummary;
   /** Optional §20 gear HUD summary. */
   gear?: HudGearSummary;
   /** Optional §20 cash delta in credits. */
@@ -217,6 +227,26 @@ export interface HudNitroSummary {
   active: boolean;
   percent: number;
 }
+
+export interface HudFuelSummary {
+  /** Current litres remaining, rounded to int for the gauge label. */
+  liters: number;
+  /** Tank capacity in litres for the active race. */
+  capacityLiters: number;
+  /** Fill percent in [0, 100], rounded to int for the gauge fill width. */
+  percent: number;
+  /** True when fuel is at or below `FUEL_CRITICAL_PERCENT` (15 %). */
+  critical: boolean;
+  /** True when the tank is empty (depletion edge already fired). */
+  depleted: boolean;
+}
+
+/**
+ * F-104 slice 2. Fill threshold below which the fuel gauge enters the
+ * critical state. Reads on the renderer side so a future tune of the
+ * threshold is data-driven from this constant.
+ */
+export const FUEL_CRITICAL_PERCENT = 15;
 
 export interface HudGearSummary {
   gear: number;
@@ -333,6 +363,20 @@ export function summarizeHudNitro(
     max,
     active: activeFraction > 0,
     percent: percentFromUnit(current / max),
+  };
+}
+
+export function summarizeHudFuel(fuel: Readonly<FuelState>): HudFuelSummary {
+  const capacity = Math.max(0, fuel.capacityLiters);
+  const liters = Math.max(0, Math.min(capacity, fuel.liters));
+  const fraction = capacity > 0 ? liters / capacity : 0;
+  const percent = percentFromUnit(fraction);
+  return {
+    liters: Math.round(liters),
+    capacityLiters: Math.round(capacity),
+    percent,
+    critical: percent <= FUEL_CRITICAL_PERCENT,
+    depleted: liters === 0,
   };
 }
 
@@ -485,6 +529,9 @@ export function deriveHudState(input: HudStateInput): HudState {
       input.nitroMaxCharges,
       input.nitroChargeDurationSec,
     );
+  }
+  if (input.fuel !== undefined) {
+    result.fuel = summarizeHudFuel(input.fuel);
   }
   if (input.transmission !== undefined) {
     result.gear = summarizeHudGear(input.transmission);

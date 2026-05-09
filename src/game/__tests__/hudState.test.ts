@@ -19,6 +19,7 @@ import {
   rankPosition,
   summarizeHudDamage,
   summarizeHudGear,
+  summarizeHudFuel,
   summarizeHudNitro,
   summarizeHudCashDelta,
   summarizeHudWeather,
@@ -406,6 +407,48 @@ describe("HUD gear and nitro summaries", () => {
       active: true,
       percent: 83,
     });
+  });
+
+  it("summarizes a full fuel tank with no critical or depleted flag", () => {
+    expect(
+      summarizeHudFuel({ liters: 100, capacityLiters: 100 }),
+    ).toEqual({
+      liters: 100,
+      capacityLiters: 100,
+      percent: 100,
+      critical: false,
+      depleted: false,
+    });
+  });
+
+  it("flips the fuel gauge to critical at or below 15 percent", () => {
+    expect(
+      summarizeHudFuel({ liters: 15, capacityLiters: 100 }),
+    ).toMatchObject({ percent: 15, critical: true, depleted: false });
+    expect(
+      summarizeHudFuel({ liters: 16, capacityLiters: 100 }),
+    ).toMatchObject({ percent: 16, critical: false, depleted: false });
+  });
+
+  it("reports depleted when the tank is empty", () => {
+    expect(
+      summarizeHudFuel({ liters: 0, capacityLiters: 100 }),
+    ).toEqual({
+      liters: 0,
+      capacityLiters: 100,
+      percent: 0,
+      critical: true,
+      depleted: true,
+    });
+  });
+
+  it("clamps a negative or over-capacity reading", () => {
+    expect(
+      summarizeHudFuel({ liters: -5, capacityLiters: 100 }),
+    ).toMatchObject({ liters: 0, depleted: true });
+    expect(
+      summarizeHudFuel({ liters: 250, capacityLiters: 100 }),
+    ).toMatchObject({ liters: 100, percent: 100 });
   });
 
   it("summarizes transmission gear, RPM, and mode", () => {
