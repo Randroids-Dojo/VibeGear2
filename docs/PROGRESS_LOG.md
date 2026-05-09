@@ -6,6 +6,69 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: feat(prep): one-click "Use recommended" tire button (F-103)
+
+**GDD sections touched:** [§14](gdd/14-weather.md) (prep-card tire
+choice surface; no runtime / data change).
+**Branch / PR:** `feat/tire-recommendation-banner`, PR pending.
+**Status:** Second of the three TG2 core-loop polish slices
+identified in the 2026-05-09 audit (F-102 car-bump kick already
+shipped; F-104 fuel system is the remaining one). Closes F-103.
+
+### Done
+- Audit-correction in FOLLOWUPS: the prep page already surfaces
+  `recommendTire(weather)` as "Recommended: dry/wet" copy plus a
+  yellow tire-mismatch warning under
+  `[data-testid="pre-race-tire-warning"]`. The genuine gap was the
+  one-click affordance to swap when the player picked the wrong
+  tire.
+- Added a "Use recommended" button under the tire selector. The
+  button only renders when `selectedTire !== card.recommendedTire`
+  and calls `setSelectedTire(card.recommendedTire)`. The button
+  carries `data-testid="pre-race-use-recommended-tire"` so a
+  Playwright spec or future regression test can target it.
+- Styled the button with the same amber accent (`#ffd166`) as the
+  existing mismatch warning so the visual chain "yellow warning ->
+  yellow action" reads at a glance.
+
+### Verified
+- `npm run typecheck` clean.
+- `npm run lint` clean.
+- `npm run test` 2934 / 2934 passed across 159 suites; UI-only
+  change with no new test logic to pin (the button rendering is a
+  thin conditional over the existing `selectedTire` /
+  `card.recommendedTire` state).
+- `npm run content-lint` clean.
+- `npm run docs:check` clean.
+
+### Decisions and assumptions
+- One-click button rather than auto-select on weather change. The
+  existing `useEffect` at line 87 already auto-aligns the tire
+  when `initialWeather` changes, but the player can override and
+  the override should stick (a player who deliberately picks dry
+  on a wet course should not have the page silently flip them
+  back). The button gives an explicit one-click recovery without
+  taking the choice away.
+- Did not add a Playwright spec. The button is a single
+  conditional render off existing state; the e2e gate would only
+  add CI minutes for a one-line UI affordance. A future spec can
+  bundle the locked-state button (F-097 follow-up) and this one
+  in a single pre-race-page suite.
+- Reused the F-101 hint-overlay amber palette so the prep page
+  visual vocabulary stays consistent.
+
+### Coverage ledger
+- §14 weather / tire choice: surface affordance now matches the
+  existing recommendation copy with a one-click action.
+
+### Followups created
+None. F-104 fuel system is the remaining core-loop polish slice.
+
+### GDD edits
+None this slice.
+
+---
+
 ## 2026-05-09: feat(physics): car-bump lateral kick on contact (F-102)
 
 **GDD sections touched:** [§13](gdd/13-damage-and-collisions.md)

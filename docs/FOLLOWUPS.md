@@ -10,6 +10,22 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-103: Prep-card tire recommendation one-click action
+**Created:** 2026-05-09
+**Priority:** nice-to-have
+**Status:** done
+**Resolved:** 2026-05-09
+**Notes:** Second of three TG2 core-loop polish slices identified
+on 2026-05-09 (alongside F-102 car-bump kick and F-104 fuel
+system). Audit-correction note: the prep page already surfaces
+`recommendTire(weather)` as "Recommended: dry/wet" copy plus a
+yellow tire-mismatch warning. The genuine gap was the one-click
+affordance to swap when the player picks the wrong tire. Slice
+adds a "Use recommended" button that appears when
+`selectedTire !== card.recommendedTire` and calls
+`setSelectedTire(card.recommendedTire)`. Pure UI, no schema, no
+runtime change. Shipped under `feat/tire-recommendation-banner`.
+
 ## F-102: Car-contact lateral kick on bump
 **Created:** 2026-05-09
 **Priority:** nice-to-have
