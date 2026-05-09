@@ -6,6 +6,57 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-09: test(e2e): garage cars locked state (F-097 follow-on)
+
+**GDD sections touched:** [§8](gdd/08-progression-and-economy.md)
+(podium-progression unlock - `requiresTour` gating on the cars
+subroute).
+**Branch / PR:** `test/car-locked-state-e2e`, PR pending.
+**Status:** Closes the F-097 deferred sub-item ("e2e for the
+locked-state disabled button"). Other F-097 deferrals (pretty
+tour display names, livery-cosmetic unlocks under F-096) stay
+under their respective followup IDs.
+
+### Done
+- Added `e2e/garage-cars-locked.spec.ts`. Two cases: with no
+  tours completed, the bastion-lm Buy button is disabled with
+  text "Locked" and the lock-reason pill reads "Win Iron Borough
+  to unlock."; with `iron-borough` in `progress.completedTours`
+  the lock-reason pill is gone and the Buy button is enabled
+  with the price label.
+- Save fixture matches the v4 schema in `garage-flow.spec.ts`;
+  the helper takes a `completedTours` argument so the same
+  builder serves both the locked and unlocked cases.
+
+### Verified
+- `pnpm typecheck` clean.
+- `pnpm playwright test e2e/garage-cars-locked.spec.ts
+  --project=chromium` 2 / 2 passed in 12.9 s on the dev server.
+- `pnpm content-lint` clean.
+- `pnpm docs:check` clean.
+
+### Assumptions
+- The seeded credits balance (200000) is well above
+  `bastion-lm.purchasePrice` so the unlocked-case enable
+  assertion does not race the credit gate. If the price ever
+  exceeds 200000 the test should bump the seed.
+- The lock-reason copy (`Win Iron Borough to unlock.`) is read
+  through the championship-name resolver, so a rename in
+  `world-tour-standard.json` would update the test fixture in
+  lockstep with the production string.
+
+### GDD coverage
+- §8 Progression: pinned the locked-state UX with a live e2e on
+  the cars subroute.
+
+### Followups
+- F-097's pretty-tour-names and tour-gating slices already
+  shipped earlier this week; the locked-state e2e closes the
+  remaining deferred sub-item. Livery / cosmetic unlocks remain
+  open under F-096.
+
+---
+
 ## 2026-05-09: feat(ai): context-aware pass side (F-085 slice 3)
 
 **GDD sections touched:** [§15](gdd/15-cpu-opponents-and-ai.md)
