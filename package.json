@@ -32,6 +32,7 @@
     "verify:full": "npm run verify && npm run test:e2e"
   },
   "dependencies": {
+    "@randroids-dojo/vibekit": "github:Randroids-Dojo/VibeKit#3f5193a2b144503ac7b25bce9ea09005c7085c60",
     "@upstash/redis": "^1.37.0",
     "next": "^15.0.0",
     "react": "^18.3.1",
