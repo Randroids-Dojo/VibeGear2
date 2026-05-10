@@ -58,7 +58,7 @@ export function enterWorldTour(
   if (!result.ok) return result;
   const tour = championship.tours.find((candidate) => candidate.id === tourId);
   if (!tour) return { ok: false, code: "unknown_tour" };
-  const firstTrackId = tour.tracks[0];
+  const firstTrackId = tour.tracks[result.activeTour.raceIndex];
   if (!firstTrackId) return { ok: false, code: "unknown_tour" };
   const unlockedSave = withFirstTourUnlocked(result.save, championship);
   return {

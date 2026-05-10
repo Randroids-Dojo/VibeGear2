@@ -88,6 +88,38 @@ describe("enterTour", () => {
     });
   });
 
+  it("resumes an in-progress activeTour when re-entering the same tour", () => {
+    const save = unlockedSave("first-tour");
+    save.progress.activeTour = {
+      tourId: "first-tour",
+      raceIndex: 2,
+      results: [
+        makeResult("first/a", 1),
+        makeResult("first/b", 3),
+      ],
+    };
+    const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "first-tour");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.activeTour.raceIndex).toBe(2);
+    expect(result.activeTour.results).toHaveLength(2);
+  });
+
+  it("does not resume across a different tourId", () => {
+    const save = unlockedSave("first-tour", "second-tour");
+    save.progress.activeTour = {
+      tourId: "first-tour",
+      raceIndex: 2,
+      results: [makeResult("first/a", 1)],
+    };
+    const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "second-tour");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.activeTour.tourId).toBe("second-tour");
+    expect(result.activeTour.raceIndex).toBe(0);
+    expect(result.activeTour.results).toEqual([]);
+  });
+
   it("rejects with unknown_tour when the id is not in the championship", () => {
     const save = unlockedSave("first-tour");
     const result = enterTour(save, FIXTURE_CHAMPIONSHIP, "ghost-tour");

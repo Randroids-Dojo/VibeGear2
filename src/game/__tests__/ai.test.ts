@@ -240,6 +240,41 @@ describe("tickAI (straight, accelerating)", () => {
   });
 });
 
+describe("tickAI (launch-phase lane hold)", () => {
+  // At z=0 on a straight, the AI must hold its current lane instead of
+  // converging on the centerline-anchored racing line — otherwise the
+  // §7 grid pile-ups itself before the field can spread.
+  it("does not pull off-center cars toward x=0 at race start", () => {
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 3, z: 0, speed: 0 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    // Lateral error is zero, so steer is zero. Without the launch hold
+    // the AI would target x=0 and produce a strongly negative steer.
+    expect(result.input.steer).toBeCloseTo(0, 6);
+  });
+
+  it("returns to racing-line targeting after the launch hold distance", () => {
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 3, z: 400, speed: 30 }),
+      PLAYER_FAR_BEHIND,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    // Past the blend window, the racing-line target on a straight is 0,
+    // so an off-center car steers back toward the centerline.
+    expect(result.input.steer).toBeLessThan(0);
+  });
+});
+
 describe("tickAI (cornering)", () => {
   it("biases toward the inside of a right-hand sweeper", () => {
     // Position the AI on the centerline mid-sweeper. Idealized lateral

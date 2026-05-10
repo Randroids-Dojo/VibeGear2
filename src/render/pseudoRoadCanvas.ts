@@ -130,6 +130,8 @@ export interface RoadColors {
   roadLight: string;
   roadDark: string;
   lane: string;
+  finishLight: string;
+  finishDark: string;
 }
 
 export interface DrawRoadOptions {
@@ -340,19 +342,25 @@ interface RoadsideSpriteStyle {
  * 60% of the correct 10 m height. Combined with the 0.18 maxHeight clamp,
  * close-in props now match the player-car silhouette and far props read at
  * physically plausible scale.
+ *
+ * `minHeight` was previously a per-kind floor of 5 to 14 px. Far-away props
+ * snapped up to that floor at the road's vanishing point, where many props
+ * project to nearly the same screen X, and the result was a "totem pole"
+ * stack of stacked sprites at the horizon. The floor is now 1 px so far
+ * props dissolve to a pixel and the perspective reads cleanly.
  */
 const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
-  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.67, minHeight: 8 },
-  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 2.22, minHeight: 12 },
-  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 5 },
-  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.33, minHeight: 5 },
-  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 2.00, minHeight: 14 },
-  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.78, minHeight: 12 },
-  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.78, minHeight: 8 },
-  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 5 },
-  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.22, minHeight: 5 },
-  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 1.33, minHeight: 9 },
-  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.67, minHeight: 8 },
+  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.67, minHeight: 1 },
+  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 2.22, minHeight: 1 },
+  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 1 },
+  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.33, minHeight: 1 },
+  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 2.00, minHeight: 1 },
+  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.78, minHeight: 1 },
+  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.78, minHeight: 1 },
+  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 1 },
+  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.22, minHeight: 1 },
+  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 1.33, minHeight: 1 },
+  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.67, minHeight: 1 },
 };
 
 const DEFAULT_RECOLOUR_IN_FLIGHT = new Set<string>();
@@ -368,6 +376,8 @@ const FALLBACK_COLORS: RoadColors = {
   roadLight: DEFAULT_COLORS.roadLight,
   roadDark: DEFAULT_COLORS.roadDark,
   lane: DEFAULT_COLORS.lane,
+  finishLight: DEFAULT_COLORS.finishLight,
+  finishDark: DEFAULT_COLORS.finishDark,
 };
 
 function pickAlternating(index: number, period: number, light: string, dark: string): string {
@@ -1824,6 +1834,49 @@ function drawStripPair(
         : null,
     { minNearHalfW: 1, minFarHalfW: 0.5 },
   );
+
+  // Start/finish line: the track compiler validates that the "start"
+  // checkpoint is at compiled segment 0, so the first FINISH_LINE_SEGMENTS
+  // strips of every lap render as a checkerboard band. Skip the strip
+  // sitting under the camera — its trapezoid covers the whole foreground
+  // and would dominate the view.
+  if (
+    far.segment.index < FINISH_LINE_SEGMENTS &&
+    near.screenY < viewport.height * FINISH_LINE_NEAR_PLANE_GATE
+  ) {
+    drawFinishLineRow(ctx, near, far, colors, far.segment.index);
+  }
+}
+
+const FINISH_LINE_NEAR_PLANE_GATE = 0.85;
+
+const FINISH_LINE_SEGMENTS = 2;
+const FINISH_LINE_CELLS = 8;
+
+function drawFinishLineRow(
+  ctx: CanvasRenderingContext2D,
+  near: StripEdge,
+  far: StripEdge,
+  colors: RoadColors,
+  rowIndex: number,
+): void {
+  for (let i = 0; i < FINISH_LINE_CELLS; i++) {
+    const t0 = i / FINISH_LINE_CELLS;
+    const t1 = (i + 1) / FINISH_LINE_CELLS;
+    const farLeft = far.screenX + (2 * t0 - 1) * far.screenW;
+    const farRight = far.screenX + (2 * t1 - 1) * far.screenW;
+    const nearLeft = near.screenX + (2 * t0 - 1) * near.screenW;
+    const nearRight = near.screenX + (2 * t1 - 1) * near.screenW;
+    const isLight = (i + rowIndex) % 2 === 0;
+    ctx.fillStyle = isLight ? colors.finishLight : colors.finishDark;
+    ctx.beginPath();
+    ctx.moveTo(farLeft, far.screenY);
+    ctx.lineTo(farRight, far.screenY);
+    ctx.lineTo(nearRight, near.screenY);
+    ctx.lineTo(nearLeft, near.screenY);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function pickAlternatingByWorld(
