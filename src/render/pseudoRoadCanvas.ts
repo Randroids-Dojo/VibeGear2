@@ -344,17 +344,17 @@ interface RoadsideSpriteStyle {
  * physically plausible scale.
  */
 const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
-  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.67, minHeight: 8 },
-  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 2.22, minHeight: 12 },
-  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 5 },
-  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.33, minHeight: 5 },
-  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 2.00, minHeight: 14 },
-  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.78, minHeight: 12 },
-  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.78, minHeight: 8 },
-  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 5 },
-  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.22, minHeight: 5 },
-  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 1.33, minHeight: 9 },
-  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.67, minHeight: 8 },
+  sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.67, minHeight: 1 },
+  tree_pine: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 2.22, minHeight: 1 },
+  fence_post: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 1 },
+  rock_boulder: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.33, minHeight: 1 },
+  light_pole: { kind: "pole", widthToHeight: 0.16, heightRoadFactor: 2.00, minHeight: 1 },
+  palms_sparse: { kind: "tree", widthToHeight: 0.58, heightRoadFactor: 1.78, minHeight: 1 },
+  marina_signs: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.78, minHeight: 1 },
+  guardrail: { kind: "fence", widthToHeight: 0.32, heightRoadFactor: 0.16, minHeight: 1 },
+  water_wall: { kind: "rock", widthToHeight: 1.2, heightRoadFactor: 0.22, minHeight: 1 },
+  rock_spire: { kind: "rock", widthToHeight: 0.62, heightRoadFactor: 1.33, minHeight: 1 },
+  heat_sign: { kind: "sign", widthToHeight: 0.58, heightRoadFactor: 0.67, minHeight: 1 },
 };
 
 const DEFAULT_RECOLOUR_IN_FLIGHT = new Set<string>();
@@ -1831,11 +1831,18 @@ function drawStripPair(
 
   // Start/finish line: the track compiler validates that the "start"
   // checkpoint is at compiled segment 0, so the first FINISH_LINE_SEGMENTS
-  // strips of every lap render as a checkerboard band.
-  if (far.segment.index < FINISH_LINE_SEGMENTS) {
+  // strips of every lap render as a checkerboard band. Skip the strip
+  // sitting under the camera — its trapezoid covers the whole foreground
+  // and would dominate the view.
+  if (
+    far.segment.index < FINISH_LINE_SEGMENTS &&
+    near.screenY < viewport.height * FINISH_LINE_NEAR_PLANE_GATE
+  ) {
     drawFinishLineRow(ctx, near, far, colors, far.segment.index);
   }
 }
+
+const FINISH_LINE_NEAR_PLANE_GATE = 0.85;
 
 const FINISH_LINE_SEGMENTS = 2;
 const FINISH_LINE_CELLS = 8;
