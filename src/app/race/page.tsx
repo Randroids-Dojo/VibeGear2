@@ -2575,6 +2575,7 @@ function RaceCanvas({
     showRaceMoment,
     clearRaceMomentTimeout,
     clearFinishRouteTimeout,
+    aiDebugEnabled,
   ]);
 
   return (

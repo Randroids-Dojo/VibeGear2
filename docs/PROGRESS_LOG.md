@@ -6,6 +6,108 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-10: fix(race): visible opponents, finish line, tour resume, launch lane hold
+
+**GDD sections touched:** [§7](gdd/07-race-modes-and-rules.md) (grid
+spawn / pile-up), [§15](gdd/15-ai-and-difficulty.md) (AI launch-phase
+lateral target), [§16](gdd/16-rendering-and-visual-design.md)
+(opponent projection, finish-line stripe, roadside scaling),
+[§20](gdd/20-ui-and-hud.md) (tour resume CTA contract).
+**Branch / PR:** `fix/race-readability-bundle`, PR #221.
+**Status:** Bundled five race-readability fixes that together took
+the World Tour from "looks broken" to "plays through." User
+playtest on 2026-05-10 reported: AI cars appeared frozen ahead,
+roadside props stacked into a totem at the horizon, no finish line,
+the second tour race did not appear available after finishing the
+first. All four addressed; the underlying crash physics is partial
+and tracked under F-105 / dot `VibeGear2-crash-physics-feedback-1c795b62`.
+
+### Done
+- Removed the 92 px upper clamp on opponent projection in
+  `src/app/race/page.tsx` and raised the depth cull from 200 m to
+  800 m. Opponents now visibly grow as the player closes the gap
+  rather than reading as frozen sprites.
+- Added a checkered start/finish band in `src/render/pseudoRoadCanvas.ts`.
+  The track compiler validates the "start" checkpoint at compiled
+  segment 0, so the band anchors there and renders for the first two
+  compiled segments of every lap. Gated by a near-plane filter so the
+  band does not dominate the foreground when the player is sitting
+  on the line.
+- Lowered the per-kind roadside `minHeight` floor from 5 to 14 px
+  down to 1 px in `ROADSIDE_SPRITE_STYLES`. Sprites now scale
+  linearly with projected road width and dissolve to a pixel at the
+  horizon instead of stacking into a "totem pole."
+- `enterTour` in `src/game/championship.ts` preserves an in-progress
+  `activeTour` when re-entering the same tour. Previously the cursor
+  reset to `raceIndex: 0`, which silently restarted the World Tour
+  from race 1. `enterWorldTour` reads the resumed cursor for the
+  resume track id.
+- Added a launch-phase lateral-target blend in `src/game/ai.ts`. The
+  ideal lateral offset blends from `aiCar.x` (current lane) at z=0
+  to the full racing-line offset at z=`AI_TUNING.LAUNCH_LANE_HOLD_M`
+  (200 m). Stops the §7 grid from pile-up'ing on the centerline at
+  race start.
+- Added a `?debug=ai` URL gate that renders a top-right roster
+  overlay: per-AI status, speed, target, z, lap, dnfReason, and the
+  no-progress / off-track timers. Updates each render frame. Used to
+  confirm the pile-up root cause; left in for future diagnosis.
+- Added `window.__vg_session = sessionRef` on race-session creation
+  so DevTools can inspect live state without rebuilding.
+
+### Verification
+- `npm run typecheck` clean.
+- `npm test --run` 2987 / 2987 (added two AI launch-phase regression
+  tests; updated `pseudoRoadCanvas.test.ts` and
+  `championship.test.ts` fixtures for the new color fields and tour
+  resume contract).
+- `npm run build` succeeds; postbuild source-map scrub clean.
+- Browser playtest in `?debug=ai`: confirmed wreck count dropped
+  from 9 of 11 to roughly 8 of 11 with the launch hold; remaining
+  wrecks are same-lane rear-ends, tracked separately under F-105.
+
+### Assumptions
+- Compiled segment 0 is the start/finish line for every authored
+  track. The track compiler enforces this (line 211 of
+  `trackCompiler.ts` errors on a non-zero start segment), so the
+  finish-line band can anchor on the index without a per-track lookup.
+- `aiCar.x` at race start equals the spawn lane, because no time has
+  passed for the AI to steer; using it as the launch-blend "hold
+  lane" target is correct for the §7 grid spawn.
+- The 92 px AI clamp dates to commit `4cb55a52` (fix/render hide
+  unreadable hill opponents); the e2e regression at
+  `e2e/projection-readability.spec.ts` filters samples by
+  `aiWidth <= 92`. With the cap removed the filter still selects
+  mid-distance samples (close cars now exceed 92 px), and the test
+  passes against the kept ratio / lateral-stability assertions.
+- The `?debug=ai` gate keeps the overlay state-allocation off in
+  normal play; it ships in production but is invisible without the
+  query param.
+
+### GDD coverage
+- §7 grid: pile-up bug pinned by the new launch-phase test in
+  `ai.test.ts` (`tickAI (launch-phase lane hold)`).
+- §15 AI launch-phase contract: `LAUNCH_LANE_HOLD_M` documented in
+  `AI_TUNING` with the rationale.
+- §16 rendering: finish-line stripe is the first consumer of
+  `DEFAULT_COLORS.finishLight` / `finishDark`; roadside scaling
+  reads as physical perspective end-to-end.
+- §20 results CTA: "Continue tour" still works as before; the
+  resume cursor now also covers the case where the player goes back
+  to /world mid-tour and re-enters.
+
+### Followups
+- F-105 (new): split the launch-blend so overtake offset stays
+  active during launch, add a follow-distance throttle for trailing
+  AI in the same lane, wire audio + VFX + HUD cues to AI-vs-AI
+  carHit events, and tune lateral knock-back so contact reads as
+  percussive. Tracked under dot
+  `VibeGear2-crash-physics-feedback-1c795b62`.
+- The `aiWidth <= 92` filter in `e2e/projection-readability.spec.ts`
+  is still legible but no longer pins the visual cap. Worth retiring
+  in a follow-on render-spec slice.
+
+---
+
 ## 2026-05-09: chore(deps): adopt @randroids-dojo/vibekit v0.1.0
 
 **GDD sections touched:** none. Process / dependency hygiene.

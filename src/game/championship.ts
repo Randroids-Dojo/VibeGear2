@@ -248,9 +248,11 @@ export function enterTour(
   // Preserve in-progress activeTour when re-entering the same tour, so
   // the player resumes at the next race instead of restarting from race 1.
   // A different tourId or no prior cursor means a fresh seed.
+  // `applyTourRaceResult` clears `activeTour` on the final race, so any
+  // existing cursor is guaranteed to be in-bounds.
   const existing = save.progress.activeTour;
   const resumed =
-    existing && existing.tourId === tourId && existing.raceIndex < lookup.tour.tracks.length
+    existing && existing.tourId === tourId
       ? { tourId, raceIndex: existing.raceIndex, results: [...existing.results] }
       : { tourId, raceIndex: 0, results: [] };
   return {

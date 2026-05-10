@@ -10,6 +10,30 @@ or `obsolete` so the trail is preserved.
 
 ---
 
+## F-105: AI grid-start crash physics and feedback
+**Created:** 2026-05-10
+**Priority:** nice-to-have
+**Status:** in-progress
+**Notes:** The race-readability bundle (PR #221) traced the "AI cars
+stop ahead" complaint to a 12-car grid pile-up. Every AI immediately
+steered toward the centerline-anchored racing line at race start,
+the field collided, and damage accumulated past the wreck threshold
+(0.95) within a couple seconds. Cars then status-flipped to dnf and
+the renderer froze them in place. To the player, this read as cars
+silently stopping. PR #221 added a launch-phase lane hold that
+blends the lateral target from "hold spawn lane" at z=0 to "pursue
+racing line" at z=200, which prevents the lateral pile-up but is
+still partial: cars in the same lane rear-end whoever is ahead
+because the AI has no follow-distance throttle, the launch blend
+also suppresses the overtake offset, and contact emits no audio /
+visual / HUD cue, so even non-fatal hits are invisible. Tracked in
+dot `VibeGear2-crash-physics-feedback-1c795b62` (priority 1) with
+slice plan: split overtake offset out of the launch blend, add a
+follow-distance throttle so trailing AI lift before contact, wire
+audio thud + sprite-anchored VFX + screen punch to carHit events
+for AI-vs-AI pairs, and tune the F-102 BUMP_KICK_BASE_MPS so
+contact reads as percussive instead of a creep-and-stick.
+
 ## F-104: TG2-faithful fuel and gearbox economy
 **Created:** 2026-05-09
 **Priority:** nice-to-have

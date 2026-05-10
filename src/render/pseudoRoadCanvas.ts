@@ -342,6 +342,12 @@ interface RoadsideSpriteStyle {
  * 60% of the correct 10 m height. Combined with the 0.18 maxHeight clamp,
  * close-in props now match the player-car silhouette and far props read at
  * physically plausible scale.
+ *
+ * `minHeight` was previously a per-kind floor of 5 to 14 px. Far-away props
+ * snapped up to that floor at the road's vanishing point, where many props
+ * project to nearly the same screen X, and the result was a "totem pole"
+ * stack of stacked sprites at the horizon. The floor is now 1 px so far
+ * props dissolve to a pixel and the perspective reads cleanly.
  */
 const ROADSIDE_SPRITE_STYLES: Record<string, RoadsideSpriteStyle> = {
   sign_marker: { kind: "sign", widthToHeight: 0.45, heightRoadFactor: 0.67, minHeight: 1 },
