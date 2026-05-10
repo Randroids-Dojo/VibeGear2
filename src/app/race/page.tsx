@@ -824,6 +824,32 @@ interface AiProjectionSnapshot {
   readonly nearestWidthDepthProduct: number;
 }
 
+interface AiDebugRow {
+  readonly index: number;
+  readonly status: string;
+  readonly speed: number;
+  readonly target: number;
+  readonly z: number;
+  readonly lap: number;
+  readonly dnfReason: string | null;
+  readonly noProgressSec: number;
+  readonly offTrackSec: number;
+}
+
+function aiDebugRosterFrom(session: RaceSessionState): readonly AiDebugRow[] {
+  return session.ai.map((entry, index) => ({
+    index,
+    status: entry.status,
+    speed: entry.car.speed,
+    target: entry.state.targetSpeed,
+    z: entry.car.z,
+    lap: entry.lap,
+    dnfReason: entry.dnfReason ?? null,
+    noProgressSec: entry.dnfTimers.noProgressSec,
+    offTrackSec: entry.dnfTimers.offTrackSec,
+  }));
+}
+
 function aiProjectionSnapshot(
   cars: readonly NonNullable<DrawRoadOptions["aiCars"]>[number][],
 ): AiProjectionSnapshot | null {
@@ -1134,6 +1160,8 @@ function RaceCanvas({
   ghostSource,
 }: RaceCanvasProps): ReactElement {
   const router = useRouter();
+  const debugSearch = useSearchParams();
+  const aiDebugEnabled = debugSearch?.get("debug") === "ai";
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<LoopHandle | null>(null);
   const sessionRef = useRef<RaceSessionState | null>(null);
@@ -1219,6 +1247,9 @@ function RaceCanvas({
   const [fieldSize, setFieldSize] = useState<number>(1);
   const [aiVisibleCount, setAiVisibleCount] = useState<number>(0);
   const [aiProjection, setAiProjection] = useState<AiProjectionSnapshot | null>(
+    null,
+  );
+  const [aiDebugRoster, setAiDebugRoster] = useState<readonly AiDebugRow[] | null>(
     null,
   );
   const [aiReadability, setAiReadability] =
@@ -1556,6 +1587,9 @@ function RaceCanvas({
     setPickupFeedback(null);
     setAiReadability(null);
     sessionRef.current = createRaceSession(config);
+    if (typeof window !== "undefined") {
+      (window as unknown as { __vg_session?: typeof sessionRef }).__vg_session = sessionRef;
+    }
     tutorialHintContextRef.current = {
       segments: config.track.segments,
       topSpeedMps: playerStats.topSpeed,
@@ -2045,6 +2079,9 @@ function RaceCanvas({
           );
         setAiVisibleCount(aiCars.length);
         setAiProjection(aiProjectionSnapshot(aiCars));
+        if (aiDebugEnabled) {
+          setAiDebugRoster(aiDebugRosterFrom(session));
+        }
         if (
           ghostEnabled &&
           session.race.phase === "racing" &&
@@ -2567,6 +2604,50 @@ function RaceCanvas({
           <span style={raceMomentDetailStyle}>{raceMoment.detail}</span>
         </div>
       ) : null}
+      {aiDebugEnabled && aiDebugRoster ? (
+        <div style={aiDebugPanelStyle} data-testid="race-ai-debug">
+          <div style={aiDebugHeaderStyle}>AI debug ({aiDebugRoster.length})</div>
+          <table style={aiDebugTableStyle}>
+            <thead>
+              <tr>
+                <th style={aiDebugCellStyle}>#</th>
+                <th style={aiDebugCellStyle}>status</th>
+                <th style={aiDebugCellStyle}>spd</th>
+                <th style={aiDebugCellStyle}>tgt</th>
+                <th style={aiDebugCellStyle}>z</th>
+                <th style={aiDebugCellStyle}>lap</th>
+                <th style={aiDebugCellStyle}>dnf</th>
+                <th style={aiDebugCellStyle}>np</th>
+                <th style={aiDebugCellStyle}>ot</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aiDebugRoster.map((row) => (
+                <tr
+                  key={row.index}
+                  style={
+                    row.status === "racing" ? undefined : aiDebugStoppedRowStyle
+                  }
+                >
+                  <td style={aiDebugCellStyle}>{row.index}</td>
+                  <td style={aiDebugCellStyle}>{row.status}</td>
+                  <td style={aiDebugCellStyle}>{row.speed.toFixed(1)}</td>
+                  <td style={aiDebugCellStyle}>{row.target.toFixed(1)}</td>
+                  <td style={aiDebugCellStyle}>{row.z.toFixed(0)}</td>
+                  <td style={aiDebugCellStyle}>{row.lap}</td>
+                  <td style={aiDebugCellStyle}>{row.dnfReason ?? "-"}</td>
+                  <td style={aiDebugCellStyle}>
+                    {row.noProgressSec.toFixed(1)}
+                  </td>
+                  <td style={aiDebugCellStyle}>
+                    {row.offTrackSec.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
       <dl
         style={metricsStyle}
         data-testid="race-metrics"
@@ -2753,6 +2834,40 @@ const shellStyle: CSSProperties = {
   background: "var(--bg, #111)",
   touchAction: "none",
   userSelect: "none",
+};
+
+const aiDebugPanelStyle: CSSProperties = {
+  position: "absolute",
+  top: 12,
+  right: 12,
+  zIndex: 100,
+  padding: "8px 10px",
+  background: "rgba(0, 0, 0, 0.78)",
+  border: "1px solid #4a5568",
+  color: "#e8edf8",
+  font: "11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace",
+  maxHeight: "60vh",
+  overflowY: "auto",
+};
+
+const aiDebugHeaderStyle: CSSProperties = {
+  marginBottom: 4,
+  fontWeight: 700,
+  color: "#ffd166",
+};
+
+const aiDebugTableStyle: CSSProperties = {
+  borderCollapse: "collapse",
+};
+
+const aiDebugCellStyle: CSSProperties = {
+  padding: "1px 6px",
+  textAlign: "right",
+  whiteSpace: "nowrap",
+};
+
+const aiDebugStoppedRowStyle: CSSProperties = {
+  color: "#ff9a9a",
 };
 
 const canvasStyle: CSSProperties = {
