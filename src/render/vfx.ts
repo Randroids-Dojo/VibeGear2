@@ -1,4 +1,4 @@
-import { clamp } from '@randroids-dojo/vibekit'
+import { clamp } from "@randroids-dojo/vibekit";
 
 /**
  * VFX module: stateful pure flash + shake stack with a reduced-motion
