@@ -704,6 +704,8 @@ describe("drawRoad foreground projection", () => {
       roadLight: "#556677",
       roadDark: "#667788",
       lane: "#778899",
+      finishLight: "#ffffff",
+      finishDark: "#101010",
     };
     const strips: readonly Strip[] = [
       strip({ visible: false, screenY: VIEWPORT.height, screenW: 0 }),
@@ -752,6 +754,8 @@ describe("drawRoad procedural markings", () => {
       roadLight: "#556677",
       roadDark: "#667788",
       lane: "#778899",
+      finishLight: "#ffffff",
+      finishDark: "#101010",
     };
     const strips: readonly Strip[] = [
       strip({
@@ -798,6 +802,8 @@ describe("drawRoad procedural markings", () => {
       roadLight: "#556677",
       roadDark: "#667788",
       lane: "#778899",
+      finishLight: "#ffffff",
+      finishDark: "#101010",
     };
     const strips: readonly Strip[] = [
       strip({
@@ -837,6 +843,8 @@ describe("drawRoad procedural markings", () => {
       roadLight: "#556677",
       roadDark: "#667788",
       lane: "#778899",
+      finishLight: "#ffffff",
+      finishDark: "#101010",
     };
     const strips: readonly Strip[] = [
       strip({

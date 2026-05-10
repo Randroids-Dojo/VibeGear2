@@ -759,7 +759,7 @@ function projectOpponentCar(input: {
   const depthMeters = input.carZ - input.camera.z;
   if (!Number.isFinite(depthMeters) || depthMeters < input.camera.depth)
     return null;
-  if (depthMeters > 200) return null;
+  if (depthMeters > 800) return null;
   if (!Number.isFinite(input.trackLength) || input.trackLength <= 0)
     return null;
 
@@ -800,7 +800,7 @@ function projectOpponentCar(input: {
       ? AI_MIN_PROJECTED_WIDTH_MOBILE
       : AI_MIN_PROJECTED_WIDTH_DESKTOP;
   if (projectedScreenW < minProjectedWidth) return null;
-  const screenW = Math.min(92, projectedScreenW);
+  const screenW = projectedScreenW;
   return {
     screenX: projection.screenX,
     screenY: projection.screenY,

@@ -130,6 +130,8 @@ export interface RoadColors {
   roadLight: string;
   roadDark: string;
   lane: string;
+  finishLight: string;
+  finishDark: string;
 }
 
 export interface DrawRoadOptions {
@@ -368,6 +370,8 @@ const FALLBACK_COLORS: RoadColors = {
   roadLight: DEFAULT_COLORS.roadLight,
   roadDark: DEFAULT_COLORS.roadDark,
   lane: DEFAULT_COLORS.lane,
+  finishLight: DEFAULT_COLORS.finishLight,
+  finishDark: DEFAULT_COLORS.finishDark,
 };
 
 function pickAlternating(index: number, period: number, light: string, dark: string): string {
@@ -1824,6 +1828,42 @@ function drawStripPair(
         : null,
     { minNearHalfW: 1, minFarHalfW: 0.5 },
   );
+
+  // Start/finish line: the track compiler validates that the "start"
+  // checkpoint is at compiled segment 0, so the first FINISH_LINE_SEGMENTS
+  // strips of every lap render as a checkerboard band.
+  if (far.segment.index < FINISH_LINE_SEGMENTS) {
+    drawFinishLineRow(ctx, near, far, colors, far.segment.index);
+  }
+}
+
+const FINISH_LINE_SEGMENTS = 2;
+const FINISH_LINE_CELLS = 8;
+
+function drawFinishLineRow(
+  ctx: CanvasRenderingContext2D,
+  near: StripEdge,
+  far: StripEdge,
+  colors: RoadColors,
+  rowIndex: number,
+): void {
+  for (let i = 0; i < FINISH_LINE_CELLS; i++) {
+    const t0 = i / FINISH_LINE_CELLS;
+    const t1 = (i + 1) / FINISH_LINE_CELLS;
+    const farLeft = far.screenX + (2 * t0 - 1) * far.screenW;
+    const farRight = far.screenX + (2 * t1 - 1) * far.screenW;
+    const nearLeft = near.screenX + (2 * t0 - 1) * near.screenW;
+    const nearRight = near.screenX + (2 * t1 - 1) * near.screenW;
+    const isLight = (i + rowIndex) % 2 === 0;
+    ctx.fillStyle = isLight ? colors.finishLight : colors.finishDark;
+    ctx.beginPath();
+    ctx.moveTo(farLeft, far.screenY);
+    ctx.lineTo(farRight, far.screenY);
+    ctx.lineTo(nearRight, near.screenY);
+    ctx.lineTo(nearLeft, near.screenY);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function pickAlternatingByWorld(
