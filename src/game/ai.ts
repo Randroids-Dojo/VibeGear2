@@ -180,6 +180,15 @@ export const AI_TUNING = Object.freeze({
    */
   MIN_AI_SPEED: 8,
   /**
+   * Distance (m) over which the AI blends from "hold spawn lane" to
+   * "pursue racing line." On the §7 grid, all 12 cars start in three
+   * staggered lanes; without this blend, every AI immediately steers
+   * toward the centerline-anchored racing line and the field collides
+   * into a pile-up before lap 1 even develops. Linear blend from 0 m
+   * (hold lane) to LAUNCH_LANE_HOLD_M (full racing line).
+   */
+  LAUNCH_LANE_HOLD_M: 200,
+  /**
    * Speed-error band around the target where the AI cruises. Inside
    * this band the AI feathers the throttle proportional to the error
    * sign, eliminating high-frequency bang-bang oscillation.
@@ -371,7 +380,14 @@ export function tickAI(
         behaviour.prefersContextPasses ? authoredCurve : 0,
       )
     : { active: false, offset: 0 };
-  const idealOffsetWithTraffic = rawIdealOffset + trafficLaneOffset + overtake.offset;
+  const racingLineOffset = rawIdealOffset + trafficLaneOffset + overtake.offset;
+  // Launch-phase lane discipline: blend toward the spawn lane (held in
+  // `aiCar.x` because the car has barely steered) so the field can spread
+  // before each car commits to the racing line. Without this, the §7 grid
+  // collapses into a pile-up on the first throttle press.
+  const launchBlend = clamp(aiCar.z / AI_TUNING.LAUNCH_LANE_HOLD_M, 0, 1);
+  const idealOffsetWithTraffic =
+    launchBlend * racingLineOffset + (1 - launchBlend) * aiCar.x;
   const baseIdealLateralOffset = clamp(
     idealOffsetWithTraffic === 0 ? 0 : idealOffsetWithTraffic,
     -context.roadHalfWidth,
