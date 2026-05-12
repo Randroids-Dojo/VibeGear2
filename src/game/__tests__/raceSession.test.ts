@@ -353,16 +353,24 @@ describe("stepRaceSession (racing)", () => {
       ...TEST_DRIVER,
       weatherSkill: { clear: 1, rain: 0.8, fog: 1, snow: 1 },
     };
+    // Park the player far ahead so the AI is not blocked by the
+    // follow-distance throttle cap. The test's intent is the weather
+    // multiplier on target speed; with the default grid the player
+    // sits 5 m ahead of AI[0] in the same lane and the follow cap
+    // would dominate the result.
+    const playerAhead = { stats: STARTER_STATS, initial: { z: 500 } };
     const rainConfig = buildConfig({
       countdownSec: 0,
       weather: "heavy_rain",
       track: trackWithWeather(["clear", "heavy_rain"]),
+      player: playerAhead,
       ai: [{ driver: wetSpecialist, stats: STARTER_STATS }],
     });
     const clearConfig = buildConfig({
       countdownSec: 0,
       weather: "clear",
       track: trackWithWeather(["clear", "heavy_rain"]),
+      player: playerAhead,
       ai: [{ driver: wetSpecialist, stats: STARTER_STATS }],
     });
     const rain = stepRaceSession(

@@ -273,6 +273,91 @@ describe("tickAI (launch-phase lane hold)", () => {
     // so an off-center car steers back toward the centerline.
     expect(result.input.steer).toBeLessThan(0);
   });
+
+  // Overtake offset must stay active during launch so trailing cars can
+  // step out of lane to pass a slower leader. Without this, same-lane
+  // cars rear-end each other in the launch window.
+  it("keeps overtake offset active during the launch hold", () => {
+    // Player sits as a slow leader 10 m ahead, in the same lane as the AI.
+    const playerLeader: PlayerView = {
+      car: freshCar({ x: 0, z: 10, speed: 5 }),
+    };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 0, speed: 20 }),
+      playerLeader,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    // With overtake active, the steer command should be non-zero
+    // (the AI is biased toward one side to pass).
+    expect(Math.abs(result.input.steer)).toBeGreaterThan(0);
+  });
+});
+
+describe("tickAI (follow-distance throttle)", () => {
+  // A leader 8 m ahead in the same lane should cap the trailer's target
+  // at the leader's speed - buffer, so the trailer lifts off instead of
+  // creeping into the contact band.
+  it("caps target speed when a same-lane car sits close ahead", () => {
+    const leader: PlayerView = {
+      car: freshCar({ x: 0, z: 8, speed: 20 }),
+    };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 0, speed: 30 }),
+      leader,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    // Capped below the leader's 20 m/s. The exact cap is 20 - buffer.
+    expect(result.nextAiState.targetSpeed).toBeLessThan(20);
+  });
+
+  it("ignores leaders outside the follow window", () => {
+    // Leader 30 m ahead is outside FOLLOW_DISTANCE_METERS (14).
+    const distantLeader: PlayerView = {
+      car: freshCar({ x: 0, z: 30, speed: 10 }),
+    };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 0, speed: 30 }),
+      distantLeader,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    // No cap applied; the AI targets its own top speed.
+    expect(result.nextAiState.targetSpeed).toBeCloseTo(
+      STARTER_STATS.topSpeed,
+      6,
+    );
+  });
+
+  it("ignores leaders in a different lane", () => {
+    // Leader 8 m ahead but offset laterally by 3 m (well past 2.4 m).
+    const adjacentLeader: PlayerView = {
+      car: freshCar({ x: 3, z: 8, speed: 10 }),
+    };
+    const result = tickAI(
+      CLEAN_LINE_DRIVER,
+      freshAi(),
+      freshCar({ x: 0, z: 0, speed: 30 }),
+      adjacentLeader,
+      STRAIGHT_TRACK,
+      RACING,
+      STARTER_STATS,
+    );
+    expect(result.nextAiState.targetSpeed).toBeCloseTo(
+      STARTER_STATS.topSpeed,
+      6,
+    );
+  });
 });
 
 describe("tickAI (cornering)", () => {
