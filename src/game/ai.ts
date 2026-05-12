@@ -263,6 +263,27 @@ export const AI_TUNING = Object.freeze({
   OVERTAKE_LANE_SHIFT_METERS: 3,
   /** Minimum lateral space from the player target line during a pass. */
   OVERTAKE_PLAYER_MARGIN_METERS: 2,
+  /**
+   * Longitudinal range (m) where a same-lane car ahead triggers the
+   * follow-distance throttle cap. Inside this window the trailing AI
+   * targets the leader's speed instead of its own top, so contact band
+   * (CAR_LENGTH_M = 4 m) stays empty. Tuned to give the trailer about a
+   * second of braking room at race-pace speeds.
+   */
+  FOLLOW_DISTANCE_METERS: 14,
+  /**
+   * Lateral threshold (m) for "same lane" follow-distance detection. A
+   * peer counts as a leader when its |dx| is below this value. Slightly
+   * wider than CAR_WIDTH_M (1.8) so the throttle cap engages just before
+   * lateral contact rather than the moment a car drifts in.
+   */
+  FOLLOW_LANE_THRESHOLD_METERS: 2.4,
+  /**
+   * Margin (m/s) the trailing AI keeps below the leader's speed inside
+   * the follow window. Without it the trailer matches exactly and creeps
+   * up on the leader; with too much, the trailer falls back unnecessarily.
+   */
+  FOLLOW_SPEED_BUFFER_M_PER_S: 1,
 });
 
 /**
@@ -380,14 +401,17 @@ export function tickAI(
         behaviour.prefersContextPasses ? authoredCurve : 0,
       )
     : { active: false, offset: 0 };
-  const racingLineOffset = rawIdealOffset + trafficLaneOffset + overtake.offset;
-  // Launch-phase lane discipline: blend toward the spawn lane (held in
-  // `aiCar.x` because the car has barely steered) so the field can spread
-  // before each car commits to the racing line. Without this, the §7 grid
-  // collapses into a pile-up on the first throttle press.
+  // Launch-phase lane discipline: blend the racing-line target toward the
+  // spawn lane (held in `aiCar.x` because the car has barely steered) so
+  // the §7 grid can spread before each car commits to the centerline. The
+  // overtake offset is held OUT of the blend so AI cars can still pass
+  // each other during launch instead of rear-ending whoever is ahead.
+  const racingLineComponent = rawIdealOffset + trafficLaneOffset;
   const launchBlend = clamp(aiCar.z / AI_TUNING.LAUNCH_LANE_HOLD_M, 0, 1);
   const idealOffsetWithTraffic =
-    launchBlend * racingLineOffset + (1 - launchBlend) * aiCar.x;
+    launchBlend * racingLineComponent +
+    (1 - launchBlend) * aiCar.x +
+    overtake.offset;
   const baseIdealLateralOffset = clamp(
     idealOffsetWithTraffic === 0 ? 0 : idealOffsetWithTraffic,
     -context.roadHalfWidth,
@@ -482,7 +506,16 @@ export function tickAI(
     Math.max(0, curvePenalty) *
     composedPaceScalar *
     (1 + recoveryPaceBonus + fieldCompressionPaceBonus);
-  const targetSpeed = clamp(rawTarget, AI_TUNING.MIN_AI_SPEED, stats.topSpeed);
+  // Follow-distance throttle: if a car is close ahead in roughly the same
+  // lane, cap the target at the leader's speed so the AI lifts off instead
+  // of creeping into rear-end contact. Pairs with the carHit damage scan -
+  // staying out of the contact band keeps cars from accumulating wreck-
+  // threshold damage. Cars wanting to pass already get a non-zero
+  // `overtake.offset` and will steer around the leader; this cap covers
+  // the straight-line case where the trailer has no room to step out yet.
+  const followCap = followDistanceCap(aiCar, [player.car, ...otherAiCars]);
+  const cappedTarget = Math.min(rawTarget, followCap);
+  const targetSpeed = clamp(cappedTarget, AI_TUNING.MIN_AI_SPEED, stats.topSpeed);
 
   // The state we will return regardless of phase. Mirrors the car so
   // other systems can read AI position without poking the physics state.
@@ -678,6 +711,41 @@ interface OvertakeThreat {
   readonly x: number;
   readonly z: number;
   readonly speed: number;
+}
+
+/**
+ * Speed cap for the AI when another car sits close ahead in roughly
+ * the same lane. Returns `+Infinity` when no leader qualifies so the
+ * caller can `Math.min` it against the raw target unconditionally.
+ *
+ * "Same lane" is `|dx| < FOLLOW_LANE_THRESHOLD_METERS`. "Close ahead" is
+ * `0 < dz < FOLLOW_DISTANCE_METERS`. The cap is the leader's speed
+ * minus a small buffer so the trailer holds station rather than
+ * matching exactly and grinding into the contact band.
+ *
+ * Pure: scans the input in order and picks the closest qualifying
+ * leader so the result is deterministic.
+ */
+function followDistanceCap(
+  aiCar: Readonly<CarState>,
+  candidates: ReadonlyArray<OvertakeThreat>,
+): number {
+  let bestGap = Number.POSITIVE_INFINITY;
+  let leaderSpeed = Number.POSITIVE_INFINITY;
+  for (const candidate of candidates) {
+    const gap = candidate.z - aiCar.z;
+    if (gap <= 0 || gap > AI_TUNING.FOLLOW_DISTANCE_METERS) continue;
+    if (
+      Math.abs(candidate.x - aiCar.x) >= AI_TUNING.FOLLOW_LANE_THRESHOLD_METERS
+    )
+      continue;
+    if (gap < bestGap) {
+      bestGap = gap;
+      leaderSpeed = candidate.speed;
+    }
+  }
+  if (!Number.isFinite(leaderSpeed)) return Number.POSITIVE_INFINITY;
+  return Math.max(0, leaderSpeed - AI_TUNING.FOLLOW_SPEED_BUFFER_M_PER_S);
 }
 
 /**

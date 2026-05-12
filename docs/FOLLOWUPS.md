@@ -22,17 +22,18 @@ the field collided, and damage accumulated past the wreck threshold
 the renderer froze them in place. To the player, this read as cars
 silently stopping. PR #221 added a launch-phase lane hold that
 blends the lateral target from "hold spawn lane" at z=0 to "pursue
-racing line" at z=200, which prevents the lateral pile-up but is
-still partial: cars in the same lane rear-end whoever is ahead
-because the AI has no follow-distance throttle, the launch blend
-also suppresses the overtake offset, and contact emits no audio /
-visual / HUD cue, so even non-fatal hits are invisible. Tracked in
-dot `VibeGear2-crash-physics-feedback-1c795b62` (priority 1) with
-slice plan: split overtake offset out of the launch blend, add a
-follow-distance throttle so trailing AI lift before contact, wire
-audio thud + sprite-anchored VFX + screen punch to carHit events
-for AI-vs-AI pairs, and tune the F-102 BUMP_KICK_BASE_MPS so
-contact reads as percussive instead of a creep-and-stick.
+racing line" at z=200, which prevents the lateral pile-up. The
+next slice (PR pending, branch `fix/ai-rear-end-wrecks`, 2026-05-11)
+split the overtake offset out of the launch blend so trailing cars
+can step out to pass during launch, and added a follow-distance
+throttle cap so a trailing AI within 14 m of a same-lane leader
+targets the leader's speed minus a 1 m/s buffer. Debug overlay went
+from 3 racing / 8 wrecked at 10 s to 8 racing / 3 wrecked under the
+same fixture. Remaining work tracked in dot
+`VibeGear2-crash-physics-feedback-1c795b62`: AI-vs-AI carHit VFX,
+wreck "death animation" before physics freeze, audio thud + wreck
+stinger, and lateral knock-back tuning so contact reads as
+percussive instead of a creep-and-stick.
 
 ## F-104: TG2-faithful fuel and gearbox economy
 **Created:** 2026-05-09

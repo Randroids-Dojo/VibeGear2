@@ -6,6 +6,80 @@ Correct them by adding a new entry that references the old one.
 
 ---
 
+## 2026-05-11: fix(ai): follow-distance throttle + overtake-during-launch (F-105 slice 1)
+
+**GDD sections touched:** [§15](gdd/15-ai-and-difficulty.md) (AI
+controller).
+**Branch / PR:** `fix/ai-rear-end-wrecks`, PR pending.
+**Status:** First slice of F-105 / dot
+`VibeGear2-crash-physics-feedback-1c795b62`. After PR #221 (lateral
+lane hold) shipped, the user observed that AI cars were still
+DNF'ing in large numbers. Debug overlay confirmed they were
+status-flipped to dnf reason "wrecked" within ~5 seconds of race
+start at z values in the 25 to 80 m range - rear-ends in the same
+lane, since the trailing AI had no follow-distance behavior and the
+launch blend suppressed the overtake offset that would otherwise
+make trailers step out to pass.
+
+### Done
+- Split the overtake offset out of the launch-phase blend in
+  `src/game/ai.ts`. Overtake bias is now always additive over the
+  blended racing-line / lane-hold target, so a trailing AI can step
+  out to pass during launch instead of slamming into a same-lane
+  leader.
+- Added a follow-distance throttle cap (`followDistanceCap` helper):
+  when a peer sits within `FOLLOW_DISTANCE_METERS` (14 m) and
+  `|dx| < FOLLOW_LANE_THRESHOLD_METERS` (2.4 m), the trailing AI
+  caps its target speed at the leader's speed minus
+  `FOLLOW_SPEED_BUFFER_M_PER_S` (1 m/s). The trailer lifts off
+  before contact and the wreck-damage band stays empty.
+- Added four ai.test.ts regression tests: overtake offset stays
+  active during launch, follow-distance cap engages on a close
+  same-lane leader, cap ignores leaders past 14 m, cap ignores
+  laterally adjacent leaders.
+
+### Verification
+- `npm run typecheck` clean.
+- `npm test --run` 2991 / 2991. (Updated the weather-skill test in
+  `raceSession.test.ts` to park the player far ahead so the new
+  follow-distance cap does not dominate the assertion; the
+  fixture's intent was the weather multiplier on target speed, not
+  the follow behavior.)
+- `npm run build` succeeds.
+- Browser playthrough with `?debug=ai`: 8 of 11 AI cars are still
+  racing at 10 s into the race (was 3 of 11 before this slice).
+  The remaining 3 wrecks happen at z values 245 to 303 - well past
+  the launch hold - so they are mid-race contact and not the grid
+  pile-up.
+
+### Assumptions
+- "Same lane" is `|dx| < 2.4 m`, slightly wider than CAR_WIDTH_M
+  (1.8) so the throttle cap engages just before lateral contact
+  rather than at the moment of contact. Wider would let a parallel
+  car wrongly trigger the cap.
+- `FOLLOW_DISTANCE_METERS` 14 m gives the trailer about half a
+  second of separation at race-pace 30 m/s, enough to brake before
+  contact. Tighter would let the wreck accumulate; looser would
+  flatten field compression too aggressively.
+- The follow-distance cap can drop below MIN_AI_SPEED when the
+  leader is essentially stopped (e.g., spawn grid before
+  countdown). The MIN_AI_SPEED floor still applies after the cap,
+  so the trailing AI never targets less than 8 m/s.
+
+### GDD coverage
+- §15 AI: `LAUNCH_LANE_HOLD_M` (pinned in PR #221) and the new
+  `FOLLOW_DISTANCE_METERS` / `FOLLOW_LANE_THRESHOLD_METERS` /
+  `FOLLOW_SPEED_BUFFER_M_PER_S` constants now define the AI's
+  inter-car spacing contract. Documented in `AI_TUNING`.
+
+### Followups
+- F-105 remains in-progress for the next slices: AI-vs-AI carHit
+  VFX (sprite-anchored flash), wreck "death animation" before
+  physics freeze, audio thud + wreck stinger, and lateral
+  knock-back tuning so contact reads as percussive.
+
+---
+
 ## 2026-05-10: fix(race): visible opponents, finish line, tour resume, launch lane hold
 
 **GDD sections touched:** [§7](gdd/07-race-modes-and-rules.md) (grid
