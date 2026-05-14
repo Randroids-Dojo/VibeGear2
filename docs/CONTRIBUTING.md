@@ -126,21 +126,36 @@ command reference, read [`SCRIPTS.md`](SCRIPTS.md).
 
 ## 11. Issue Triage and Labels
 
-Use these labels when filing issues or triaging PRs:
+Use these labels when filing issues or triaging PRs. Choose the label that
+best describes the primary area the issue touches.
 
-- `physics`
-- `renderer`
-- `ai`
-- `ui-ux`
-- `audio`
-- `modding`
-- `content`
-- `legal-review`
-- `good-first-issue`
-- `help-wanted`
-- `performance`
-- `bug`
-- `design`
+- `physics` -- Use when the issue involves driving model tuning, collision
+detection, traction, damage calculation, or race simulation logic.
+- `renderer` -- Use when the issue involves canvas road rendering, sprite
+atlases, HUD drawing, visual effects, or anything visible on screen.
+- `ai` -- Use when the issue involves CPU opponent behavior, racing lines,
+difficulty tuning, or traffic AI.
+- `ui-ux` -- Use when the issue involves screens, navigation flows, controls,
+accessibility, or player-facing text and copy.
+- `audio` -- Use when the issue involves music, sound effects, mixing,
+audio manifests, or playback bugs.
+- `modding` -- Use when the issue involves the data mod system, schemas,
+loader behavior, starter packs, or community content loading.
+- `content` -- Use when the issue involves tracks, tours, cars, balance
+data, manifests, or other authored game data.
+- `legal-review` -- Use when the issue raises originality, licence,
+trademark, or source-provenance questions that need maintainer review
+before merge.
+- `good-first-issue` -- Use when the task is small, well-scoped, and
+suitable for a first-time contributor to pick up.
+- `help-wanted` -- Use when maintainers would welcome an outside
+contribution on a task that is not actively assigned.
+- `performance` -- Use when the issue involves frame time, bundle size,
+memory usage, loading speed, or profiling work.
+- `bug` -- Use when the issue reports broken behavior, a regression, a
+crash, or incorrect output.
+- `design` -- Use when the issue is a GDD discussion, balance proposal,
+UX concept, rule change, roadmap item, or game-design question.
 
 Use `legal-review` for originality, licence, trademark, or source-provenance
 questions. Maintainers may block merge until the legal-review question is
